@@ -529,6 +529,30 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .dc-round-ic{font-size:20px;color:var(--gold-hi);line-height:1;}
 .dc-round-t{font-family:'DotGothic16',monospace;font-size:12px;color:#e7cd84;letter-spacing:1px;}
 .dc-round-s{font-size:10px;color:#8fa3d9;line-height:1.4;}
+.dc-round{cursor:pointer;transition:.15s}
+.dc-round:hover{border-color:var(--gold-hi);background:rgba(232,184,75,.1)}
+/* ===== 円卓会議ターミナル（Claude） ===== */
+.entaku-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(3,5,10,.72);backdrop-filter:blur(3px);padding:16px}
+.entaku-modal.hidden{display:none}
+.entaku-win{width:min(760px,96vw);height:min(80vh,680px);display:flex;flex-direction:column;background:#05070d;border:1px solid var(--gold);border-radius:12px;overflow:hidden;box-shadow:0 0 40px rgba(0,0,0,.6)}
+.entaku-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(232,184,75,.08);border-bottom:1px solid rgba(232,184,75,.35)}
+.entaku-dot{width:9px;height:9px;border-radius:50%;background:var(--in);box-shadow:0 0 8px var(--in)}
+.entaku-title{flex:1;font-family:'DotGothic16',monospace;font-size:12px;color:#e7cd84;letter-spacing:1px}
+.entaku-x{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:6px;width:26px;height:24px;cursor:pointer;font-size:12px}
+.entaku-body{flex:1;min-height:0;overflow:auto;padding:12px;font-family:ui-monospace,'DotGothic16',monospace;font-size:13px;line-height:1.65;background:#070a12}
+.ent-msg{margin-bottom:12px}
+.ent-who{display:inline-block;font-size:10px;letter-spacing:1px;padding:1px 7px;border-radius:4px;margin-bottom:4px}
+.ent-me .ent-who{color:#0a0d14;background:var(--gold)}
+.ent-ai .ent-who{color:var(--in);border:1px solid rgba(61,220,151,.5)}
+.ent-txt{color:var(--text)}
+.ent-me .ent-txt{color:#cfe0ff}
+.ent-typing{color:var(--muted)}
+.entaku-jumps{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.entaku-jump{font-family:'DotGothic16',monospace;font-size:11px;color:#0a0d14;background:linear-gradient(90deg,var(--gold),var(--gold-hi));border:none;border-radius:6px;padding:4px 10px;cursor:pointer}
+.entaku-input{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line);background:#05070d}
+#entakuText{flex:1;background:#0a0d14;border:1px solid var(--line);border-radius:8px;color:var(--text);font:inherit;font-size:13px;padding:8px;resize:none;line-height:1.5}
+#entakuSend{background:linear-gradient(90deg,var(--gold),var(--gold-hi));color:#1a1400;border:none;border-radius:8px;padding:0 18px;font-weight:800;cursor:pointer;font-family:'DotGothic16',monospace}
+#entakuSend:disabled{opacity:.5;cursor:default}
 @media(max-width:980px){
   #quests-row{
     grid-template-columns:1fr;
@@ -944,11 +968,11 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
           <div class="dc-role">契約・規約・コンプラ</div>
         </div>
       </div>
-      <div class="dc-round">
-        <span class="dc-round-ic">⭗</span>
+      <div class="dc-round" id="dcRound" role="button" tabindex="0" onclick="openEntaku()" title="クリックで円卓会議ターミナル（Claude）を開く">
+        <span class="dc-round-ic">⌨</span>
         <div class="dc-round-body">
-          <div class="dc-round-t">円卓会議スペース</div>
-          <div class="dc-round-s">3部署で囲んで相談・意思決定（AI謁見）</div>
+          <div class="dc-round-t">円卓会議ターミナル</div>
+          <div class="dc-round-s">情報を投げるとClaudeが経理／法務へ振り分け・CF管理を案内</div>
         </div>
       </div>
     </div>
@@ -1645,6 +1669,110 @@ window.Treasury={
       document.getElementById('treasury-pane')?.scrollIntoView({behavior:'smooth',block:'start'});
     }catch(e){}
   }
+})();
+</script>
+
+<!-- ===== 円卓会議ターミナル（Claude） ===== -->
+<div id="entaku-modal" class="entaku-modal hidden" onclick="if(event.target===this)closeEntaku()">
+  <div class="entaku-win">
+    <div class="entaku-bar">
+      <span class="entaku-dot"></span>
+      <span class="entaku-title">円卓会議ターミナル ─ AI: 円卓（Claude Opus 4.8）</span>
+      <button class="entaku-x" onclick="closeEntaku()" aria-label="閉じる">✕</button>
+    </div>
+    <div class="entaku-body" id="entakuBody"></div>
+    <form class="entaku-input" id="entakuForm" onsubmit="return sendEntaku(event)">
+      <textarea id="entakuText" rows="2" placeholder="情報を投げる（領収書/請求書の内容・契約書・入出金・相談…）→ Enterで送信、Shift+Enterで改行"></textarea>
+      <button type="submit" id="entakuSend">送信</button>
+    </form>
+  </div>
+</div>
+<script>
+(function(){
+  const S = { history: [], busy: false };
+  function el(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+  // 振り分け先 → CFナビの遷移先
+  const ROUTES = [
+    { key:'口座', s:'cf-bank', label:'口座・CSVへ' },
+    { key:'明細突合', s:'cf-link', label:'明細突合へ' },
+    { key:'案件', s:'cf-cases', label:'案件ボードへ' },
+    { key:'リーガル', s:'cf-legal', label:'契約リーガルへ' },
+    { key:'関連者', s:'cf-party', label:'関連者貸借へ' },
+    { key:'CF予測', s:'cf-forecast', label:'CF予測へ' },
+    { key:'印籠', s:'cf-inrou', label:'印籠レポートへ' },
+    { key:'精算', s:'quest', label:'精算クエストへ' },
+  ];
+  function gotoScreen(sid){
+    try{
+      document.getElementById('treasury-pane')?.scrollIntoView({behavior:'smooth',block:'start'});
+      document.querySelector('.gamenav button[data-s="'+sid+'"]')?.click();
+    }catch(e){}
+  }
+  function jumpButtons(text){
+    const hits = ROUTES.filter(r=>text.includes(r.key));
+    if(!hits.length) return '';
+    return '<div class="entaku-jumps">'+hits.slice(0,4).map(r=>'<button type="button" class="entaku-jump" data-s="'+r.s+'">'+r.label+'</button>').join('')+'</div>';
+  }
+  function render(){
+    const body = el('entakuBody'); if(!body) return;
+    body.innerHTML = S.history.map(m=>{
+      const who = m.role==='assistant' ? '円卓' : 'あなた';
+      const cls = m.role==='assistant' ? 'ent-ai' : 'ent-me';
+      const jumps = m.role==='assistant' ? jumpButtons(m.content) : '';
+      return '<div class="ent-msg '+cls+'"><span class="ent-who">'+who+'</span><div class="ent-txt">'+esc(m.content).replace(/\n/g,'<br>')+jumps+'</div></div>';
+    }).join('') + (S.busy?'<div class="ent-msg ent-ai"><span class="ent-who">円卓</span><div class="ent-txt ent-typing">…考え中</div></div>':'');
+    body.scrollTop = body.scrollHeight;
+    body.querySelectorAll('.entaku-jump').forEach(b=>b.onclick=()=>gotoScreen(b.dataset.s));
+  }
+  // 現在のCF状況を軽く要約してcontextに渡す
+  function cfContext(){
+    try{
+      const S2 = window.Treasury && window.Treasury.S;
+      if(!S2) return '';
+      return '案件 '+(S2.cases?.length||0)+'件 / 口座 '+(S2.accounts?.length||0)+'件 / 銀行明細 '+(S2.bankTx?.length||0)+'件 / 関連者 '+(S2.relatedParties?.length||0)+'件';
+    }catch(e){ return ''; }
+  }
+  window.openEntaku = function(){
+    el('entaku-modal').classList.remove('hidden');
+    if(!S.history.length){
+      S.history.push({role:'assistant', content:'円卓会議へようこそ。ここに情報を投げてください。\n・お金（領収書/請求書/入出金/経費/税）は「経理」へ\n・契約（契約書/覚書）は「法務」へ振り分けます。\n契約書は支払サイトを抜き出して経理のCF予測へつなぎます。何から始めますか？'});
+      render();
+    }
+    setTimeout(()=>el('entakuText')?.focus(), 50);
+  };
+  window.closeEntaku = function(){ el('entaku-modal').classList.add('hidden'); };
+  window.sendEntaku = function(ev){
+    if(ev) ev.preventDefault();
+    if(S.busy) return false;
+    const ta = el('entakuText'); const q = (ta.value||'').trim();
+    if(!q) return false;
+    S.history.push({role:'user', content:q}); ta.value=''; S.busy=true; render();
+    el('entakuSend').disabled = true;
+    fetch('/api/claude', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ messages: S.history, context: cfContext() })
+    }).then(async r=>{
+      if(!r.ok){ const e=await r.json().catch(()=>({})); throw new Error(e.error||('HTTP '+r.status)); }
+      return r.json();
+    }).then(res=>{
+      S.busy=false; el('entakuSend').disabled=false;
+      S.history.push({role:'assistant', content: res.text || '（応答が空でした）'});
+      render();
+    }).catch(e=>{
+      S.busy=false; el('entakuSend').disabled=false;
+      S.history.push({role:'assistant', content:'⚠ Claudeに接続できませんでした（'+e.message+'）。\nAIが動くのはVercel版のみです。サーバーに ANTHROPIC_API_KEY の設定が必要です。'});
+      render();
+    });
+    return false;
+  };
+  // Enter送信 / Shift+Enter改行
+  document.addEventListener('keydown', function(e){
+    if(e.key==='Enter' && !e.shiftKey){
+      const ta = document.getElementById('entakuText');
+      if(ta && document.activeElement===ta){ e.preventDefault(); sendEntaku(); }
+    }
+  });
 })();
 </script>
 
