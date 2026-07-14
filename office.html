@@ -222,7 +222,7 @@ body.embedded .hud-dock{padding:0 0 4px;}
     <div class="stage">
       <div class="hud-dock" id="hud-dock"></div>
       <div class="stage-game">
-      <canvas id="game" width="768" height="1728"></canvas>
+      <canvas id="game" width="480" height="360"></canvas>
       <div class="panel overlays">
         <div class="win ov" data-panel="clock" id="p-clock">
           <div class="ov-bar">
@@ -383,133 +383,93 @@ else{const f=document.getElementById('cardframe');f.src=f.dataset.src;}
   }
   refreshDock();
 })();
-/* ================= MAP（縦長・16×36。右端 col13-15 に送迎車の大通り） ================= */
-const TW=16, COLS=16, ROWS=36;
-const T={FLOOR:0,WALL:1,GRASS:2,TREE:3,DESK:4,PC:5,COPIER:6,SHELF:7,CARPET:8,TABLE:9,SOFA:10,FLOWER:11,DOOR:12,DAYFLOOR:13,DAYTABLE:14,ROAD:15,CROSS:16,SIDE:17,PAVE:18,DECK:19,POOL:20,SAND:21,WATER:22,STAGE:23};
-const map=[];
-for(let y=0;y<ROWS;y++){map.push(new Array(COLS).fill(T.WALL));}
-function fill(x1,y1,x2,y2,t){for(let y=y1;y<=y2;y++)for(let x=x1;x<=x2;x++)if(x>=0&&y>=0&&x<COLS&&y<ROWS)map[y][x]=t;}
-
-/* ==== 右端の縦の大通り（送迎車の道・全高） ==== */
-fill(13,0,15,35,T.ROAD);
-
-/* ==== 本社ビル（上） ==== */
-fill(1,1,5,4,T.CARPET);     // 社長室
-fill(7,1,12,4,T.FLOOR);     // 会議・応接
-fill(6,1,6,5,T.SIDE);       // 社長室｜会議の通路
-fill(0,5,12,5,T.SIDE);      // 本社内 横通路
-fill(1,6,12,9,T.FLOOR);     // 本社オフィス
-
-/* ==== 横道路（本社↓デイ） ==== */
-fill(0,10,12,11,T.ROAD);
-
-/* ==== デイサービス｜取引先 ==== */
-fill(1,12,5,17,T.DAYFLOOR); // デイサービス
-fill(7,12,12,17,T.FLOOR);   // 取引先
-fill(6,12,6,17,T.SIDE);     // あいだの通路
-
-/* ==== 駐車場 ==== */
-fill(0,18,12,20,T.PAVE);
-
-/* ==== 横道路（駐車場↓プール） ==== */
-fill(0,21,12,22,T.ROAD);
-
-/* ==== プール｜ビーチ・海 ==== */
-fill(0,23,0,29,T.SIDE);     // 左の歩道
-fill(1,23,6,29,T.DECK);     // プールデッキ
-fill(2,24,5,28,T.POOL);     // プール
-fill(7,23,8,29,T.SAND);     // 砂浜
-fill(9,23,12,29,T.WATER);   // 海
-
-/* ==== 横道路（プール↓イベント） ==== */
-fill(0,30,12,31,T.ROAD);
-
-/* ==== イベント会場（下） ==== */
-fill(1,32,12,35,T.GRASS);
-map[34][5]=T.STAGE;map[34][6]=T.STAGE;map[34][7]=T.STAGE;
-
-/* 出入口 */
-[[3,5],[9,5],[6,6],[3,11],[9,11],[3,12],[9,12]].forEach(d=>map[d[1]][d[0]]=T.DOOR);
-/* 横断歩道（各ブロック→右の大通りへ） */
-fill(11,10,12,11,T.CROSS);
-fill(11,21,12,22,T.CROSS);
-fill(11,30,12,31,T.CROSS);
-
-/* 本社オフィス: 机・PC・棚・コピー */
-[[2,7],[5,7],[8,7],[2,9],[5,9],[8,9]].forEach(d=>{map[d[1]][d[0]]=T.PC;map[d[1]][d[0]+1]=T.DESK;});
-map[6][10]=T.SHELF;map[6][11]=T.SHELF;map[6][12]=T.SHELF;
-map[8][11]=T.COPIER;
-/* 社長室 */
-map[2][3]=T.PC;map[2][4]=T.DESK;map[1][1]=T.FLOWER;map[4][5]=T.SHELF;
-/* 会議・応接 */
-for(let x=8;x<=11;x++){map[2][x]=T.TABLE;map[3][x]=T.TABLE;}
-map[2][12]=T.SOFA;map[3][12]=T.SOFA;
-/* デイサービス */
-map[13][2]=T.PC;map[13][3]=T.DESK;map[16][2]=T.DAYTABLE;map[16][4]=T.DAYTABLE;
-/* 取引先 */
-map[13][9]=T.PC;map[13][10]=T.DESK;map[16][8]=T.TABLE;map[16][9]=T.TABLE;map[13][12]=T.SHELF;
-/* プール・ビーチ・イベント 装飾 */
-map[23][1]=T.FLOWER;map[29][6]=T.FLOWER;map[23][7]=T.TREE;map[28][8]=T.TREE;
-map[32][2]=T.TREE;map[35][11]=T.TREE;map[33][10]=T.FLOWER;
-
-const WALKABLE=new Set([T.FLOOR,T.GRASS,T.CARPET,T.DOOR,T.DAYFLOOR,T.SIDE,T.PAVE,T.CROSS,T.DECK,T.SAND,T.ROAD]);
-function walkable(x,y){return x>=0&&y>=0&&x<COLS&&y<ROWS&&WALKABLE.has(map[y][x]);}
-
-const ROOMS={
-  shacho:{x1:1,y1:1,x2:5,y2:4,label:'社長室',lx:1,ly:0.6},
-  kaigi:{x1:7,y1:1,x2:12,y2:4,label:'会議・応接室',lx:7,ly:0.6},
-  honsha:{x1:1,y1:6,x2:12,y2:9,label:'本社オフィス',lx:1,ly:9.7},
-  day:{x1:1,y1:12,x2:5,y2:17,label:'デイサービス',lx:1,ly:17.7},
-  client:{x1:7,y1:12,x2:12,y2:17,label:'取引先',lx:7,ly:17.7},
-  parking:{x1:1,y1:18,x2:12,y2:20,label:'駐車場',lx:1,ly:20.6},
-  pool:{x1:1,y1:23,x2:6,y2:29,label:'プール',lx:1,ly:22.4},
-  umi:{x1:7,y1:23,x2:12,y2:29,label:'ビーチ・海',lx:7,ly:22.4},
-  park:{x1:1,y1:32,x2:12,y2:35,label:'イベント会場',lx:1,ly:31.4}
+/* ================= MAP（ゾーンベース・横長フロアプラン） ================= */
+const MAP_W=480, MAP_H=360;
+const ZONES={
+  shacho:{label:'社長室',x:10,y:8,w:92,h:48,fill:'#2a2238',fill2:'#1a1528',links:['kaigi','honsha']},
+  kaigi:{label:'会議・応接',x:110,y:8,w:118,h:48,fill:'#1e2838',fill2:'#141c28',links:['shacho','honsha']},
+  honsha:{label:'本社オフィス',x:10,y:64,w:388,h:58,fill:'#1e2430',fill2:'#141820',links:['shacho','kaigi','day','client','parking']},
+  day:{label:'デイサービス',x:10,y:130,w:148,h:62,fill:'#1a2820',fill2:'#121c18',links:['honsha','client','parking']},
+  client:{label:'取引先',x:166,y:130,w:232,h:62,fill:'#282018',fill2:'#1a140f',links:['honsha','day','parking']},
+  parking:{label:'駐車場',x:10,y:200,w:388,h:36,fill:'#2a3038',fill2:'#1e2228',links:['honsha','day','client','road','pool','umi','park']},
+  pool:{label:'プール',x:10,y:244,w:168,h:38,fill:'#1a3858',fill2:'#0e2840',links:['parking','umi','park']},
+  umi:{label:'ビーチ・海',x:186,y:244,w:212,h:38,fill:'#0e3068',fill2:'#081e48',links:['parking','pool','park']},
+  park:{label:'イベント会場',x:10,y:290,w:388,h:34,fill:'#142e20',fill2:'#0c2014',links:['parking','pool','umi']},
+  road:{label:'送迎',x:404,y:6,w:66,h:348,fill:'#141820',fill2:'#0c1018',links:['parking'],lane:true}
 };
-
+const ROOMS=ZONES;
+function pt(zone,nx,ny){
+  const z=ZONES[zone];
+  return {x:z.x+z.w*nx,y:z.y+z.h*ny};
+}
+function zoneCenter(id){
+  const z=ZONES[id];
+  return {x:z.x+z.w/2,y:z.y+z.h/2};
+}
+function zoneAt(x,y){
+  for(const id of ['shacho','kaigi','honsha','day','client','parking','pool','umi','park','road']){
+    const z=ZONES[id];
+    if(x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h)return id;
+  }
+  return 'honsha';
+}
+function findZonePath(a,b){
+  if(a===b)return [a];
+  const q=[[a]],seen=new Set([a]);
+  while(q.length){
+    const path=q.shift(),cur=path[path.length-1];
+    if(cur===b)return path;
+    for(const n of ZONES[cur].links||[]){
+      if(seen.has(n))continue;
+      seen.add(n);
+      q.push(path.concat(n));
+    }
+  }
+  return [a,b];
+}
 const SEATS={
-  meeting:[[8,1],[9,1],[10,1],[11,1],[8,4],[9,4],[10,4],[11,4]],
-  recept:[[12,1],[12,4],[11,4],[8,1]],
-  pool:[[1,25],[6,26],[1,28],[6,24]],
-  umi:[[7,24],[8,26],[8,24],[7,28]],
-  concert:[[2,33],[4,33],[8,33],[10,34]],
-  day:[[2,14],[4,14],[2,16],[4,15]],
-  copier:[11,8],
-  shelf:[[10,6],[11,6],[12,6]],
-  client:[9,15]
+  meeting:[pt('kaigi',0.22,0.35),pt('kaigi',0.42,0.35),pt('kaigi',0.62,0.35),pt('kaigi',0.82,0.35),
+           pt('kaigi',0.22,0.72),pt('kaigi',0.42,0.72),pt('kaigi',0.62,0.72),pt('kaigi',0.82,0.72)],
+  recept:[pt('kaigi',0.88,0.35),pt('kaigi',0.88,0.72),pt('kaigi',0.72,0.72),pt('kaigi',0.22,0.35)],
+  pool:[pt('pool',0.18,0.55),pt('pool',0.82,0.6),pt('pool',0.2,0.82),pt('pool',0.75,0.3)],
+  umi:[pt('umi',0.15,0.5),pt('umi',0.45,0.55),pt('umi',0.7,0.45),pt('umi',0.35,0.75)],
+  concert:[pt('park',0.15,0.55),pt('park',0.35,0.55),pt('park',0.6,0.55),pt('park',0.82,0.65)],
+  day:[pt('day',0.22,0.4),pt('day',0.55,0.4),pt('day',0.22,0.75),pt('day',0.55,0.72)],
+  copier:pt('honsha',0.88,0.55),
+  shelf:[pt('honsha',0.72,0.35),pt('honsha',0.82,0.35),pt('honsha',0.92,0.35)],
+  client:pt('client',0.5,0.55)
 };
-const ELDER_SEATS=[[2,14],[4,14]];
+const ELDER_SEATS=[pt('day',0.22,0.4),pt('day',0.55,0.4)];
 
 /* ================= CHARACTERS ================= */
 const CHARS=[
- {id:'shacho',name:'社長',short:'社長',dept:'本社',female:false,cloth:'#7c3aed',hair:'#3f3f46',seat:[3,2],home:'shacho',
+ {id:'shacho',name:'社長',short:'社長',dept:'本社',female:false,cloth:'#7c3aed',hair:'#3f3f46',seat:pt('shacho',0.5,0.55),home:'shacho',
   sched:[[9,10,'会議'],[10,12,'デスクワーク'],[12,13,'休憩'],[13,14,'来客対応'],[14,16,'デスクワーク'],[16,17,'会議'],[17,19,'デスクワーク']]},
- {id:'koshiishi',name:'越石',short:'越石',dept:'本社',female:true,cloth:'#3b82f6',hair:'#52341d',seat:[2,7],home:'honsha',
+ {id:'koshiishi',name:'越石',short:'越石',dept:'本社',female:true,cloth:'#3b82f6',hair:'#52341d',seat:pt('honsha',0.18,0.55),home:'honsha',
   sched:[[9,10,'会議'],[10,11,'振込作業'],[11,12,'書類整理'],[12,13,'休憩'],[13,15,'デスクワーク'],[15,16,'コピー'],[16,19,'デスクワーク']]},
- {id:'sayaka',name:'さやか',short:'さやか',dept:'本社',female:true,cloth:'#3b82f6',hair:'#a16207',seat:[5,7],home:'honsha',
+ {id:'sayaka',name:'さやか',short:'さやか',dept:'本社',female:true,cloth:'#3b82f6',hair:'#a16207',seat:pt('honsha',0.38,0.55),home:'honsha',
   sched:[[9,10,'会議'],[10,12,'プログラミング'],[12,13,'休憩'],[13,16,'プログラミング'],[16,17,'コピー'],[17,19,'プログラミング']]},
- {id:'yuzuru',name:'譲',short:'譲',dept:'イベント',female:false,cloth:'#f59e0b',hair:'#1c1917',seat:[8,7],home:'honsha',
+ {id:'yuzuru',name:'譲',short:'譲',dept:'イベント',female:false,cloth:'#f59e0b',hair:'#1c1917',seat:pt('honsha',0.58,0.55),home:'honsha',
   sched:[[9,10,'会議'],[10,12,'イベント（プール）'],[12,13,'休憩'],[13,15,'イベント（海）'],[15,17,'イベント（コンサート）'],[17,19,'デスクワーク']]},
- {id:'tanji',name:'丹治',short:'丹治',dept:'営業',female:false,cloth:'#10b981',hair:'#44403c',seat:[5,8],home:'honsha',
+ {id:'tanji',name:'丹治',short:'丹治',dept:'営業',female:false,cloth:'#10b981',hair:'#44403c',seat:pt('honsha',0.48,0.75),home:'honsha',
   sched:[[9,10,'会議'],[10,12,'商談'],[12,13,'休憩'],[13,17,'商談'],[17,19,'デスクワーク']]},
- {id:'okabe',name:'岡部',short:'岡部',dept:'法務',female:false,cloth:'#64748b',hair:'#292524',seat:[2,8],home:'honsha',
+ {id:'okabe',name:'岡部',short:'岡部',dept:'法務',female:false,cloth:'#64748b',hair:'#292524',seat:pt('honsha',0.18,0.75),home:'honsha',
   sched:[[9,12,'デスクワーク'],[12,13,'休憩'],[13,14,'来客対応'],[14,16,'書類整理'],[16,19,'デスクワーク']]},
- {id:'tokita',name:'鴇田施設長',short:'鴇田',dept:'デイサービス',female:false,cloth:'#14b8a6',hair:'#57534e',seat:[2,13],home:'day',
+ {id:'tokita',name:'鴇田施設長',short:'鴇田',dept:'デイサービス',female:false,cloth:'#14b8a6',hair:'#57534e',seat:pt('day',0.35,0.35),home:'day',
   sched:[[8,9,'デスクワーク'],[9,12,'デイサービス業務'],[12,13,'休憩'],[13,17,'デイサービス業務'],[17,19,'デスクワーク']]},
- {id:'takahashi',name:'高橋さん',short:'高橋',dept:'デイサービス',female:true,cloth:'#f472b6',hair:'#713f12',seat:[4,15],home:'day',
+ {id:'takahashi',name:'高橋さん',short:'高橋',dept:'デイサービス',female:true,cloth:'#f472b6',hair:'#713f12',seat:pt('day',0.65,0.72),home:'day',
   sched:[[9,12,'デイサービス業務'],[12,13,'休憩'],[13,17,'デイサービス業務'],[17,19,'書類整理']]},
- {id:'shinagawa',name:'品川さん',short:'品川',dept:'デイサービス',female:true,cloth:'#f472b6',hair:'#3f3f46',seat:[5,16],home:'day',
+ {id:'shinagawa',name:'品川さん',short:'品川',dept:'デイサービス',female:true,cloth:'#f472b6',hair:'#3f3f46',seat:pt('day',0.75,0.4),home:'day',
   sched:[[9,10,'送迎'],[10,12,'デイサービス業務'],[12,13,'送迎'],[13,14,'休憩'],[14,16,'デイサービス業務'],[16,17,'送迎'],[17,19,'デスクワーク']]}
 ];
 CHARS.forEach((c,i)=>{
-  c.idx=i;c.px=c.seat[0]*TW;c.py=c.seat[1]*TW;c.path=[];c.curAct=null;c.hidden=false;
+  c.idx=i;c.px=c.seat.x;c.py=c.seat.y;c.path=[];c.curAct=null;c.hidden=false;
   c.wanderRoom=null;c.wanderAt=0;c.bubble=null;c.override=null;c.calId='';c.calEvent=null;c.calAct=null;c.pendingBubble=null;
 });
 const SHINA=CHARS.find(c=>c.id==='shinagawa');
 
-/* デイサービス利用者（2部制：午前組と午後組）と取引先のひと */
 function elder(name,short,female,cloth,hair){
-  return {name:name,short:short,female:female,cloth:cloth,hair:hair,px:11*TW,py:19*TW,path:[],hidden:true,spd:0.55,bubble:null,pendingBubble:null};
+  return {name:name,short:short,female:female,cloth:cloth,hair:hair,px:pt('parking',0.5,0.5).x,py:pt('parking',0.5,0.5).y,path:[],hidden:true,spd:0.85,bubble:null,pendingBubble:null};
 }
 const ELDERS=[
  elder('ウメさん','ウメ',true,'#9d7bb0','#cbd5e1'),
@@ -518,7 +478,7 @@ const ELDERS=[
  elder('シゲゾウさん','シゲ',false,'#5c8a6a','#cbd5e1')
 ];
 const G_AM=[ELDERS[0],ELDERS[1]], G_PM=[ELDERS[2],ELDERS[3]];
-const CLIENT={name:'取引先のひと',short:'取引先',female:false,cloth:'#8d6e63',hair:'#4b5563',px:9*TW,py:15*TW,path:[],hidden:false,bubble:null,pendingBubble:null};
+const CLIENT={name:'取引先のひと',short:'取引先',female:false,cloth:'#8d6e63',hair:'#4b5563',...(()=>{const p=pt('client',0.5,0.55);return{px:p.x,py:p.y};})(),path:[],hidden:false,bubble:null,pendingBubble:null};
 
 const ACT_COLORS={
  'デスクワーク':'#7dd3fc','プログラミング':'#60a5fa','振込作業':'#fbbf24','書類整理':'#c4b5fd','コピー':'#a3e635',
@@ -584,59 +544,37 @@ function actTarget(c,act){
 }
 
 /* ================= PATHFINDING ================= */
-function findPath(sx,sy,tx,ty){
-  if(sx===tx&&sy===ty)return[];
-  if(!walkable(tx,ty))return null;
-  const prev=new Int32Array(COLS*ROWS).fill(-1);
-  const seen=new Uint8Array(COLS*ROWS);
-  const q=[sy*COLS+sx];seen[sy*COLS+sx]=1;
-  const D=[[1,0],[-1,0],[0,1],[0,-1]];
-  while(q.length){
-    const cur=q.shift(),cx=cur%COLS,cy=(cur-cx)/COLS;
-    if(cx===tx&&cy===ty){
-      const path=[];let n=cur;
-      while(n!==sy*COLS+sx){path.push([n%COLS,(n-n%COLS)/COLS]);n=prev[n];}
-      return path.reverse();
-    }
-    for(const d of D){
-      const nx=cx+d[0],ny=cy+d[1];
-      if(!walkable(nx,ny))continue;
-      const ni=ny*COLS+nx;
-      if(seen[ni])continue;
-      seen[ni]=1;prev[ni]=cur;q.push(ni);
-    }
+function randomPointIn(roomKey){
+  const z=ZONES[roomKey];
+  for(let i=0;i<30;i++){
+    const nx=0.15+Math.random()*0.7,ny=0.2+Math.random()*0.65;
+    return {x:z.x+z.w*nx,y:z.y+z.h*ny};
   }
-  return null;
+  return zoneCenter(roomKey);
 }
-function randomTileIn(roomKey){
-  const r=ROOMS[roomKey];
-  for(let i=0;i<40;i++){
-    const x=r.x1+Math.floor(Math.random()*(r.x2-r.x1+1));
-    const y=r.y1+Math.floor(Math.random()*(r.y2-r.y1+1));
-    if(walkable(x,y))return[x,y];
-  }
-  return null;
+function sendTo(c,dest){
+  const from=zoneAt(c.px,c.py);
+  const to=dest.zone||zoneAt(dest.x,dest.y);
+  const zp=findZonePath(from,to);
+  const wps=zp.map(zoneCenter);
+  if(dest.x!==undefined)wps.push({x:dest.x,y:dest.y});
+  else if(dest.zone)wps.push(zoneCenter(dest.zone));
+  c.path=wps;
 }
-function sendTo(c,tile){
-  const sx=Math.round(c.px/TW),sy=Math.round(c.py/TW);
-  const p=findPath(sx,sy,tile[0],tile[1]);
-  if(p)c.path=p;
+function atPoint(c,x,y,tol=10){
+  return !c.path.length&&Math.hypot(c.px-x,c.py-y)<tol;
 }
-function atTile(c,x,y){return !c.path.length&&Math.abs(c.px-x*TW)<1&&Math.abs(c.py-y*TW)<1;}
 
 /* ================= MOVEMENT ================= */
 function moveAlong(c,dt){
   if(!c.path.length)return;
-  const n=c.path[0],nx=n[0]*TW,ny=n[1]*TW;
-  const sp=0.055*(c.spd||1)*dt;
-  const dx=nx-c.px,dy=ny-c.py;
-  const dist=Math.abs(dx)+Math.abs(dy);
+  const n=c.path[0],sp=0.14*(c.spd||1)*dt;
+  const dx=n.x-c.px,dy=n.y-c.py,dist=Math.hypot(dx,dy);
   if(dist<=sp){
-    c.px=nx;c.py=ny;c.path.shift();
+    c.px=n.x;c.py=n.y;c.path.shift();
     if(!c.path.length&&c.pendingBubble){say(c,c.pendingBubble);c.pendingBubble=null;}
   }else{
-    c.px+=Math.sign(dx)*Math.min(sp,Math.abs(dx));
-    if(dx===0)c.py+=Math.sign(dy)*Math.min(sp,Math.abs(dy));
+    c.px+=dx/dist*sp;c.py+=dy/dist*sp;
   }
 }
 function updateChar(c,dt){
@@ -652,7 +590,9 @@ function updateChar(c,dt){
     else{
       if(c.hidden)c.hidden=false;
       if(tgt.spot)sendTo(c,tgt.spot);
-      else if(tgt.wander){c.wanderRoom=tgt.wander;c.wanderAt=0;}
+      else if(tgt.wander){
+        c.wanderRoom=tgt.wander;c.wanderAt=0;
+      }
     }
     if(prev!==null)log(c.short+'：'+act);
     renderMembers();
@@ -661,26 +601,19 @@ function updateChar(c,dt){
   if(c.wanderRoom&&!c.path.length){
     if(performance.now()>c.wanderAt){
       c.wanderAt=performance.now()+2500+Math.random()*4000;
-      const t=randomTileIn(c.wanderRoom);
-      if(t)sendTo(c,t);
+      const p=randomPointIn(c.wanderRoom);
+      if(p)sendTo(c,p);
     }
   }
   moveAlong(c,dt);
 }
 
 /* ================= 送迎（2部制・車） ================= */
-/* 送迎車は右端の縦大通り(col 13-15)のみ走行。駐車場横 (14,19) が定位置。 */
-const CAR_LANE=14, PARK_ROW=19, BOARD_COL=13;
-const CAR={homeX:CAR_LANE*TW,homeY:PARK_ROW*TW,x:CAR_LANE*TW,y:PARK_ROW*TW,dir:-1};
+const ROAD_X=437, PARK_Y=218, BOARD_PT=pt('parking',0.82,0.5);
+const CAR={homeX:ROAD_X,homeY:PARK_Y,x:ROAD_X,y:PARK_Y,dir:-1};
 let escort=null;
-function carRouteOut(){
-  const x=CAR_LANE*TW;
-  return [[x,PARK_ROW*TW],[x,11*TW],[x,3*TW],[x,-90]];
-}
-function carRouteIn(){
-  const x=CAR_LANE*TW;
-  return [[x,-90],[x,3*TW],[x,11*TW],[x,PARK_ROW*TW]];
-}
+function carRouteOut(){return [{x:ROAD_X,y:PARK_Y},{x:ROAD_X,y:140},{x:ROAD_X,y:40},{x:ROAD_X,y:-30}];}
+function carRouteIn(){return [{x:ROAD_X,y:-30},{x:ROAD_X,y:40},{x:ROAD_X,y:140},{x:ROAD_X,y:PARK_Y}];}
 function startEscort(){
   if(escort)return;
   const board=ELDERS.filter(e=>!e.hidden);
@@ -691,28 +624,27 @@ function startEscort(){
   if(!board.length&&!arrive.length)return;
   escort={board:board,arrive:arrive,phase:'walk',t:0,wp:null};
   CAR.x=CAR.homeX;CAR.y=CAR.homeY;CAR.dir=-1;
-  sendTo(SHINA,[BOARD_COL,PARK_ROW]);
-  board.forEach((e,i)=>sendTo(e,[10+i,PARK_ROW]));
+  sendTo(SHINA,BOARD_PT);
+  board.forEach((e,i)=>sendTo(e,pt('parking',0.55+i*0.08,0.5)));
   const what=(board.length?'お送り':'')+(board.length&&arrive.length?' と ':'')+(arrive.length?'お迎え':'');
   log('品川：送迎（'+what+'）の じゅんび');
 }
 function followWp(dt){
   const w=escort.wp[0];if(!w)return true;
-  const sp=0.18*dt;
-  const dx=w[0]-CAR.x,dy=w[1]-CAR.y;
+  const sp=0.35*dt;
+  const dx=w.x-CAR.x,dy=w.y-CAR.y;
   if(Math.abs(dx)>Math.abs(dy))CAR.dir=Math.sign(dx)||CAR.dir;
   else if(Math.abs(dy)>0.5)CAR.dir=dy<0?-1:1;
   const dist=Math.hypot(dx,dy);
-  if(dist<=sp){CAR.x=w[0];CAR.y=w[1];escort.wp.shift();return escort.wp.length===0;}
-  const ratio=sp/dist;
-  CAR.x+=dx*ratio;CAR.y+=dy*ratio;
+  if(dist<=sp){CAR.x=w.x;CAR.y=w.y;escort.wp.shift();return escort.wp.length===0;}
+  CAR.x+=dx/dist*sp;CAR.y+=dy/dist*sp;
   return false;
 }
 function updateEscort(dt){
   if(!escort)return;
   switch(escort.phase){
     case 'walk':{
-      const ok=atTile(SHINA,BOARD_COL,PARK_ROW)&&escort.board.every((e,i)=>atTile(e,10+i,PARK_ROW));
+      const ok=atPoint(SHINA,BOARD_PT.x,BOARD_PT.y)&&escort.board.every((e,i)=>atPoint(e,pt('parking',0.55+i*0.08,0.5).x,pt('parking',0.55+i*0.08,0.5).y));
       if(ok){escort.phase='board';escort.t=900;}
       break;}
     case 'board':
@@ -734,10 +666,10 @@ function updateEscort(dt){
       break;
     case 'back':
       if(followWp(dt)){
-        SHINA.hidden=false;SHINA.px=BOARD_COL*TW;SHINA.py=PARK_ROW*TW;
+        SHINA.hidden=false;SHINA.px=BOARD_PT.x;SHINA.py=BOARD_PT.y;
         if(escort.arrive.length){
           escort.arrive.forEach((e,i)=>{
-            e.hidden=false;e.px=(10+i)*TW;e.py=PARK_ROW*TW;
+            e.hidden=false;e.px=pt('parking',0.55+i*0.08,0.5).x;e.py=pt('parking',0.55+i*0.08,0.5).y;
             sendTo(e,ELDER_SEATS[i%ELDER_SEATS.length]);
             e.pendingBubble='きょうも よろしくねぇ';
           });
@@ -754,15 +686,11 @@ function resetDay(){
   ELDERS.forEach(e=>{e.hidden=true;e.path=[];e.bubble=null;e.pendingBubble=null;});
   escort=null;
   CAR.x=CAR.homeX;CAR.y=CAR.homeY;CAR.dir=-1;
-  SHINA.hidden=false;SHINA.px=SHINA.seat[0]*TW;SHINA.py=SHINA.seat[1]*TW;SHINA.path=[];
+  SHINA.hidden=false;SHINA.px=SHINA.seat.x;SHINA.py=SHINA.seat.y;SHINA.path=[];
 }
 
 /* ================= DRAWING ================= */
 const cv=document.getElementById('game'),ctx=cv.getContext('2d');
-const mapCv=document.createElement('canvas');mapCv.width=COLS*TW;mapCv.height=ROWS*TW;
-const CHAR_S=1.55;
-const FURN_S=1.2;
-const VIEW_ZOOM=1;
 function gradRect(g,x,y,w,h,c1,c2,vert){
   const grd=vert?g.createLinearGradient(x,y,x,y+h):g.createLinearGradient(x,y,x+w,y);
   grd.addColorStop(0,c1);grd.addColorStop(1,c2);
@@ -778,258 +706,115 @@ function strokeRoundRect(g,x,y,w,h,r,stroke,lw){
   g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();
   g.strokeStyle=stroke;g.lineWidth=lw||1;g.stroke();
 }
-function px(g,x,y,w,h,col){g.fillStyle=col;g.fillRect(x,y,w,h);}
-function furnOrigin(x,y){
-  const pad=TW*(FURN_S-1)/2;
-  return {x:x-pad,y:y-pad,s:TW*FURN_S};
-}
-function drawTile(g,tx,ty){
-  const t=map[ty][tx],x=tx*TW,y=ty*TW;
-  let base=T.FLOOR;
-  if(t===T.GRASS||t===T.TREE)base=T.GRASS;
-  else if(t===T.CARPET)base=T.CARPET;
-  else if(t===T.DAYFLOOR||t===T.DAYTABLE)base=T.DAYFLOOR;
-  else if(t===T.DECK)base=T.DECK;
-  else if(t===T.SAND)base=T.SAND;
-  else if(t===T.STAGE)base=T.GRASS;
-  else if(t===T.FLOWER){
-    if(ty>=22)base=(tx>=7&&tx<=12)?T.SAND:T.GRASS;
-    else if(ty<=5&&tx<=12)base=T.CARPET;
-    else if(ty>=12&&ty<=17)base=T.DAYFLOOR;
-    else base=T.GRASS;
-  }
-  switch(base){
-    case T.GRASS:gradRect(g,x,y,TW,TW,'#1e4a32','#142e20',true);break;
-    case T.CARPET:gradRect(g,x,y,TW,TW,'#3d2f4a','#2a2035',true);break;
-    case T.DAYFLOOR:gradRect(g,x,y,TW,TW,'#2a3a2e','#1e2a22',true);break;
-    case T.DECK:gradRect(g,x,y,TW,TW,'#3a4f58','#2a3a42',true);break;
-    case T.SAND:gradRect(g,x,y,TW,TW,'#c4a878','#a88a5a',true);break;
-    default:gradRect(g,x,y,TW,TW,'#2a3140','#1e2430',true);break;
-  }
-  switch(t){
-    case T.WALL:{
-      let wc='#1a2030',wt='#2a3550',acc='#c4a66a';
-      if(tx<=12&&ty<=9){wc='#1a2238';wt='#2a3a58';}
-      else if(tx<=5&&ty>=12&&ty<=17){wc='#1a2820';wt='#2a4030';}
-      else if(tx>=7&&tx<=12&&ty>=12&&ty<=17){wc='#282018';wt='#3a3020';}
-      gradRect(g,x,y,TW,TW,wt,wc,true);
-      px(g,x,y,TW,1,acc);
-      break;}
-    case T.ROAD:{
-      gradRect(g,x,y,TW,TW,'#1e222a','#141820',true);
-      if((ty===10||ty===11)&&tx<=12)px(g,x+3,y+7,10,1,'#3a4050');
-      if(tx>=13&&ty%4===0)px(g,x+7,y+2,2,12,'#3a4050');
-      break;}
-    case T.CROSS:
-      gradRect(g,x,y,TW,TW,'#1e222a','#141820',true);
-      if(tx>=13){px(g,x,y+3,TW,2,'#4a5060');px(g,x,y+9,TW,2,'#4a5060');}
-      else{px(g,x+3,y,2,TW,'#4a5060');px(g,x+9,y,2,TW,'#4a5060');}
-      break;
-    case T.SIDE:gradRect(g,x,y,TW,TW,'#353b48','#2a3038',true);break;
-    case T.PAVE:gradRect(g,x,y,TW,TW,'#3a4048','#2e333a',true);break;
-    case T.DECK:gradRect(g,x,y,TW,TW,'#4a5a62','#354248',true);break;
-    case T.POOL:
-      gradRect(g,x,y,TW,TW,'#2a7ab8','#1a5088',true);
-      if((tx+ty)%3===0)px(g,x+2,y+4,8,1,'rgba(255,255,255,.15)');
-      break;
-    case T.SAND:
-      gradRect(g,x,y,TW,TW,'#c4a878','#a88a5a',true);break;
-    case T.WATER:
-      gradRect(g,x,y,TW,TW,'#1a5a98','#0e3868',true);
-      if((tx+ty)%2===0)px(g,x+1,y+5,12,1,'rgba(255,255,255,.1)');
-      break;
-    case T.STAGE:{
-      const f=furnOrigin(x,y),s=f.s,u=s/16;
-      roundRect(g,f.x,f.y+8*u,s,5*u,2,'#5a3820');
-      roundRect(g,f.x+2*u,f.y+2*u,s-4*u,6*u,2,'#8a5a30');
-      break;}
-    case T.TREE:{
-      const f=furnOrigin(x,y),s=f.s,u=s/16;
-      roundRect(g,f.x+6*u,f.y+10*u,4*u,4*u,1.5,'#4a3020');
-      roundRect(g,f.x+3*u,f.y+2*u,10*u,9*u,3,'#1a5a30');
-      break;}
-    case T.DESK:{
-      const f=furnOrigin(x,y),s=f.s,u=s/16;
-      roundRect(g,f.x+1*u,f.y+4*u,s-2*u,9*u,1.5,'#5a4030');
-      roundRect(g,f.x+3*u,f.y+6*u,s-6*u,5*u,1,'#6a5848');
-      break;}
-    case T.PC:{
-      const f=furnOrigin(x,y),s=f.s,u=s/16;
-      roundRect(g,f.x+1*u,f.y+4*u,s-2*u,9*u,1.5,'#5a4030');
-      roundRect(g,f.x+4*u,f.y+1*u,8*u,7*u,1,'#1a2030');
-      px(g,f.x+5*u,f.y+2*u,6*u,4*u,'#3a6ab0');
-      break;}
-    case T.COPIER:{
-      const f=furnOrigin(x,y),s=f.s,u=s/16;
-      roundRect(g,f.x+2*u,f.y+2*u,s-4*u,12*u,2,'#6a7080');
-      px(g,f.x+4*u,f.y+4*u,8*u,2*u,'#e8ecf0');
-      px(g,f.x+10*u,f.y+3*u,2*u,2*u,'#5eff7a');
-      break;}
-    case T.SHELF:{
-      const f=furnOrigin(x,y),s=f.s,u=s/16;
-      roundRect(g,f.x+2*u,f.y+1*u,s-4*u,13*u,1.5,'#4a3525');
-      px(g,f.x+4*u,f.y+3*u,s-8*u,2*u,'#8a7058');
-      px(g,f.x+4*u,f.y+8*u,s-8*u,2*u,'#8a7058');
-      break;}
-    case T.TABLE:{
-      const f=furnOrigin(x,y),s=f.s,u=s/16;
-      roundRect(g,f.x+1*u,f.y+4*u,s-2*u,8*u,2,'#8a7048');
-      break;}
-    case T.SOFA:{
-      const f=furnOrigin(x,y),s=f.s,u=s/16;
-      roundRect(g,f.x+1*u,f.y+5*u,s-2*u,8*u,2,'#6a3540');
-      break;}
-    case T.FLOWER:{
-      const f=furnOrigin(x,y),s=f.s,u=s/16;
-      roundRect(g,f.x+6*u,f.y+10*u,4*u,3*u,1,'#4a3020');
-      roundRect(g,f.x+5*u,f.y+4*u,6*u,6*u,3,'#2a6a38');
-      px(g,f.x+6*u,f.y+3*u,2*u,2*u,'#e8a040');
-      break;}
-    case T.DOOR:
-      px(g,x+1,y,2,TW-2,'#c4a66a');
-      break;
-    case T.DAYTABLE:{
-      const f=furnOrigin(x,y),s=f.s,u=s/16;
-      roundRect(g,f.x+2*u,f.y+4*u,s-4*u,9*u,2,'#a89060');
-      break;}
-  }
-}
-function prerenderMap(){
-  const g=mapCv.getContext('2d');g.imageSmoothingEnabled=true;
-  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)drawTile(g,x,y);
-  /* ゾーン境界線 */
-  g.strokeStyle='rgba(196,166,106,.12)';g.lineWidth=1;
-  Object.values(ROOMS).forEach(r=>{
-    g.strokeRect(r.x1*TW+0.5,r.y1*TW+0.5,(r.x2-r.x1+1)*TW-1,(r.y2-r.y1+1)*TW-1);
-  });
-  /* ラベル */
-  g.font='600 7px "Zen Kaku Gothic New",sans-serif';
-  Object.values(ROOMS).forEach(r=>{
-    const tx=r.lx*TW+3,ty=r.ly*TW;
-    const tw=r.label.length*7+10;
-    roundRect(g,tx-2,ty-9,tw,11,4,'rgba(8,10,16,.75)');
-    g.fillStyle='#e8d4a8';g.fillText(r.label,tx+2,ty);
-  });
-}
-function drawSprite(g,x,y,c,walking,frame){
-  const skin='#f4c9a8',skinSh='#e8b090',s=CHAR_S,ox=x+8,oy=y+16;
-  g.save();g.imageSmoothingEnabled=true;
-  g.translate(ox,oy);g.scale(s,s);g.translate(-8,-16);
-  g.fillStyle='rgba(0,0,0,0.22)';g.beginPath();g.ellipse(8,17.5,6.5,2.2,0,0,Math.PI*2);g.fill();
-  const legSwing=walking?(frame?-1.5:1.5):0,armSwing=walking?(frame?2:-2):0;
-  const pants=shade(c.cloth,-48),shoe='#2a2a32';
-  roundRect(g,4.5,12+legSwing,3.8,5.5,1.4,pants);
-  roundRect(g,9.2,12-legSwing,3.8,5.5,1.4,pants);
-  roundRect(g,4,16.5+legSwing,4.2,2.2,1,shoe);
-  roundRect(g,9.8,16.5-legSwing,4.2,2.2,1,shoe);
-  gradRect(g,3.2,6.8,9.6,6.8,c.cloth,shade(c.cloth,-28),true);
-  roundRect(g,5.2,6.2,5.6,1.8,0.6,shade(c.cloth,18));
-  if(c.female){
-    g.fillStyle=shade(c.cloth,-12);
-    g.beginPath();g.moveTo(3.2,11.5);g.lineTo(12.8,11.5);g.lineTo(13.5,14.5);g.lineTo(2.5,14.5);g.closePath();g.fill();
-  }
-  roundRect(g,0.8,7.2+armSwing,2.8,5.5,1.3,shade(c.cloth,-12));
-  roundRect(g,12.4,7.2-armSwing,2.8,5.5,1.3,shade(c.cloth,-12));
-  roundRect(g,0.8,11.5+armSwing,2.8,2.2,0.9,skin);
-  roundRect(g,12.4,11.5-armSwing,2.8,2.2,0.9,skin);
-  roundRect(g,6.2,4.8,3.6,2.2,0.9,skinSh);
-  gradRect(g,3.2,0.2,9.6,6.8,skin,skinSh,true);
-  g.fillStyle=c.hair;roundRect(g,2.2,-1.2,11.6,5.2,2.6,c.hair);
-  roundRect(g,2.8,0.8,10.4,3.8,2,c.hair);
-  if(c.female){roundRect(g,1.2,0.8,2.8,8.5,1.2,c.hair);roundRect(g,12,0.8,2.8,8.5,1.2,c.hair);}
-  roundRect(g,5.2,3,2.4,2.4,0.7,'#fff');
-  roundRect(g,8.8,3,2.4,2.4,0.7,'#fff');
-  roundRect(g,5.8,3.4,1.3,1.5,0.5,'#3d4a5c');
-  roundRect(g,9.4,3.4,1.3,1.5,0.5,'#3d4a5c');
-  g.fillStyle='rgba(255,130,120,0.28)';
-  g.beginPath();g.ellipse(4.2,5.2,1.3,0.65,0,0,Math.PI*2);g.fill();
-  g.beginPath();g.ellipse(11.8,5.2,1.3,0.65,0,0,Math.PI*2);g.fill();
-  g.fillStyle='#c87868';g.beginPath();g.ellipse(8,5.6,1.2,0.5,0,0,Math.PI*2);g.fill();
-  g.restore();
-}
-function drawCar(g){
-  const x=CAR.x,y=CAR.y,s=1.55;
-  g.save();g.imageSmoothingEnabled=true;
-  g.translate(x+16,y+10);g.scale(s,s);g.translate(-16,-10);
-  g.fillStyle='rgba(0,0,0,0.3)';g.beginPath();g.ellipse(16,20.5,16,3.8,0,0,Math.PI*2);g.fill();
-  const white='#f4f6fa',whiteD='#d4dae4',glass='#8eb8d4',accent='#f07828';
-  roundRect(g,-1,6,34,10.5,4.5,white);
-  gradRect(g,0,6,32,5,white,whiteD,true);
-  roundRect(g,2.5,0.5,27,7.5,3.5,white);
-  gradRect(g,3.5,1,25,6,'#e6ecf4',white,true);
-  roundRect(g,4.5,1.8,10,5.2,2.2,glass);
-  g.fillStyle='rgba(255,255,255,0.42)';roundRect(g,5,2.2,4.5,2.2,1,'rgba(255,255,255,0.5)');
-  roundRect(g,16.5,2.2,7.5,4.5,1.8,glass);
-  roundRect(g,25,2.8,5,3.8,1.5,glass);
-  roundRect(g,0.5,10.5,31,2.2,0.8,accent);
-  roundRect(g,1.5,14.5,6.5,4.5,2.2,'#181820');
-  roundRect(g,24,14.5,6.5,4.5,2.2,'#181820');
-  roundRect(g,3,15.8,3.5,2.2,1,'#9aa3ad');
-  roundRect(g,25.5,15.8,3.5,2.2,1,'#9aa3ad');
-  const hl=CAR.dir<0?-0.5:29.5;
-  roundRect(g,hl,8.5,3.5,2.8,1.4,'#fff6cc');
-  roundRect(g,9.5,-0.5,13,2.2,1,'#fff');
-  g.font='600 4.2px "Zen Kaku Gothic New",sans-serif';
-  g.fillStyle='#d9480f';g.fillText('送迎',12.5,1.2);
-  g.strokeStyle='#b8c2ce';g.lineWidth=0.6;
-  g.beginPath();g.moveTo(15.5,7);g.lineTo(15.5,15.5);g.stroke();
-  roundRect(g,1,7.5,2,3,0.8,'#c5cdd8');
-  g.restore();
-}
 function shade(hex,amt){
   const n=parseInt(hex.slice(1),16);
   const r=Math.max(0,Math.min(255,(n>>16)+amt)),g=Math.max(0,Math.min(255,((n>>8)&255)+amt)),b=Math.max(0,Math.min(255,(n&255)+amt));
   return '#'+((r<<16)|(g<<8)|b).toString(16).padStart(6,'0');
 }
+function drawMap(g){
+  g.fillStyle='#080a10';g.fillRect(0,0,MAP_W,MAP_H);
+  g.strokeStyle='rgba(196,166,106,.08)';g.lineWidth=1;
+  for(let y=64;y<MAP_H;y+=28)g.beginPath(),g.moveTo(8,y),g.lineTo(398,y),g.stroke();
+  Object.entries(ZONES).forEach(([id,z])=>{
+    if(z.lane){
+      gradRect(g,z.x,z.y,z.w,z.h,z.fill,z.fill2,true);
+      g.setLineDash([4,6]);g.strokeStyle='rgba(196,166,106,.25)';g.lineWidth=1;
+      g.beginPath();g.moveTo(z.x+z.w/2,z.y+8);g.lineTo(z.x+z.w/2,z.y+z.h-8);g.stroke();
+      g.setLineDash([]);
+      g.font='600 8px "Zen Kaku Gothic New",sans-serif';
+      g.fillStyle='#c4a66a';g.fillText('送迎',z.x+10,z.y+18);
+      return;
+    }
+    roundRect(g,z.x,z.y,z.w,z.h,6,z.fill);
+    gradRect(g,z.x+1,z.y+1,z.w-2,z.h-2,z.fill2||z.fill,shade(z.fill,12),true);
+    g.strokeStyle='rgba(196,166,106,.28)';g.lineWidth=1;
+    strokeRoundRect(g,z.x+.5,z.y+.5,z.w-1,z.h-1,6,'rgba(196,166,106,.28)',1);
+    g.font='600 9px "Zen Kaku Gothic New",sans-serif';
+    const tw=g.measureText(z.label).width;
+    roundRect(g,z.x+6,z.y+5,tw+10,14,4,'rgba(6,8,14,.72)');
+    g.fillStyle='#e8d4a8';g.fillText(z.label,z.x+11,z.y+15);
+    if(id==='honsha'){
+      for(let i=0;i<5;i++){
+        const dx=z.x+24+i*68,dy=z.y+28;
+        roundRect(g,dx,dy,28,18,3,'#2a3548');
+        roundRect(g,dx+4,dy-8,18,10,2,'#1a2030');
+      }
+    }
+    if(id==='pool'){
+      g.fillStyle='rgba(120,200,255,.15)';
+      roundRect(g,z.x+12,z.y+14,z.w-24,z.h-22,8,'rgba(120,200,255,.12)');
+    }
+    if(id==='park'){
+      roundRect(g,z.x+z.w*0.38,z.y+10,z.w*0.24,z.h-16,3,'#5a3820');
+    }
+  });
+}
+function drawPerson(g,c,walking,frame){
+  const x=c.px,y=c.py,r=7;
+  g.save();g.imageSmoothingEnabled=true;
+  g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(x,y+r+3,6,2.2,0,0,Math.PI*2);g.fill();
+  const bob=walking?(frame?-1:1):0;
+  gradRect(g,x-r,y-r+bob,r*2,r*2+2,c.cloth,shade(c.cloth,-30),true);
+  g.fillStyle=c.hair;g.beginPath();g.arc(x,y-r-1+bob,r-1,Math.PI,0);g.fill();
+  g.fillStyle='#f4c9a8';g.beginPath();g.arc(x,y-2+bob,r-2.5,0,Math.PI*2);g.fill();
+  g.fillStyle='#fff';g.fillRect(x-3,y-3+bob,2,2);g.fillRect(x+1,y-3+bob,2,2);
+  g.fillStyle='#3d4a5c';g.fillRect(x-2,y-2+bob,1,1);g.fillRect(x+2,y-2+bob,1,1);
+  g.restore();
+}
+function drawCar(g){
+  const x=CAR.x,y=CAR.y;
+  g.save();g.imageSmoothingEnabled=true;
+  g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(x,y+14,14,3,0,0,Math.PI*2);g.fill();
+  roundRect(g,x-14,y-6,28,16,5,'#f0f2f6');
+  gradRect(g,x-12,y-4,24,8,'#fff','#d8dce4',true);
+  roundRect(g,x-10,y-10,20,8,4,'#e8ecf0');
+  roundRect(g,x-12,y+8,8,6,2,'#181820');
+  roundRect(g,x+4,y+8,8,6,2,'#181820');
+  roundRect(g,x-13,y+2,26,3,1,'#f07828');
+  g.font='600 7px "Zen Kaku Gothic New",sans-serif';
+  g.fillStyle='#d9480f';g.fillText('送迎',x-10,y-12);
+  g.restore();
+}
 let selected=null;
 function draw(){
-  const base=3*VIEW_ZOOM;
-  ctx.setTransform(base,0,0,base,0,0);
+  ctx.setTransform(1,0,0,1,0,0);
   ctx.imageSmoothingEnabled=true;
-  ctx.drawImage(mapCv,0,0);
+  drawMap(ctx);
   drawCar(ctx);
   const now=performance.now();
   const order=[...CHARS,...ELDERS,CLIENT].filter(c=>!c.hidden).sort((a,b)=>a.py-b.py);
-  ctx.font='600 9px "Zen Kaku Gothic New",sans-serif';
   for(const c of order){
-    const walking=c.path.length>0,frame=Math.floor(now/160)%2===0;
+    const walking=c.path.length>0,frame=Math.floor(now/180)%2===0;
     if(selected===c){
-      ctx.strokeStyle='#ffd75e';ctx.lineWidth=1;
-      const hw=7*CHAR_S,hh=9*CHAR_S;
-      ctx.strokeRect(c.px+8-hw,c.py-2-hh*0.2,hw*2,hh*1.6);
+      ctx.strokeStyle='#ffd75e';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.arc(c.px,c.py,12,0,Math.PI*2);ctx.stroke();
     }
-    drawSprite(ctx,c.px,c.py-2,c,walking,frame);
-    const label=c.short;
-    const lw=Math.max(label.length*7+8,24);
-    const ly=c.py-8-5*CHAR_S;
-    const lx=c.px+8-lw/2;
-    ctx.fillStyle='rgba(8,10,18,.78)';
-    roundRect(ctx,lx,ly,lw,10,4,'rgba(8,10,18,.78)');
-    ctx.fillStyle='#d8c8a0';
+    drawPerson(ctx,c,walking,frame);
+    const label=c.short,lw=Math.max(label.length*7+8,22);
+    const lx=c.px-lw/2,ly=c.py-22;
+    roundRect(ctx,lx,ly,lw,11,4,'rgba(6,8,14,.8)');
     ctx.font='600 7px "Zen Kaku Gothic New",sans-serif';
-    ctx.fillText(label,lx+4,ly+7);
+    ctx.fillStyle='#d8c8a0';ctx.fillText(label,lx+4,ly+8);
   }
   for(const c of order){
     if(c.bubble&&now<c.bubble.until){
       const txt=c.bubble.text;
-      ctx.font='600 8px "Zen Kaku Gothic New",sans-serif';
-      const tw=ctx.measureText(txt).width;
-      const w=Math.min(tw+14,COLS*TW-8), h=14;
-      let bx=c.px+8-w/2;bx=Math.max(4,Math.min(COLS*TW-w-4,bx));
-      const by=c.py-22-10*CHAR_S;
-      roundRect(ctx,bx,by,w,h,5,'rgba(255,255,255,0.95)');
-      strokeRoundRect(ctx,bx+0.5,by+0.5,w-1,h-1,4,'rgba(70,85,110,0.35)',1);
-      ctx.fillStyle='#1a2238';ctx.fillText(txt,bx+7,by+10);
+      ctx.font='600 7px "Zen Kaku Gothic New",sans-serif';
+      const tw=ctx.measureText(txt).width,w=Math.min(tw+12,MAP_W-16),h=13;
+      let bx=c.px-w/2;bx=Math.max(6,Math.min(MAP_W-w-6,bx));
+      const by=c.py-36;
+      roundRect(ctx,bx,by,w,h,4,'rgba(255,255,255,.94)');
+      strokeRoundRect(ctx,bx+.5,by+.5,w-1,h-1,3,'rgba(70,85,110,.3)',1);
+      ctx.fillStyle='#1a2238';ctx.fillText(txt,bx+6,by+9);
     }else if(c.bubble&&now>=c.bubble.until)c.bubble=null;
   }
   if(EMBEDDED){
-    const w=COLS*TW,h=ROWS*TW;
-    const v=ctx.createLinearGradient(0,0,0,h);
-    v.addColorStop(0,'rgba(5,6,8,0.22)');v.addColorStop(0.1,'rgba(5,6,8,0)');
-    v.addColorStop(0.9,'rgba(5,6,8,0)');v.addColorStop(1,'rgba(5,6,8,0.28)');
-    ctx.fillStyle=v;ctx.fillRect(0,0,w,h);
-    ctx.strokeStyle='rgba(196,166,106,.15)';ctx.lineWidth=1;
-    ctx.strokeRect(0.5,0.5,w-1,h-1);
+    const v=ctx.createLinearGradient(0,0,0,MAP_H);
+    v.addColorStop(0,'rgba(5,6,8,.18)');v.addColorStop(.1,'transparent');
+    v.addColorStop(.9,'transparent');v.addColorStop(1,'rgba(5,6,8,.22)');
+    ctx.fillStyle=v;ctx.fillRect(0,0,MAP_W,MAP_H);
+    ctx.strokeStyle='rgba(196,166,106,.18)';ctx.lineWidth=1;
+    ctx.strokeRect(.5,.5,MAP_W-1,MAP_H-1);
   }
 }
 
@@ -1084,14 +869,13 @@ function selectChar(c){
 }
 cv.addEventListener('click',e=>{
   const r=cv.getBoundingClientRect();
-  const mx=(e.clientX-r.left)/r.width*COLS*TW;
-  const my=(e.clientY-r.top)/r.height*ROWS*TW;
+  const mx=(e.clientX-r.left)/r.width*MAP_W;
+  const my=(e.clientY-r.top)/r.height*MAP_H;
   let best=null,bd=1e9;
-  const hit=12*CHAR_S;
   CHARS.forEach(c=>{
     if(c.hidden)return;
-    const d=Math.hypot(c.px+8-mx,c.py+6-my);
-    if(d<hit&&d<bd){bd=d;best=c;}
+    const d=Math.hypot(c.px-mx,c.py-my);
+    if(d<16&&d<bd){bd=d;best=c;}
   });
   if(best)selectChar(best);
 });
@@ -1238,30 +1022,28 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 loadSettings();
-prerenderMap();
 renderMembers();
 log('オフィスクエストが はじまった！');
-if(document.fonts&&document.fonts.ready)document.fonts.ready.then(prerenderMap);
 function fitCanvas(){
-  if(!EMBEDDED)return;
   const wrap=document.querySelector('.stage-game');
   const cv=document.getElementById('game');
   if(!wrap||!cv)return;
-  const pad=16;
+  const pad=EMBEDDED?12:0;
   const r=wrap.getBoundingClientRect();
   const availW=Math.max(8,r.width-pad);
   const availH=Math.max(8,r.height-pad);
   if(availW<8||availH<8)return;
-  /* 縦横とも枠内に収め、スクロールなし */
-  const scale=Math.min(availW/cv.width,availH/cv.height);
-  const w=Math.max(1,Math.floor(cv.width*scale));
-  const h=Math.max(1,Math.floor(cv.height*scale));
+  const scale=EMBEDDED?Math.min(availW/MAP_W,availH/MAP_H):Math.min(availW/MAP_W,1);
+  const w=Math.max(1,Math.floor(MAP_W*scale));
+  const h=Math.max(1,Math.floor(MAP_H*scale));
   cv.style.width=w+'px';
   cv.style.height=h+'px';
-  cv.style.maxWidth=w+'px';
-  cv.style.maxHeight=h+'px';
-  wrap.style.alignItems='center';
-  wrap.style.justifyContent='center';
+  if(EMBEDDED){
+    cv.style.maxWidth=w+'px';
+    cv.style.maxHeight=h+'px';
+    wrap.style.alignItems='center';
+    wrap.style.justifyContent='center';
+  }
 }
 if(EMBEDDED){
   const sg=document.querySelector('.stage-game');

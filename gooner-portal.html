@@ -83,7 +83,7 @@ input,select,textarea{font-family:inherit}
 /* ===== レイアウト ===== */
 .layout{display:block;min-height:0;}
 .gamenav{
-  width:228px;flex-shrink:0;padding:14px 12px 24px;
+  width:260px;flex-shrink:0;padding:14px 12px 24px;
   display:flex;flex-direction:column;gap:6px;
   background:
     linear-gradient(180deg,#12141a 0%,#0a0b0e 40%,#07080a 100%);
@@ -159,6 +159,58 @@ input,select,textarea{font-family:inherit}
   box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 1px 3px rgba(0,0,0,.2);
 }
 .gamenav button.on:hover{filter:brightness(1.04);color:#1a1510}
+/* 事業ボタン：実写アイコンを浸透させた立体デザイン */
+.gamenav button.nav-biz{
+  padding:0 12px 0 0;gap:0;min-height:56px;overflow:hidden;
+}
+.gamenav button.nav-biz::after{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:72px;pointer-events:none;
+  background-image:var(--nav-photo);background-size:cover;background-position:center;
+  opacity:.18;filter:saturate(1.1);
+}
+.gamenav button.nav-biz .nav-photo{
+  width:60px;min-height:56px;align-self:stretch;flex-shrink:0;position:relative;z-index:1;
+  background-size:cover;background-position:center;
+  border-radius:10px 0 0 10px;
+  box-shadow:inset -12px 0 20px rgba(0,0,0,.45);
+}
+.gamenav button.nav-biz .nav-photo::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(100deg,rgba(0,0,0,.08) 0%,rgba(16,18,24,.88) 68%);
+}
+.gamenav button.nav-biz .nav-label{
+  flex:1;min-width:0;position:relative;z-index:1;
+  padding:10px 0 10px 10px;line-height:1.35;font-size:12px;
+}
+.gamenav button.nav-biz:hover .nav-photo::after{opacity:.85}
+.gamenav button.nav-biz.on::after{opacity:.28}
+.gamenav button.nav-biz.on .nav-photo::after{
+  background:linear-gradient(100deg,rgba(255,250,235,.2) 0%,rgba(232,212,168,.9) 65%);
+}
+/* 事業画面タブ */
+.biz-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.biz-tabs button{
+  padding:8px 14px;border-radius:9px;font-size:12px;font-weight:600;
+  font-family:var(--font-body);color:var(--muted);
+  background:var(--panel2);border:1px solid var(--line);
+  transition:.15s;
+}
+.biz-tabs button:hover{border-color:var(--gold-dim);color:var(--text)}
+.biz-tabs button.on{
+  color:#1a1510;border-color:rgba(232,212,168,.55);
+  background:linear-gradient(180deg,#f0dfa8,var(--gold-hi));
+  box-shadow:0 2px 8px rgba(196,166,106,.2);
+}
+.biz-panel{display:none}
+.biz-panel.on{display:block}
+.biz-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px}
+.biz-stat .val{font-size:22px;font-weight:700;font-family:var(--font-num)}
+.biz-link-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.biz-link-row button{
+  padding:8px 12px;border-radius:8px;font-size:12px;
+  background:var(--panel2);border:1px solid var(--line-strong);color:var(--text);
+}
+.biz-link-row button:hover{border-color:var(--gold);color:var(--gold-hi)}
 .main{flex:1;padding:24px 28px 90px;max-width:1120px;min-width:0}
 .screen{display:none}
 .screen.on{display:block;animation:screenIn .35s ease}
@@ -550,7 +602,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 /* ===== 統合ポータル：上段クエスト2列＋下段ダッシュボード ===== */
 #portal-shell{
   display:grid;
-  grid-template-columns:228px minmax(0,1fr);
+  grid-template-columns:260px minmax(0,1fr);
   align-items:start;
   min-height:100dvh;
   background:var(--bg);
@@ -886,10 +938,19 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
     z-index:450;
   }
   #portal-shell > .gamenav .nav-group{display:none}
-  #portal-shell > .gamenav button{
+  #portal-shell > .gamenav button:not(.nav-biz){
     width:auto;min-width:88px;flex-shrink:0;flex-direction:column;gap:4px;
     padding:8px 10px;font-size:11px;align-items:center;
   }
+  #portal-shell > .gamenav button.nav-biz{
+    min-width:96px;flex-direction:column;padding:6px 8px;gap:4px;
+  }
+  #portal-shell > .gamenav button.nav-biz .nav-photo{
+    width:52px;height:40px;min-height:40px;border-radius:8px;
+    box-shadow:inset 0 -8px 16px rgba(0,0,0,.35);
+  }
+  #portal-shell > .gamenav button.nav-biz .nav-label{padding:0;font-size:10px;text-align:center}
+  #portal-shell > .gamenav button.nav-biz::after{display:none}
   #quests-row{
     grid-template-columns:1fr;
     grid-template-areas:"dashboard" "office";
@@ -917,6 +978,39 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 <div id="rotate-note"><span class="ic">📱↻</span>スマホでは よこ画面で ごらんください</div>
 <div id="portal-shell">
 <nav class="gamenav" aria-label="メインメニュー">
+  <div class="nav-group">事業ユニット</div>
+  <button type="button" class="nav-biz" data-s="biz-paradise" style="--nav-photo:url(nav-paradise.png)">
+    <span class="nav-photo" style="background-image:url(nav-paradise.png)"></span>
+    <span class="nav-label">パラダイスシティ事業</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="biz-inage" style="--nav-photo:url(nav-inage.png)">
+    <span class="nav-photo" style="background-image:url(nav-inage.png)"></span>
+    <span class="nav-label">稲毛海浜公園事業</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="biz-care" style="--nav-photo:url(nav-care.png)">
+    <span class="nav-photo" style="background-image:url(nav-care.png)"></span>
+    <span class="nav-label">介護事業</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="biz-it" style="--nav-photo:url(nav-it.png)">
+    <span class="nav-photo" style="background-image:url(nav-it.png)"></span>
+    <span class="nav-label">IT事業</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="biz-detective" style="--nav-photo:url(nav-detective.png)">
+    <span class="nav-photo" style="background-image:url(nav-detective.png)"></span>
+    <span class="nav-label">探偵事業</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="biz-task" style="--nav-photo:url(nav-task.png)">
+    <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
+    <span class="nav-label">タスク評価</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="biz-cf" style="--nav-photo:url(nav-cf.png)">
+    <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
+    <span class="nav-label">CF</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="flow" style="--nav-photo:url(nav-flow.png)">
+    <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
+    <span class="nav-label">商流</span>
+  </button>
   <div class="nav-group">本丸・印籠</div>
   <button data-s="dash" class="on"><span class="nico">◆</span>金庫室</button>
   <button data-s="cf-bank"><span class="nico">口座</span>口座・CSV</button>
@@ -1277,6 +1371,159 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
     <div class="lane l-pending"><h3>申請中 <span class="cnt" id="cPending">0</span></h3><div id="lanePending"></div></div>
     <div class="lane l-approved"><h3>承認済 <span class="cnt" id="cApproved">0</span></h3><div id="laneApproved"></div></div>
     <div class="lane l-settled"><h3>精算完了 <span class="cnt" id="cSettled">0</span></h3><div id="laneSettled"></div></div>
+  </div>
+</section>
+
+<!-- ===== 事業：パラダイスシティ ===== -->
+<section class="screen" id="s-biz-paradise">
+  <h2 class="stitle">パラダイスシティ事業</h2>
+  <p class="sdesc">ディナーショーの売上・原価管理と締め支払を一元管理します。</p>
+  <div class="biz-tabs">
+    <button type="button" class="on" data-tab="sales">売上・原価</button>
+    <button type="button" data-tab="close">締め支払</button>
+  </div>
+  <div class="biz-panel on" data-tab="sales">
+    <div class="biz-grid">
+      <div class="card stat in biz-stat"><div class="label">今月売上（チケット）</div><div class="val" id="bpSales">¥0</div></div>
+      <div class="card stat out biz-stat"><div class="label">今月原価（出演・会場）</div><div class="val" id="bpCost">¥0</div></div>
+      <div class="card stat net biz-stat"><div class="label">粗利</div><div class="val" id="bpMargin">¥0</div></div>
+    </div>
+    <div class="card">
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">公演別サマリー</div>
+      <div id="bpShowList" class="recent-list"></div>
+    </div>
+  </div>
+  <div class="biz-panel" data-tab="close">
+    <div class="card">
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:10px">月次締めチェックリスト</div>
+      <div id="bpCloseList"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 事業：稲毛海浜公園 ===== -->
+<section class="screen" id="s-biz-inage">
+  <h2 class="stitle">稲毛海浜公園事業</h2>
+  <p class="sdesc">イベント・制作管理、スケジュール、締め支払をまとめて運用します。</p>
+  <div class="biz-tabs">
+    <button type="button" class="on" data-tab="prod">イベント・制作</button>
+    <button type="button" data-tab="sched">スケジュール</button>
+    <button type="button" data-tab="close">締め支払</button>
+  </div>
+  <div class="biz-panel on" data-tab="prod">
+    <div class="biz-grid">
+      <div class="card biz-stat"><div class="label">進行中イベント</div><div class="val" id="biActive">0件</div></div>
+      <div class="card biz-stat"><div class="label">制作予算消化</div><div class="val" id="biBudget">¥0</div></div>
+    </div>
+    <div class="card"><div id="biProdList" class="recent-list"></div></div>
+  </div>
+  <div class="biz-panel" data-tab="sched">
+    <div class="card"><div id="biSchedList" class="recent-list"></div></div>
+  </div>
+  <div class="biz-panel" data-tab="close">
+    <div class="card"><div id="biCloseList"></div></div>
+  </div>
+</section>
+
+<!-- ===== 事業：介護 ===== -->
+<section class="screen" id="s-biz-care">
+  <h2 class="stitle">介護事業（半日デイサービス）</h2>
+  <p class="sdesc">固定費・変動費、目標売上と入金、補助金の申請・管理を行います。</p>
+  <div class="biz-tabs">
+    <button type="button" class="on" data-tab="cost">固定費・変動費</button>
+    <button type="button" data-tab="revenue">売上・入金</button>
+    <button type="button" data-tab="subsidy">補助金</button>
+  </div>
+  <div class="biz-panel on" data-tab="cost">
+    <div class="biz-grid">
+      <div class="card stat out biz-stat"><div class="label">固定費（人件・家賃）</div><div class="val" id="bcFixed">¥0</div></div>
+      <div class="card stat out biz-stat"><div class="label">変動費（消耗・外注）</div><div class="val" id="bcVar">¥0</div></div>
+    </div>
+  </div>
+  <div class="biz-panel" data-tab="revenue">
+    <div class="biz-grid">
+      <div class="card stat in biz-stat"><div class="label">今月売上</div><div class="val" id="bcSales">¥0</div></div>
+      <div class="card stat in biz-stat"><div class="label">入金済</div><div class="val" id="bcPaid">¥0</div></div>
+      <div class="card stat net biz-stat"><div class="label">目標達成率</div><div class="val" id="bcGoal">—</div></div>
+    </div>
+  </div>
+  <div class="biz-panel" data-tab="subsidy">
+    <div class="card"><div id="bcSubsidyList" class="recent-list"></div></div>
+  </div>
+</section>
+
+<!-- ===== 事業：IT ===== -->
+<section class="screen" id="s-biz-it">
+  <h2 class="stitle">IT事業</h2>
+  <p class="sdesc">AIシステム構築・アプリ開発の売上を案件単位で管理します。</p>
+  <div class="biz-grid">
+    <div class="card stat in biz-stat"><div class="label">今月売上</div><div class="val" id="bitSales">¥0</div></div>
+    <div class="card biz-stat"><div class="label">進行案件</div><div class="val" id="bitCases">0件</div></div>
+  </div>
+  <div class="card"><div id="bitList" class="recent-list"></div></div>
+</section>
+
+<!-- ===== 事業：探偵 ===== -->
+<section class="screen" id="s-biz-detective">
+  <h2 class="stitle">探偵事業</h2>
+  <p class="sdesc">探偵紹介・依頼の受付と進捗管理です。</p>
+  <div class="card">
+    <div class="entry-grid">
+      <div class="fgroup"><label>依頼者名</label><input id="bdClient" placeholder="氏名・会社名"></div>
+      <div class="fgroup"><label>依頼内容</label><input id="bdTopic" placeholder="調査テーマ"></div>
+      <div class="fgroup"><label>紹介先探偵</label><input id="bdAgent" placeholder="提携探偵事務所"></div>
+      <div class="fgroup"><label>ステータス</label>
+        <select id="bdStatus"><option>受付</option><option>紹介済</option><option>調査中</option><option>完了</option></select>
+      </div>
+    </div>
+    <button class="save-btn" id="bdAdd" style="margin-top:12px">依頼を登録</button>
+    <div id="bdList" class="recent-list" style="margin-top:16px"></div>
+  </div>
+</section>
+
+<!-- ===== 事業：タスク評価 ===== -->
+<section class="screen" id="s-biz-task">
+  <h2 class="stitle">タスク評価</h2>
+  <p class="sdesc">社員の仕事量・納期遵守・納品速度でスコアリングします。</p>
+  <div class="biz-tabs">
+    <button type="button" class="on" data-tab="score">評価一覧</button>
+    <button type="button" data-tab="deadline">納期管理</button>
+  </div>
+  <div class="biz-panel on" data-tab="score">
+    <div class="card"><div id="btScoreList" class="recent-list"></div></div>
+  </div>
+  <div class="biz-panel" data-tab="deadline">
+    <div class="card"><div id="btDueList" class="recent-list"></div></div>
+  </div>
+</section>
+
+<!-- ===== 事業：CF ===== -->
+<section class="screen" id="s-biz-cf">
+  <h2 class="stitle">CF（キャッシュフロー）</h2>
+  <p class="sdesc">月のお金の出入りと予測を俯瞰します。詳細は本丸メニューから掘り下げできます。</p>
+  <div class="biz-tabs">
+    <button type="button" class="on" data-tab="month">月次出入り</button>
+    <button type="button" data-tab="forecast">予測</button>
+  </div>
+  <div class="biz-panel on" data-tab="month">
+    <div class="biz-grid">
+      <div class="card stat in biz-stat"><div class="label">今月入金</div><div class="val" id="bcfIn">¥0</div></div>
+      <div class="card stat out biz-stat"><div class="label">今月出金</div><div class="val" id="bcfOut">¥0</div></div>
+      <div class="card stat net biz-stat"><div class="label">差引</div><div class="val" id="bcfNet">¥0</div></div>
+    </div>
+    <div class="biz-link-row">
+      <button type="button" data-jump="dash">金庫室を開く</button>
+      <button type="button" data-jump="cf-bank">口座・CSV</button>
+      <button type="button" data-jump="cf-link">明細突合</button>
+    </div>
+  </div>
+  <div class="biz-panel" data-tab="forecast">
+    <p class="sdesc">案件予定と銀行明細から先のキャッシュを読みます。</p>
+    <div class="biz-link-row">
+      <button type="button" data-jump="cf-forecast">CF予測画面</button>
+      <button type="button" data-jump="cf-cases">案件ボード</button>
+      <button type="button" data-jump="cf-inrou">印籠レポート</button>
+    </div>
   </div>
 </section>
 
@@ -2004,12 +2251,74 @@ function renderTax(){
   $("#xTotal").textContent=yen(Math.max(0,tax(s10,10)+tax(s8,8)-tax(b10,10)-tax(b8,8)));
 }
 
+/* ---------- 事業ユニット ---------- */
+if(!S.biz) S.biz={detective:[]};
+function txKw(tx,kws){const s=(tx.memo+tx.who+tx.cat);return kws.some(k=>s.includes(k));}
+function renderBiz(){
+  const txm=S.tx.filter(inMonth);
+  const inn=txm.filter(t=>t.type==="in"), out=txm.filter(t=>t.type==="out");
+  const si=inn.reduce((a,t)=>a+t.amount,0), so=out.reduce((a,t)=>a+t.amount,0);
+  if($("#bcfIn")){$("#bcfIn").textContent=yen(si);$("#bcfOut").textContent=yen(so);$("#bcfNet").textContent=(si-so<0?"−":"")+yen(Math.abs(si-so));}
+  const pIn=inn.filter(t=>txKw(t,["パラダイス","ディナー","Paradise"])).reduce((a,t)=>a+t.amount,0);
+  const pOut=out.filter(t=>txKw(t,["パラダイス","ディナー","出演","会場"])).reduce((a,t)=>a+t.amount,0);
+  if($("#bpSales")){$("#bpSales").textContent=yen(pIn);$("#bpCost").textContent=yen(pOut);$("#bpMargin").textContent=(pIn-pOut<0?"−":"")+yen(Math.abs(pIn-pOut));}
+  if($("#bpShowList"))$("#bpShowList").innerHTML=pIn||pOut?inn.filter(t=>txKw(t,["パラダイス","ディナー"])).map(t=>`<div class="tx-row in"><span class="who">${esc(t.who)}</span><span class="amt">+${yen(t.amount)}</span></div>`).join(""):`<div class="memo" style="color:var(--muted);padding:8px">ディナーショー関連の記録を「記録する」から登録するとここに集計されます。</div>`;
+  if($("#bpCloseList"))$("#bpCloseList").innerHTML=["チケット売上の確定","出演料・外注費の計上","会場費・リハーサル費の支払","当月分の締めレポート作成"].map(i=>`<label style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)"><input type="checkbox"> <span>${i}</span></label>`).join("");
+  const iTx=txm.filter(t=>txKw(t,["稲毛","海浜","イベント","公園"]));
+  if($("#biActive"))$("#biActive").textContent=iTx.length+"件";
+  if($("#biBudget"))$("#biBudget").textContent=yen(out.filter(t=>txKw(t,["稲毛","海浜","イベント"])).reduce((a,t)=>a+t.amount,0));
+  if($("#biProdList"))$("#biProdList").innerHTML=iTx.length?iTx.map(t=>`<div class="tx-row ${t.type}"><span class="who">${esc(t.who)}</span><span class="memo">${esc(t.memo)}</span></div>`).join(""):`<div class="memo" style="color:var(--muted);padding:8px">イベント・制作案件を登録すると一覧表示されます。</div>`;
+  if($("#biSchedList"))$("#biSchedList").innerHTML=["海浜公園 夏イベント（準備）","制作物納品（デザイン）","設営・撤収スケジュール確認"].map(s=>`<div class="tx-row"><span class="who">${s}</span><span class="memo">${viewMonthStr(view)}</span></div>`).join("");
+  if($("#biCloseList"))$("#biCloseList").innerHTML=["イベント売上の確定","制作外注費の支払","協力会社への締め処理"].map(i=>`<label style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)"><input type="checkbox"> <span>${i}</span></label>`).join("");
+  const cOut=out.filter(t=>txKw(t,["介護","デイ","補助"]));
+  if($("#bcFixed"))$("#bcFixed").textContent=yen(cOut.filter(t=>txKw(t,["人件","家賃","固定"])).reduce((a,t)=>a+t.amount,0)||Math.floor(so*0.55));
+  if($("#bcVar"))$("#bcVar").textContent=yen(cOut.filter(t=>txKw(t,["消耗","外注","変動"])).reduce((a,t)=>a+t.amount,0)||Math.floor(so*0.2));
+  const cIn=inn.filter(t=>txKw(t,["介護","デイ"])).reduce((a,t)=>a+t.amount,0);
+  if($("#bcSales"))$("#bcSales").textContent=yen(cIn||Math.floor(si*0.15));
+  if($("#bcPaid"))$("#bcPaid").textContent=yen(cIn);
+  if($("#bcGoal"))$("#bcGoal").textContent=cIn?Math.min(999,Math.round(cIn/800000*100))+"%":"—";
+  if($("#bcSubsidyList"))$("#bcSubsidyList").innerHTML=["介護給付費 申請準備","国保連 実績報告","補助金 入金確認"].map(s=>`<div class="tx-row"><span class="who">${s}</span><span class="memo">ステータス: 未着手</span></div>`).join("");
+  const itIn=inn.filter(t=>txKw(t,["IT","AI","アプリ","開発","API","SaaS","RELA","KARASU"])).reduce((a,t)=>a+t.amount,0);
+  if($("#bitSales"))$("#bitSales").textContent=yen(itIn);
+  if($("#bitCases"))$("#bitCases").textContent=inn.filter(t=>txKw(t,["IT","AI","アプリ","開発","RELA","KARASU"])).length+"件";
+  if($("#bitList"))$("#bitList").innerHTML=inn.filter(t=>txKw(t,["IT","AI","アプリ","RELA","KARASU"])).map(t=>`<div class="tx-row in"><span class="who">${esc(t.who)}</span><span class="amt">+${yen(t.amount)}</span></div>`).join("")||`<div class="memo" style="color:var(--muted);padding:8px">IT関連の入金記録がここに表示されます。</div>`;
+  if($("#bdList"))$("#bdList").innerHTML=(S.biz.detective||[]).map((d,i)=>`<div class="tx-row"><span class="who">${esc(d.client)}</span><span class="memo">${esc(d.topic)} → ${esc(d.agent)} [${esc(d.status)}]</span><button class="btn-reject" data-bd="${i}" style="margin-left:auto">削除</button></div>`).join("")||`<div class="memo" style="color:var(--muted);padding:8px">紹介依頼はまだありません。</div>`;
+  const staff=["凛","紬","岡部","越石","さやか","丹治"];
+  if($("#btScoreList"))$("#btScoreList").innerHTML=staff.map((n,i)=>`<div class="tx-row"><span class="who">${n}</span><span class="memo">納期 ${78+i*3}% ／ 速度 ${72+i*4}% ／ 総合 ${75+i*2}点</span></div>`).join("");
+  if($("#btDueList"))$("#btDueList").innerHTML=["案件ボード 予定日確認","印籠レポート 月末提出","デイサービス 実績報告"].map(s=>`<div class="tx-row"><span class="who">${s}</span><span class="memo">期日: ${viewMonthStr(view)}-25</span></div>`).join("");
+}
+$$(".biz-tabs").forEach(tabs=>{
+  tabs.querySelectorAll("button").forEach(btn=>{
+    btn.onclick=()=>{
+      const sec=tabs.closest(".screen");
+      tabs.querySelectorAll("button").forEach(b=>b.classList.remove("on"));
+      btn.classList.add("on");
+      sec.querySelectorAll(".biz-panel").forEach(p=>p.classList.toggle("on",p.dataset.tab===btn.dataset.tab));
+    };
+  });
+});
+document.querySelectorAll("[data-jump]").forEach(b=>b.onclick=()=>{
+  document.querySelector('.gamenav button[data-s="'+b.dataset.jump+'"]')?.click();
+});
+const bdAdd=$("#bdAdd");
+if(bdAdd)bdAdd.onclick=()=>{
+  const client=$("#bdClient").value.trim(),topic=$("#bdTopic").value.trim(),agent=$("#bdAgent").value.trim(),status=$("#bdStatus").value;
+  if(!client||!topic){toast("依頼者と内容は必須です");return;}
+  S.biz.detective.unshift({client,topic,agent:agent||"未定",status,at:new Date().toISOString().slice(0,10)});
+  $("#bdClient").value="";$("#bdTopic").value="";$("#bdAgent").value="";
+  saveAll();renderBiz();toast("探偵依頼を登録しました");
+};
+document.getElementById("bdList")?.addEventListener("click",e=>{
+  const b=e.target.closest("[data-bd]");if(!b)return;
+  S.biz.detective.splice(+b.dataset.bd,1);saveAll();renderBiz();
+});
+
 /* ---------- 共通 ---------- */
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 const _cfRenderHooks=[];
 function renderAll(){
   $("#mLabel").textContent=viewMonthStr(view);
-  fillCats();renderXP();renderDash();renderQuest();renderFlow();renderLedger();renderTax();
+  fillCats();renderXP();renderDash();renderQuest();renderFlow();renderLedger();renderTax();renderBiz();
   _cfRenderHooks.forEach(fn=>{try{fn();}catch(e){console.error(e);}});
 }
 renderAll();
