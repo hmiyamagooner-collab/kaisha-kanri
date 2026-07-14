@@ -651,6 +651,26 @@
     const hash = simpleHash(payload);
     const genAt = new Date().toISOString();
 
+    // 契約リーガル（AI）解析があれば証拠に含める
+    const lg = c.legal && c.legal.analysis ? c.legal.analysis : null;
+    const lgRec = c.legal && c.legal.reconcile;
+    const legalBlock = lg
+      ? `<h3>契約リーガル（AI解析）</h3>
+        <p class="cf-meta">${T().esc(lg.summary || "")}</p>
+        ${
+          lgRec
+            ? `<p class="cf-meta">契約書との突合 — 金額: ${lgRec.amountMatch === false ? '<b class="cf-warn">不一致</b>' : lgRec.amountMatch ? "一致" : "—"} ／ 相手方: ${lgRec.partyMatch === false ? '<b class="cf-warn">不一致</b>' : lgRec.partyMatch ? "一致" : "—"} ／ 契約日: ${lgRec.dateMatch === false ? '<b class="cf-warn">不一致</b>' : lgRec.dateMatch ? "一致" : "—"}</p>`
+            : ""
+        }
+        ${
+          Array.isArray(lg.risks) && lg.risks.length
+            ? `<table class="ledger"><thead><tr><th>度</th><th>リスク・注意点</th></tr></thead><tbody>${lg.risks
+                .map((r) => `<tr><td>${r.level === "high" ? "高" : r.level === "medium" ? "中" : "低"}</td><td>${T().esc(r.text || "")}</td></tr>`)
+                .join("")}</tbody></table>`
+            : ""
+        }`
+      : "";
+
     out.innerHTML = `
       <div class="inrou-sheet" id="inrouSheet">
         <div class="inrou-seal">印籠</div>
@@ -667,6 +687,7 @@
           <tr><td>メモ</td><td>${T().esc(c.contractNote || "")}</td></tr>
           <tr><td>承認状態</td><td><b class="${apStatusOf(c) === "approved" ? "" : "cf-warn"}">${AP_JA[apStatusOf(c)]}</b>${c.apAt ? `（${T().esc(c.apBy || "")} ／ ${c.apAt.slice(0, 10)}）` : "（未承認）"}</td></tr>
         </tbody></table>
+        ${legalBlock}
         <h3>予定</h3>
         <table class="ledger"><thead><tr><th>日付</th><th>区分</th><th>金額</th><th>実績紐づけ</th></tr></thead>
         <tbody>${
@@ -706,12 +727,116 @@
       </div>`;
   }
 
+  /* ---------- 契約リーガル（AI） ---------- */
+  function legalResultHtml(res, c) {
+    const a = (res && res.analysis) || {};
+    const rec = res && res.reconcile;
+    const risks = Array.isArray(a.risks) ? a.risks : [];
+    const kv = [];
+    if (a.type) kv.push(["種別", a.type]);
+    if (a.counterparty) kv.push(["相手方", a.counterparty]);
+    if (a.amount != null) kv.push(["契約額", T().yen(a.amount)]);
+    if (a.contractDate) kv.push(["契約日", a.contractDate]);
+    (Array.isArray(a.keyTerms) ? a.keyTerms : []).forEach((t) => t && t.label && kv.push([t.label, t.value || ""]));
+    const recChip = (label, v) =>
+      v === true
+        ? `<span class="chip ok">${label} 一致</span>`
+        : v === false
+        ? `<span class="chip ng">${label} 不一致</span>`
+        : `<span class="chip na">${label} —</span>`;
+    return `
+      <div class="lg-sec">
+        <div class="lg-sec-t">要約</div>
+        <div class="lg-summary">${T().esc(a.summary || "（要約なし）")}</div>
+      </div>
+      ${
+        rec
+          ? `<div class="lg-sec"><div class="lg-sec-t">案件との突合（${T().esc(c ? c.title : "")}）</div>
+        <div class="lg-rec">${recChip("金額", rec.amountMatch)}${recChip("相手方", rec.partyMatch)}${recChip("契約日", rec.dateMatch)}</div>
+        ${rec.amountMatch === false ? `<div class="cf-meta" style="margin-top:6px;color:var(--out)">契約書 ${T().yen(rec.aiAmount || 0)} ／ 案件登録 ${T().yen(rec.caseAmount || 0)}</div>` : ""}</div>`
+          : ""
+      }
+      <div class="lg-sec">
+        <div class="lg-sec-t">抽出項目</div>
+        <div class="lg-kv">${kv.map(([k, v]) => `<span class="k">${T().esc(k)}</span><span>${T().esc(v)}</span>`).join("") || "<span>—</span>"}</div>
+      </div>
+      <div class="lg-sec">
+        <div class="lg-sec-t">リスク・注意点（${risks.length}）</div>
+        ${
+          risks
+            .map((r) => {
+              const lv = r.level === "high" ? "high" : r.level === "medium" ? "medium" : "low";
+              const lvJa = lv === "high" ? "高" : lv === "medium" ? "中" : "低";
+              return `<div class="lg-risk ${lv}"><span class="lv">${lvJa}</span><span>${T().esc(r.text || "")}</span></div>`;
+            })
+            .join("") || `<div class="cf-empty ok">重大な指摘はありません</div>`
+        }
+      </div>
+      <p class="note">AI解析: gpt-4o ／ ${res && res.at ? res.at.slice(0, 16).replace("T", " ") : ""}（社内牽制用・正式な法的助言ではありません）</p>`;
+  }
+
+  function renderLegal() {
+    const S = T().S;
+    const sel = document.getElementById("cfLegalCase");
+    if (sel) {
+      const prev = sel.value;
+      sel.innerHTML =
+        `<option value="">案件と突合しない</option>` +
+        S.cases.map((c) => `<option value="${c.id}">${T().esc(c.title)}（${CASE_TYPES[c.type]}）</option>`).join("");
+      if (prev && [...sel.options].some((o) => o.value === prev)) sel.value = prev;
+    }
+    // 選択案件に保存済みの解析があれば表示
+    const out = document.getElementById("cfLegalResult");
+    const cid = sel ? sel.value : "";
+    const c = cid ? S.cases.find((x) => x.id === cid) : null;
+    if (out && c && c.legal) out.innerHTML = legalResultHtml(c.legal, c);
+  }
+
+  async function runLegal() {
+    const S = T().S;
+    const text = (document.getElementById("cfLegalText").value || "").trim();
+    const out = document.getElementById("cfLegalResult");
+    const btn = document.getElementById("cfLegalRun");
+    if (!text) return T().toast("契約書テキストを貼り付けてください");
+    const cid = (document.getElementById("cfLegalCase") || {}).value;
+    const c = cid ? S.cases.find((x) => x.id === cid) : null;
+    const caseInfo = c ? { title: c.title, type: CASE_TYPES[c.type], counterparty: c.counterparty || partyName(c.partyId), contractDate: c.contractDate, amount: c.amount } : null;
+    if (btn) { btn.disabled = true; btn.textContent = "AI解析中（20-40秒）…"; }
+    if (out) out.innerHTML = `<div class="cf-empty">AIが契約書を読んでいます…</div>`;
+    try {
+      const r = await fetch("/api/legal-analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contractText: text, case: caseInfo }),
+      });
+      if (!r.ok) {
+        const e = await r.json().catch(() => ({}));
+        throw new Error(e.error || `HTTP ${r.status}`);
+      }
+      const res = await r.json();
+      if (out) out.innerHTML = legalResultHtml(res, c);
+      if (c) {
+        c.legal = res;
+        audit("legal_analyze", `契約リーガル解析: ${c.title}`, { caseId: c.id });
+        T().saveAll();
+        renderCases();
+      }
+      T().toast("契約書を解析しました");
+    } catch (e) {
+      if (out)
+        out.innerHTML = `<div class="cf-alert-box"><b>AI解析に失敗しました</b><div class="cf-meta">${T().esc(String(e.message || e))}</div><div class="cf-meta" style="margin-top:6px">GitHub Pages版ではAIは動きません。Vercel版のURLでお試しください。サーバーには OPENAI_API_KEY の設定が必要です。</div></div>`;
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = "AIでチェックする"; }
+    }
+  }
+
   function renderCFAll() {
     renderAccounts();
     renderParties();
     renderCases();
     renderBankTxList();
     renderForecast();
+    renderLegal();
     if ((document.getElementById("cfInrouCase") || {}).value) renderInrou();
   }
 
@@ -776,6 +901,8 @@
     document.getElementById("cfLinkUnmatchedOnly")?.addEventListener("change", renderBankTxList);
     document.getElementById("cfLinkBtn")?.addEventListener("click", linkSelected);
     document.getElementById("cfForecastDays")?.addEventListener("change", renderForecast);
+    document.getElementById("cfLegalRun")?.addEventListener("click", runLegal);
+    document.getElementById("cfLegalCase")?.addEventListener("change", renderLegal);
     document.getElementById("cfInrouCase")?.addEventListener("change", renderInrou);
     document.getElementById("cfInrouPrint")?.addEventListener("click", () => {
       renderInrou();

@@ -364,6 +364,23 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .ap-badge.ap-pending{color:var(--gold-hi);border-color:rgba(232,184,75,.5);background:rgba(232,184,75,.08)}
 .ap-badge.ap-rejected{color:var(--out);border-color:rgba(255,93,115,.5);background:rgba(255,93,115,.08)}
 .ap-by{font-size:10px;color:var(--muted);font-family:var(--font-num);margin-left:2px}
+/* ===== 契約リーガル（AI） ===== */
+#cfLegalText{width:100%;background:#0a0d14;border:1px solid var(--line);border-radius:8px;color:var(--text);font:inherit;font-size:13px;padding:10px;resize:vertical;line-height:1.6}
+.lg-sec{margin-bottom:14px}
+.lg-sec-t{font-family:var(--font-hud);color:var(--gold);letter-spacing:1px;font-size:12px;margin-bottom:6px}
+.lg-summary{font-size:13px;line-height:1.7;color:var(--muted)}
+.lg-kv{display:grid;grid-template-columns:88px 1fr;gap:4px 10px;font-size:12px}
+.lg-kv .k{color:var(--muted)}
+.lg-risk{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:8px;margin-bottom:6px;font-size:12px;border:1px solid var(--line);background:#0a0d14}
+.lg-risk .lv{font-family:var(--font-hud);font-size:10px;padding:1px 7px;border-radius:999px;flex-shrink:0;letter-spacing:1px}
+.lg-risk.high{border-color:rgba(255,93,115,.5)} .lg-risk.high .lv{color:var(--out);border:1px solid var(--out)}
+.lg-risk.medium .lv{color:var(--gold-hi);border:1px solid rgba(232,184,75,.6)}
+.lg-risk.low .lv{color:var(--muted);border:1px solid var(--line)}
+.lg-rec{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.lg-rec .chip{font-size:11px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);font-family:var(--font-hud)}
+.lg-rec .chip.ok{color:var(--in);border-color:rgba(61,220,151,.5);background:rgba(61,220,151,.08)}
+.lg-rec .chip.ng{color:var(--out);border-color:rgba(255,93,115,.5);background:rgba(255,93,115,.08)}
+.lg-rec .chip.na{color:var(--muted)}
 .cf-card-tags{display:inline-flex;gap:6px;align-items:center}
 .cf-ap-actions{display:inline-flex;gap:8px;align-items:center;margin-left:auto}
 .csv-btn.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
@@ -561,6 +578,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   <button data-s="cf-cases"><span class="nico">案</span>案件ボード</button>
   <button data-s="cf-link"><span class="nico">⇔</span>明細突合</button>
   <button data-s="cf-flow"><span class="nico">印</span>案件フロー</button>
+  <button data-s="cf-legal"><span class="nico">法</span>契約リーガル</button>
   <button data-s="cf-party"><span class="nico">貸</span>関連者貸借</button>
   <button data-s="cf-forecast"><span class="nico">予</span>CF予測</button>
   <button data-s="cf-inrou"><span class="nico">籠</span>印籠レポート</button>
@@ -759,6 +777,23 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
     <button class="csv-btn" id="cfInrouCsv">突合CSV書き出し</button>
   </div>
   <div id="cfInrouReport" style="margin-top:12px"></div>
+</section>
+
+<!-- ===== CF: 契約リーガル（AI） ===== -->
+<section class="screen" id="s-cf-legal">
+  <h2 class="stitle">契約リーガル（AI）</h2>
+  <p class="sdesc">契約書を貼り付けてAIでチェック。要点・リスク・金額/相手/契約日を抽出し、登録案件と突合します（社内牽制用・法的助言ではありません）。</p>
+  <div class="cf-grid-2">
+    <div class="card">
+      <div class="fgroup"><label>突合する案件（任意）</label><select id="cfLegalCase"><option value="">案件と突合しない</option></select></div>
+      <div class="fgroup" style="margin-top:10px"><label>契約書テキスト</label>
+        <textarea id="cfLegalText" rows="12" placeholder="契約書の本文をここに貼り付け…（PDFは開いてテキストをコピー）"></textarea>
+      </div>
+      <button class="save-btn" id="cfLegalRun" style="margin-top:12px">AIでチェックする</button>
+      <p class="note" id="cfLegalNote">※AI解析はVercel版でのみ動作します（GitHub Pages版では動きません）。結果は選んだ案件に保存され、印籠レポートにも反映されます。</p>
+    </div>
+    <div class="card" id="cfLegalResult"><div class="cf-empty">左に契約書を貼って「AIでチェックする」を押してください。</div></div>
+  </div>
 </section>
 
 <!-- ===== 記録する ===== -->
