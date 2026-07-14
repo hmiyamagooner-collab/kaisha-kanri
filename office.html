@@ -59,15 +59,8 @@ body.embedded .panel.overlays{display:none!important;}
 body.embedded .stage-game{
   flex:1;position:relative;min-height:0;overflow:hidden;
   display:flex;align-items:center;justify-content:center;
-  padding:8px;
-  background:
-    radial-gradient(ellipse 80% 55% at 50% 35%,rgba(196,166,106,.05),transparent 60%),
-    linear-gradient(180deg,#0c0d11 0%,#050608 100%);
-}
-body.embedded .stage-game::before{
-  content:"";position:absolute;inset:6px;border-radius:12px;pointer-events:none;z-index:0;
-  border:1px solid rgba(196,166,106,.18);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
+  padding:4px;
+  background:linear-gradient(180deg,#0a0c10 0%,#050608 100%);
 }
 body.embedded canvas#game{
   position:relative;z-index:1;
@@ -76,10 +69,10 @@ body.embedded canvas#game{
   max-width:100%;max-height:100%;
   object-fit:contain;
   image-rendering:auto;
-  border:1px solid rgba(120,150,180,.35);
-  border-radius:10px;
-  box-shadow:0 8px 28px rgba(0,0,0,.45);
-  background:#8ec8e8;
+  border:1px solid rgba(100,130,160,.3);
+  border-radius:8px;
+  box-shadow:0 4px 20px rgba(0,0,0,.45);
+  background:#87ceeb;
 }
 /* 埋め込み(ポータル)では縦長ペインでも「よこ画面推奨」を出さずマップを描画する */
 body.embedded #rotate-note{display:none!important;}
@@ -222,7 +215,7 @@ body.embedded .hud-dock{padding:0 0 4px;}
     <div class="stage">
       <div class="hud-dock" id="hud-dock"></div>
       <div class="stage-game">
-      <canvas id="game" width="480" height="360"></canvas>
+      <canvas id="game" width="960" height="720"></canvas>
       <div class="panel overlays">
         <div class="win ov" data-panel="clock" id="p-clock">
           <div class="ov-bar">
@@ -383,20 +376,23 @@ else{const f=document.getElementById('cardframe');f.src=f.dataset.src;}
   }
   refreshDock();
 })();
-/* ================= MAP（ゾーンベース・横長フロアプラン） ================= */
-const MAP_W=480, MAP_H=360;
+/* ================= MAP（街配置：北=オフィス → 南=海岸→海） ================= */
+const MAP_W=480, MAP_H=360, DPR=2;
+const PAD=6, URBAN_R=390;
 const ZONES={
-  shacho:{label:'社長室',x:10,y:8,w:92,h:48,fill:'#2a2238',fill2:'#1a1528',links:['kaigi','honsha']},
-  kaigi:{label:'会議・応接',x:110,y:8,w:118,h:48,fill:'#1e2838',fill2:'#141c28',links:['shacho','honsha']},
-  honsha:{label:'本社オフィス',x:10,y:64,w:388,h:58,fill:'#1e2430',fill2:'#141820',links:['shacho','kaigi','day','client','parking']},
-  day:{label:'デイサービス',x:10,y:130,w:148,h:62,fill:'#1a2820',fill2:'#121c18',links:['honsha','client','parking']},
-  client:{label:'取引先',x:166,y:130,w:232,h:62,fill:'#282018',fill2:'#1a140f',links:['honsha','day','parking']},
-  parking:{label:'駐車場',x:10,y:200,w:388,h:36,fill:'#2a3038',fill2:'#1e2228',links:['honsha','day','client','road','pool','umi','park']},
-  pool:{label:'プール',x:10,y:244,w:168,h:38,fill:'#1a3858',fill2:'#0e2840',links:['parking','umi','park']},
-  umi:{label:'ビーチ・海',x:186,y:244,w:212,h:38,fill:'#0e3068',fill2:'#081e48',links:['parking','pool','park']},
-  park:{label:'イベント会場',x:10,y:290,w:388,h:34,fill:'#142e20',fill2:'#0c2014',links:['parking','pool','umi']},
-  road:{label:'送迎',x:404,y:6,w:66,h:348,fill:'#141820',fill2:'#0c1018',links:['parking'],lane:true}
+  shacho:{label:'社長室',x:10,y:10,w:82,h:40,links:['kaigi','honsha']},
+  kaigi:{label:'会議・応接',x:100,y:10,w:110,h:40,links:['shacho','honsha']},
+  honsha:{label:'本社オフィス',x:10,y:56,w:368,h:48,links:['shacho','kaigi','day','client','parking']},
+  day:{label:'デイサービス',x:10,y:120,w:132,h:50,links:['honsha','client','parking']},
+  client:{label:'取引先',x:150,y:120,w:228,h:50,links:['honsha','day','parking']},
+  parking:{label:'駐車場',x:10,y:186,w:368,h:28,links:['honsha','day','client','road','pool','park','beach']},
+  pool:{label:'プール',x:10,y:232,w:112,h:36,links:['parking','park','beach']},
+  park:{label:'イベント会場',x:128,y:232,w:250,h:36,links:['parking','pool','beach']},
+  beach:{label:'稲毛海浜',x:10,y:272,w:368,h:22,links:['pool','park','parking','umi']},
+  umi:{label:'海',x:10,y:296,w:368,h:58,links:['beach']},
+  road:{label:'',x:384,y:8,w:86,h:344,links:['parking'],lane:true}
 };
+const COAST_Y=272, OCEAN_Y=296;
 const ROOMS=ZONES;
 function pt(zone,nx,ny){
   const z=ZONES[zone];
@@ -407,11 +403,13 @@ function zoneCenter(id){
   return {x:z.x+z.w/2,y:z.y+z.h/2};
 }
 function zoneAt(x,y){
-  for(const id of ['shacho','kaigi','honsha','day','client','parking','pool','umi','park','road']){
+  if(y>=OCEAN_Y)return'umi';
+  if(y>=COAST_Y&&y<OCEAN_Y)return'beach';
+  for(const id of ['road','shacho','kaigi','honsha','day','client','parking','pool','park']){
     const z=ZONES[id];
     if(x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h)return id;
   }
-  return 'honsha';
+  return'parking';
 }
 function findZonePath(a,b){
   if(a===b)return [a];
@@ -431,8 +429,8 @@ const SEATS={
   meeting:[pt('kaigi',0.22,0.35),pt('kaigi',0.42,0.35),pt('kaigi',0.62,0.35),pt('kaigi',0.82,0.35),
            pt('kaigi',0.22,0.72),pt('kaigi',0.42,0.72),pt('kaigi',0.62,0.72),pt('kaigi',0.82,0.72)],
   recept:[pt('kaigi',0.88,0.35),pt('kaigi',0.88,0.72),pt('kaigi',0.72,0.72),pt('kaigi',0.22,0.35)],
-  pool:[pt('pool',0.18,0.55),pt('pool',0.82,0.6),pt('pool',0.2,0.82),pt('pool',0.75,0.3)],
-  umi:[pt('umi',0.15,0.5),pt('umi',0.45,0.55),pt('umi',0.7,0.45),pt('umi',0.35,0.75)],
+  pool:[pt('pool',0.35,0.55),pt('pool',0.7,0.5),pt('pool',0.25,0.75),pt('pool',0.65,0.3)],
+  umi:[pt('beach',0.18,0.5),pt('beach',0.42,0.55),pt('beach',0.68,0.48),pt('beach',0.85,0.52)],
   concert:[pt('park',0.15,0.55),pt('park',0.35,0.55),pt('park',0.6,0.55),pt('park',0.82,0.65)],
   day:[pt('day',0.22,0.4),pt('day',0.55,0.4),pt('day',0.22,0.75),pt('day',0.55,0.72)],
   copier:pt('honsha',0.88,0.55),
@@ -536,7 +534,7 @@ function actTarget(c,act){
     case '書類整理':return{spot:SEATS.shelf[c.idx%SEATS.shelf.length]};
     case '商談':return{spot:SEATS.client};
     case '送迎':return{escort:true};
-    case '休憩':return{wander:'umi'};
+    case '休憩':return{wander:'beach'};
     case '手すき':return{wander:c.home};
     case '営業・外回り':case '退勤':return{hidden:true};
     default:return{spot:c.seat};
@@ -609,11 +607,11 @@ function updateChar(c,dt){
 }
 
 /* ================= 送迎（2部制・車） ================= */
-const ROAD_X=437, PARK_Y=218, BOARD_PT=pt('parking',0.82,0.5);
-const CAR={homeX:ROAD_X,homeY:PARK_Y,x:ROAD_X,y:PARK_Y,dir:-1};
+const BV_X=427, PARK_Y=200, BOARD_PT=pt('parking',0.92,0.5);
+const CAR={homeX:BV_X,homeY:PARK_Y,x:BV_X,y:PARK_Y,facing:'n'};
 let escort=null;
-function carRouteOut(){return [{x:ROAD_X,y:PARK_Y},{x:ROAD_X,y:140},{x:ROAD_X,y:40},{x:ROAD_X,y:-30}];}
-function carRouteIn(){return [{x:ROAD_X,y:-30},{x:ROAD_X,y:40},{x:ROAD_X,y:140},{x:ROAD_X,y:PARK_Y}];}
+function carRouteOut(){return [{x:BV_X,y:PARK_Y},{x:BV_X,y:130},{x:BV_X,y:40},{x:BV_X,y:-50}];}
+function carRouteIn(){return [{x:BV_X,y:-50},{x:BV_X,y:40},{x:BV_X,y:130},{x:BV_X,y:PARK_Y}];}
 function startEscort(){
   if(escort)return;
   const board=ELDERS.filter(e=>!e.hidden);
@@ -623,7 +621,7 @@ function startEscort(){
   else if(h<15)arrive=G_PM.filter(e=>e.hidden);
   if(!board.length&&!arrive.length)return;
   escort={board:board,arrive:arrive,phase:'walk',t:0,wp:null};
-  CAR.x=CAR.homeX;CAR.y=CAR.homeY;CAR.dir=-1;
+  CAR.x=CAR.homeX;CAR.y=CAR.homeY;CAR.facing='n';
   sendTo(SHINA,BOARD_PT);
   board.forEach((e,i)=>sendTo(e,pt('parking',0.55+i*0.08,0.5)));
   const what=(board.length?'お送り':'')+(board.length&&arrive.length?' と ':'')+(arrive.length?'お迎え':'');
@@ -633,8 +631,8 @@ function followWp(dt){
   const w=escort.wp[0];if(!w)return true;
   const sp=0.35*dt;
   const dx=w.x-CAR.x,dy=w.y-CAR.y;
-  if(Math.abs(dx)>Math.abs(dy))CAR.dir=Math.sign(dx)||CAR.dir;
-  else if(Math.abs(dy)>0.5)CAR.dir=dy<0?-1:1;
+  if(Math.abs(dx)>Math.abs(dy))CAR.facing=dx>0?'e':'w';
+  else if(Math.abs(dy)>0.5)CAR.facing=dy<0?'n':'s';
   const dist=Math.hypot(dx,dy);
   if(dist<=sp){CAR.x=w.x;CAR.y=w.y;escort.wp.shift();return escort.wp.length===0;}
   CAR.x+=dx/dist*sp;CAR.y+=dy/dist*sp;
@@ -685,13 +683,18 @@ function updateEscort(dt){
 function resetDay(){
   ELDERS.forEach(e=>{e.hidden=true;e.path=[];e.bubble=null;e.pendingBubble=null;});
   escort=null;
-  CAR.x=CAR.homeX;CAR.y=CAR.homeY;CAR.dir=-1;
+  CAR.x=CAR.homeX;CAR.y=CAR.homeY;CAR.facing='n';
   SHINA.hidden=false;SHINA.px=SHINA.seat.x;SHINA.py=SHINA.seat.y;SHINA.path=[];
 }
 
-/* ================= DRAWING（街マップ） ================= */
+/* ================= DRAWING（俯瞰街マップ・高精細） ================= */
 const cv=document.getElementById('game'),ctx=cv.getContext('2d');
-const cityCv=document.createElement('canvas');cityCv.width=MAP_W;cityCv.height=MAP_H;
+const cityCv=document.createElement('canvas');
+function initCanvasSize(){
+  cv.width=MAP_W*DPR;cv.height=MAP_H*DPR;
+  cityCv.width=MAP_W*DPR;cityCv.height=MAP_H*DPR;
+}
+initCanvasSize();
 function gradRect(g,x,y,w,h,c1,c2,vert){
   const grd=vert?g.createLinearGradient(x,y,x,y+h):g.createLinearGradient(x,y,x+w,y);
   grd.addColorStop(0,c1);grd.addColorStop(1,c2);
@@ -712,130 +715,216 @@ function shade(hex,amt){
   const r=Math.max(0,Math.min(255,(n>>16)+amt)),gv=Math.max(0,Math.min(255,((n>>8)&255)+amt)),b=Math.max(0,Math.min(255,(n&255)+amt));
   return '#'+((r<<16)|(gv<<8)|b).toString(16).padStart(6,'0');
 }
+function rotFor(dir){
+  return {n:0,e:Math.PI/2,s:Math.PI,w:-Math.PI/2}[dir]||0;
+}
+function drawTopDownSedan(g,x,y,dir,color){
+  g.save();g.translate(x,y);g.rotate(rotFor(dir));
+  g.fillStyle='rgba(0,0,0,.22)';g.beginPath();g.ellipse(0,10,9,2.4,0,0,Math.PI*2);g.fill();
+  [[-5.5,-7],[5.5,-7],[-5.5,7],[5.5,7]].forEach(([wx,wy])=>{
+    g.fillStyle='#12141a';g.beginPath();g.ellipse(wx,wy,2.3,1.5,0,0,Math.PI*2);g.fill();
+    g.fillStyle='#2a3038';g.beginPath();g.ellipse(wx,wy,1.2,.7,0,0,Math.PI*2);g.fill();
+  });
+  const c=color||'#d4dae4';
+  gradRect(g,-5.5,-9,11,18,c,shade(c,-22),true);
+  g.strokeStyle='rgba(0,0,0,.14)';g.lineWidth=.7;strokeRoundRect(g,-5.5,-9,11,18,2.4,'rgba(0,0,0,.14)',.7);
+  gradRect(g,-4.5,-8.5,9,4.2,'#9ed0ec','#4a88b0',true);
+  g.fillStyle='rgba(255,255,255,.35)';g.fillRect(-3.5,-8,7,1.1);
+  g.fillStyle='#5a7088';roundRect(g,-3.5,4.2,7,3.2,1.2,'#5a7088');
+  g.strokeStyle='rgba(0,0,0,.12)';g.lineWidth=.5;
+  g.beginPath();g.moveTo(-5,-2.5);g.lineTo(5,-2.5);g.stroke();
+  g.fillStyle='rgba(255,255,255,.5)';g.fillRect(-4.5,-7.8,2,1.5);
+  g.restore();
+}
+function drawTopDownVan(g,x,y,dir){
+  g.save();g.translate(x,y);g.rotate(rotFor(dir));
+  g.fillStyle='rgba(0,0,0,.28)';g.beginPath();g.ellipse(0,13,12,3,0,0,Math.PI*2);g.fill();
+  [[-6.5,-9.5],[6.5,-9.5],[-6.5,9.5],[6.5,9.5]].forEach(([wx,wy])=>{
+    g.fillStyle='#101218';g.beginPath();g.ellipse(wx,wy,2.6,1.7,0,0,Math.PI*2);g.fill();
+  });
+  gradRect(g,-7,-11.5,14,23,'#f6f8fc','#d0d8e4',true);
+  g.strokeStyle='rgba(0,0,0,.1)';g.lineWidth=.8;strokeRoundRect(g,-7,-11.5,14,23,2.8,'rgba(0,0,0,.1)',.8);
+  gradRect(g,-6.5,-11,13,6,'#8ec4e0','#4a88a8',true);
+  g.fillStyle='#88b0c8';g.fillRect(-6.5,-4.5,2.8,6);g.fillRect(3.7,-4.5,2.8,6);
+  gradRect(g,-6.5,1.5,13,10.5,'#fafbfc','#e4eaf0',true);
+  g.fillStyle='#e85d18';g.fillRect(-7,.8,14,2.6);
+  g.fillStyle='#fff';g.font='700 5px "Zen Kaku Gothic New",sans-serif';
+  g.fillText('送迎',-7,-9.2);
+  g.fillStyle='#2a3040';roundRect(g,-4.5,-12.2,9,2.2,1,'#2a3040');
+  g.fillStyle='rgba(255,255,255,.45)';g.fillRect(-3,-11.8,6,.8);
+  g.restore();
+}
 function drawRoad(g,x,y,w,h,horiz){
-  gradRect(g,x,y,w,h,'#5c636e','#3d434c',!horiz);
-  g.strokeStyle='rgba(255,255,255,.55)';g.lineWidth=1;g.setLineDash([7,9]);
-  if(horiz){const cy=y+h/2;g.beginPath();g.moveTo(x+4,cy);g.lineTo(x+w-4,cy);g.stroke();}
-  else{const cx=x+w/2;g.beginPath();g.moveTo(cx,y+4);g.lineTo(cx,y+h-4);g.stroke();}
+  gradRect(g,x,y,w,h,'#5e6670','#3a424c',!horiz);
+  g.strokeStyle='rgba(255,255,255,.5)';g.lineWidth=1;g.setLineDash([8,10]);
+  if(horiz){const cy=y+h/2;g.beginPath();g.moveTo(x+6,cy);g.lineTo(x+w-6,cy);g.stroke();}
+  else{const cx=x+w/2;g.beginPath();g.moveTo(cx,y+6);g.lineTo(cx,y+h-6);g.stroke();}
   g.setLineDash([]);
-  g.strokeStyle='rgba(255,255,255,.18)';g.lineWidth=2;
-  if(horiz){g.beginPath();g.moveTo(x,y+1);g.lineTo(x+w,y+1);g.stroke();g.beginPath();g.moveTo(x,y+h-1);g.lineTo(x+w,y+h-1);g.stroke();}
+  g.strokeStyle='rgba(255,255,255,.15)';g.lineWidth=1.5;
+  if(horiz){g.beginPath();g.moveTo(x,y+.5);g.lineTo(x+w,y+.5);g.stroke();g.beginPath();g.moveTo(x,y+h-.5);g.lineTo(x+w,y+h-.5);g.stroke();}
+  else{g.beginPath();g.moveTo(x+.5,y);g.lineTo(x+.5,y+h);g.stroke();g.beginPath();g.moveTo(x+w-.5,y);g.lineTo(x+w-.5,y+h);g.stroke();}
 }
 function drawSidewalk(g,x,y,w,h){
-  gradRect(g,x,y,w,h,'#d8dce2','#b8bec8',true);
-  g.strokeStyle='rgba(0,0,0,.06)';g.strokeRect(x+.5,y+.5,w-1,h-1);
+  gradRect(g,x,y,w,h,'#e2e6ec','#c4cad4',true);
+  for(let i=0;i<Math.floor(w/6);i++){g.fillStyle='rgba(0,0,0,.03)';g.fillRect(x+i*6,y,w>6?1:0,h);}
+  g.strokeStyle='rgba(0,0,0,.05)';g.strokeRect(x+.5,y+.5,w-1,h-1);
 }
-function drawWindows(g,x,y,w,h,cols,rows,col){
+function drawWindows(g,x,y,w,h,cols,rows,tint){
   const cw=w/(cols+1),ch=h/(rows+1);
   for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
-    const wx=x+cw*(c+.5),wy=y+ch*(r+.5);
-    const lit=((r+c)%3===0);
-    g.fillStyle=lit?(col||'#a8d4f0'):'#6a7a8a';
-    roundRect(g,wx,wy,cw*.55,ch*.5,1,g.fillStyle);
+    const wx=x+cw*(c+.55),wy=y+ch*(r+.55),lit=((r*3+c*2)%5<2);
+    g.fillStyle=lit?(tint||'#b8e4ff'):'#5a6878';
+    roundRect(g,wx-cw*.22,wy-ch*.18,cw*.44,ch*.36,1,g.fillStyle);
+    if(lit){g.fillStyle='rgba(255,255,255,.25)';g.fillRect(wx-cw*.18,wy-ch*.14,cw*.12,ch*.1);}
   }
 }
 function drawSign(g,x,y,text){
   g.font='600 8px "Zen Kaku Gothic New",sans-serif';
   const tw=g.measureText(text).width;
-  roundRect(g,x,y,tw+12,14,3,'#f4f6f8');
-  g.strokeStyle='#2a3038';g.lineWidth=.8;strokeRoundRect(g,x+.4,y+.4,tw+11.2,13.2,3,'#2a3038',.8);
-  g.fillStyle='#1a2238';g.fillText(text,x+6,y+10);
+  roundRect(g,x,y,tw+12,14,3,'#f8fafc');
+  g.strokeStyle='#3a4450';g.lineWidth=.8;strokeRoundRect(g,x+.4,y+.4,tw+11.2,13.2,3,'#3a4450',.8);
+  g.fillStyle='#1a2438';g.fillText(text,x+6,y+10);
 }
 function drawTree(g,x,y,s){
-  g.fillStyle='rgba(0,0,0,.15)';g.beginPath();g.ellipse(x,y+s*.9,s*.7,s*.22,0,0,Math.PI*2);g.fill();
-  g.fillStyle='#5a4030';g.fillRect(x-2,y+s*.45,4,s*.45);
-  g.fillStyle='#2d7a3a';g.beginPath();g.arc(x,y+s*.25,s*.55,0,Math.PI*2);g.fill();
-  g.fillStyle='#3fa84f';g.beginPath();g.arc(x-s*.2,y+s*.15,s*.35,0,Math.PI*2);g.fill();
-  g.beginPath();g.arc(x+s*.18,y+s*.1,s*.3,0,Math.PI*2);g.fill();
+  g.fillStyle='rgba(0,0,0,.16)';g.beginPath();g.ellipse(x,y+s*.92,s*.75,s*.2,0,0,Math.PI*2);g.fill();
+  g.fillStyle='#5c4430';g.fillRect(x-2,y+s*.48,4,s*.42);
+  g.fillStyle='#2a7038';g.beginPath();g.arc(x,y+s*.22,s*.58,0,Math.PI*2);g.fill();
+  g.fillStyle='#3d9848';g.beginPath();g.arc(x-s*.22,y+s*.12,s*.36,0,Math.PI*2);g.fill();
+  g.beginPath();g.arc(x+s*.2,y+s*.08,s*.32,0,Math.PI*2);g.fill();
 }
 function drawBuilding(g,z,type){
   const {x,y,w,h,label}=z;
-  const roof=5;
-  g.fillStyle='rgba(0,0,0,.18)';g.fillRect(x+4,y+h-2,w,h*.06);
-  drawSidewalk(g,x-3,y+h,w+6,5);
-  let wall1='#b8c0cc',wall2='#8e98a8',roof1='#6a7484',roof2='#4a5564';
-  if(type==='exec'){wall1='#d4c8e8';wall2='#a898c0';roof1='#7a6898';roof2='#5a4878';}
-  if(type==='care'){wall1='#e8dcc8';wall2='#c8b898';roof1='#a89070';roof2='#887050';}
-  if(type==='shop'){wall1='#d8ccc0';wall2='#b0a090';roof1='#908070';roof2='#706050';}
-  if(type==='tower'){wall1='#c8d4e0';wall2='#98a8b8';roof1='#687888';roof2='#485868';}
+  g.fillStyle='rgba(0,0,0,.16)';g.fillRect(x+5,y+h-1,w,h*.05);
+  drawSidewalk(g,x-2,y+h,w+4,4);
+  let wall1='#c8d0dc',wall2='#98a4b4',roof1='#6a7484',roof2='#4a5564',accent='#8898a8';
+  if(type==='exec'){wall1='#e0d4f0';wall2='#b8a0c8';roof1='#7a6898';roof2='#5a4878';accent='#c4a66a';}
+  if(type==='care'){wall1='#ece0cc';wall2='#c8b898';roof1='#a89070';roof2='#887050';accent='#d8a878';}
+  if(type==='shop'){wall1='#e0d4c8';wall2='#b8a898';roof1='#908070';roof2='#706050';accent='#c87858';}
+  if(type==='tower'){wall1='#d0dce8';wall2='#a0b0c0';roof1='#687888';roof2='#485868';accent='#78a8c8';}
   gradRect(g,x,y,w,h,wall1,wall2,true);
-  gradRect(g,x-roof*.4,y-roof,w+roof*.8,roof*1.1,roof1,roof2,true);
-  g.strokeStyle='rgba(0,0,0,.12)';g.strokeRect(x+.5,y+.5,w-1,h-1);
-  if(type==='tower')drawWindows(g,x+6,y+8,w-12,h-14,5,2,'#b8e0ff');
-  else if(type==='care')drawWindows(g,x+8,y+10,w-16,h-18,3,2,'#fff8d8');
-  else drawWindows(g,x+6,y+8,w-12,h-12,3,1,'#c8e8ff');
-  if(type==='exec'){g.fillStyle='#c4a66a';g.fillRect(x+w*.3,y+h-10,w*.4,10);}
+  g.strokeStyle='rgba(0,0,0,.1)';g.strokeRect(x+.5,y+.5,w-1,h-1);
+  const rh=type==='tower'?6:5;
+  gradRect(g,x-rh*.3,y-rh,w+rh*.6,rh*1.15,roof1,roof2,true);
+  g.strokeStyle='rgba(0,0,0,.12)';g.beginPath();g.moveTo(x,y);g.lineTo(x-rh*.3,y-rh);g.lineTo(x+w+rh*.3,y-rh);g.lineTo(x+w,y);g.stroke();
+  if(type==='tower')drawWindows(g,x+8,y+10,w-16,h-18,6,2,'#c8ecff');
+  else if(type==='care')drawWindows(g,x+10,y+12,w-20,h-20,3,2,'#fff4c8');
+  else drawWindows(g,x+8,y+10,w-16,h-14,4,2,'#c8ecff');
+  g.fillStyle=accent;roundRect(g,x+w*.38,y+h-12,w*.24,12,2,accent);
+  g.fillStyle='rgba(0,0,0,.08)';g.fillRect(x+w*.4,y+h-11,w*.2,9);
   drawSign(g,x+4,y-16,label);
 }
 function drawParkingLot(g,z){
   const {x,y,w,h,label}=z;
-  gradRect(g,x,y,w,h,'#6a7078','#525860',true);
-  g.strokeStyle='rgba(255,255,255,.65)';g.lineWidth=1;
-  for(let i=0;i<5;i++){const px=x+14+i*72;g.strokeRect(px,y+8,58,h-16);}
-  g.setLineDash([4,4]);g.strokeStyle='#9aa0a8';
-  g.beginPath();g.moveTo(x+8,y+h-6);g.lineTo(x+w-8,y+h-6);g.stroke();
-  g.setLineDash([]);
-  [[0.15,.35],[0.35,.55],[0.55,.4],[0.75,.6]].forEach(([nx,ny],i)=>{
-    const cx=z.x+z.w*nx,cy=z.y+z.h*ny;
-    g.fillStyle=['#e8ecf0','#d0d8e0','#c8d0d8','#f0f2f6'][i];
-    roundRect(g,cx-11,cy-5,22,11,3,g.fillStyle);
-    g.fillStyle='#181820';roundRect(g,cx-9,cy+4,6,4,1,'#181820');roundRect(g,cx+3,cy+4,6,4,1,'#181820');
+  gradRect(g,x,y,w,h,'#6a7078','#4a5058',true);
+  g.strokeStyle='rgba(255,255,255,.55)';g.lineWidth=1;
+  for(let i=0;i<5;i++){const px=x+12+i*70;g.strokeRect(px,y+6,58,h-12);}
+  g.setLineDash([5,5]);g.strokeStyle='#8a9098';
+  g.beginPath();g.moveTo(x+6,y+h-5);g.lineTo(x+w-6,y+h-5);g.stroke();g.setLineDash([]);
+  const slots=[[0.14,.5,'w','#e8ecf4'],[0.32,.5,'w','#c8d4e0'],[0.5,.5,'e','#d8e0e8'],[0.68,.5,'e','#b8c8d8']];
+  slots.forEach(([nx,ny,dir,col])=>{
+    drawTopDownSedan(g,z.x+z.w*nx,z.y+z.h*ny,dir,col);
   });
   drawSign(g,x+4,y-14,label);
 }
 function drawPoolArea(g,z){
   const {x,y,w,h,label}=z;
-  gradRect(g,x,y,w,h,'#d8e8d0','#b8c8a8',true);
-  drawTree(g,x+14,y+h-8,12);drawTree(g,x+w-16,y+h-6,10);
-  gradRect(g,x+16,y+12,w-32,h-20,'#4ab0e8','#1a78b8',true);
-  g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=1;
-  for(let i=0;i<4;i++){g.beginPath();g.moveTo(x+20+i*18,y+18);g.lineTo(x+50+i*18,y+18);g.stroke();}
-  gradRect(g,x+8,y+h-10,w-16,8,'#c8a878','#a88858',true);
+  gradRect(g,x,y,w,h,'#d4e8c8','#a8c898',true);
+  drawTree(g,x+16,y+h-6,11);drawTree(g,x+w-14,y+h-5,9);
+  gradRect(g,x+14,y+10,w-28,h-18,'#48b8e8','#1888c8',true);
+  g.strokeStyle='rgba(255,255,255,.4)';g.lineWidth=1;
+  for(let i=0;i<3;i++){g.beginPath();g.moveTo(x+20+i*22,y+14);g.lineTo(x+48+i*22,y+14);g.stroke();}
+  gradRect(g,x+10,y+h-9,w-20,7,'#d8b878','#b89858',true);
+  g.strokeStyle='#88a878';g.strokeRect(x+14,y+10,w-28,h-18);
   drawSign(g,x+4,y-14,label);
 }
-function drawBeachSea(g,z){
+function drawBeachStrip(g,z){
   const {x,y,w,h,label}=z;
-  const sandW=Math.floor(w*.28);
-  gradRect(g,x,y,sandW,h,'#f0dca0','#d8b870',true);
-  gradRect(g,x+sandW,y,w-sandW,h,'#2a88c8','#0a4888',true);
-  g.strokeStyle='rgba(255,255,255,.25)';
-  for(let i=0;i<5;i++){g.beginPath();g.moveTo(x+sandW+4,y+10+i*7);g.lineTo(x+w-6,y+12+i*7);g.stroke();}
-  g.fillStyle='#4a9a48';drawTree(g,x+8,y+h-6,11);
+  gradRect(g,x,y,w,h,'#f4e4b0','#d8b870',true);
+  for(let i=0;i<40;i++){
+    const sx=x+4+((i*47)%Math.floor(w-8)),sy=y+2+((i*13)%Math.floor(h-4));
+    g.fillStyle=i%3?'rgba(180,150,90,.25)':'rgba(220,190,130,.2)';
+    g.fillRect(sx,sy,2,1);
+  }
+  g.strokeStyle='rgba(255,255,255,.55)';g.lineWidth=1.5;
+  g.beginPath();g.moveTo(x+2,y+2);
+  for(let i=0;i<=w;i+=12)g.lineTo(x+i,y+2+Math.sin(i*.15)*1.2);
+  g.stroke();
+  [[0.12,.55],[0.38,.45],[0.62,.58],[0.82,.48]].forEach(([nx,ny],i)=>{
+    const px=x+w*nx,py=y+h*ny;
+    g.strokeStyle='#c87848';g.lineWidth=1.2;g.beginPath();g.moveTo(px,py);g.lineTo(px,py-10);g.stroke();
+    g.fillStyle=['#f87171','#60a5fa','#fbbf24','#34d399'][i];
+    g.beginPath();g.moveTo(px-7,py-10);g.lineTo(px+7,py-10);g.lineTo(px,py-16);g.closePath();g.fill();
+  });
+  g.fillStyle='#4a9848';drawTree(g,x+10,y+h-4,8);
   drawSign(g,x+4,y-14,label);
+}
+function drawOcean(g,z){
+  const {x,y,w,h}=z;
+  gradRect(g,x,y,w,h,'#2a90c8','#0a4888',true);
+  g.strokeStyle='rgba(255,255,255,.18)';g.lineWidth=1;
+  for(let r=0;r<6;r++){
+    g.beginPath();
+    for(let i=0;i<=w;i+=8){
+      const wy=y+12+r*9+Math.sin((i+r*20)*.08)*2;
+      if(i===0)g.moveTo(x+i,wy);else g.lineTo(x+i,wy);
+    }
+    g.stroke();
+  }
+  g.fillStyle='rgba(255,255,255,.12)';
+  for(let i=0;i<8;i++)g.fillRect(x+10+i*44,y+4,18,2);
+}
+function drawOceanWaves(g,t){
+  const z=ZONES.umi;
+  g.save();g.globalAlpha=.35;
+  g.strokeStyle='#fff';g.lineWidth=1.2;
+  for(let r=0;r<3;r++){
+    g.beginPath();
+    for(let i=0;i<=z.w;i+=6){
+      const wy=z.y+8+r*14+Math.sin((i+t*.04+r*30)*.1)*2.5;
+      if(i===0)g.moveTo(z.x+i,wy);else g.lineTo(z.x+i,wy);
+    }
+    g.stroke();
+  }
+  g.restore();
 }
 function drawParkVenue(g,z){
   const {x,y,w,h,label}=z;
-  gradRect(g,x,y,w,h,'#5aaa48','#3a7a32',true);
-  for(let i=0;i<7;i++)drawTree(g,x+20+i*48,y+h*.15+((i%2)*8),9+((i%3)*2));
-  gradRect(g,x+w*.32,y+h*.28,w*.36,h*.38,'#6a4830','#4a3020',true);
-  g.fillStyle='rgba(255,255,255,.12)';g.fillRect(x+w*.34,y+h*.3,w*.32,4);
-  [[0.12,.65],[0.28,.72],[0.55,.68],[0.78,.75]].forEach(([nx,ny])=>{
-    g.fillStyle='#f8f0e0';g.beginPath();g.moveTo(x+w*nx,y+h*ny);g.lineTo(x+w*nx+8,y+h*ny);g.lineTo(x+w*nx+4,y+h*ny-10);g.closePath();g.fill();
+  gradRect(g,x,y,w,h,'#58a848','#387828',true);
+  for(let i=0;i<6;i++)drawTree(g,x+24+i*40,y+h*.2+((i%2)*6),8+((i%3)*2));
+  gradRect(g,x+w*.3,y+h*.25,w*.4,h*.42,'#6a4830','#4a3020',true);
+  g.fillStyle='rgba(255,255,255,.15)';g.fillRect(x+w*.32,y+h*.27,w*.36,5);
+  g.strokeStyle='#8a6848';g.strokeRect(x+w*.3,y+h*.25,w*.4,h*.42);
+  [[0.1,.62],[0.3,.7],[0.55,.65],[0.78,.72]].forEach(([nx,ny],i)=>{
+    g.fillStyle=['#f8f0e0','#e8e0d0','#fff8f0','#f0e8d8'][i];
+    g.beginPath();g.moveTo(x+w*nx,y+h*ny);g.lineTo(x+w*nx+9,y+h*ny);g.lineTo(x+w*nx+4.5,y+h*ny-11);g.closePath();g.fill();
   });
   drawSign(g,x+4,y-14,label);
 }
 function drawBoulevard(g,z){
   const {x,y,w,h}=z;
   drawRoad(g,x,y,w,h,false);
-  drawSidewalk(g,x-4,y,4,h);
-  for(let ly=y+20;ly<y+h-20;ly+=34){
-    g.fillStyle='#8890a0';g.fillRect(x+6,ly,3,ly+16>y+h?8:16);
-    g.fillStyle='#fff8d0';g.beginPath();g.arc(x+7,ly,3,0,Math.PI*2);g.fill();
+  drawSidewalk(g,x-3,y,3,h);
+  for(let ly=y+24;ly<y+h-24;ly+=36){
+    g.fillStyle='#7a8494';g.fillRect(x+8,ly,2.5,ly+18>y+h?10:18);
+    g.fillStyle='#fff8d0';g.beginPath();g.arc(x+9,ly,3.2,0,Math.PI*2);g.fill();
   }
   g.font='600 7px "Zen Kaku Gothic New",sans-serif';
-  g.fillStyle='#e8ecf0';g.fillText('送迎バス専用道',x+8,y+14);
+  g.fillStyle='#eef2f8';g.fillText('送迎バス専用道',x+10,y+16);
+  drawTopDownVan(g,x+w*.5,y+h*.88,'s');
 }
 function prerenderCity(){
-  const g=cityCv.getContext('2d');g.imageSmoothingEnabled=true;
-  const sky=g.createLinearGradient(0,0,0,MAP_H);
-  sky.addColorStop(0,'#8ec8e8');sky.addColorStop(.12,'#b8d8c8');sky.addColorStop(.35,'#7cb868');sky.addColorStop(1,'#6aaa58');
-  g.fillStyle=sky;g.fillRect(0,0,MAP_W,MAP_H);
-  g.fillStyle='rgba(90,150,70,.25)';g.fillRect(0,MAP_H*.55,MAP_W,MAP_H*.45);
-  drawRoad(g,6,54,392,10,true);
-  drawRoad(g,6,122,392,10,true);
-  drawRoad(g,6,196,392,10,true);
-  drawRoad(g,6,238,392,10,true);
-  drawRoad(g,158,130,10,70,false);
+  const g=cityCv.getContext('2d');
+  g.setTransform(DPR,0,0,DPR,0,0);
+  g.imageSmoothingEnabled=true;
+  const sky=g.createLinearGradient(0,0,0,COAST_Y);
+  sky.addColorStop(0,'#8ec8e8');sky.addColorStop(.15,'#a8d8b8');sky.addColorStop(.55,'#78b868');sky.addColorStop(1,'#68a858');
+  g.fillStyle=sky;g.fillRect(0,0,MAP_W,COAST_Y);
+  g.fillStyle='rgba(80,140,60,.18)';g.fillRect(PAD,PAD,URBAN_R-PAD,COAST_Y-PAD-4);
+  drawRoad(g,6,52,368,8,true);
+  drawRoad(g,6,108,368,8,true);
+  drawRoad(g,6,174,368,8,true);
+  drawRoad(g,6,224,368,8,true);
+  drawRoad(g,142,118,8,58,false);
   drawBoulevard(g,ZONES.road);
   drawBuilding(g,ZONES.shacho,'exec');
   drawBuilding(g,ZONES.kaigi,'shop');
@@ -844,44 +933,37 @@ function prerenderCity(){
   drawBuilding(g,ZONES.client,'shop');
   drawParkingLot(g,ZONES.parking);
   drawPoolArea(g,ZONES.pool);
-  drawBeachSea(g,ZONES.umi);
   drawParkVenue(g,ZONES.park);
-  drawTree(g,398,48,10);drawTree(g,398,120,9);drawTree(g,6,280,11);drawTree(g,392,300,10);
-  g.fillStyle='rgba(255,255,255,.04)';g.fillRect(0,0,MAP_W,MAP_H);
+  drawBeachStrip(g,ZONES.beach);
+  drawOcean(g,ZONES.umi);
+  drawTree(g,372,42,10);drawTree(g,372,108,9);drawTree(g,8,258,10);
+  g.fillStyle='rgba(255,255,255,.03)';g.fillRect(0,0,MAP_W,MAP_H);
 }
 function drawPerson(g,c,walking,frame){
   const x=c.px,y=c.py;
   g.save();g.imageSmoothingEnabled=true;
   g.fillStyle='rgba(0,0,0,.22)';g.beginPath();g.ellipse(x,y+9,5.5,2,0,0,Math.PI*2);g.fill();
-  const bob=walking?(frame?-.8:.8):0,sw=walking?(frame?-2:2):0;
-  g.fillStyle=shade(c.cloth,-40);roundRect(g,x-3.5,y+2+bob,3,5,1.2,shade(c.cloth,-40));
-  roundRect(g,x+.5,y+2-bob,3,5,1.2,shade(c.cloth,-40));
+  const bob=walking?(frame?-.9:.9):0,sw=walking?(frame?-2.2:2.2):0;
+  g.fillStyle=shade(c.cloth,-42);
+  roundRect(g,x-3.5,y+2+bob,3,5,1.2,shade(c.cloth,-42));
+  roundRect(g,x+.5,y+2-bob,3,5,1.2,shade(c.cloth,-42));
   gradRect(g,x-4,y-4+bob,8,7,c.cloth,shade(c.cloth,-28),true);
   roundRect(g,x-5,y+bob+sw*.3,2.5,5,1,shade(c.cloth,-15));
   roundRect(g,x+2.5,y+bob-sw*.3,2.5,5,1,shade(c.cloth,-15));
   g.fillStyle=c.hair;g.beginPath();g.arc(x,y-5+bob,4.2,Math.PI,0);g.fill();
-  g.fillStyle='#f4c9a8';g.beginPath();g.arc(x,y-1+bob,3.5,0,Math.PI*2);g.fill();
+  g.fillStyle='#f0c4a0';g.beginPath();g.arc(x,y-1+bob,3.5,0,Math.PI*2);g.fill();
+  g.fillStyle='rgba(0,0,0,.12)';g.fillRect(x-1.5,y+.5+bob,3,1);
   g.restore();
 }
 function drawCar(g){
-  const x=CAR.x,y=CAR.y;
-  g.save();g.imageSmoothingEnabled=true;
-  g.fillStyle='rgba(0,0,0,.28)';g.beginPath();g.ellipse(x,y+11,13,2.8,0,0,Math.PI*2);g.fill();
-  roundRect(g,x-13,y-5,26,14,4,'#f4f6fa');
-  gradRect(g,x-11,y-3,22,7,'#fff','#dce2ea',true);
-  roundRect(g,x-9,y-9,18,7,3,'#e8eef4');
-  roundRect(g,x-11,y+7,7,5,2,'#222');
-  roundRect(g,x+4,y+7,7,5,2,'#222');
-  roundRect(g,x-12,y+1,24,2.5,1,'#f07828');
-  g.font='600 6px "Zen Kaku Gothic New",sans-serif';
-  g.fillStyle='#d9480f';g.fillText('送迎',x-8,y-10);
-  g.restore();
+  drawTopDownVan(g,CAR.x,CAR.y,CAR.facing||'n');
 }
 let selected=null;
 function draw(){
-  ctx.setTransform(1,0,0,1,0,0);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.imageSmoothingEnabled=true;
-  ctx.drawImage(cityCv,0,0);
+  ctx.drawImage(cityCv,0,0,MAP_W,MAP_H);
+  drawOceanWaves(ctx,performance.now()*.001);
   drawCar(ctx);
   const now=performance.now();
   const order=[...CHARS,...ELDERS,CLIENT].filter(c=>!c.hidden).sort((a,b)=>a.py-b.py);
@@ -894,7 +976,7 @@ function draw(){
     drawPerson(ctx,c,walking,frame);
     const label=c.short,lw=Math.max(label.length*7+8,22);
     const lx=c.px-lw/2,ly=c.py-20;
-    roundRect(ctx,lx,ly,lw,11,4,'rgba(255,255,255,.92)');
+    roundRect(ctx,lx,ly,lw,11,4,'rgba(255,255,255,.94)');
     ctx.font='600 7px "Zen Kaku Gothic New",sans-serif';
     ctx.fillStyle='#1a2238';ctx.fillText(label,lx+4,ly+8);
   }
@@ -912,10 +994,10 @@ function draw(){
   }
   if(EMBEDDED){
     const v=ctx.createLinearGradient(0,0,0,MAP_H);
-    v.addColorStop(0,'rgba(255,255,255,.06)');v.addColorStop(.08,'transparent');
-    v.addColorStop(.92,'transparent');v.addColorStop(1,'rgba(0,0,0,.12)');
+    v.addColorStop(0,'rgba(255,255,255,.05)');v.addColorStop(.06,'transparent');
+    v.addColorStop(.94,'transparent');v.addColorStop(1,'rgba(0,0,0,.1)');
     ctx.fillStyle=v;ctx.fillRect(0,0,MAP_W,MAP_H);
-    ctx.strokeStyle='rgba(196,166,106,.22)';ctx.lineWidth=1;
+    ctx.strokeStyle='rgba(196,166,106,.2)';ctx.lineWidth=1;
     ctx.strokeRect(.5,.5,MAP_W-1,MAP_H-1);
   }
 }
@@ -1131,7 +1213,7 @@ function fitCanvas(){
   const wrap=document.querySelector('.stage-game');
   const cv=document.getElementById('game');
   if(!wrap||!cv)return;
-  const pad=EMBEDDED?12:0;
+  const pad=EMBEDDED?8:0;
   const r=wrap.getBoundingClientRect();
   const availW=Math.max(8,r.width-pad);
   const availH=Math.max(8,r.height-pad);
