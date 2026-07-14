@@ -494,7 +494,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
-  .dc-card.is-talking .dc-mouth{animation:none!important}
+  .dc-card.is-talking .dc-photo img,.dc-card.is-talking .dc-avatar-wrap::after{animation:none!important}
 }
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
@@ -728,20 +728,29 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .dc-card[data-dept="legal"]:hover{border-color:rgba(196,166,106,.45);box-shadow:0 12px 36px rgba(0,0,0,.5),0 0 18px rgba(150,135,175,.08)}
 .dc-photo{flex:1;min-height:0;overflow:hidden;background:#030405;position:relative}
 .dc-avatar-wrap{width:100%;height:100%;position:relative}
-.dc-mouth{
-  position:absolute;left:50%;bottom:30%;z-index:2;
-  width:14px;height:6px;border-radius:50%;
-  background:rgba(180,90,100,.8);
-  transform:translateX(-50%);opacity:0;
-  pointer-events:none;transition:opacity .15s;
+.dc-avatar-wrap{width:100%;height:100%;position:relative;overflow:hidden}
+.dc-avatar-wrap::after{
+  content:"";position:absolute;left:38%;top:57%;width:24%;height:8%;
+  border-radius:50%;pointer-events:none;opacity:0;z-index:2;
+  background:radial-gradient(ellipse at 50% 55%,rgba(255,255,255,.22),transparent 72%);
 }
-.dc-card.is-talking .dc-mouth{opacity:.9;animation:dcMouth .18s ease-in-out infinite}
-@keyframes dcMouth{
-  0%,100%{height:5px;width:12px;border-radius:50%}
-  25%{height:9px;width:10px;border-radius:45% 45% 50% 50%}
-  50%{height:5px;width:13px;border-radius:50%}
-  75%{height:10px;width:9px;border-radius:40% 40% 55% 55%}
+.dc-card[data-dept="secretary"] .dc-avatar-wrap::after{left:40%;top:56%;width:22%;height:7%}
+.dc-card[data-dept="finance"] .dc-avatar-wrap::after{left:37%;top:58%;width:24%;height:8%}
+.dc-card[data-dept="legal"] .dc-avatar-wrap::after{left:39%;top:57%;width:23%;height:7%}
+.dc-card.is-talking .dc-photo img{animation:dcJawTalk .36s ease-in-out infinite}
+.dc-card.is-talking .dc-avatar-wrap::after{animation:dcMouthGlow .36s ease-in-out infinite}
+@keyframes dcJawTalk{
+  0%,100%{transform:scale(1.06) translateY(0)}
+  28%{transform:scale(1.06) translateY(1.2px)}
+  48%{transform:scale(1.06) translateY(0)}
+  72%{transform:scale(1.06) translateY(0.9px)}
 }
+@keyframes dcMouthGlow{
+  0%,100%{opacity:0;transform:scaleY(.55)}
+  28%,72%{opacity:.55;transform:scaleY(1.05)}
+  48%{opacity:.15;transform:scaleY(.7)}
+}
+.dc-mouth{display:none}
 .dc-bubble{
   position:absolute;top:6px;left:6px;right:6px;z-index:4;
   background:rgba(6,7,10,.92);backdrop-filter:blur(10px);
@@ -777,7 +786,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   width:100%;height:100%;object-fit:cover;object-position:center 8%;
   display:block;position:relative;z-index:1;
   filter:brightness(.96) saturate(.95) contrast(1.02);
-  transform:scale(1.06);transform-origin:center 22%;
+  transform:scale(1.06);transform-origin:50% 42%;
 }
 .dc-photo img[data-fallback="1"]{opacity:0}
 .dc-photo::before{
