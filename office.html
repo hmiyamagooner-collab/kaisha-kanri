@@ -49,11 +49,13 @@ body.embedded .stage{
   flex:1 1 auto;max-width:none;min-width:0;width:100%;height:100%;
   display:flex;flex-direction:column;min-height:0;
 }
-body.embedded .stage-game{flex:1;position:relative;min-height:0;overflow:hidden;}
+body.embedded .stage-game{flex:1;position:relative;min-height:0;overflow:hidden;background:#0a1230;}
 body.embedded canvas#game{
   max-width:100%;width:100%;height:100%;margin:0;
   object-fit:contain;object-position:center top;
 }
+/* 埋め込み(ポータル)では縦長ペインでも「よこ画面推奨」を出さずマップを描画する */
+body.embedded #rotate-note{display:none!important;}
 @media(max-width:1000px) and (orientation:portrait){
   .toprow{flex-direction:column;}
   .cards{flex:1 1 auto;height:72vh;}
