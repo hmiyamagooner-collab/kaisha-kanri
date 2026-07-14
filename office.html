@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>会社管理 ─ オフィスクエスト</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Kaku+Gothic+New:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{
   --win-bg:#000616;
@@ -49,10 +49,13 @@ body.embedded .stage{
   flex:1 1 auto;max-width:none;min-width:0;width:100%;height:100%;
   display:flex;flex-direction:column;min-height:0;
 }
-body.embedded .stage-game{flex:1;position:relative;min-height:0;overflow:hidden;background:#0a1230;}
+body.embedded .stage-game{flex:1;position:relative;min-height:0;overflow:hidden;background:linear-gradient(180deg,#1a2848 0%,#0d1530 100%);}
 body.embedded canvas#game{
   width:100%;height:100%;margin:0;display:block;
-  object-fit:contain;object-position:center top;image-rendering:pixelated;
+  object-fit:contain;object-position:center center;
+  image-rendering:auto;
+  border-radius:8px;
+  filter:drop-shadow(0 4px 24px rgba(0,0,0,.45));
 }
 /* 埋め込み(ポータル)では縦長ペインでも「よこ画面推奨」を出さずマップを描画する */
 body.embedded #rotate-note{display:none!important;}
@@ -642,9 +645,18 @@ function updateChar(c,dt){
 }
 
 /* ================= 送迎（2部制・車） ================= */
-/* 送迎車は右端の縦の大通り(col 13-15)だけを通る。駐車場わきの (14,19) が定位置。 */
-const CAR={homeX:14*TW,homeY:19*TW,x:14*TW,y:19*TW,dir:-1};
+/* 送迎車は右端の縦大通り(col 13-15)のみ走行。駐車場横 (14,19) が定位置。 */
+const CAR_LANE=14, PARK_ROW=19, BOARD_COL=13;
+const CAR={homeX:CAR_LANE*TW,homeY:PARK_ROW*TW,x:CAR_LANE*TW,y:PARK_ROW*TW,dir:-1};
 let escort=null;
+function carRouteOut(){
+  const x=CAR_LANE*TW;
+  return [[x,PARK_ROW*TW],[x,11*TW],[x,3*TW],[x,-90]];
+}
+function carRouteIn(){
+  const x=CAR_LANE*TW;
+  return [[x,-90],[x,3*TW],[x,11*TW],[x,PARK_ROW*TW]];
+}
 function startEscort(){
   if(escort)return;
   const board=ELDERS.filter(e=>!e.hidden);
@@ -654,59 +666,61 @@ function startEscort(){
   else if(h<15)arrive=G_PM.filter(e=>e.hidden);
   if(!board.length&&!arrive.length)return;
   escort={board:board,arrive:arrive,phase:'walk',t:0,wp:null};
-  sendTo(SHINA,[12,19]);
-  board.forEach((e,i)=>sendTo(e,[10+i,19]));
+  CAR.x=CAR.homeX;CAR.y=CAR.homeY;CAR.dir=-1;
+  sendTo(SHINA,[BOARD_COL,PARK_ROW]);
+  board.forEach((e,i)=>sendTo(e,[10+i,PARK_ROW]));
   const what=(board.length?'お送り':'')+(board.length&&arrive.length?' と ':'')+(arrive.length?'お迎え':'');
   log('品川：送迎（'+what+'）の じゅんび');
 }
 function followWp(dt){
   const w=escort.wp[0];if(!w)return true;
-  const sp=0.16*dt;
+  const sp=0.18*dt;
   const dx=w[0]-CAR.x,dy=w[1]-CAR.y;
-  if(Math.abs(dx)>0.5)CAR.dir=Math.sign(dx);
-  const dist=Math.abs(dx)+Math.abs(dy);
+  if(Math.abs(dx)>Math.abs(dy))CAR.dir=Math.sign(dx)||CAR.dir;
+  else if(Math.abs(dy)>0.5)CAR.dir=dy<0?-1:1;
+  const dist=Math.hypot(dx,dy);
   if(dist<=sp){CAR.x=w[0];CAR.y=w[1];escort.wp.shift();return escort.wp.length===0;}
-  if(Math.abs(dx)>0)CAR.x+=Math.sign(dx)*Math.min(sp,Math.abs(dx));
-  else CAR.y+=Math.sign(dy)*Math.min(sp,Math.abs(dy));
+  const ratio=sp/dist;
+  CAR.x+=dx*ratio;CAR.y+=dy*ratio;
   return false;
 }
 function updateEscort(dt){
   if(!escort)return;
   switch(escort.phase){
     case 'walk':{
-      const ok=atTile(SHINA,12,19)&&escort.board.every((e,i)=>atTile(e,10+i,19));
-      if(ok){escort.phase='board';escort.t=700;}
+      const ok=atTile(SHINA,BOARD_COL,PARK_ROW)&&escort.board.every((e,i)=>atTile(e,10+i,PARK_ROW));
+      if(ok){escort.phase='board';escort.t=900;}
       break;}
     case 'board':
       escort.t-=dt;
       if(escort.t<=0){
         SHINA.hidden=true;
         escort.board.forEach(e=>e.hidden=true);
-        escort.wp=[[CAR.homeX,-70]];
+        escort.wp=carRouteOut().slice(1);
         escort.phase='out';
         log('送迎車が しゅっぱつした');
       }
       break;
     case 'out':
-      if(followWp(dt)){escort.phase='away';escort.t=2200;}
+      if(followWp(dt)){escort.phase='away';escort.t=2400;}
       break;
     case 'away':
       escort.t-=dt;
-      if(escort.t<=0){escort.wp=[[CAR.homeX,CAR.homeY]];escort.phase='back';}
+      if(escort.t<=0){escort.wp=carRouteIn().slice(1);escort.phase='back';}
       break;
     case 'back':
       if(followWp(dt)){
-        SHINA.hidden=false;SHINA.px=12*TW;SHINA.py=19*TW;
+        SHINA.hidden=false;SHINA.px=BOARD_COL*TW;SHINA.py=PARK_ROW*TW;
         if(escort.arrive.length){
           escort.arrive.forEach((e,i)=>{
-            e.hidden=false;e.px=(10+i)*TW;e.py=19*TW;
+            e.hidden=false;e.px=(10+i)*TW;e.py=PARK_ROW*TW;
             sendTo(e,ELDER_SEATS[i%ELDER_SEATS.length]);
             e.pendingBubble='きょうも よろしくねぇ';
           });
           log('お年寄りを おむかえした（'+(escort.arrive[0]===ELDERS[0]?'午前の部':'午後の部')+'）');
         }
         if(escort.board.length)log('お年寄りを おうちまで おくった');
-        sendTo(SHINA,[5,16]);
+        sendTo(SHINA,SHINA.seat);
         escort=null;
       }
       break;
@@ -721,12 +735,20 @@ function resetDay(){
 
 /* ================= DRAWING ================= */
 const cv=document.getElementById('game'),ctx=cv.getContext('2d');
-ctx.imageSmoothingEnabled=false;
 const mapCv=document.createElement('canvas');mapCv.width=COLS*TW;mapCv.height=ROWS*TW;
-/* エリアは相対的に小さく、人・備品は大きく（地図全体＝公園・プール・ビーチも含む） */
 const CHAR_S=1.85;
 const FURN_S=1.45;
-const VIEW_ZOOM=1; /* 全体表示（イベント会場を隠さない） */
+const VIEW_ZOOM=1;
+function gradRect(g,x,y,w,h,c1,c2,vert){
+  const grd=vert?g.createLinearGradient(x,y,x,y+h):g.createLinearGradient(x,y,x+w,y);
+  grd.addColorStop(0,c1);grd.addColorStop(1,c2);
+  g.fillStyle=grd;g.fillRect(x,y,w,h);
+}
+function roundRect(g,x,y,w,h,r,fill){
+  g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);
+  g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();
+  if(fill){g.fillStyle=fill;g.fill();}
+}
 function px(g,x,y,w,h,col){g.fillStyle=col;g.fillRect(x,y,w,h);}
 function furnOrigin(x,y){
   const pad=TW*(FURN_S-1)/2;
@@ -747,11 +769,11 @@ function drawTile(g,tx,ty){
     else if(tx>=21&&ty<=18)base=T.GRASS;
   }
   switch(base){
-    case T.GRASS:px(g,x,y,TW,TW,'#2f8f3e');px(g,x+3,y+4,2,2,'#3fae50');px(g,x+10,y+9,2,2,'#3fae50');px(g,x+6,y+13,2,2,'#278035');break;
-    case T.CARPET:px(g,x,y,TW,TW,'#8f2f35');px(g,x,y,TW,1,'#a8444a');px(g,x+7,y+7,2,2,'#7a2428');break;
-    case T.DAYFLOOR:px(g,x,y,TW,TW,'#cfe0c3');px(g,x,y+TW-1,TW,1,'#b7cba9');px(g,x+7,y,1,TW,'#c2d5b4');break;
-    case T.DECK:px(g,x,y,TW,TW,'#a8c4cc');px(g,x,y+7,TW,1,'#8fb0ba');px(g,x+7,y,1,TW,'#98b8c2');break;
-    default:px(g,x,y,TW,TW,'#c8a165');px(g,x,y+TW-1,TW,1,'#a5824c');px(g,x+7,y,1,TW,'#bb945a');break;
+    case T.GRASS:gradRect(g,x,y,TW,TW,'#3faa52','#2a7a3c',true);break;
+    case T.CARPET:gradRect(g,x,y,TW,TW,'#a84850','#7a3038',true);break;
+    case T.DAYFLOOR:gradRect(g,x,y,TW,TW,'#dce8d0','#c5d4b8',true);break;
+    case T.DECK:gradRect(g,x,y,TW,TW,'#b8d4dc','#98b8c4',true);break;
+    default:gradRect(g,x,y,TW,TW,'#d4b070','#b89458',true);break;
   }
   switch(t){
     case T.WALL:{
@@ -764,19 +786,16 @@ function drawTile(g,tx,ty){
       px(g,x,y+7,TW,1,wd);px(g,x+7,y,1,7,wd);px(g,x+3,y+8,1,8,wd);px(g,x+11,y+8,1,8,wd);
       break;}
     case T.ROAD:{
-      px(g,x,y,TW,TW,'#3a3f4a');
-      px(g,x+3,y+5,2,2,'#454b58');px(g,x+11,y+12,2,2,'#454b58');
-      if((ty===12||ty===13)&&tx%2===0)px(g,x+2,y+7,9,1,'#e8e8e8'); /* 横道路（本社｜デイ） */
-      if((tx===19||tx===20)&&ty%2===0)px(g,x+7,y+2,1,9,'#e8e8e8'); /* 縦道路（右レジャー） */
+      gradRect(g,x,y,TW,TW,'#4a5060','#353a48',true);
+      if((ty===10||ty===11)&&tx<=12)px(g,x+2,y+6,10,2,'#e8eaef');
+      if((tx===13||tx===14||tx===15)&&ty%3===0)px(g,x+6,y+2,2,10,'#e8eaef');
       break;}
     case T.CROSS:
-      px(g,x,y,TW,TW,'#3a3f4a');
-      if(tx===19||tx===20){
-        /* 縦道路を渡る：東西のゼブラ */
-        px(g,x,y+2,TW,3,'#e8e8e8');px(g,x,y+7,TW,3,'#e8e8e8');px(g,x,y+12,TW,3,'#e8e8e8');
+      gradRect(g,x,y,TW,TW,'#4a5060','#353a48',true);
+      if(tx>=13){
+        px(g,x,y+2,TW,3,'#f0f2f6');px(g,x,y+8,TW,3,'#f0f2f6');
       }else{
-        /* 横道路を渡る：南北のゼブラ */
-        px(g,x+2,y,3,TW,'#e8e8e8');px(g,x+7,y,3,TW,'#e8e8e8');px(g,x+12,y,3,TW,'#e8e8e8');
+        px(g,x+2,y,3,TW,'#f0f2f6');px(g,x+8,y,3,TW,'#f0f2f6');
       }
       break;
     case T.SIDE:
@@ -854,51 +873,43 @@ function drawTile(g,tx,ty){
   }
 }
 function prerenderMap(){
-  const g=mapCv.getContext('2d');g.imageSmoothingEnabled=false;
+  const g=mapCv.getContext('2d');g.imageSmoothingEnabled=true;
   for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)drawTile(g,x,y);
-  g.font='7px "DotGothic16",monospace';
+  g.font='600 8px "Zen Kaku Gothic New",sans-serif';
   Object.values(ROOMS).forEach(r=>{
     const tx=r.lx*TW+2,ty=r.ly*TW;
-    g.fillStyle='rgba(0,0,0,0.45)';g.fillRect(tx-2,ty-8,r.label.length*7+4,10);
-    g.fillStyle='#ffe9a8';g.fillText(r.label,tx,ty);
+    g.fillStyle='rgba(8,12,28,0.55)';roundRect(g,tx-3,ty-10,r.label.length*7+8,12,4,'rgba(8,12,28,0.55)');
+    g.fillStyle='#ffe9c8';g.fillText(r.label,tx,ty);
   });
 }
 function drawSprite(g,x,y,c,walking,frame){
-  const skin='#f2c893';
-  const s=CHAR_S;
-  const ox=x+8,oy=y+14;
-  g.save();
-  g.translate(ox,oy);
-  g.scale(s,s);
-  g.translate(-8,-14);
-  px(g,3,14,10,2,'rgba(0,0,0,0.3)');
-  g.fillStyle='#2d2438';
-  if(walking&&frame){g.fillRect(5,11,3,4);g.fillRect(9,12,3,3);}
-  else if(walking){g.fillRect(5,12,3,3);g.fillRect(9,11,3,4);}
-  else{g.fillRect(5,12,3,3);g.fillRect(9,12,3,3);}
-  px(g,4,7,8,5,c.cloth);
-  px(g,2,7,2,4,c.cloth);px(g,12,7,2,4,c.cloth);
-  if(c.female)px(g,3,10,10,2,shade(c.cloth,-25));
-  px(g,4,1,8,6,skin);
-  px(g,3,-1,10,3,c.hair);px(g,3,1,2,2,c.hair);px(g,11,1,2,2,c.hair);
-  if(c.female){px(g,2,1,2,7,c.hair);px(g,12,1,2,7,c.hair);}
-  px(g,6,3,1,2,'#1f2430');px(g,9,3,1,2,'#1f2430');
+  const skin='#f5d0a8',s=CHAR_S,ox=x+8,oy=y+14;
+  g.save();g.translate(ox,oy);g.scale(s,s);g.translate(-8,-14);
+  g.fillStyle='rgba(0,0,0,0.22)';g.beginPath();g.ellipse(8,16,5,2,0,0,Math.PI*2);g.fill();
+  const legL=walking&&frame?11:12,legR=walking&&!frame?11:12;
+  roundRect(g,5,legL,3,4,1.5,shade(c.cloth,-40));
+  roundRect(g,9,legR,3,4,1.5,shade(c.cloth,-40));
+  roundRect(g,3,7,10,6,2,c.cloth);
+  roundRect(g,1,7,3,5,1.5,shade(c.cloth,15));
+  roundRect(g,12,7,3,5,1.5,shade(c.cloth,15));
+  if(c.female)roundRect(g,3,10,10,3,1.5,shade(c.cloth,-20));
+  roundRect(g,4,1,8,6,3,skin);
+  g.fillStyle=c.hair;roundRect(g,3,-1,10,4,2,c.hair);
+  if(c.female){roundRect(g,2,0,2,7,1,c.hair);roundRect(g,12,0,2,7,1,c.hair);}
+  g.fillStyle='#2a3040';roundRect(g,6,3,2,2,1,'#2a3040');roundRect(g,9,3,2,2,1,'#2a3040');
   g.restore();
 }
 function drawCar(g){
   const x=CAR.x,y=CAR.y,s=1.35;
-  g.save();
-  g.translate(x+16,y+8);
-  g.scale(s,s);
-  g.translate(-16,-8);
-  px(g,3,12,5,4,'#1c1c22');px(g,24,12,5,4,'#1c1c22');
-  px(g,4,13,3,2,'#6b7280');px(g,25,13,3,2,'#6b7280');
-  px(g,1,4,30,9,'#2f9e8f');
-  px(g,4,0,24,6,'#3fb8a8');
-  px(g,6,1,8,4,'#bfe8ff');px(g,18,1,8,4,'#bfe8ff');
-  px(g,1,9,30,2,'#1f6e63');
-  px(g,CAR.dir<0?0:29,6,2,2,'#ffe08a');
-  px(g,12,7,8,3,'#e6f4f1');
+  g.save();g.translate(x+16,y+8);g.scale(s,s);g.translate(-16,-8);
+  g.fillStyle='rgba(0,0,0,0.25)';g.beginPath();g.ellipse(16,18,14,3,0,0,Math.PI*2);g.fill();
+  roundRect(g,1,4,30,9,3,'#2a9e8f');
+  gradRect(g,4,0,24,6,'#4fd4c4','#2a9e8f',true);
+  roundRect(g,6,1,8,4,2,'#d8f0ff');roundRect(g,18,1,8,4,2,'#d8f0ff');
+  roundRect(g,3,12,5,4,2,'#1c1c22');roundRect(g,24,12,5,4,2,'#1c1c22');
+  roundRect(g,4,13,3,2,1,'#9ca3af');roundRect(g,25,13,3,2,1,'#9ca3af');
+  roundRect(g,CAR.dir<0?0:28,5,3,3,1.5,'#ffe08a');
+  roundRect(g,11,7,10,3,1.5,'#e8f8f4');
   g.restore();
 }
 function shade(hex,amt){
@@ -910,12 +921,12 @@ let selected=null;
 function draw(){
   const base=3*VIEW_ZOOM;
   ctx.setTransform(base,0,0,base,0,0);
-  ctx.imageSmoothingEnabled=false;
+  ctx.imageSmoothingEnabled=true;
   ctx.drawImage(mapCv,0,0);
   drawCar(ctx);
   const now=performance.now();
   const order=[...CHARS,...ELDERS,CLIENT].filter(c=>!c.hidden).sort((a,b)=>a.py-b.py);
-  ctx.font='8px "DotGothic16",monospace';
+  ctx.font='600 9px "Zen Kaku Gothic New",sans-serif';
   for(const c of order){
     const walking=c.path.length>0,frame=Math.floor(now/160)%2===0;
     if(selected===c){
