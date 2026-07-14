@@ -51,8 +51,8 @@ body.embedded .stage{
 }
 body.embedded .stage-game{flex:1;position:relative;min-height:0;overflow:hidden;background:#0a1230;}
 body.embedded canvas#game{
-  width:100%;height:auto;margin:0 auto;display:block;
-  image-rendering:pixelated;
+  width:100%;height:100%;margin:0;display:block;
+  object-fit:contain;object-position:center top;image-rendering:pixelated;
 }
 /* 埋め込み(ポータル)では縦長ペインでも「よこ画面推奨」を出さずマップを描画する */
 body.embedded #rotate-note{display:none!important;}

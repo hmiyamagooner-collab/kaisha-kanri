@@ -18,20 +18,22 @@
 <style>
 
 :root{
-  --bg:#0A0D14;          /* 闇紺 */
-  --panel:#141A26;       /* 甲板 */
-  --panel2:#1B2333;
+  --bg:#080A12;
+  --panel:#121826;
+  --panel2:#1A2234;
   --line:#2A3550;
-  --gold:#E8B84B;        /* 金 */
+  --gold:#E8B84B;
   --gold-hi:#FFDD87;
-  --in:#3DDC97;          /* 入金翠 */
-  --out:#FF5D73;         /* 出金緋 */
-  --tax:#9D7BFF;         /* 税紫 */
+  --in:#3DDC97;
+  --out:#FF5D73;
+  --tax:#9D7BFF;
   --text:#E9EDF5;
-  --muted:#8A93A6;
+  --muted:#7E8799;
   --font-hud:'DotGothic16',monospace;
   --font-body:'Zen Kaku Gothic New',sans-serif;
   --font-num:'Share Tech Mono',monospace;
+  --radius:12px;
+  --shadow:0 4px 20px rgba(0,0,0,.25);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 
@@ -93,26 +95,41 @@ input,select,textarea{font-family:inherit}
 .screen.on{display:block;animation:screenIn .35s ease}
 @keyframes screenIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
-h2.stitle{font-family:var(--font-hud);font-size:19px;color:var(--gold);letter-spacing:2px;margin-bottom:4px;text-shadow:0 0 10px rgba(232,184,75,.35)}
-p.sdesc{color:var(--muted);font-size:13px;margin-bottom:18px}
+h2.stitle{
+  font-family:var(--font-hud);font-size:18px;color:var(--gold-hi);
+  letter-spacing:2px;margin-bottom:6px;
+  display:flex;align-items:center;gap:10px;
+}
+h2.stitle::after{
+  content:"";flex:1;height:1px;
+  background:linear-gradient(90deg,rgba(232,184,75,.35),transparent);
+  max-width:120px;
+}
+p.sdesc{color:var(--muted);font-size:13px;margin-bottom:20px;line-height:1.65;max-width:72ch}
 
 /* ===== カード共通 ===== */
 .card{
-  background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;
-  position:relative;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:16px 18px;position:relative;
+  box-shadow:var(--shadow);
 }
 .card::before{
-  content:"";position:absolute;inset:0;border-radius:14px;pointer-events:none;
-  border:1px solid transparent;
-  background:linear-gradient(135deg,rgba(232,184,75,.25),transparent 40%) border-box;
+  content:"";position:absolute;inset:0;border-radius:var(--radius);pointer-events:none;
+  background:linear-gradient(135deg,rgba(232,184,75,.12),transparent 45%);
   -webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);
   -webkit-mask-composite:xor;mask-composite:exclude;
+  border:1px solid transparent;
 }
 
 /* ===== ダッシュボード ===== */
-.grid-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:16px}
-.stat .label{font-size:12px;color:var(--muted);letter-spacing:1px}
-.stat .val{font-family:var(--font-num);font-size:27px;margin-top:4px}
+.grid-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px}
+.stat{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:14px 16px;transition:border-color .2s,box-shadow .2s;
+}
+.stat:hover{border-color:rgba(232,184,75,.3);box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.stat .label{font-size:11px;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase}
+.stat .val{font-family:var(--font-num);font-size:26px;margin-top:6px;line-height:1.1}
 .stat.in .val{color:var(--in);text-shadow:0 0 10px rgba(61,220,151,.4)}
 .stat.out .val{color:var(--out);text-shadow:0 0 10px rgba(255,93,115,.4)}
 .stat.net .val{color:var(--gold-hi);text-shadow:0 0 10px rgba(232,184,75,.4)}
@@ -144,9 +161,11 @@ p.sdesc{color:var(--muted);font-size:13px;margin-bottom:18px}
 
 .recent-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
 .tx-row{
-  display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;
+  display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;
   background:var(--panel2);border:1px solid var(--line);font-size:13px;
+  transition:border-color .15s,background .15s;
 }
+.tx-row:hover{border-color:rgba(232,184,75,.25);background:rgba(26,34,52,.9)}
 .tx-row .amt{margin-left:auto;font-family:var(--font-num);font-size:15px}
 .tx-row.in .amt{color:var(--in)}
 .tx-row.out .amt{color:var(--out)}
@@ -202,7 +221,7 @@ p.sdesc{color:var(--muted);font-size:13px;margin-bottom:18px}
 /* ===== 精算クエストボード ===== */
 .quest-board{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 @media(max-width:860px){.quest-board{grid-template-columns:1fr}}
-.lane{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;min-height:220px}
+.lane{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px;min-height:220px}
 .lane h3{font-family:var(--font-hud);font-size:14px;letter-spacing:2px;padding-bottom:8px;margin-bottom:10px;border-bottom:1px dashed var(--line);display:flex;justify-content:space-between}
 .lane h3 .cnt{color:var(--muted)}
 .lane.l-pending h3{color:var(--out)}
@@ -256,10 +275,11 @@ p.sdesc{color:var(--muted);font-size:13px;margin-bottom:18px}
 .csv-btn:hover{background:rgba(232,184,75,.1)}
 table.ledger{width:100%;border-collapse:collapse;font-size:13px}
 table.ledger th{
-  text-align:left;color:var(--muted);font-weight:500;font-size:11px;letter-spacing:1px;
-  padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap;
+  text-align:left;color:var(--muted);font-weight:500;font-size:10px;letter-spacing:1.5px;
+  padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap;
+  background:var(--panel);position:sticky;top:0;z-index:2;
 }
-table.ledger td{padding:9px 10px;border-bottom:1px solid rgba(42,53,80,.5);white-space:nowrap}
+table.ledger td{padding:10px 12px;border-bottom:1px solid rgba(42,53,80,.45);white-space:nowrap}
 table.ledger td.num{font-family:var(--font-num)}
 table.ledger tr:hover td{background:rgba(232,184,75,.04)}
 .tag{font-size:11px;padding:2px 8px;border-radius:6px;border:1px solid var(--line);color:var(--muted)}
@@ -280,8 +300,9 @@ table.ledger tr:hover td{background:rgba(232,184,75,.04)}
 
 /* ===== CF 印籠 ===== */
 .cf-note-banner{
-  font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:14px;
-  padding:10px 12px;border:1px dashed rgba(232,184,75,.35);border-radius:10px;background:rgba(232,184,75,.05);
+  font-size:11px;color:var(--muted);line-height:1.65;margin-bottom:16px;
+  padding:10px 14px;border-left:3px solid rgba(232,184,75,.5);
+  border-radius:0 8px 8px 0;background:rgba(232,184,75,.04);
 }
 .cf-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:900px){.cf-grid-2{grid-template-columns:1fr}}
@@ -452,11 +473,16 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 @media(max-width:760px){
   .gamenav{
     position:fixed;bottom:0;left:0;right:0;width:auto;z-index:60;
-    flex-direction:row;justify-content:space-around;padding:6px 4px calc(6px + env(safe-area-inset-bottom));
-    background:rgba(10,13,20,.95);border-top:1px solid var(--gold);border-right:none;
+    flex-direction:row;justify-content:flex-start;overflow-x:auto;
+    padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+    background:rgba(8,10,18,.97);border-top:1px solid rgba(232,184,75,.35);border-right:none;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;
   }
-  .gamenav button{flex-direction:column;gap:2px;padding:6px 4px;font-size:10px;align-items:center;width:auto}
-  .gamenav button.on{box-shadow:none;border-color:transparent;background:transparent}
+  .gamenav::-webkit-scrollbar{display:none}
+  .gamenav .nav-group{display:none}
+  .gamenav button{flex-direction:column;gap:2px;padding:6px 8px;font-size:9px;align-items:center;width:auto;min-width:52px;flex-shrink:0}
+  .gamenav button .nico{font-size:13px;width:auto}
+  .gamenav button.on{box-shadow:inset 0 -2px 0 var(--gold);border-color:transparent;background:rgba(232,184,75,.08)}
   .main{padding:16px 14px 110px}
   .hud-xp{order:3;flex-basis:100%}
 }
@@ -469,68 +495,150 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 <style>
 /* ===== 統合ポータル：上段クエスト2列＋下段ダッシュボード ===== */
 #portal-bar{
-  position:sticky;top:0;z-index:300;display:flex;gap:10px;align-items:center;
-  padding:8px 14px;background:#05040a;border-bottom:2px solid #c9a227;
-  box-shadow:0 0 20px rgba(201,162,39,.25);
+  position:sticky;top:0;z-index:300;display:flex;gap:12px;align-items:center;
+  padding:10px 18px;
+  background:linear-gradient(180deg,#0c0b12 0%,#08070d 100%);
+  border-bottom:1px solid rgba(201,162,39,.35);
+  box-shadow:0 4px 24px rgba(0,0,0,.45);
 }
 #portal-bar .pt-logo{
-  font-family:'DotGothic16',monospace;font-size:14px;color:#e7cd84;letter-spacing:2px;
+  font-family:var(--font-hud);font-size:15px;color:var(--gold-hi);letter-spacing:3px;
+  display:flex;align-items:center;gap:10px;
 }
-#portal-bar .pt-hint{margin-left:auto;font-size:11px;color:#8A93A6;font-family:'DotGothic16',monospace;}
-#portal-shell{display:flex;flex-direction:column;min-height:100vh;background:#08070d;}
-/* 上段＝Dashboard(左70%)＋オフィス(右30%)を同じ自然な高さで横並び（オフィス枠≒正方形でマップが収まる）／下段＝入出金(全幅・大) */
+#portal-bar .pt-logo::before{
+  content:"";width:8px;height:8px;border-radius:50%;
+  background:var(--in);box-shadow:0 0 10px var(--in);
+}
+#portal-bar .pt-hint{
+  margin-left:auto;font-size:11px;color:var(--muted);
+  font-family:var(--font-body);letter-spacing:.02em;
+  display:flex;gap:14px;flex-wrap:wrap;
+}
+#portal-bar .pt-hint b{color:var(--gold-hi);font-weight:500}
+#portal-shell{
+  display:flex;flex-direction:column;min-height:100vh;
+  background:#06050a;
+  background-image:radial-gradient(ellipse 120% 60% at 50% -20%,rgba(232,184,75,.04),transparent);
+}
 #quests-row{
   display:grid;
   grid-template-columns:minmax(0,7fr) minmax(0,3fr);
   grid-template-areas:"dashboard office" "treasury office";
-  grid-template-rows:min(40vh,420px) minmax(52vh,640px);
-  gap:2px;flex:1;min-height:0;
-  background:#c9a227;/* 2pxの隙間を金の仕切り線に見せる */
+  grid-template-rows:min(38vh,400px) minmax(54vh,680px);
+  gap:1px;flex:1;min-height:0;
+  background:rgba(201,162,39,.22);
 }
 .quest-pane{
   min-width:0;min-height:0;display:flex;flex-direction:column;
   position:relative;background:#0a0e2a;overflow:hidden;
 }
 .pane-cap{
-  flex-shrink:0;z-index:5;
-  font-family:'DotGothic16',monospace;font-size:12px;color:#e7cd84;letter-spacing:1px;
-  background:rgba(5,4,10,.85);border-bottom:1px solid rgba(201,162,39,.45);
-  padding:6px 12px;
+  flex-shrink:0;z-index:5;display:flex;align-items:center;gap:8px;
+  font-family:var(--font-hud);font-size:11px;color:var(--gold-hi);letter-spacing:2px;
+  background:linear-gradient(90deg,rgba(5,4,10,.95),rgba(10,13,20,.85));
+  border-bottom:1px solid rgba(201,162,39,.28);
+  padding:7px 14px;
 }
-#office-pane{ grid-area:office;background:#070a1c; }
+.pane-cap::after{
+  content:"";margin-left:auto;width:6px;height:6px;border-radius:50%;
+  background:rgba(201,162,39,.35);
+}
+#dashboard-pane .pane-cap::before{content:"■";color:var(--tax);font-size:10px}
+#office-pane .pane-cap::before{content:"◆";color:var(--in);font-size:10px}
+#treasury-pane .pane-cap::before{content:"▼";color:var(--gold);font-size:10px}
+#treasury-pane .pane-cap::after{background:var(--gold);box-shadow:0 0 8px rgba(232,184,75,.5)}
+#office-pane{grid-area:office;background:#070a1c;}
 #office-pane iframe{flex:1;width:100%;min-height:0;border:none;display:block;background:#0a0e2a;}
-#treasury-pane{ grid-area:treasury;background:var(--bg); }
+#treasury-pane{grid-area:treasury;background:var(--bg);}
 #app-treasury{
-  display:flex !important;flex-direction:column;flex:1;min-height:0;overflow:auto;
-  height:auto;
+  display:flex!important;flex-direction:column;flex:1;min-height:0;overflow:auto;height:auto;
 }
 #app-treasury .layout{min-height:0;flex:1;}
-#app-treasury .hud{position:sticky;top:0;flex-shrink:0;}
-#app-treasury .gamenav{width:150px;padding:10px 6px;}
-#app-treasury .main{padding:12px 14px 40px;max-width:none;overflow:auto;}
-/* 上段左：Company Dashboard（3名・スクロールしないコンパクト版） */
-#dashboard-pane{
-  grid-area:dashboard;
-  background:#0a0e2a;
+#app-treasury .hud{
+  position:sticky;top:0;flex-shrink:0;
+  padding:8px 14px;gap:10px;
+  background:rgba(8,10,16,.96);
+  border-bottom:1px solid rgba(232,184,75,.25);
+  box-shadow:0 2px 16px rgba(0,0,0,.3);
 }
+#app-treasury .hud-logo{font-size:17px}
+#app-treasury .gamenav{
+  width:168px;padding:12px 8px;gap:2px;
+  background:rgba(8,10,16,.6);
+  border-right:1px solid rgba(42,53,80,.8);
+  overflow-y:auto;
+}
+#app-treasury .gamenav .nav-group{
+  font-size:9px;color:var(--muted);letter-spacing:2px;
+  padding:10px 10px 4px;font-family:var(--font-hud);
+  opacity:.75;
+}
+#app-treasury .gamenav button{
+  padding:9px 10px;font-size:13px;border-radius:8px;
+}
+#app-treasury .main{padding:18px 20px 48px;max-width:none;overflow:auto;}
+#dashboard-pane{grid-area:dashboard;background:#0a0e2a;}
 #dashboard-pane #root{display:none!important;}
-/* コンパクト・ダッシュボード（ペインにピタッと収まる／スクロール無し）。装飾は最小＝後日リデザイン前提 */
-.dash-compact{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:8px;gap:8px;}
-.dc-cards{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.dash-compact{
+  flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;
+  padding:10px 12px 12px;gap:10px;
+  background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(157,123,255,.06),transparent);
+}
+.dc-cards{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
 .dc-card{
   min-height:0;display:flex;flex-direction:column;overflow:hidden;
-  background:#111a3a;border:1px solid var(--line);border-radius:10px;
+  background:linear-gradient(180deg,#141c38 0%,#0e1528 100%);
+  border:1px solid rgba(42,53,80,.9);border-radius:12px;
+  transition:border-color .2s,transform .2s,box-shadow .2s;
+  cursor:default;
 }
-.dc-photo{flex:1;min-height:0;overflow:hidden;background:#0a0e2a;}
-.dc-photo img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block;}
-.dc-name{flex-shrink:0;font-family:'DotGothic16',monospace;font-size:13px;color:#e7cd84;text-align:center;padding:5px 4px 0;letter-spacing:1px;}
-.dc-role{flex-shrink:0;font-size:10px;color:#8fa3d9;text-align:center;padding:1px 4px 6px;line-height:1.3;}
-.dc-round{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:7px 12px;border:1px dashed var(--gold);border-radius:10px;background:rgba(232,184,75,.05);}
-.dc-round-ic{font-size:20px;color:var(--gold-hi);line-height:1;}
-.dc-round-t{font-family:'DotGothic16',monospace;font-size:12px;color:#e7cd84;letter-spacing:1px;}
-.dc-round-s{font-size:10px;color:#8fa3d9;line-height:1.4;}
-.dc-round{cursor:pointer;transition:.15s}
-.dc-round:hover{border-color:var(--gold-hi);background:rgba(232,184,75,.1)}
+.dc-card:hover{
+  border-color:rgba(232,184,75,.45);
+  transform:translateY(-2px);
+  box-shadow:0 8px 24px rgba(0,0,0,.35);
+}
+.dc-card[data-dept="secretary"]:hover{border-color:rgba(91,108,255,.5)}
+.dc-card[data-dept="finance"]:hover{border-color:rgba(61,220,151,.5)}
+.dc-card[data-dept="legal"]:hover{border-color:rgba(157,123,255,.5)}
+.dc-photo{flex:1;min-height:0;overflow:hidden;background:#080c18;position:relative}
+.dc-card[data-dept="secretary"] .dc-photo{background:linear-gradient(160deg,#1a2048,#0e1228)}
+.dc-card[data-dept="finance"] .dc-photo{background:linear-gradient(160deg,#0e2a22,#081418)}
+.dc-card[data-dept="legal"] .dc-photo{background:linear-gradient(160deg,#221a38,#100e20)}
+.dc-photo img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
+.dc-photo img[data-fallback="1"]{opacity:0}
+.dc-photo::before{
+  content:attr(data-initial);position:absolute;inset:0;z-index:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-hud);font-size:40px;color:rgba(255,255,255,.15);
+  pointer-events:none;
+}
+.dc-photo::after{
+  content:"";position:absolute;inset:0;z-index:1;
+  background:linear-gradient(180deg,transparent 50%,rgba(8,12,24,.9));
+  pointer-events:none;
+}
+.dc-name{
+  flex-shrink:0;font-family:var(--font-hud);font-size:13px;color:var(--gold-hi);
+  text-align:center;padding:6px 4px 0;letter-spacing:2px;
+}
+.dc-role{
+  flex-shrink:0;font-size:10px;color:var(--muted);text-align:center;
+  padding:2px 6px 8px;line-height:1.35;
+}
+.dc-round{
+  flex-shrink:0;display:flex;align-items:center;gap:12px;
+  padding:10px 14px;border:1px solid rgba(232,184,75,.35);border-radius:12px;
+  background:linear-gradient(90deg,rgba(232,184,75,.08),rgba(232,184,75,.02));
+  cursor:pointer;transition:.15s;
+}
+.dc-round:hover{
+  border-color:var(--gold-hi);
+  background:linear-gradient(90deg,rgba(232,184,75,.14),rgba(232,184,75,.04));
+  box-shadow:0 0 20px rgba(232,184,75,.12);
+}
+.dc-round-ic{font-size:22px;color:var(--gold-hi);line-height:1;flex-shrink:0}
+.dc-round-t{font-family:var(--font-hud);font-size:12px;color:var(--gold-hi);letter-spacing:1px}
+.dc-round-s{font-size:10px;color:var(--muted);line-height:1.45;margin-top:2px}
 /* ===== 円卓会議ターミナル（Claude） ===== */
 .entaku-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(3,5,10,.72);backdrop-filter:blur(3px);padding:16px}
 .entaku-modal.hidden{display:none}
@@ -582,16 +690,46 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 <div id="portal-shell">
 <div id="portal-bar">
   <span class="pt-logo">GOONER PORTAL</span>
-  <span class="pt-hint">上段左：Dashboard　／　上段右：オフィス　／　下段：入出金クエスト（本丸）</span>
+  <span class="pt-hint"><b>Dashboard</b> 上段左　<b>オフィス</b> 上段右　<b>入出金</b> 下段（本丸）</span>
 </div>
 
 <div id="quests-row">
+  <section class="quest-pane" id="dashboard-pane">
+    <div class="pane-cap">Company Dashboard</div>
+    <div class="dash-compact" id="dashCompact">
+      <div class="dc-cards">
+        <div class="dc-card" data-dept="secretary">
+          <div class="dc-photo" data-initial="凛"><img src="dash-secretary.png" alt="凛" onerror="this.dataset.fallback='1'"></div>
+          <div class="dc-name">凛</div>
+          <div class="dc-role">ヒロ社長秘書</div>
+        </div>
+        <div class="dc-card" data-dept="finance">
+          <div class="dc-photo" data-initial="紬"><img src="dash-finance.png" alt="紬" onerror="this.dataset.fallback='1'"></div>
+          <div class="dc-name">紬</div>
+          <div class="dc-role">経理部長</div>
+        </div>
+        <div class="dc-card" data-dept="legal">
+          <div class="dc-photo" data-initial="陽"><img src="dash-legal.png" alt="陽翔" onerror="this.dataset.fallback='1'"></div>
+          <div class="dc-name">陽翔</div>
+          <div class="dc-role">法務部長</div>
+        </div>
+      </div>
+      <div class="dc-round" id="dcRound" role="button" tabindex="0" onclick="openEntaku()" title="クリックで円卓会議ターミナル（Claude）を開く">
+        <span class="dc-round-ic">⌨</span>
+        <div class="dc-round-body">
+          <div class="dc-round-t">円卓会議ターミナル</div>
+          <div class="dc-round-s">情報を投げるとClaudeが経理／法務へ振り分け・CF管理を案内</div>
+        </div>
+      </div>
+    </div>
+    <div id="root" hidden></div>
+  </section>
   <section class="quest-pane" id="office-pane">
-    <div class="pane-cap">◆ オフィスクエスト</div>
+    <div class="pane-cap">オフィスクエスト</div>
     <iframe src="office.html" title="オフィスクエスト マップ"></iframe>
   </section>
   <section class="quest-pane" id="treasury-pane">
-    <div class="pane-cap">▼ 入出金クエスト（本丸）</div>
+    <div class="pane-cap">入出金クエスト（本丸）</div>
     <div id="app-treasury">
 
 
@@ -619,6 +757,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 <div class="layout">
 <!-- ===== ゲームメニュー ===== -->
 <nav class="gamenav" aria-label="メインメニュー">
+  <div class="nav-group">本丸・印籠</div>
   <button data-s="dash" class="on"><span class="nico">◆</span>金庫室</button>
   <button data-s="cf-bank"><span class="nico">口座</span>口座・CSV</button>
   <button data-s="cf-cases"><span class="nico">案</span>案件ボード</button>
@@ -628,8 +767,10 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   <button data-s="cf-party"><span class="nico">貸</span>関連者貸借</button>
   <button data-s="cf-forecast"><span class="nico">予</span>CF予測</button>
   <button data-s="cf-inrou"><span class="nico">籠</span>印籠レポート</button>
+  <div class="nav-group">記録・精算</div>
   <button data-s="entry"><span class="nico">＋</span>記録する</button>
   <button data-s="quest"><span class="nico">⚔</span>精算クエスト</button>
+  <div class="nav-group">分析・台帳</div>
   <button data-s="flow"><span class="nico">≋</span>商流マップ</button>
   <button data-s="ledger"><span class="nico">▤</span>台帳</button>
   <button data-s="tax"><span class="nico">Ⓣ</span>納税タンク</button>
@@ -946,38 +1087,6 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 
 
 </div><!-- /#app-treasury -->
-  </section>
-  <!-- 上段左：Company Dashboard（3名・スクロールしないコンパクト版。デザインは後日チャッピーがリデザイン予定） -->
-  <section class="quest-pane" id="dashboard-pane">
-    <div class="pane-cap">■ Company Dashboard</div>
-    <div class="dash-compact" id="dashCompact">
-      <div class="dc-cards">
-        <div class="dc-card" data-dept="secretary">
-          <div class="dc-photo"><img src="dash-secretary.png" alt="凛"></div>
-          <div class="dc-name">凛</div>
-          <div class="dc-role">秘書室・窓口／相談役</div>
-        </div>
-        <div class="dc-card" data-dept="finance">
-          <div class="dc-photo"><img src="dash-finance.png" alt="紬"></div>
-          <div class="dc-name">紬</div>
-          <div class="dc-role">経理部・請求／経費／入金</div>
-        </div>
-        <div class="dc-card" data-dept="legal">
-          <div class="dc-photo"><img src="dash-legal.png" alt="法務"></div>
-          <div class="dc-name">法務</div>
-          <div class="dc-role">契約・規約・コンプラ</div>
-        </div>
-      </div>
-      <div class="dc-round" id="dcRound" role="button" tabindex="0" onclick="openEntaku()" title="クリックで円卓会議ターミナル（Claude）を開く">
-        <span class="dc-round-ic">⌨</span>
-        <div class="dc-round-body">
-          <div class="dc-round-t">円卓会議ターミナル</div>
-          <div class="dc-round-s">情報を投げるとClaudeが経理／法務へ振り分け・CF管理を案内</div>
-        </div>
-      </div>
-    </div>
-    <!-- 旧Reactダッシュボードは非表示で保持（後日のリデザイン素材用） -->
-    <div id="root" hidden></div>
   </section>
 </div><!-- /#quests-row -->
 
