@@ -757,10 +757,15 @@ function drawTile(g,tx,ty){
     default:px(g,x,y,TW,TW,'#c8a165');px(g,x,y+TW-1,TW,1,'#a5824c');px(g,x+7,y,1,TW,'#bb945a');break;
   }
   switch(t){
-    case T.WALL:
-      px(g,x,y,TW,TW,'#4a5578');px(g,x,y,TW,2,'#5f6b94');
-      px(g,x,y+7,TW,1,'#333c58');px(g,x+7,y,1,7,'#333c58');px(g,x+3,y+8,1,8,'#333c58');px(g,x+11,y+8,1,8,'#333c58');
-      break;
+    case T.WALL:{
+      // 壁の色でエリアを区別：会社(青)／介護施設(緑)／取引先(茶)／外(灰)
+      let wc='#4a5578',wt='#5f6b94',wd='#333c58';
+      if(tx<=18&&ty<=12){wc='#3b4a74';wt='#5566a0';wd='#2a3352';}            // 会社（本社ビル）
+      else if(tx<=9&&ty>=13&&ty<=21){wc='#5b7a52';wt='#77996b';wd='#41563a';} // 介護施設（デイサービス）
+      else if(tx>=10&&tx<=18&&ty>=13&&ty<=21){wc='#6a5230';wt='#8a6d43';wd='#4a3820';} // 取引先
+      px(g,x,y,TW,TW,wc);px(g,x,y,TW,2,wt);
+      px(g,x,y+7,TW,1,wd);px(g,x+7,y,1,7,wd);px(g,x+3,y+8,1,8,wd);px(g,x+11,y+8,1,8,wd);
+      break;}
     case T.ROAD:{
       px(g,x,y,TW,TW,'#3a3f4a');
       px(g,x+3,y+5,2,2,'#454b58');px(g,x+11,y+12,2,2,'#454b58');
