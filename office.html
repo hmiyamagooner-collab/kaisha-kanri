@@ -648,7 +648,8 @@ function updateChar(c,dt){
 }
 
 /* ================= 送迎（2部制・車） ================= */
-const CAR={homeX:8*TW,homeY:23*TW,x:8*TW,y:23*TW,dir:-1};
+/* 送迎車はデイと取引先の間の通路(col 9: SIDE→ROAD)を通す。col 8 だとデイサービスを貫通するため 9 に。 */
+const CAR={homeX:9*TW,homeY:23*TW,x:9*TW,y:23*TW,dir:-1};
 const ROAD_Y=12.5*TW; /* 本社と下部のあいだの道路 */
 let escort=null;
 function startEscort(){

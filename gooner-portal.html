@@ -478,12 +478,12 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 #portal-bar .pt-hint{margin-left:auto;font-size:11px;color:#8A93A6;font-family:'DotGothic16',monospace;}
 #portal-shell{display:flex;flex-direction:column;min-height:100vh;background:#08070d;}
-/* 左列＝Dashboard(上・小)＋入出金(下・大)で70%／右列＝オフィス(縦ぶち抜き・約5倍高)で30% */
+/* 上段＝Dashboard(左70%)＋オフィス(右30%)を同じ自然な高さで横並び（オフィス枠≒正方形でマップが収まる）／下段＝入出金(全幅・大) */
 #quests-row{
   display:grid;
   grid-template-columns:minmax(0,7fr) minmax(0,3fr);
-  grid-template-areas:"dashboard office" "treasury office";
-  grid-template-rows:min(27vh,300px) minmax(70vh,1200px);
+  grid-template-areas:"dashboard office" "treasury treasury";
+  grid-template-rows:min(44vh,460px) minmax(56vh,780px);
   gap:2px;flex:1;min-height:0;
   background:#c9a227;/* 2pxの隙間を金の仕切り線に見せる */
 }
