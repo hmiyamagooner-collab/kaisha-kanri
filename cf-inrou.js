@@ -192,6 +192,31 @@
     return Math.round((done / sched.length) * 100);
   }
 
+  /* ---------- 承認ワークフロー（案件） ---------- */
+  // 社員が申請 → 承認者が承認/差戻し。誰がいつを auditLog に刻み、印籠の証拠にする。
+  const AP_JA = { pending: "申請中", approved: "承認済", rejected: "差戻し" };
+  function apStatusOf(c) {
+    return c && c.apStatus ? c.apStatus : "pending";
+  }
+  function setCaseApproval(caseId, status) {
+    const S = T().S;
+    const c = S.cases.find((x) => x.id === caseId);
+    if (!c) return;
+    if ((status === "approved" || status === "rejected") && T().role !== "boss") {
+      T().toast("承認・差戻しは「承認者」モードで行えます");
+      return;
+    }
+    c.apStatus = status;
+    c.apBy = T().role === "boss" ? "承認者" : "社員";
+    c.apAt = new Date().toISOString();
+    const label = status === "approved" ? "承認" : status === "rejected" ? "差戻し" : "承認申請";
+    audit("case_" + status, `${label}: ${c.title}`, { caseId });
+    T().saveAll();
+    T().toast(`${label}しました`);
+    openCaseFlow(caseId);
+    renderCases();
+  }
+
   /* ---------- screens ---------- */
   function renderAccounts() {
     const S = T().S;
@@ -301,7 +326,7 @@
           const rate = matchRate(c);
           const flag = act.count === 0 ? "未突合" : rate != null && rate < 100 ? "突合途中" : "紐づけあり";
           return `<button type="button" class="cf-card cf-case" data-case="${c.id}">
-          <div class="cf-card-h"><b>${T().esc(c.title)}</b><span class="tag">${CASE_TYPES[c.type] || c.type}</span></div>
+          <div class="cf-card-h"><b>${T().esc(c.title)}</b><span class="cf-card-tags"><span class="tag">${CASE_TYPES[c.type] || c.type}</span><span class="ap-badge ap-${apStatusOf(c)}">${AP_JA[apStatusOf(c)]}</span></span></div>
           <div class="cf-meta">契約 ${T().esc(c.contractDate || "—")} ／ 相手 ${T().esc(c.counterparty || partyName(c.partyId))}</div>
           <div class="cf-meta">契約額 ${T().yen(c.amount || 0)} ／ 実績入 ${T().yen(act.inSum)} 出 ${T().yen(act.outSum)}</div>
           <div class="cf-flag ${flag === "未突合" ? "bad" : flag === "突合途中" ? "warn" : "ok"}">${flag}${rate != null ? " ・予定消化 " + rate + "%" : ""}</div>
@@ -397,7 +422,8 @@
       marks.push({ d: t.date, cls: "actual" + (bad ? " bad" : ""), lb: (t.amount >= 0 ? "+" : "−") + T().yen(Math.abs(t.amount)) });
     });
     const dirLabel = inflowSide ? "入金" : "出金";
-    const badVerdict = Math.abs(gap) > 1 || unplannedTxs.length > 0;
+    const apSt = apStatusOf(c);
+    const badVerdict = Math.abs(gap) > 1 || unplannedTxs.length > 0 || apSt !== "approved";
     const iso = (ms) => new Date(ms).toISOString().slice(0, 10);
     const vizHtml = `
       <div class="cf-viz">
@@ -419,6 +445,7 @@
           <div class="cf-strip-lbls"><span>${times.length ? iso(minT) : "—"}</span><span>${times.length ? iso(minT + spanT) : "—"}</span></div>
         </div>
         <div class="cf-verdict ${badVerdict ? "bad" : "ok"}">
+          <div class="cf-vd"><span class="k">承認</span><span class="v ${apSt === "approved" ? "in" : "warn"}">${AP_JA[apSt]}</span></div>
           <div class="cf-vd"><span class="k">契約額</span><span class="v">${T().yen(contractAmt)}</span></div>
           <div class="cf-vd"><span class="k">実績（${dirLabel}）</span><span class="v ${inflowSide ? "in" : "out"}">${T().yen(relevantActual)}</span></div>
           <div class="cf-vd"><span class="k">契約との差額</span><span class="v ${Math.abs(gap) > 1 ? "out" : ""}">${T().yen(Math.abs(gap))}</span></div>
@@ -433,11 +460,27 @@
         </div>
       </div>`;
 
+    /* ---- 承認バッジ＆操作ボタン（役割で出し分け） ---- */
+    const apBadge =
+      `<span class="ap-badge ap-${apSt}">${AP_JA[apSt]}</span>` +
+      (c.apAt ? `<span class="ap-by">${iso(Date.parse(c.apAt))} ${T().esc(c.apBy || "")}</span>` : "");
+    let apBtns = "";
+    if (apSt === "pending" && T().role === "boss")
+      apBtns = `<button type="button" class="csv-btn" data-ap="approved">承認する</button><button type="button" class="csv-btn ghost" data-ap="rejected">差戻し</button>`;
+    else if (apSt === "pending")
+      apBtns = `<span class="cf-meta">承認者の承認待ちです</span>`;
+    else if (apSt === "approved" && T().role === "boss")
+      apBtns = `<button type="button" class="csv-btn ghost" data-ap="rejected">承認を取消</button>`;
+    else if (apSt === "rejected")
+      apBtns = `<button type="button" class="csv-btn" data-ap="pending">再申請する</button>`;
+
     panel.innerHTML = `
       <div class="cf-flow-head">
         <h3>${T().esc(c.title)}</h3>
         <span class="tag">${CASE_TYPES[c.type]}</span>
+        ${apBadge}
         <button type="button" class="csv-btn" id="cfFlowInrou">この案件の印籠を開く</button>
+        <span class="cf-ap-actions">${apBtns}</span>
       </div>
       <p class="sdesc" style="margin-bottom:12px">契約・予定・実績の三点を並べます。差があれば赤で示します（社内牽制用・AML届出そのものではありません）。</p>
       ${vizHtml}
@@ -489,6 +532,9 @@
         renderInrou();
       };
     }
+    panel.querySelectorAll("[data-ap]").forEach((b) => {
+      b.onclick = () => setCaseApproval(c.id, b.dataset.ap);
+    });
   }
 
   function buildTimeline(c, sched, txs) {
@@ -610,6 +656,7 @@
           <tr><td>契約額</td><td>${T().yen(c.amount || 0)}</td></tr>
           <tr><td>利率</td><td>${c.rate != null ? c.rate + "%" : "—"}</td></tr>
           <tr><td>メモ</td><td>${T().esc(c.contractNote || "")}</td></tr>
+          <tr><td>承認状態</td><td><b class="${apStatusOf(c) === "approved" ? "" : "cf-warn"}">${AP_JA[apStatusOf(c)]}</b>${c.apAt ? `（${T().esc(c.apBy || "")} ／ ${c.apAt.slice(0, 10)}）` : "（未承認）"}</td></tr>
         </tbody></table>
         <h3>予定</h3>
         <table class="ledger"><thead><tr><th>日付</th><th>区分</th><th>金額</th><th>実績紐づけ</th></tr></thead>
@@ -860,9 +907,10 @@
       rate: document.getElementById("cfCaseRate").value === "" ? null : +document.getElementById("cfCaseRate").value,
       contractNote: document.getElementById("cfCaseNote").value.trim(),
       createdAt: today(),
+      apStatus: "pending", // 作成時は「申請中」。承認者が承認するまで印籠は未承認扱い
     };
     S.cases.push(c);
-    audit("case_add", `案件作成: ${title}`, { caseId: c.id });
+    audit("case_add", `案件作成（承認申請）: ${title}`, { caseId: c.id });
 
     // optional first schedule
     const schedDate = document.getElementById("cfCaseSchedDate").value;

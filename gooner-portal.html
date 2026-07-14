@@ -358,6 +358,17 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .cf-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:10px;color:var(--muted);margin-top:10px}
 .cf-legend span{display:inline-flex;align-items:center;gap:5px}
 .cf-legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
+/* ===== 承認ワークフロー（案件） ===== */
+.ap-badge{font-family:var(--font-hud);font-size:10px;letter-spacing:1px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
+.ap-badge.ap-approved{color:var(--in);border-color:rgba(61,220,151,.5);background:rgba(61,220,151,.08)}
+.ap-badge.ap-pending{color:var(--gold-hi);border-color:rgba(232,184,75,.5);background:rgba(232,184,75,.08)}
+.ap-badge.ap-rejected{color:var(--out);border-color:rgba(255,93,115,.5);background:rgba(255,93,115,.08)}
+.ap-by{font-size:10px;color:var(--muted);font-family:var(--font-num);margin-left:2px}
+.cf-card-tags{display:inline-flex;gap:6px;align-items:center}
+.cf-ap-actions{display:inline-flex;gap:8px;align-items:center;margin-left:auto}
+.csv-btn.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.csv-btn.ghost:hover{border-color:var(--out);color:var(--out)}
+.cf-warn{color:var(--out)}
 .cf-alert-box{border:1px solid rgba(255,93,115,.35);border-radius:12px;padding:12px;background:rgba(255,93,115,.06)}
 .inrou-sheet{
   background:#0e1420;border:2px solid var(--gold);border-radius:14px;padding:18px 20px;position:relative;
