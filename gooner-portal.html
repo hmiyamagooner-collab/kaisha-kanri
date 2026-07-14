@@ -35,12 +35,11 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 
-#app-treasury{min-height:100vh;
+#app-treasury{min-height:0;
   background:var(--bg);color:var(--text);font-family:var(--font-body);
   background-image:
     radial-gradient(ellipse 80% 50% at 50% -10%, rgba(232,184,75,.07), transparent),
     repeating-linear-gradient(0deg, transparent 0 3px, rgba(255,255,255,.008) 3px 4px);
-  min-height:100vh;
 }
 button{font-family:inherit;cursor:pointer}
 input,select,textarea{font-family:inherit}
@@ -71,7 +70,7 @@ input,select,textarea{font-family:inherit}
 .month-nav button{background:var(--panel2);border:1px solid var(--line);color:var(--gold);border-radius:6px;width:28px;height:28px;font-size:14px}
 
 /* ===== レイアウト ===== */
-.layout{display:flex;min-height:calc(100vh - 64px)}
+.layout{display:flex;min-height:0;height:100%;}
 .gamenav{
   width:190px;flex-shrink:0;padding:18px 10px;border-right:1px solid var(--line);
   display:flex;flex-direction:column;gap:6px;
@@ -279,6 +278,74 @@ table.ledger tr:hover td{background:rgba(232,184,75,.04)}
 .tax-total .v{font-family:var(--font-num);font-size:22px}
 .note{font-size:11px;color:var(--muted);margin-top:12px;line-height:1.7}
 
+/* ===== CF 印籠 ===== */
+.cf-note-banner{
+  font-size:11px;color:var(--muted);line-height:1.7;margin-bottom:14px;
+  padding:10px 12px;border:1px dashed rgba(232,184,75,.35);border-radius:10px;background:rgba(232,184,75,.05);
+}
+.cf-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:900px){.cf-grid-2{grid-template-columns:1fr}}
+.cf-card{
+  background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;text-align:left;
+  color:inherit;width:100%;font:inherit;cursor:default;
+}
+button.cf-case{cursor:pointer;transition:.15s}
+button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,75,.2)}
+.cf-card-h{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.cf-meta{font-size:11px;color:var(--muted);line-height:1.6}
+.cf-empty{color:var(--muted);padding:14px;font-size:13px}
+.cf-amt{font-family:var(--font-num);margin-top:6px}
+.cf-amt.in{color:var(--in)}.cf-amt.out{color:var(--out)}
+.cf-flag{margin-top:8px;font-size:11px;font-family:var(--font-hud)}
+.cf-flag.bad,.tag.bad,.cf-sched.bad,.cf-gap.bad,.cf-tl.bad{color:var(--out)}
+.cf-flag.warn,.cf-sched.warn{color:var(--gold-hi)}
+.cf-flag.ok,.cf-sched.ok,.cf-gap.ok{color:var(--in)}
+.cf-tx-row{
+  display:grid;grid-template-columns:22px 88px 100px 1fr auto;gap:8px;align-items:center;
+  padding:8px 10px;border-bottom:1px solid rgba(42,53,80,.5);font-size:12px;
+}
+.cf-tx-row.flag-need{background:rgba(255,93,115,.08)}
+.cf-tx-row .in{color:var(--in)}.cf-tx-row .out{color:var(--out)}
+.cf-tx-row .memo{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cf-pre{
+  background:#0a0d14;border:1px solid var(--line);border-radius:8px;padding:10px;
+  font-size:11px;overflow:auto;max-height:140px;color:var(--muted);
+}
+.cf-flow-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:900px){.cf-flow-grid{grid-template-columns:1fr}}
+.cf-flow-col{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:13px}
+.cf-col-t{font-family:var(--font-hud);color:var(--gold);margin-bottom:8px;letter-spacing:1px}
+.cf-sched{font-size:12px;padding:5px 0;border-bottom:1px dashed rgba(42,53,80,.5)}
+.cf-flow-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.cf-flow-head h3{font-family:var(--font-hud);color:var(--gold-hi);font-size:16px}
+.cf-gap{margin:14px 0;padding:10px;border-radius:10px;border:1px solid var(--line);font-family:var(--font-num)}
+.cf-timeline{margin-top:8px}
+.cf-tl{font-size:12px;padding:4px 0;border-left:2px solid var(--line);padding-left:10px;margin:4px 0}
+.cf-tl.contract{border-color:var(--gold)}
+.cf-tl.sched{border-color:var(--tax)}
+.cf-tl.actual{border-color:var(--in)}
+.cf-alert-box{border:1px solid rgba(255,93,115,.35);border-radius:12px;padding:12px;background:rgba(255,93,115,.06)}
+.inrou-sheet{
+  background:#0e1420;border:2px solid var(--gold);border-radius:14px;padding:18px 20px;position:relative;
+}
+.inrou-sheet h2{font-family:var(--font-hud);color:var(--gold);font-size:18px;margin:8px 0 6px}
+.inrou-sheet h3{font-family:var(--font-hud);color:var(--gold-hi);font-size:14px;margin:16px 0 8px}
+.inrou-seal{
+  position:absolute;right:18px;top:18px;width:64px;height:64px;border:3px solid var(--out);
+  border-radius:50%;color:var(--out);font-family:var(--font-hud);display:flex;align-items:center;justify-content:center;
+  transform:rotate(-12deg);opacity:.85;letter-spacing:2px;
+}
+@media print{
+  #portal-bar,#office-pane,#quests-row .pane-cap,#rotate-note,
+  .hud,.gamenav,#fxLayer,#toast,.csv-btn,button.save-btn,.ledger-tools{display:none!important}
+  #treasury-pane,#app-treasury,.layout,.main,#s-cf-inrou{display:block!important;width:100%!important;height:auto!important;overflow:visible!important}
+  .screen:not(#s-cf-inrou){display:none!important}
+  #s-cf-inrou{padding:0;display:block!important}
+  .inrou-sheet{border-color:#000;color:#000;background:#fff}
+  body{background:#fff}
+}
+
+
 /* ===== コイン演出・レベルアップ ===== */
 #fxLayer{position:fixed;inset:0;pointer-events:none;z-index:200;overflow:hidden}
 .coin{
@@ -321,33 +388,53 @@ table.ledger tr:hover td{background:rgba(232,184,75,.04)}
 
 </style>
 <style>
-/* ===== 統合ポータル タブバー ===== */
-#portal-tabs{
-  position:sticky;top:0;z-index:300;display:flex;gap:8px;align-items:center;
+/* ===== 統合ポータル：上段クエスト2列＋下段ダッシュボード ===== */
+#portal-bar{
+  position:sticky;top:0;z-index:300;display:flex;gap:10px;align-items:center;
   padding:8px 14px;background:#05040a;border-bottom:2px solid #c9a227;
   box-shadow:0 0 20px rgba(201,162,39,.25);
 }
-#portal-tabs .pt-logo{
-  font-family:'DotGothic16',monospace;font-size:14px;color:#e7cd84;letter-spacing:2px;margin-right:8px;
+#portal-bar .pt-logo{
+  font-family:'DotGothic16',monospace;font-size:14px;color:#e7cd84;letter-spacing:2px;
 }
-#portal-tabs button{
-  font-family:'DotGothic16',monospace;font-size:13px;letter-spacing:1px;
-  background:transparent;color:#8A93A6;border:1px solid #2A3550;border-radius:8px;
-  padding:8px 16px;cursor:pointer;transition:.15s;
+#portal-bar .pt-hint{margin-left:auto;font-size:11px;color:#8A93A6;font-family:'DotGothic16',monospace;}
+#portal-shell{display:flex;flex-direction:column;min-height:100vh;background:#08070d;}
+/* 上段＝オフィスマップ／下段＝入出金（旧ダッシュボード位置） */
+#quests-row{display:contents;}
+.quest-pane{
+  min-width:0;min-height:0;display:flex;flex-direction:column;
+  position:relative;background:#0a0e2a;overflow:hidden;
 }
-#portal-tabs button:hover{color:#fff;}
-#portal-tabs button.on{
-  background:linear-gradient(180deg,#e7cd84,#c9a227);color:#1d1500;border-color:#c9a227;
-  box-shadow:0 0 14px rgba(201,162,39,.4);
+.pane-cap{
+  flex-shrink:0;z-index:5;
+  font-family:'DotGothic16',monospace;font-size:12px;color:#e7cd84;letter-spacing:1px;
+  background:rgba(5,4,10,.85);border-bottom:1px solid rgba(201,162,39,.45);
+  padding:6px 12px;
 }
-#portal-tabs a.pt-quest{
-  margin-left:auto;font-family:'DotGothic16',monospace;font-size:12px;color:#8A93A6;
-  text-decoration:none;border:1px dashed #2A3550;border-radius:8px;padding:7px 12px;
+#office-pane{
+  order:1;background:#070a1c;
+  height:min(24vh,260px);min-height:160px;flex-shrink:0;
+  border-bottom:2px solid #c9a227;
 }
-#portal-tabs a.pt-quest:hover{color:#e7cd84;border-color:#c9a227;}
-#app-dashboard,#app-treasury{display:none;}
-#app-dashboard.on,#app-treasury.on{display:block;}
-@media(max-width:600px){#portal-tabs .pt-logo{display:none;}}
+#office-pane iframe{flex:1;width:100%;min-height:0;border:none;display:block;background:#0a0e2a;}
+#treasury-pane{
+  order:2;background:var(--bg);
+  flex:1;min-height:min(68vh,720px);
+}
+#app-treasury{
+  display:flex !important;flex-direction:column;flex:1;min-height:0;overflow:auto;
+  height:auto;
+}
+#app-treasury .layout{min-height:0;flex:1;}
+#app-treasury .hud{position:sticky;top:0;flex-shrink:0;}
+#app-treasury .gamenav{width:150px;padding:10px 6px;}
+#app-treasury .main{padding:12px 14px 40px;max-width:none;overflow:auto;}
+#dashboard-pane{display:none !important;}
+@media(max-width:980px){
+  #office-pane{height:28vh;}
+  #treasury-pane{min-height:60vh;}
+}
+@media(max-width:600px){#portal-bar .pt-hint{display:none;}}
 /* ===== スマホ対応（横画面前提） ===== */
 #rotate-note{
   display:none;position:fixed;inset:0;z-index:9999;background:#05040a;
@@ -358,46 +445,25 @@ table.ledger tr:hover td{background:rgba(232,184,75,.04)}
 @media(max-width:820px) and (orientation:portrait){
   #rotate-note{display:block;}
 }
-/* ===== オフィス管理タブ：マップ＋住人カードを1画面に ===== */
-#dash-split{display:flex;height:calc(100vh - 50px);min-height:480px;}
-#office-embed{flex:1 1 54%;min-width:0;border-right:2px solid #c9a227;background:#0a0e2a;position:relative;}
-#office-embed iframe{width:100%;height:100%;border:none;display:block;}
-#office-embed .oe-cap{
-  position:absolute;top:8px;left:10px;z-index:5;pointer-events:none;
-  font-family:'DotGothic16',monospace;font-size:11px;color:#e7cd84;
-  background:rgba(5,4,10,.7);border:1px solid #c9a227;border-radius:6px;padding:3px 8px;
-}
-#dash-cards{flex:1 1 46%;min-width:0;overflow-y:auto;}
-@media(max-width:980px){
-  #dash-split{flex-direction:column;height:auto;}
-  #office-embed{height:62vh;border-right:none;border-bottom:2px solid #c9a227;}
-  #dash-cards{overflow:visible;}
-}
 </style>
 </head>
 <body>
 
 <div id="rotate-note"><span class="ic">📱↻</span>スマホでは よこ画面で ごらんください</div>
-<div id="portal-tabs">
+<div id="portal-shell">
+<div id="portal-bar">
   <span class="pt-logo">GOONER PORTAL</span>
-  <button id="tab-dash" class="on">◆ オフィス管理</button>
-  <button id="tab-trea">▼ 入出金クエスト</button>
-  <a class="pt-quest" href="index.html" target="_blank">⌂ オフィスクエスト（マップ）</a>
+  <span class="pt-hint">上：オフィスクエスト　／　下：入出金クエスト（本丸）</span>
 </div>
 
-<div id="app-dashboard" class="on">
-<div id="dash-split">
-  <div id="office-embed">
-    <div class="oe-cap">オフィスマップ ─ いまの みんなの うごき</div>
-    <iframe src="index.html" title="オフィスクエスト マップ"></iframe>
-  </div>
-  <div id="dash-cards">
-    <div id="root"></div>
-  </div>
-</div>
-</div>
-
-<div id="app-treasury">
+<div id="quests-row">
+  <section class="quest-pane" id="office-pane">
+    <div class="pane-cap">◆ オフィスクエスト</div>
+    <iframe src="office.html" title="オフィスクエスト マップ"></iframe>
+  </section>
+  <section class="quest-pane" id="treasury-pane">
+    <div class="pane-cap">▼ 入出金クエスト（本丸）</div>
+    <div id="app-treasury">
 
 
 <!-- ===== HUD ===== -->
@@ -425,6 +491,13 @@ table.ledger tr:hover td{background:rgba(232,184,75,.04)}
 <!-- ===== ゲームメニュー ===== -->
 <nav class="gamenav" aria-label="メインメニュー">
   <button data-s="dash" class="on"><span class="nico">◆</span>金庫室</button>
+  <button data-s="cf-bank"><span class="nico">口座</span>口座・CSV</button>
+  <button data-s="cf-cases"><span class="nico">案</span>案件ボード</button>
+  <button data-s="cf-link"><span class="nico">⇔</span>明細突合</button>
+  <button data-s="cf-flow"><span class="nico">印</span>案件フロー</button>
+  <button data-s="cf-party"><span class="nico">貸</span>関連者貸借</button>
+  <button data-s="cf-forecast"><span class="nico">予</span>CF予測</button>
+  <button data-s="cf-inrou"><span class="nico">籠</span>印籠レポート</button>
   <button data-s="entry"><span class="nico">＋</span>記録する</button>
   <button data-s="quest"><span class="nico">⚔</span>精算クエスト</button>
   <button data-s="flow"><span class="nico">≋</span>商流マップ</button>
@@ -437,7 +510,8 @@ table.ledger tr:hover td{background:rgba(232,184,75,.04)}
 <!-- ===== 金庫室（ダッシュボード） ===== -->
 <section class="screen on" id="s-dash">
   <h2 class="stitle">◆ 金庫室</h2>
-  <p class="sdesc">今月のお金の出入りを一望。数字はすべて記録から自動計算されます。</p>
+  <p class="sdesc">今月のお金の出入りを一望。本丸は「口座CSV・案件・印籠」です。下のナビから証拠を積み上げてください。</p>
+  <div class="cf-note-banner">本システムは社内のキャッシュフロー可視化・牽制のためのものです。法令上のAML届出や銀行API連携そのものではありません。</div>
   <div class="grid-stats">
     <div class="card stat in"><div class="label">入金合計</div><div class="val" id="dIn">¥0</div><div class="sub" id="dInCnt"></div></div>
     <div class="card stat out"><div class="label">出金合計</div><div class="val" id="dOut">¥0</div><div class="sub" id="dOutCnt"></div></div>
@@ -461,6 +535,164 @@ table.ledger tr:hover td{background:rgba(232,184,75,.04)}
       </div>
     </div>
   </div>
+</section>
+
+<!-- ===== CF: 口座・CSV ===== -->
+<section class="screen" id="s-cf-bank">
+  <h2 class="stitle">口座・CSV取込</h2>
+  <p class="sdesc">銀行の入出金明細をCSVで取り込みます。取り込まれた行は削除できません（訂正は相殺行で）。</p>
+  <div class="cf-note-banner">推奨手順: ネットバンクからCSVダウンロード → 口座を選ぶ → 列マッピング確認 → 取込。重複行はハッシュで自動スキップ。</div>
+  <div class="cf-grid-2">
+    <div class="card">
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:10px">口座マスタ</div>
+      <div id="cfAccList"></div>
+      <div class="entry-grid" style="margin-top:12px">
+        <div class="fgroup"><label>口座名</label><input id="cfAccName" placeholder="例：みずほ 当座"></div>
+        <div class="fgroup"><label>銀行名</label><input id="cfAccBank" placeholder="例：みずほ銀行"></div>
+        <div class="fgroup"><label>区分</label>
+          <select id="cfAccOwner"><option value="company">自社</option><option value="personal">個人会社</option><option value="other">その他</option></select>
+        </div>
+        <div class="fgroup"><label>メモ</label><input id="cfAccNote" placeholder="用途など"></div>
+      </div>
+      <button class="save-btn" id="cfAddAccount" style="margin-top:12px">口座を追加</button>
+    </div>
+    <div class="card">
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:10px">CSV取込</div>
+      <div class="fgroup"><label>取込先口座</label><select id="cfCsvAccount"></select></div>
+      <div class="fgroup" style="margin-top:10px"><label>CSVファイル</label><input type="file" id="cfCsvFile" accept=".csv,text/csv"></div>
+      <div id="cfCsvMap" style="display:none;margin-top:12px"></div>
+      <button class="save-btn" id="cfCsvCommit" style="margin-top:12px">取込を確定（イミュータブル保存）</button>
+      <div class="label" style="font-size:12px;color:var(--muted);margin:16px 0 8px">取込履歴・残高スナップショット</div>
+      <div id="cfImportHistory"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CF: 案件ボード ===== -->
+<section class="screen" id="s-cf-cases">
+  <h2 class="stitle">案件ボード</h2>
+  <p class="sdesc">売買・金消・個人会社貸借・税を案件単位で管理します。</p>
+  <div class="cf-grid-2">
+    <div>
+      <div class="ledger-tools">
+        <select id="cfCaseFilter">
+          <option value="">すべて</option>
+          <option value="sale">売買</option>
+          <option value="loan">金消契約</option>
+          <option value="related_loan">個人会社貸借</option>
+          <option value="tax">税金</option>
+        </select>
+      </div>
+      <div id="cfCaseBoard"></div>
+    </div>
+    <div class="card">
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:10px">新規案件</div>
+      <div class="entry-grid">
+        <div class="fgroup" style="grid-column:1/-1"><label>案件名</label><input id="cfCaseTitle" placeholder="例：◯◯社 売買契約 / 金消 No.12"></div>
+        <div class="fgroup"><label>種別</label>
+          <select id="cfCaseType">
+            <option value="sale">売買</option>
+            <option value="loan">金消契約</option>
+            <option value="related_loan">個人会社貸借</option>
+            <option value="tax">税金</option>
+          </select>
+        </div>
+        <div class="fgroup"><label>相手方（表示名）</label><input id="cfCaseWho" placeholder="会社名・氏名"></div>
+        <div class="fgroup" id="cfCasePartyWrap" style="display:none"><label>関連者マスタ</label><select id="cfCaseParty"></select></div>
+        <div class="fgroup" id="cfCaseDirWrap" style="display:none"><label>方向</label>
+          <select id="cfCaseDir"><option value="lend">当社が貸す</option><option value="borrow">当社が借りる</option></select>
+        </div>
+        <div class="fgroup"><label>契約日</label><input type="date" id="cfCaseDate"></div>
+        <div class="fgroup"><label>契約額</label><input type="number" id="cfCaseAmt" min="0"></div>
+        <div class="fgroup" id="cfCaseRateWrap" style="display:none"><label>利率 %（年）</label><input type="number" id="cfCaseRate" step="0.01"></div>
+        <div class="fgroup" style="grid-column:1/-1"><label>契約メモ</label><input id="cfCaseNote" placeholder="契約書ファイル名や保管場所など"></div>
+        <div class="fgroup"><label>予定日（任意）</label><input type="date" id="cfCaseSchedDate"></div>
+        <div class="fgroup"><label>予定額</label><input type="number" id="cfCaseSchedAmt" min="0"></div>
+        <div class="fgroup"><label>予定区分</label>
+          <select id="cfCaseSchedKind"><option value="in">入金</option><option value="out">出金</option><option value="interest_in">利息入</option></select>
+        </div>
+        <div class="fgroup"><label>金消回数（自動生成用）</label><input type="number" id="cfLoanMonths" value="12" min="1" max="360"></div>
+      </div>
+      <div class="btnrow" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="csv-btn" type="button" id="cfGenLoanSched">金消スケジュール案を準備</button>
+        <button class="save-btn" type="button" id="cfCaseSave" style="flex:1">案件を保存</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CF: 明細突合 ===== -->
+<section class="screen" id="s-cf-link">
+  <h2 class="stitle">明細突合</h2>
+  <p class="sdesc">銀行明細を案件に手動で紐づけます。水掛け論を防ぐための突合です。</p>
+  <div class="card">
+    <div class="ledger-tools">
+      <select id="cfLinkAccountFilter"></select>
+      <label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px"><input type="checkbox" id="cfLinkUnmatchedOnly" checked> 未突合のみ</label>
+      <select id="cfLinkCase"></select>
+      <button class="csv-btn" id="cfLinkBtn">選択明細を案件に紐づけ</button>
+    </div>
+    <div id="cfBankList"></div>
+  </div>
+</section>
+
+<!-- ===== CF: 案件フロー ===== -->
+<section class="screen" id="s-cf-flow">
+  <h2 class="stitle">案件フロー（印籠の核）</h2>
+  <p class="sdesc">案件ボードから案件を選ぶと、ここに契約・予定・実績が並びます。</p>
+  <div class="card" id="cfFlowPanel"><div class="cf-empty">案件ボードで案件カードをクリックしてください。</div></div>
+</section>
+
+<!-- ===== CF: 関連者貸借 ===== -->
+<section class="screen" id="s-cf-party">
+  <h2 class="stitle">関連者・個人会社貸借</h2>
+  <p class="sdesc">個人会社との貸し借りを相手別に明示します。</p>
+  <div class="cf-grid-2">
+    <div id="cfPartyList"></div>
+    <div class="card">
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:10px">関連者を追加</div>
+      <div class="entry-grid">
+        <div class="fgroup"><label>名称</label><input id="cfPartyName" placeholder="例：代表個人会社"></div>
+        <div class="fgroup"><label>区分</label>
+          <select id="cfPartyKind"><option value="personal_co">個人会社</option><option value="related">関連者</option></select>
+        </div>
+        <div class="fgroup" style="grid-column:1/-1"><label>メモ</label><input id="cfPartyNote"></div>
+      </div>
+      <button class="save-btn" id="cfAddParty" style="margin-top:12px">追加</button>
+      <p class="note">貸借案件は案件ボードで種別「個人会社貸借」を選び、ここに登録した相手を紐づけてください。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CF: 予測 ===== -->
+<section class="screen" id="s-cf-forecast">
+  <h2 class="stitle">CF予測</h2>
+  <p class="sdesc">予定スケジュールから未来の残高を見ます。予定外・未突合は赤で警告します。</p>
+  <div class="grid-stats">
+    <div class="card stat net"><div class="label">起点残高見込</div><div class="val" id="cfForecastStart">¥0</div><div class="sub">直近残高 or 明細累計</div></div>
+    <div class="card stat out"><div class="label">期間内最低残高見込</div><div class="val" id="cfForecastMin">¥0</div><div class="sub">予定消化後</div></div>
+    <div class="card">
+      <div class="label" style="font-size:12px;color:var(--muted)">予測期間</div>
+      <select id="cfForecastDays" style="margin-top:8px;width:100%">
+        <option value="30">30日</option>
+        <option value="90" selected>90日</option>
+        <option value="180">180日</option>
+      </select>
+    </div>
+  </div>
+  <div class="card" id="cfForecastBody" style="margin-top:14px"></div>
+</section>
+
+<!-- ===== CF: 印籠 ===== -->
+<section class="screen" id="s-cf-inrou">
+  <h2 class="stitle">印籠レポート</h2>
+  <p class="sdesc">案件の契約・突合・ログを一枚にまとめ、印刷やCSVで「突きつけられる」材料にします。</p>
+  <div class="ledger-tools">
+    <select id="cfInrouCase"></select>
+    <button class="csv-btn" id="cfInrouPrint">印刷 / PDF</button>
+    <button class="csv-btn" id="cfInrouCsv">突合CSV書き出し</button>
+  </div>
+  <div id="cfInrouReport" style="margin-top:12px"></div>
 </section>
 
 <!-- ===== 記録する ===== -->
@@ -566,7 +798,14 @@ table.ledger tr:hover td{background:rgba(232,184,75,.04)}
 <div id="toast" role="status"></div>
 
 
-</div>
+</div><!-- /#app-treasury -->
+  </section>
+</div><!-- /#quests-row -->
+
+</div><!-- /#portal-shell -->
+
+<!-- Dashboard mount kept hidden (React bundle still references #root) -->
+<div id="root" hidden aria-hidden="true"></div>
 
 <script>/**
  * @license React
@@ -1222,37 +1461,36 @@ function renderTax(){
 
 /* ---------- 共通 ---------- */
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+const _cfRenderHooks=[];
 function renderAll(){
   $("#mLabel").textContent=viewMonthStr(view);
   fillCats();renderXP();renderDash();renderQuest();renderFlow();renderLedger();renderTax();
+  _cfRenderHooks.forEach(fn=>{try{fn();}catch(e){console.error(e);}});
 }
 renderAll();
 
+window.Treasury={
+  get S(){return S;},
+  get role(){return role;},
+  saveAll, renderAll, esc, yen, toast,
+  onRender(fn){ if(typeof fn==="function") _cfRenderHooks.push(fn); }
+};
+
 })();
 </script>
+<script src="cf-inrou.js"></script>
 
 <script>
+/* 旧タブ切替は廃止（常時 オフィスクエスト｜入出金｜下にダッシュボード） */
 (function(){
-  const bDash=document.getElementById('tab-dash');
-  const bTrea=document.getElementById('tab-trea');
-  const aDash=document.getElementById('app-dashboard');
-  const aTrea=document.getElementById('app-treasury');
-  function show(which){
-    const dash=which==='dash';
-    bDash.classList.toggle('on',dash);
-    bTrea.classList.toggle('on',!dash);
-    aDash.classList.toggle('on',dash);
-    aTrea.classList.toggle('on',!dash);
-    window.scrollTo(0,0);
-    try{localStorage.setItem('gooner_portal_tab',which);}catch(e){}
+  if(location.hash==='#treasury'){
+    const el=document.getElementById('treasury-pane');
+    if(el)try{el.scrollIntoView({behavior:'smooth',block:'start'});}catch(e){}
   }
-  bDash.onclick=()=>show('dash');
-  bTrea.onclick=()=>show('trea');
-  if(location.hash==='#treasury'){show('trea');}
-  else{
+  if(location.hash==='#inrou'){
     try{
-      const saved=localStorage.getItem('gooner_portal_tab');
-      if(saved==='trea')show('trea');
+      document.querySelector('.gamenav button[data-s="cf-inrou"]')?.click();
+      document.getElementById('treasury-pane')?.scrollIntoView({behavior:'smooth',block:'start'});
     }catch(e){}
   }
 })();
