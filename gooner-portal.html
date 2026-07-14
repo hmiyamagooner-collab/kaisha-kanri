@@ -336,7 +336,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   transform:rotate(-12deg);opacity:.85;letter-spacing:2px;
 }
 @media print{
-  #portal-bar,#office-pane,#quests-row .pane-cap,#rotate-note,
+  #portal-bar,#office-pane,#dashboard-pane,#quests-row .pane-cap,#rotate-note,
   .hud,.gamenav,#fxLayer,#toast,.csv-btn,button.save-btn,.ledger-tools{display:none!important}
   #treasury-pane,#app-treasury,.layout,.main,#s-cf-inrou{display:block!important;width:100%!important;height:auto!important;overflow:visible!important}
   .screen:not(#s-cf-inrou){display:none!important}
@@ -399,8 +399,12 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 #portal-bar .pt-hint{margin-left:auto;font-size:11px;color:#8A93A6;font-family:'DotGothic16',monospace;}
 #portal-shell{display:flex;flex-direction:column;min-height:100vh;background:#08070d;}
-/* 上段＝オフィスマップ／下段＝入出金（旧ダッシュボード位置） */
-#quests-row{display:contents;}
+/* 上段＝左右2枚（左:オフィス／右:入出金）／下段＝Company Dashboard */
+#quests-row{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:2px;
+  height:min(52vh,560px);min-height:340px;flex-shrink:0;
+  background:#c9a227;/* 2pxの隙間を金の仕切り線に見せる */
+}
 .quest-pane{
   min-width:0;min-height:0;display:flex;flex-direction:column;
   position:relative;background:#0a0e2a;overflow:hidden;
@@ -411,16 +415,9 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   background:rgba(5,4,10,.85);border-bottom:1px solid rgba(201,162,39,.45);
   padding:6px 12px;
 }
-#office-pane{
-  order:1;background:#070a1c;
-  height:min(24vh,260px);min-height:160px;flex-shrink:0;
-  border-bottom:2px solid #c9a227;
-}
+#office-pane{ background:#070a1c; }
 #office-pane iframe{flex:1;width:100%;min-height:0;border:none;display:block;background:#0a0e2a;}
-#treasury-pane{
-  order:2;background:var(--bg);
-  flex:1;min-height:min(68vh,720px);
-}
+#treasury-pane{ background:var(--bg); }
 #app-treasury{
   display:flex !important;flex-direction:column;flex:1;min-height:0;overflow:auto;
   height:auto;
@@ -429,10 +426,17 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 #app-treasury .hud{position:sticky;top:0;flex-shrink:0;}
 #app-treasury .gamenav{width:150px;padding:10px 6px;}
 #app-treasury .main{padding:12px 14px 40px;max-width:none;overflow:auto;}
-#dashboard-pane{display:none !important;}
+/* 下段：Company Dashboard（ポータル内蔵のReactアプリを #root に描画） */
+#dashboard-pane{
+  display:flex;flex-direction:column;flex:1;
+  min-height:min(48vh,620px);
+  background:#0a0e2a;border-top:2px solid #c9a227;
+}
+#dashboard-pane #root{flex:1;min-height:0;overflow:auto;width:100%;}
 @media(max-width:980px){
-  #office-pane{height:28vh;}
-  #treasury-pane{min-height:60vh;}
+  #quests-row{grid-template-columns:1fr;height:auto;}
+  #office-pane{height:32vh;min-height:200px;}
+  #treasury-pane{min-height:56vh;}
 }
 @media(max-width:600px){#portal-bar .pt-hint{display:none;}}
 /* ===== スマホ対応（横画面前提） ===== */
@@ -453,7 +457,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 <div id="portal-shell">
 <div id="portal-bar">
   <span class="pt-logo">GOONER PORTAL</span>
-  <span class="pt-hint">上：オフィスクエスト　／　下：入出金クエスト（本丸）</span>
+  <span class="pt-hint">上段左：オフィス　／　上段右：入出金（本丸）　／　下段：Dashboard</span>
 </div>
 
 <div id="quests-row">
@@ -802,10 +806,13 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   </section>
 </div><!-- /#quests-row -->
 
-</div><!-- /#portal-shell -->
+  <!-- 下段：Company Dashboard（このポータル内蔵のReactアプリを #root に描画。デザインは仮・後日リデザイン） -->
+  <section class="quest-pane" id="dashboard-pane">
+    <div class="pane-cap">■ Company Dashboard</div>
+    <div id="root"></div>
+  </section>
 
-<!-- Dashboard mount kept hidden (React bundle still references #root) -->
-<div id="root" hidden aria-hidden="true"></div>
+</div><!-- /#portal-shell -->
 
 <script>/**
  * @license React

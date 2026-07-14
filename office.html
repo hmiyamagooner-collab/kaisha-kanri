@@ -343,6 +343,15 @@ else{const f=document.getElementById('cardframe');f.src=f.dataset.src;}
     refreshDock();
   };
   window._ovRefreshDock=refreshDock;
+  // 埋め込み(ポータル)では画面が狭くステータス窓がマップに被って邪魔なので、
+  // 初期状態はドックに格納してマップをスッキリ見せる（チップ▸から復帰できる）。単体フル画面では従来どおり表示。
+  if(typeof EMBEDDED!=='undefined'&&EMBEDDED){
+    ['clock','members','log'].forEach(k=>{
+      const w=document.querySelector('.win.ov[data-panel="'+k+'"]');
+      if(w){w.classList.add('closed');w.classList.remove('minimized');}
+    });
+  }
+  refreshDock();
 })();
 /* ================= MAP ================= */
 const TW=16, COLS=30, ROWS=28;
