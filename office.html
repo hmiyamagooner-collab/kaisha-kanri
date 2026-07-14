@@ -51,8 +51,8 @@ body.embedded .stage{
 }
 body.embedded .stage-game{flex:1;position:relative;min-height:0;overflow:hidden;background:#0a1230;}
 body.embedded canvas#game{
-  max-width:100%;width:100%;height:100%;margin:0;
-  object-fit:contain;object-position:center top;
+  width:100%;height:auto;margin:0 auto;display:block;
+  image-rendering:pixelated;
 }
 /* 埋め込み(ポータル)では縦長ペインでも「よこ画面推奨」を出さずマップを描画する */
 body.embedded #rotate-note{display:none!important;}
@@ -195,7 +195,7 @@ body.embedded .hud-dock{padding:0 0 4px;}
     <div class="stage">
       <div class="hud-dock" id="hud-dock"></div>
       <div class="stage-game">
-      <canvas id="game" width="1440" height="1344"></canvas>
+      <canvas id="game" width="768" height="1728"></canvas>
       <div class="panel overlays">
         <div class="win ov" data-panel="clock" id="p-clock">
           <div class="ov-bar">
@@ -356,128 +356,122 @@ else{const f=document.getElementById('cardframe');f.src=f.dataset.src;}
   }
   refreshDock();
 })();
-/* ================= MAP ================= */
-const TW=16, COLS=30, ROWS=28;
+/* ================= MAP（縦長・16×36。右端 col13-15 に送迎車の大通り） ================= */
+const TW=16, COLS=16, ROWS=36;
 const T={FLOOR:0,WALL:1,GRASS:2,TREE:3,DESK:4,PC:5,COPIER:6,SHELF:7,CARPET:8,TABLE:9,SOFA:10,FLOWER:11,DOOR:12,DAYFLOOR:13,DAYTABLE:14,ROAD:15,CROSS:16,SIDE:17,PAVE:18,DECK:19,POOL:20,SAND:21,WATER:22,STAGE:23};
 const map=[];
 for(let y=0;y<ROWS;y++){map.push(new Array(COLS).fill(T.WALL));}
 function fill(x1,y1,x2,y2,t){for(let y=y1;y<=y2;y++)for(let x=x1;x<=x2;x++)if(x>=0&&y>=0&&x<COLS&&y<ROWS)map[y][x]=t;}
 
-/* ==== 本社キャンパス（左・上部） ==== */
-fill(1,1,7,4,T.CARPET);        // 社長室
-fill(9,1,17,4,T.FLOOR);        // 会議・応接
-fill(1,6,17,11,T.FLOOR);       // 本社オフィス
-fill(18,1,18,11,T.GRASS);      // 本社右の緑地（壁にしない）
+/* ==== 右端の縦の大通り（送迎車の道・全高） ==== */
+fill(13,0,15,35,T.ROAD);
 
-/* ==== 本社と下部のあいだの道路 ==== */
-fill(0,12,18,13,T.ROAD);
-fill(0,14,18,14,T.SIDE);
+/* ==== 本社ビル（上） ==== */
+fill(1,1,5,4,T.CARPET);     // 社長室
+fill(7,1,12,4,T.FLOOR);     // 会議・応接
+fill(6,1,6,5,T.SIDE);       // 社長室｜会議の通路
+fill(0,5,12,5,T.SIDE);      // 本社内 横通路
+fill(1,6,12,9,T.FLOOR);     // 本社オフィス
 
-/* ==== 道路沿い横並び：デイサービス｜取引先 ==== */
-fill(1,15,8,20,T.DAYFLOOR);    // デイサービス
-fill(10,15,17,20,T.FLOOR);     // 取引先
-fill(9,15,9,20,T.SIDE);        // あいだの通路
-fill(1,21,17,21,T.SIDE);
-fill(1,22,17,26,T.PAVE);       // 駐車場（その下）
+/* ==== 横道路（本社↓デイ） ==== */
+fill(0,10,12,11,T.ROAD);
 
-/* ==== 縦道路（左｜右レジャー） ==== */
-fill(19,0,20,27,T.ROAD);
+/* ==== デイサービス｜取引先 ==== */
+fill(1,12,5,17,T.DAYFLOOR); // デイサービス
+fill(7,12,12,17,T.FLOOR);   // 取引先
+fill(6,12,6,17,T.SIDE);     // あいだの通路
 
-/* ==== 右側縦並び：ビーチ → プール → イベント（壁なし） ==== */
-fill(21,0,29,27,T.GRASS);      // 右帯の下地（壁を消す）
-fill(21,0,29,8,T.SAND);        // ビーチ
-fill(26,0,29,8,T.WATER);       // 海際
-fill(21,9,29,16,T.DECK);       // プールデッキ
-fill(22,10,28,15,T.POOL);      // プール
-fill(21,17,29,27,T.GRASS);     // イベント会場
+/* ==== 駐車場 ==== */
+fill(0,18,12,20,T.PAVE);
 
-/* 出入口（建物側） */
-[[4,5],[12,5],[9,6],[4,11],[14,11],[4,15],[14,15],[8,15],[10,15]].forEach(d=>map[d[1]][d[0]]=T.DOOR);
-/* 横断歩道：横道路は南北ストライプ、縦道路は東西ストライプになるよう配置 */
-fill(4,12,5,13,T.CROSS);   // 本社中央口
-fill(13,12,14,13,T.CROSS); // 本社東口→取引先・駐車場
-fill(19,3,20,4,T.CROSS);   // →ビーチ
-fill(19,12,20,13,T.CROSS); // →プール帯
-fill(19,19,20,20,T.CROSS); // →イベント
+/* ==== 横道路（駐車場↓プール） ==== */
+fill(0,21,12,22,T.ROAD);
+
+/* ==== プール｜ビーチ・海 ==== */
+fill(0,23,0,29,T.SIDE);     // 左の歩道
+fill(1,23,6,29,T.DECK);     // プールデッキ
+fill(2,24,5,28,T.POOL);     // プール
+fill(7,23,8,29,T.SAND);     // 砂浜
+fill(9,23,12,29,T.WATER);   // 海
+
+/* ==== 横道路（プール↓イベント） ==== */
+fill(0,30,12,31,T.ROAD);
+
+/* ==== イベント会場（下） ==== */
+fill(1,32,12,35,T.GRASS);
+map[34][5]=T.STAGE;map[34][6]=T.STAGE;map[34][7]=T.STAGE;
+
+/* 出入口 */
+[[3,5],[9,5],[6,6],[3,11],[9,11],[3,12],[9,12]].forEach(d=>map[d[1]][d[0]]=T.DOOR);
+/* 横断歩道（各ブロック→右の大通りへ） */
+fill(11,10,12,11,T.CROSS);
+fill(11,21,12,22,T.CROSS);
+fill(11,30,12,31,T.CROSS);
 
 /* 本社オフィス: 机・PC・棚・コピー */
-[[2,7],[6,7],[10,7],[2,10],[6,10],[10,10]].forEach(d=>{map[d[1]][d[0]]=T.PC;map[d[1]][d[0]+1]=T.DESK;});
-map[7][13]=T.SHELF;map[7][14]=T.SHELF;map[7][15]=T.SHELF;
-map[7][16]=T.COPIER;
-map[11][16]=T.FLOWER;
+[[2,7],[5,7],[8,7],[2,9],[5,9],[8,9]].forEach(d=>{map[d[1]][d[0]]=T.PC;map[d[1]][d[0]+1]=T.DESK;});
+map[6][10]=T.SHELF;map[6][11]=T.SHELF;map[6][12]=T.SHELF;
+map[8][11]=T.COPIER;
 /* 社長室 */
-map[2][3]=T.PC;map[2][4]=T.DESK;
-map[1][5]=T.SHELF;map[1][6]=T.SHELF;
-map[1][1]=T.FLOWER;map[4][7]=T.FLOWER;
+map[2][3]=T.PC;map[2][4]=T.DESK;map[1][1]=T.FLOWER;map[4][5]=T.SHELF;
 /* 会議・応接 */
-for(let x=10;x<=13;x++){map[2][x]=T.TABLE;map[3][x]=T.TABLE;}
-for(let x=14;x<=16;x++){map[2][x]=T.SOFA;map[3][x]=T.TABLE;}
-map[1][9]=T.FLOWER;map[1][17]=T.FLOWER;
+for(let x=8;x<=11;x++){map[2][x]=T.TABLE;map[3][x]=T.TABLE;}
+map[2][12]=T.SOFA;map[3][12]=T.SOFA;
 /* デイサービス */
-map[16][2]=T.PC;map[16][3]=T.DESK;
-map[17][4]=T.DAYTABLE;map[17][6]=T.DAYTABLE;
-map[15][8]=T.FLOWER;map[20][1]=T.FLOWER;
+map[13][2]=T.PC;map[13][3]=T.DESK;map[16][2]=T.DAYTABLE;map[16][4]=T.DAYTABLE;
 /* 取引先 */
-map[16][11]=T.PC;map[16][12]=T.DESK;
-map[16][16]=T.SHELF;
-map[18][13]=T.TABLE;map[18][14]=T.TABLE;
-map[20][16]=T.FLOWER;
-/* ビーチの木・花 */
-map[2][22]=T.TREE;map[6][23]=T.FLOWER;
-/* プール花 */
-map[9][21]=T.FLOWER;map[16][28]=T.FLOWER;
-/* イベント会場ステージ */
-map[19][24]=T.STAGE;map[19][25]=T.STAGE;map[19][26]=T.STAGE;
-map[18][22]=T.TREE;map[25][28]=T.TREE;
-map[26][23]=T.FLOWER;
+map[13][9]=T.PC;map[13][10]=T.DESK;map[16][8]=T.TABLE;map[16][9]=T.TABLE;map[13][12]=T.SHELF;
+/* プール・ビーチ・イベント 装飾 */
+map[23][1]=T.FLOWER;map[29][6]=T.FLOWER;map[23][7]=T.TREE;map[28][8]=T.TREE;
+map[32][2]=T.TREE;map[35][11]=T.TREE;map[33][10]=T.FLOWER;
 
 const WALKABLE=new Set([T.FLOOR,T.GRASS,T.CARPET,T.DOOR,T.DAYFLOOR,T.SIDE,T.PAVE,T.CROSS,T.DECK,T.SAND,T.ROAD]);
 function walkable(x,y){return x>=0&&y>=0&&x<COLS&&y<ROWS&&WALKABLE.has(map[y][x]);}
 
 const ROOMS={
-  shacho:{x1:1,y1:1,x2:7,y2:4,label:'社長室',lx:1,ly:4.7},
-  kaigi:{x1:9,y1:1,x2:17,y2:4,label:'会議・応接室',lx:9,ly:4.7},
-  honsha:{x1:1,y1:6,x2:17,y2:11,label:'本社オフィス',lx:1,ly:11.7},
-  day:{x1:1,y1:15,x2:8,y2:20,label:'デイサービス',lx:1,ly:20.7},
-  client:{x1:10,y1:15,x2:17,y2:20,label:'取引先',lx:10,ly:20.7},
-  parking:{x1:1,y1:22,x2:17,y2:26,label:'駐車場',lx:1,ly:26.7},
-  umi:{x1:21,y1:0,x2:29,y2:8,label:'ビーチ',lx:21.2,ly:1.2},
-  pool:{x1:21,y1:9,x2:29,y2:16,label:'プール',lx:21.2,ly:10.2},
-  park:{x1:21,y1:17,x2:29,y2:27,label:'イベント会場',lx:21.2,ly:18.2}
+  shacho:{x1:1,y1:1,x2:5,y2:4,label:'社長室',lx:1,ly:0.6},
+  kaigi:{x1:7,y1:1,x2:12,y2:4,label:'会議・応接室',lx:7,ly:0.6},
+  honsha:{x1:1,y1:6,x2:12,y2:9,label:'本社オフィス',lx:1,ly:9.7},
+  day:{x1:1,y1:12,x2:5,y2:17,label:'デイサービス',lx:1,ly:17.7},
+  client:{x1:7,y1:12,x2:12,y2:17,label:'取引先',lx:7,ly:17.7},
+  parking:{x1:1,y1:18,x2:12,y2:20,label:'駐車場',lx:1,ly:20.6},
+  pool:{x1:1,y1:23,x2:6,y2:29,label:'プール',lx:1,ly:22.4},
+  umi:{x1:7,y1:23,x2:12,y2:29,label:'ビーチ・海',lx:7,ly:22.4},
+  park:{x1:1,y1:32,x2:12,y2:35,label:'イベント会場',lx:1,ly:31.4}
 };
 
 const SEATS={
-  meeting:[[10,1],[11,1],[12,1],[13,1],[10,4],[11,4],[12,4],[13,4]],
-  recept:[[14,4],[15,4],[16,4],[15,1]],
-  pool:[[21,12],[29,11],[21,16],[28,14]],
-  umi:[[22,2],[24,5],[23,7],[25,1]],
-  concert:[[23,21],[24,21],[25,21],[27,23]],
-  day:[[4,18],[6,18],[2,17],[5,16]],
-  copier:[16,8],
-  shelf:[[13,8],[14,8],[15,8]],
-  client:[13,18]
+  meeting:[[8,1],[9,1],[10,1],[11,1],[8,4],[9,4],[10,4],[11,4]],
+  recept:[[12,1],[12,4],[11,4],[8,1]],
+  pool:[[1,25],[6,26],[1,28],[6,24]],
+  umi:[[7,24],[8,26],[8,24],[7,28]],
+  concert:[[2,33],[4,33],[8,33],[10,34]],
+  day:[[2,14],[4,14],[2,16],[4,15]],
+  copier:[11,8],
+  shelf:[[10,6],[11,6],[12,6]],
+  client:[9,15]
 };
-const ELDER_SEATS=[[3,18],[6,18]];
+const ELDER_SEATS=[[2,14],[4,14]];
 
 /* ================= CHARACTERS ================= */
 const CHARS=[
  {id:'shacho',name:'社長',short:'社長',dept:'本社',female:false,cloth:'#7c3aed',hair:'#3f3f46',seat:[3,2],home:'shacho',
   sched:[[9,10,'会議'],[10,12,'デスクワーク'],[12,13,'休憩'],[13,14,'来客対応'],[14,16,'デスクワーク'],[16,17,'会議'],[17,19,'デスクワーク']]},
- {id:'koshiishi',name:'越石',short:'越石',dept:'本社',female:true,cloth:'#3b82f6',hair:'#52341d',seat:[2,8],home:'honsha',
+ {id:'koshiishi',name:'越石',short:'越石',dept:'本社',female:true,cloth:'#3b82f6',hair:'#52341d',seat:[2,7],home:'honsha',
   sched:[[9,10,'会議'],[10,11,'振込作業'],[11,12,'書類整理'],[12,13,'休憩'],[13,15,'デスクワーク'],[15,16,'コピー'],[16,19,'デスクワーク']]},
- {id:'sayaka',name:'さやか',short:'さやか',dept:'本社',female:true,cloth:'#3b82f6',hair:'#a16207',seat:[6,8],home:'honsha',
+ {id:'sayaka',name:'さやか',short:'さやか',dept:'本社',female:true,cloth:'#3b82f6',hair:'#a16207',seat:[5,7],home:'honsha',
   sched:[[9,10,'会議'],[10,12,'プログラミング'],[12,13,'休憩'],[13,16,'プログラミング'],[16,17,'コピー'],[17,19,'プログラミング']]},
- {id:'yuzuru',name:'譲',short:'譲',dept:'イベント',female:false,cloth:'#f59e0b',hair:'#1c1917',seat:[10,8],home:'honsha',
+ {id:'yuzuru',name:'譲',short:'譲',dept:'イベント',female:false,cloth:'#f59e0b',hair:'#1c1917',seat:[8,7],home:'honsha',
   sched:[[9,10,'会議'],[10,12,'イベント（プール）'],[12,13,'休憩'],[13,15,'イベント（海）'],[15,17,'イベント（コンサート）'],[17,19,'デスクワーク']]},
- {id:'tanji',name:'丹治',short:'丹治',dept:'営業',female:false,cloth:'#10b981',hair:'#44403c',seat:[6,10],home:'honsha',
+ {id:'tanji',name:'丹治',short:'丹治',dept:'営業',female:false,cloth:'#10b981',hair:'#44403c',seat:[5,8],home:'honsha',
   sched:[[9,10,'会議'],[10,12,'商談'],[12,13,'休憩'],[13,17,'商談'],[17,19,'デスクワーク']]},
- {id:'okabe',name:'岡部',short:'岡部',dept:'法務',female:false,cloth:'#64748b',hair:'#292524',seat:[2,10],home:'honsha',
+ {id:'okabe',name:'岡部',short:'岡部',dept:'法務',female:false,cloth:'#64748b',hair:'#292524',seat:[2,8],home:'honsha',
   sched:[[9,12,'デスクワーク'],[12,13,'休憩'],[13,14,'来客対応'],[14,16,'書類整理'],[16,19,'デスクワーク']]},
- {id:'tokita',name:'鴇田施設長',short:'鴇田',dept:'デイサービス',female:false,cloth:'#14b8a6',hair:'#57534e',seat:[2,16],home:'day',
+ {id:'tokita',name:'鴇田施設長',short:'鴇田',dept:'デイサービス',female:false,cloth:'#14b8a6',hair:'#57534e',seat:[2,13],home:'day',
   sched:[[8,9,'デスクワーク'],[9,12,'デイサービス業務'],[12,13,'休憩'],[13,17,'デイサービス業務'],[17,19,'デスクワーク']]},
- {id:'takahashi',name:'高橋さん',short:'高橋',dept:'デイサービス',female:true,cloth:'#f472b6',hair:'#713f12',seat:[4,18],home:'day',
+ {id:'takahashi',name:'高橋さん',short:'高橋',dept:'デイサービス',female:true,cloth:'#f472b6',hair:'#713f12',seat:[4,15],home:'day',
   sched:[[9,12,'デイサービス業務'],[12,13,'休憩'],[13,17,'デイサービス業務'],[17,19,'書類整理']]},
- {id:'shinagawa',name:'品川さん',short:'品川',dept:'デイサービス',female:true,cloth:'#f472b6',hair:'#3f3f46',seat:[6,18],home:'day',
+ {id:'shinagawa',name:'品川さん',short:'品川',dept:'デイサービス',female:true,cloth:'#f472b6',hair:'#3f3f46',seat:[5,16],home:'day',
   sched:[[9,10,'送迎'],[10,12,'デイサービス業務'],[12,13,'送迎'],[13,14,'休憩'],[14,16,'デイサービス業務'],[16,17,'送迎'],[17,19,'デスクワーク']]}
 ];
 CHARS.forEach((c,i)=>{
@@ -488,7 +482,7 @@ const SHINA=CHARS.find(c=>c.id==='shinagawa');
 
 /* デイサービス利用者（2部制：午前組と午後組）と取引先のひと */
 function elder(name,short,female,cloth,hair){
-  return {name:name,short:short,female:female,cloth:cloth,hair:hair,px:8*TW,py:23*TW,path:[],hidden:true,spd:0.55,bubble:null,pendingBubble:null};
+  return {name:name,short:short,female:female,cloth:cloth,hair:hair,px:11*TW,py:19*TW,path:[],hidden:true,spd:0.55,bubble:null,pendingBubble:null};
 }
 const ELDERS=[
  elder('ウメさん','ウメ',true,'#9d7bb0','#cbd5e1'),
@@ -497,7 +491,7 @@ const ELDERS=[
  elder('シゲゾウさん','シゲ',false,'#5c8a6a','#cbd5e1')
 ];
 const G_AM=[ELDERS[0],ELDERS[1]], G_PM=[ELDERS[2],ELDERS[3]];
-const CLIENT={name:'取引先のひと',short:'取引先',female:false,cloth:'#8d6e63',hair:'#4b5563',px:13*TW,py:17*TW,path:[],hidden:false,bubble:null,pendingBubble:null};
+const CLIENT={name:'取引先のひと',short:'取引先',female:false,cloth:'#8d6e63',hair:'#4b5563',px:9*TW,py:15*TW,path:[],hidden:false,bubble:null,pendingBubble:null};
 
 const ACT_COLORS={
  'デスクワーク':'#7dd3fc','プログラミング':'#60a5fa','振込作業':'#fbbf24','書類整理':'#c4b5fd','コピー':'#a3e635',
@@ -648,9 +642,8 @@ function updateChar(c,dt){
 }
 
 /* ================= 送迎（2部制・車） ================= */
-/* 送迎車はデイと取引先の間の通路(col 9: SIDE→ROAD)を通す。col 8 だとデイサービスを貫通するため 9 に。 */
-const CAR={homeX:9*TW,homeY:23*TW,x:9*TW,y:23*TW,dir:-1};
-const ROAD_Y=12.5*TW; /* 本社と下部のあいだの道路 */
+/* 送迎車は右端の縦の大通り(col 13-15)だけを通る。駐車場わきの (14,19) が定位置。 */
+const CAR={homeX:14*TW,homeY:19*TW,x:14*TW,y:19*TW,dir:-1};
 let escort=null;
 function startEscort(){
   if(escort)return;
@@ -661,8 +654,8 @@ function startEscort(){
   else if(h<15)arrive=G_PM.filter(e=>e.hidden);
   if(!board.length&&!arrive.length)return;
   escort={board:board,arrive:arrive,phase:'walk',t:0,wp:null};
-  sendTo(SHINA,[7,22]);
-  board.forEach((e,i)=>sendTo(e,[9+i,22]));
+  sendTo(SHINA,[12,19]);
+  board.forEach((e,i)=>sendTo(e,[10+i,19]));
   const what=(board.length?'お送り':'')+(board.length&&arrive.length?' と ':'')+(arrive.length?'お迎え':'');
   log('品川：送迎（'+what+'）の じゅんび');
 }
@@ -681,7 +674,7 @@ function updateEscort(dt){
   if(!escort)return;
   switch(escort.phase){
     case 'walk':{
-      const ok=atTile(SHINA,7,22)&&escort.board.every((e,i)=>atTile(e,9+i,22));
+      const ok=atTile(SHINA,12,19)&&escort.board.every((e,i)=>atTile(e,10+i,19));
       if(ok){escort.phase='board';escort.t=700;}
       break;}
     case 'board':
@@ -689,7 +682,7 @@ function updateEscort(dt){
       if(escort.t<=0){
         SHINA.hidden=true;
         escort.board.forEach(e=>e.hidden=true);
-        escort.wp=[[CAR.homeX,ROAD_Y],[-70,ROAD_Y]];
+        escort.wp=[[CAR.homeX,-70]];
         escort.phase='out';
         log('送迎車が しゅっぱつした');
       }
@@ -699,21 +692,21 @@ function updateEscort(dt){
       break;
     case 'away':
       escort.t-=dt;
-      if(escort.t<=0){escort.wp=[[CAR.homeX,ROAD_Y],[CAR.homeX,CAR.homeY]];escort.phase='back';}
+      if(escort.t<=0){escort.wp=[[CAR.homeX,CAR.homeY]];escort.phase='back';}
       break;
     case 'back':
       if(followWp(dt)){
-        SHINA.hidden=false;SHINA.px=7*TW;SHINA.py=22*TW;
+        SHINA.hidden=false;SHINA.px=12*TW;SHINA.py=19*TW;
         if(escort.arrive.length){
           escort.arrive.forEach((e,i)=>{
-            e.hidden=false;e.px=(9+i)*TW;e.py=22*TW;
+            e.hidden=false;e.px=(10+i)*TW;e.py=19*TW;
             sendTo(e,ELDER_SEATS[i%ELDER_SEATS.length]);
             e.pendingBubble='きょうも よろしくねぇ';
           });
           log('お年寄りを おむかえした（'+(escort.arrive[0]===ELDERS[0]?'午前の部':'午後の部')+'）');
         }
         if(escort.board.length)log('お年寄りを おうちまで おくった');
-        sendTo(SHINA,[6,18]);
+        sendTo(SHINA,[5,16]);
         escort=null;
       }
       break;
