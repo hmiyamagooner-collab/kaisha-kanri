@@ -483,7 +483,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   display:grid;
   grid-template-columns:minmax(0,1fr) minmax(0,1fr);
   grid-template-areas:"dashboard office" "treasury treasury";
-  grid-template-rows:min(42vh,460px) minmax(52vh,760px);
+  grid-template-rows:min(27vh,300px) minmax(62vh,840px);
   gap:2px;flex:1;min-height:0;
   background:#c9a227;/* 2pxの隙間を金の仕切り線に見せる */
 }
@@ -508,12 +508,27 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 #app-treasury .hud{position:sticky;top:0;flex-shrink:0;}
 #app-treasury .gamenav{width:150px;padding:10px 6px;}
 #app-treasury .main{padding:12px 14px 40px;max-width:none;overflow:auto;}
-/* 上段左：Company Dashboard（3名・内蔵Reactを #root に描画） */
+/* 上段左：Company Dashboard（3名・スクロールしないコンパクト版） */
 #dashboard-pane{
   grid-area:dashboard;
   background:#0a0e2a;
 }
-#dashboard-pane #root{flex:1;min-height:0;overflow:auto;width:100%;}
+#dashboard-pane #root{display:none!important;}
+/* コンパクト・ダッシュボード（ペインにピタッと収まる／スクロール無し）。装飾は最小＝後日リデザイン前提 */
+.dash-compact{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:8px;gap:8px;}
+.dc-cards{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.dc-card{
+  min-height:0;display:flex;flex-direction:column;overflow:hidden;
+  background:#111a3a;border:1px solid var(--line);border-radius:10px;
+}
+.dc-photo{flex:1;min-height:0;overflow:hidden;background:#0a0e2a;}
+.dc-photo img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block;}
+.dc-name{flex-shrink:0;font-family:'DotGothic16',monospace;font-size:13px;color:#e7cd84;text-align:center;padding:5px 4px 0;letter-spacing:1px;}
+.dc-role{flex-shrink:0;font-size:10px;color:#8fa3d9;text-align:center;padding:1px 4px 6px;line-height:1.3;}
+.dc-round{flex-shrink:0;display:flex;align-items:center;gap:10px;padding:7px 12px;border:1px dashed var(--gold);border-radius:10px;background:rgba(232,184,75,.05);}
+.dc-round-ic{font-size:20px;color:var(--gold-hi);line-height:1;}
+.dc-round-t{font-family:'DotGothic16',monospace;font-size:12px;color:#e7cd84;letter-spacing:1px;}
+.dc-round-s{font-size:10px;color:#8fa3d9;line-height:1.4;}
 @media(max-width:980px){
   #quests-row{
     grid-template-columns:1fr;
@@ -908,10 +923,37 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 
 </div><!-- /#app-treasury -->
   </section>
-  <!-- 上段左：Company Dashboard（3名・内蔵Reactを #root に描画。デザインは仮・後日リデザイン） -->
+  <!-- 上段左：Company Dashboard（3名・スクロールしないコンパクト版。デザインは後日チャッピーがリデザイン予定） -->
   <section class="quest-pane" id="dashboard-pane">
     <div class="pane-cap">■ Company Dashboard</div>
-    <div id="root"></div>
+    <div class="dash-compact" id="dashCompact">
+      <div class="dc-cards">
+        <div class="dc-card" data-dept="secretary">
+          <div class="dc-photo"><img src="dash-secretary.png" alt="秘書室"></div>
+          <div class="dc-name">秘書室</div>
+          <div class="dc-role">窓口・相談役</div>
+        </div>
+        <div class="dc-card" data-dept="finance">
+          <div class="dc-photo"><img src="dash-finance.png" alt="経理"></div>
+          <div class="dc-name">経理</div>
+          <div class="dc-role">請求・経費・入金管理</div>
+        </div>
+        <div class="dc-card" data-dept="legal">
+          <div class="dc-photo"><img src="dash-legal.png" alt="法務"></div>
+          <div class="dc-name">法務</div>
+          <div class="dc-role">契約・規約・コンプラ</div>
+        </div>
+      </div>
+      <div class="dc-round">
+        <span class="dc-round-ic">⭗</span>
+        <div class="dc-round-body">
+          <div class="dc-round-t">円卓会議スペース</div>
+          <div class="dc-round-s">3部署で囲んで相談・意思決定（AI謁見）</div>
+        </div>
+      </div>
+    </div>
+    <!-- 旧Reactダッシュボードは非表示で保持（後日のリデザイン素材用） -->
+    <div id="root" hidden></div>
   </section>
 </div><!-- /#quests-row -->
 
