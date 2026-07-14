@@ -592,26 +592,35 @@
     document.getElementById("cfForecastMin").textContent = T().yen(minBal);
     document.getElementById("cfForecastMin").className = "val " + (minBal < 0 ? "out" : "net");
 
-    box.innerHTML =
-      `<div class="cf-alert-box">
-        <b>予定外・未突合シグナル（${unexpected.length}件）</b>
-        <div class="cf-meta">大口や案件未紐づけの入出金。会長の想定外入出金・説明不能な動きの早期発見用です。</div>
-        ${
-          unexpected
-            .slice(0, 30)
-            .map(
-              (t) =>
-                `<div class="cf-sched bad">${t.date} ${t.amount >= 0 ? "+" : "−"}${T().yen(Math.abs(t.amount))} ${T().esc(t.memo || "")} ${t.needsExplain ? "【要説明】" : "【未突合】"}</div>`
-            )
-            .join("") || `<div class="cf-empty ok">該当なし</div>`
-        }
+    // --- アラート: 予定外の入出金（勝手な入金＝資金洗浄／勝手な引き出しの早期発見） ---
+    const LARGE = 500000; // 50万円以上は「大口」= 要説明の目安
+    const inflows = unexpected.filter((t) => t.amount > 0).sort((a, b) => b.amount - a.amount);
+    const outflows = unexpected.filter((t) => t.amount < 0).sort((a, b) => a.amount - b.amount);
+    const sumIn = inflows.reduce((a, t) => a + t.amount, 0);
+    const sumOut = outflows.reduce((a, t) => a + Math.abs(t.amount), 0);
+    const plannedInSum = sched.filter((s) => s.kind === "in" || s.kind === "interest_in").reduce((a, s) => a + Math.abs(s.amount), 0);
+    const plannedOutSum = sched.filter((s) => !(s.kind === "in" || s.kind === "interest_in")).reduce((a, s) => a + Math.abs(s.amount), 0);
+    const alertRow = (t) => {
+      const big = Math.abs(t.amount) >= LARGE;
+      const inn = t.amount > 0;
+      const tags = [inn ? "予定外入金" : "予定外出金", big ? "大口" : "", t.needsExplain ? "要説明" : ""].filter(Boolean).join("・");
+      return `<div class="cf-alert-item ${big ? "sev-hi" : ""}"><span class="${inn ? "in" : "out"}">${inn ? "+" : "−"}${T().yen(Math.abs(t.amount))}</span><span class="num">${t.date}</span><span class="memo">${T().esc(t.memo || "（摘要なし）")}</span><span class="tag ${inn ? "bad" : ""}">${tags}</span></div>`;
+    };
+
+    box.innerHTML = `
+      <div class="cf-fc-alerts">
+        <div class="cf-fc-tile ${inflows.length ? "bad" : "ok"}"><span class="k">予定外の入金</span><span class="v in">${inflows.length}件 ／ ${T().yen(sumIn)}</span><span class="sub">案件・予定に紐づかない入金。資金洗浄・勝手な入金の疑い</span></div>
+        <div class="cf-fc-tile ${outflows.length ? "warn" : "ok"}"><span class="k">予定外の出金</span><span class="v out">${outflows.length}件 ／ ${T().yen(sumOut)}</span><span class="sub">承認・予定のない引き出し</span></div>
+        <div class="cf-fc-tile"><span class="k">今後${days}日の予定入金</span><span class="v in">${T().yen(plannedInSum)}</span><span class="sub">予定出金 ${T().yen(plannedOutSum)}</span></div>
       </div>
-      <div class="cf-col-t" style="margin-top:14px">予定キャッシュフロー</div>
+      <div class="cf-col-t" style="margin-top:16px">⚠ 予定外・要説明の入出金（大口＝赤で最上位）</div>
+      ${[...inflows, ...outflows].slice(0, 40).map(alertRow).join("") || `<div class="cf-empty ok">該当なし — 説明のつかない入出金はありません</div>`}
+      <div class="cf-col-t" style="margin-top:16px">未来の予定キャッシュフロー（残高見込）</div>
       ${
         rows
           .map((r) => {
             const c = S.cases.find((x) => x.id === r.caseId);
-            return `<div class="cf-sched">${r.date} ${r.amount >= 0 ? "+" : "−"}${T().yen(Math.abs(r.amount))} → 残高見込 ${T().yen(r.bal)} <span class="cf-meta">${T().esc(c ? c.title : "")}</span></div>`;
+            return `<div class="cf-sched ${r.bal < 0 ? "bad" : ""}">${r.date} ${r.amount >= 0 ? "+" : "−"}${T().yen(Math.abs(r.amount))} → 残高見込 ${T().yen(r.bal)} <span class="cf-meta">${T().esc(c ? c.title : "")}</span></div>`;
           })
           .join("") || `<div class="cf-empty">期間内の未消化予定はありません</div>`
       }`;

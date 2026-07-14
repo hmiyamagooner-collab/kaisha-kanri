@@ -370,6 +370,23 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .csv-btn.ghost:hover{border-color:var(--out);color:var(--out)}
 .cf-warn{color:var(--out)}
 .cf-alert-box{border:1px solid rgba(255,93,115,.35);border-radius:12px;padding:12px;background:rgba(255,93,115,.06)}
+/* ===== CF予測アラート ===== */
+.cf-fc-alerts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:900px){.cf-fc-alerts{grid-template-columns:1fr}}
+.cf-fc-tile{display:flex;flex-direction:column;gap:5px;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:#0a0d14}
+.cf-fc-tile.bad{border-color:rgba(255,93,115,.5);background:rgba(255,93,115,.06)}
+.cf-fc-tile.warn{border-color:rgba(232,184,75,.45);background:rgba(232,184,75,.05)}
+.cf-fc-tile.ok{border-color:rgba(61,220,151,.3)}
+.cf-fc-tile .k{font-size:11px;color:var(--muted);font-family:var(--font-hud);letter-spacing:1px}
+.cf-fc-tile .v{font-size:16px;font-family:var(--font-num)}
+.cf-fc-tile .v.in{color:var(--in)} .cf-fc-tile .v.out{color:var(--out)}
+.cf-fc-tile .sub{font-size:10px;color:var(--muted);line-height:1.5}
+.cf-alert-item{display:grid;grid-template-columns:112px 84px 1fr auto;gap:10px;align-items:center;padding:8px 10px;border-bottom:1px solid rgba(42,53,80,.5);font-size:12px}
+.cf-alert-item.sev-hi{background:rgba(255,93,115,.09);border-left:3px solid var(--out)}
+.cf-alert-item .in{color:var(--in);font-family:var(--font-num);font-weight:700}
+.cf-alert-item .out{color:var(--out);font-family:var(--font-num);font-weight:700}
+.cf-alert-item .num{color:var(--muted);font-family:var(--font-num)}
+.cf-alert-item .memo{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .inrou-sheet{
   background:#0e1420;border:2px solid var(--gold);border-radius:14px;padding:18px 20px;position:relative;
 }
