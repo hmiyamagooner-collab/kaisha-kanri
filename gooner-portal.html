@@ -324,6 +324,40 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .cf-tl.contract{border-color:var(--gold)}
 .cf-tl.sched{border-color:var(--tax)}
 .cf-tl.actual{border-color:var(--in)}
+/* ===== 案件フロー・資金ビジュアル（一目でわかる図＋印籠判定） ===== */
+.cf-viz{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+.cf-viz .cf-col-t{margin-bottom:12px}
+.cf-bars{display:flex;flex-direction:column;gap:9px}
+.cf-bar-row{display:grid;grid-template-columns:44px 1fr 108px;gap:10px;align-items:center;font-size:12px}
+.cf-bar-lb{color:var(--muted);font-family:var(--font-hud);letter-spacing:1px}
+.cf-bar-track{height:16px;background:#0a0d14;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.cf-bar-fill{height:100%;border-radius:7px 0 0 7px;min-width:2px;transition:width .4s ease}
+.cf-bar-fill.contract{background:linear-gradient(90deg,var(--gold),var(--gold-hi))}
+.cf-bar-fill.sched{background:var(--tax)}
+.cf-bar-fill.actual{background:var(--in)}
+.cf-bar-fill.actual.short{background:var(--out)}
+.cf-bar-val{font-family:var(--font-num);font-size:12px;text-align:right}
+.cf-strip-wrap{margin:16px 0 4px}
+.cf-strip{position:relative;height:44px;border-bottom:2px solid var(--line)}
+.cf-mark{position:absolute;bottom:2px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;white-space:nowrap;pointer-events:none}
+.cf-mark .dot{width:12px;height:12px;border-radius:50%;border:2px solid #0a0d14;box-shadow:0 0 0 1px currentColor}
+.cf-mark .ml{opacity:.85}
+.cf-mark.contract{color:var(--gold-hi)} .cf-mark.contract .dot{background:var(--gold)}
+.cf-mark.sched{color:var(--tax)} .cf-mark.sched .dot{background:var(--tax)}
+.cf-mark.sched.unmet .dot{background:transparent}
+.cf-mark.actual{color:var(--in)} .cf-mark.actual .dot{background:var(--in)}
+.cf-mark.actual.bad{color:var(--out)} .cf-mark.actual.bad .dot{background:var(--out)}
+.cf-strip-lbls{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:var(--font-num)}
+.cf-verdict{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:#0a0d14}
+.cf-verdict.bad{border-color:rgba(255,93,115,.5);background:rgba(255,93,115,.06)}
+.cf-verdict.ok{border-color:rgba(61,220,151,.4)}
+.cf-vd{display:flex;flex-direction:column;gap:3px}
+.cf-vd .k{font-size:10px;color:var(--muted);font-family:var(--font-hud);letter-spacing:1px}
+.cf-vd .v{font-size:15px;font-family:var(--font-num)}
+.cf-vd .v.in{color:var(--in)} .cf-vd .v.out,.cf-vd .v.warn{color:var(--out)}
+.cf-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:10px;color:var(--muted);margin-top:10px}
+.cf-legend span{display:inline-flex;align-items:center;gap:5px}
+.cf-legend i{width:10px;height:10px;border-radius:50%;display:inline-block}
 .cf-alert-box{border:1px solid rgba(255,93,115,.35);border-radius:12px;padding:12px;background:rgba(255,93,115,.06)}
 .inrou-sheet{
   background:#0e1420;border:2px solid var(--gold);border-radius:14px;padding:18px 20px;position:relative;

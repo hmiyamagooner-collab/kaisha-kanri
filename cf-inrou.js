@@ -369,7 +369,69 @@
     const sched = schedulesForCase(c.id);
     const txs = bankForCase(c.id);
     const contractAmt = c.amount || 0;
-    const gap = contractAmt - (c.type === "sale" || c.direction === "borrow" ? act.inSum : act.outSum);
+    const inflowSide = c.type === "sale" || c.direction === "borrow";
+    const relevantActual = inflowSide ? act.inSum : act.outSum;
+    const gap = contractAmt - relevantActual;
+
+    /* ---- 資金フロー可視化データ（契約 vs 予定 vs 実績・時系列・要説明） ---- */
+    const schedTotal = sched.reduce((a, s) => a + Math.abs(s.amount || 0), 0);
+    const plannedTxIds = new Set(sched.filter((s) => s.linkedBankTxId).map((s) => s.linkedBankTxId));
+    const unplannedTxs = txs.filter((t) => !plannedTxIds.has(t.id)); // 予定に無い口座実績＝要説明(マネロン赤信号)
+    const unmetSched = sched.filter((s) => !s.linkedBankTxId); // 予定に実績が来ていない
+    const barMax = Math.max(contractAmt, schedTotal, relevantActual, 1);
+    const barPct = (v) => Math.max(0, Math.min(100, (v / barMax) * 100));
+    const times = [c.contractDate, ...sched.map((s) => s.date), ...txs.map((t) => t.date)]
+      .map((d) => Date.parse(d))
+      .filter((n) => !isNaN(n));
+    const minT = times.length ? Math.min(...times) : 0;
+    const spanT = (times.length ? Math.max(...times) : 1) - minT || 1;
+    const stripPos = (d) => {
+      const t = Date.parse(d);
+      return isNaN(t) ? 50 : 4 + ((t - minT) / spanT) * 92;
+    };
+    const marks = [];
+    if (c.contractDate) marks.push({ d: c.contractDate, cls: "contract", lb: "契約" });
+    sched.forEach((s) => marks.push({ d: s.date, cls: "sched" + (s.linkedBankTxId ? "" : " unmet"), lb: s.kind || "予定" }));
+    txs.forEach((t) => {
+      const bad = t.needsExplain || !plannedTxIds.has(t.id);
+      marks.push({ d: t.date, cls: "actual" + (bad ? " bad" : ""), lb: (t.amount >= 0 ? "+" : "−") + T().yen(Math.abs(t.amount)) });
+    });
+    const dirLabel = inflowSide ? "入金" : "出金";
+    const badVerdict = Math.abs(gap) > 1 || unplannedTxs.length > 0;
+    const iso = (ms) => new Date(ms).toISOString().slice(0, 10);
+    const vizHtml = `
+      <div class="cf-viz">
+        <div class="cf-col-t">資金フロー（一目でわかる図）</div>
+        <div class="cf-bars">
+          <div class="cf-bar-row"><span class="cf-bar-lb">契約</span><div class="cf-bar-track"><div class="cf-bar-fill contract" style="width:${barPct(contractAmt).toFixed(1)}%"></div></div><span class="cf-bar-val">${T().yen(contractAmt)}</span></div>
+          <div class="cf-bar-row"><span class="cf-bar-lb">予定</span><div class="cf-bar-track"><div class="cf-bar-fill sched" style="width:${barPct(schedTotal).toFixed(1)}%"></div></div><span class="cf-bar-val">${T().yen(schedTotal)}</span></div>
+          <div class="cf-bar-row"><span class="cf-bar-lb">実績</span><div class="cf-bar-track"><div class="cf-bar-fill actual ${relevantActual + 1 < contractAmt ? "short" : ""}" style="width:${barPct(relevantActual).toFixed(1)}%"></div></div><span class="cf-bar-val">${T().yen(relevantActual)}</span></div>
+        </div>
+        <div class="cf-strip-wrap">
+          <div class="cf-strip">
+            ${marks
+              .map(
+                (m) =>
+                  `<div class="cf-mark ${m.cls}" style="left:${stripPos(m.d).toFixed(1)}%" title="${T().esc(m.d + " " + m.lb)}"><span class="dot"></span></div>`
+              )
+              .join("")}
+          </div>
+          <div class="cf-strip-lbls"><span>${times.length ? iso(minT) : "—"}</span><span>${times.length ? iso(minT + spanT) : "—"}</span></div>
+        </div>
+        <div class="cf-verdict ${badVerdict ? "bad" : "ok"}">
+          <div class="cf-vd"><span class="k">契約額</span><span class="v">${T().yen(contractAmt)}</span></div>
+          <div class="cf-vd"><span class="k">実績（${dirLabel}）</span><span class="v ${inflowSide ? "in" : "out"}">${T().yen(relevantActual)}</span></div>
+          <div class="cf-vd"><span class="k">契約との差額</span><span class="v ${Math.abs(gap) > 1 ? "out" : ""}">${T().yen(Math.abs(gap))}</span></div>
+          <div class="cf-vd"><span class="k">未説明の入出金</span><span class="v ${unplannedTxs.length > 0 ? "warn" : ""}">${unplannedTxs.length} 件</span></div>
+          <div class="cf-vd"><span class="k">未実績の予定</span><span class="v ${unmetSched.length > 0 ? "warn" : ""}">${unmetSched.length} 件</span></div>
+        </div>
+        <div class="cf-legend">
+          <span><i style="background:var(--gold)"></i>契約</span>
+          <span><i style="background:var(--tax)"></i>予定</span>
+          <span><i style="background:var(--in)"></i>実績（説明済）</span>
+          <span><i style="background:var(--out)"></i>要説明・予定外</span>
+        </div>
+      </div>`;
 
     panel.innerHTML = `
       <div class="cf-flow-head">
@@ -378,6 +440,7 @@
         <button type="button" class="csv-btn" id="cfFlowInrou">この案件の印籠を開く</button>
       </div>
       <p class="sdesc" style="margin-bottom:12px">契約・予定・実績の三点を並べます。差があれば赤で示します（社内牽制用・AML届出そのものではありません）。</p>
+      ${vizHtml}
       <div class="cf-flow-grid">
         <div class="cf-flow-col">
           <div class="cf-col-t">① 契約</div>
