@@ -10,7 +10,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 
-  html, body { background: #0d1118; margin: 0; }
+  html, body { background: #050608; margin: 0; height: 100%; overflow: hidden; }
   html { font-size: 15px; -webkit-font-smoothing: antialiased; }
   body { font-family: 'Zen Kaku Gothic New', sans-serif; line-height: 1.6; color: #eceff4; }
   @keyframes cardIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
@@ -20,34 +20,36 @@
 <style>
 
 :root{
-  --bg:#0d1118;
-  --panel:#161c28;
-  --panel2:#1e2636;
-  --line:rgba(255,255,255,.09);
-  --line-strong:rgba(255,255,255,.14);
+  --bg:#050608;
+  --panel:#0a0b0e;
+  --panel2:#101215;
+  --line:rgba(196,166,106,.1);
+  --line-strong:rgba(196,166,106,.2);
   --gold:#c4a66a;
-  --gold-hi:#e2cfa0;
+  --gold-hi:#e8d4a8;
+  --gold-dim:#7a6540;
   --accent:#7aabde;
   --in:#5dd9ad;
   --out:#ef7f8c;
   --tax:#b39ddb;
   --text:#eceff4;
-  --muted:#949eb0;
+  --muted:#8a909c;
   --font-display:'Sora','Zen Kaku Gothic New',sans-serif;
   --font-body:'Zen Kaku Gothic New',sans-serif;
   --font-num:'IBM Plex Mono',monospace;
   --radius:14px;
   --radius-sm:10px;
-  --shadow:0 8px 30px rgba(0,0,0,.22);
-  --glass:rgba(18,24,36,.82);
+  --shadow:0 12px 40px rgba(0,0,0,.5);
+  --glass:rgba(6,7,10,.94);
+  --lux-ring:linear-gradient(155deg,rgba(232,212,168,.42),rgba(196,166,106,.08) 35%,rgba(80,68,44,.15) 65%,rgba(232,212,168,.28));
 }
 *{box-sizing:border-box;margin:0;padding:0}
 
 #app-treasury{min-height:0;
   background:var(--bg);color:var(--text);font-family:var(--font-body);
   background-image:
-    radial-gradient(ellipse 90% 55% at 50% -8%, rgba(122,171,222,.06), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 50%, rgba(196,166,106,.04), transparent);
+    radial-gradient(ellipse 70% 45% at 50% -5%, rgba(196,166,106,.04), transparent),
+    radial-gradient(ellipse 50% 35% at 100% 60%, rgba(122,171,222,.03), transparent);
 }
 button{font-family:inherit;cursor:pointer}
 input,select,textarea{font-family:inherit}
@@ -492,7 +494,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
-  .dc-card.is-talking .dc-avatar-wrap,.dc-card.is-talking .dc-mouth{animation:none!important}
+  .dc-card.is-talking .dc-mouth{animation:none!important}
 }
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
@@ -500,11 +502,11 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 <style>
 /* ===== 統合ポータル：上段クエスト2列＋下段ダッシュボード ===== */
 #portal-bar{
-  position:sticky;top:0;z-index:300;display:flex;gap:14px;align-items:center;
-  padding:12px 22px;
-  background:var(--glass);backdrop-filter:blur(16px);
-  border-bottom:1px solid var(--line-strong);
-  box-shadow:0 4px 24px rgba(0,0,0,.2);
+  flex-shrink:0;z-index:300;display:flex;gap:14px;align-items:center;
+  padding:10px 22px;
+  background:rgba(5,6,8,.96);backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(196,166,106,.14);
+  box-shadow:0 4px 24px rgba(0,0,0,.4);
 }
 #portal-bar .pt-logo{
   font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--text);letter-spacing:.1em;
@@ -521,51 +523,60 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 #portal-bar .pt-hint b{color:var(--text);font-weight:600}
 #portal-shell{
-  display:flex;flex-direction:column;min-height:100vh;
+  display:flex;flex-direction:column;
+  height:100dvh;max-height:100dvh;overflow:hidden;
   background:var(--bg);
   background-image:
-    radial-gradient(ellipse 100% 50% at 20% -10%,rgba(122,171,222,.05),transparent),
-    radial-gradient(ellipse 80% 40% at 80% 0%,rgba(196,166,106,.04),transparent);
+    radial-gradient(ellipse 90% 45% at 50% -8%,rgba(196,166,106,.035),transparent),
+    radial-gradient(ellipse 60% 30% at 85% 5%,rgba(122,171,222,.025),transparent);
 }
 #quests-row{
   display:grid;
-  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  grid-template-columns:minmax(0,6fr) minmax(0,4fr);
   grid-template-areas:"dashboard office" "treasury treasury";
-  grid-template-rows:min(50vh,520px) minmax(50vh,640px);
-  gap:8px;flex:1;min-height:0;
+  grid-template-rows:minmax(0,62fr) minmax(0,38fr);
+  gap:8px;flex:1;min-height:0;overflow:hidden;
   padding:8px;
-  background:transparent;
+  background:#030405;
 }
 .quest-pane{
   min-width:0;min-height:0;display:flex;flex-direction:column;
   position:relative;background:var(--panel);overflow:hidden;
-  border:1px solid var(--line-strong);border-radius:var(--radius);
-  box-shadow:var(--shadow);
+  border:1px solid rgba(196,166,106,.14);border-radius:var(--radius);
+  box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.03);
 }
 .pane-cap{
   flex-shrink:0;z-index:5;display:flex;align-items:center;gap:8px;
   font-family:var(--font-display);font-size:11px;font-weight:600;color:var(--muted);
   letter-spacing:.1em;text-transform:uppercase;
-  background:var(--glass);backdrop-filter:blur(8px);
-  border-bottom:1px solid var(--line-strong);
+  background:linear-gradient(180deg,rgba(196,166,106,.06),rgba(6,7,10,.92));
+  backdrop-filter:blur(8px);
+  border-bottom:1px solid rgba(196,166,106,.16);
   padding:9px 16px;
 }
 .pane-cap::after{
   content:"";margin-left:auto;width:5px;height:5px;border-radius:50%;
-  background:var(--line-strong);
+  background:rgba(196,166,106,.35);
 }
-#dashboard-pane .pane-cap::before{content:"";width:3px;height:12px;border-radius:2px;background:var(--accent);margin-right:4px}
+#dashboard-pane .pane-cap::before{content:"";width:3px;height:12px;border-radius:2px;background:linear-gradient(180deg,var(--gold-hi),var(--gold-dim));margin-right:4px;box-shadow:0 0 8px rgba(196,166,106,.35)}
 #office-pane .pane-cap::before{content:"";width:3px;height:12px;border-radius:2px;background:var(--in);margin-right:4px}
 #treasury-pane .pane-cap::before{content:"";width:3px;height:12px;border-radius:2px;background:var(--gold);margin-right:4px}
 #treasury-pane .pane-cap::after{background:var(--gold)}
-#office-pane{grid-area:office;background:var(--panel);}
-#office-pane iframe{flex:1;width:100%;min-height:0;border:none;display:block;background:transparent;}
-#dashboard-pane,#office-pane{min-height:50vh;}
-#treasury-pane{grid-area:treasury;background:var(--bg);border-radius:var(--radius);}
-#app-treasury{
-  display:flex!important;flex-direction:column;flex:1;min-height:0;overflow:auto;height:auto;
+#office-pane{grid-area:office;background:var(--panel);overflow:hidden;}
+.office-frame{
+  flex:1;min-height:0;overflow:hidden;display:flex;
+  background:#050608;
 }
-#app-treasury .layout{min-height:0;flex:1;}
+#office-pane iframe{flex:1;width:100%;height:100%;min-height:0;border:none;display:block;background:#050608;overflow:hidden;}
+#dashboard-pane,#office-pane{min-height:0;overflow:hidden;}
+#treasury-pane{
+  grid-area:treasury;background:var(--bg);border-radius:var(--radius);
+  overflow:hidden;min-height:0;display:flex;flex-direction:column;
+}
+#app-treasury{
+  display:flex!important;flex-direction:column;flex:1;min-height:0;overflow:hidden;
+}
+#app-treasury .layout{min-height:0;flex:1;overflow:hidden;display:flex;}
 #app-treasury .hud{
   position:sticky;top:0;flex-shrink:0;
   padding:10px 18px;gap:10px;
@@ -588,72 +599,165 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 #app-treasury .gamenav button{
   padding:9px 10px;font-size:13px;border-radius:8px;
 }
-#app-treasury .main{padding:18px 20px 48px;max-width:none;overflow:auto;}
-#dashboard-pane{grid-area:dashboard;}
+#app-treasury .main{padding:18px 20px 28px;max-width:none;overflow:auto;min-height:0;flex:1;}
+#dashboard-pane{grid-area:dashboard;overflow:hidden;}
 #dashboard-pane #root{display:none!important;}
 .dash-compact{
   flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;
-  padding:14px 16px 16px;gap:12px;
-  background:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(122,171,222,.04),transparent);
+  padding:10px 12px 12px;gap:8px;
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 0%,rgba(196,166,106,.03),transparent),
+    #050608;
 }
-.dc-cards{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.dc-cards{flex:0 0 72%;min-height:200px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+/* ===== 円卓会議（Dashboard内インライン） ===== */
+.entaku-inline{
+  flex:1;min-height:0;display:flex;flex-direction:column;position:relative;
+  border:1px solid rgba(196,166,106,.22);border-radius:12px;
+  background:linear-gradient(180deg,#0c0d10 0%,#050608 100%);
+  overflow:hidden;
+  box-shadow:
+    0 10px 36px rgba(0,0,0,.55),
+    inset 0 1px 0 rgba(232,212,168,.07),
+    inset 0 0 24px rgba(0,0,0,.35);
+}
+.entaku-inline::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;
+  background:var(--lux-ring);
+  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  pointer-events:none;z-index:2;
+}
+.entaku-inline::after{
+  content:"";position:absolute;top:0;left:8%;right:8%;height:1px;z-index:3;
+  background:linear-gradient(90deg,transparent,rgba(232,212,168,.55),transparent);
+  pointer-events:none;
+}
+.entaku-inline.collapsed .entaku-inline-body,
+.entaku-inline.collapsed .entaku-input{display:none}
+.entaku-inline-head{
+  flex-shrink:0;display:flex;align-items:center;gap:8px;position:relative;z-index:1;
+  padding:10px 14px;cursor:pointer;user-select:none;
+  background:linear-gradient(180deg,rgba(196,166,106,.1),rgba(8,9,12,.85));
+  border-bottom:1px solid rgba(196,166,106,.18);
+}
+.entaku-inline-head:hover{background:linear-gradient(180deg,rgba(196,166,106,.14),rgba(8,9,12,.9))}
+.entaku-inline-dot{
+  width:7px;height:7px;border-radius:50%;background:var(--gold-hi);flex-shrink:0;
+  box-shadow:0 0 10px rgba(232,212,168,.45);
+}
+.entaku-inline-title{
+  flex:1;font-family:var(--font-display);font-size:12px;font-weight:600;
+  color:var(--gold-hi);letter-spacing:.06em;
+}
+.entaku-inline-toggle{
+  background:rgba(0,0,0,.35);border:1px solid rgba(196,166,106,.25);color:var(--gold-hi);
+  border-radius:6px;width:24px;height:22px;font-size:11px;cursor:pointer;
+}
+.entaku-inline-body{
+  flex:1;min-height:0;overflow:auto;padding:12px 14px;position:relative;z-index:1;
+  font-family:var(--font-body);font-size:12px;line-height:1.6;
+  background:#040506;
+}
+.entaku-inline .entaku-input{
+  flex-shrink:0;display:flex;gap:8px;padding:10px 12px;position:relative;z-index:1;
+  border-top:1px solid rgba(196,166,106,.16);
+  background:linear-gradient(180deg,#0a0b0e,#060708);
+}
+.entaku-inline #entakuText{rows:1;min-height:36px;max-height:72px;font-size:12px;padding:8px}
+.entaku-inline #entakuSend{padding:0 14px;font-size:12px}
+/* 旧モーダルは使わない */
+.entaku-modal{display:none!important}
+/* AI作業中：入出金ペイン */
+#treasury-pane.ai-working .hud{box-shadow:inset 0 -2px 0 var(--accent)}
+#treasury-pane.ai-working .xp-fill{animation:aiXpPulse 1.2s ease-in-out infinite}
+#treasury-pane.ai-working .gamenav button.on{
+  box-shadow:inset 3px 0 0 var(--accent),0 0 14px rgba(122,171,222,.2);
+  border-color:rgba(122,171,222,.35);
+}
+@keyframes aiXpPulse{0%,100%{opacity:1}50%{opacity:.55}}
+.ai-work-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:11px;font-weight:600;color:var(--accent);
+  padding:4px 10px;border-radius:99px;
+  background:rgba(122,171,222,.12);border:1px solid rgba(122,171,222,.35);
+  animation:aiBadgePulse 1.5s ease-in-out infinite;
+}
+.ai-work-badge[hidden]{display:none!important}
+@keyframes aiBadgePulse{0%,100%{opacity:1}50%{opacity:.65}}
+.ai-work-log{
+  flex-shrink:0;
+  font-size:11px;color:var(--accent);padding:6px 18px;
+  background:rgba(122,171,222,.08);border-bottom:1px solid rgba(122,171,222,.2);
+}
+.ai-work-log[hidden]{display:none!important}
 .dc-card{
-  min-height:0;display:flex;flex-direction:column;overflow:hidden;
-  background:var(--panel2);
-  border:1px solid var(--line-strong);border-radius:var(--radius-sm);
-  transition:border-color .2s,transform .2s,box-shadow .2s;
+  min-height:0;display:flex;flex-direction:column;overflow:hidden;position:relative;
+  background:linear-gradient(180deg,#111318 0%,#08090c 100%);
+  border:1px solid rgba(196,166,106,.18);border-radius:12px;
+  transition:border-color .25s,box-shadow .25s;
   cursor:default;
+  box-shadow:
+    0 8px 28px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.04);
+}
+.dc-card::before{
+  content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;z-index:3;
+  background:var(--lux-ring);
+  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  pointer-events:none;
+}
+.dc-card::after{
+  content:"";position:absolute;top:0;left:10%;right:10%;height:1px;z-index:3;
+  background:linear-gradient(90deg,transparent,rgba(232,212,168,.45),transparent);
+  pointer-events:none;
 }
 .dc-card:hover{
-  border-color:rgba(196,166,106,.35);
-  transform:translateY(-2px);
-  box-shadow:0 12px 32px rgba(0,0,0,.25);
+  border-color:rgba(232,212,168,.38);
+  box-shadow:0 12px 36px rgba(0,0,0,.55),0 0 20px rgba(196,166,106,.06);
 }
-.dc-card[data-dept="secretary"]:hover{border-color:rgba(91,108,255,.5)}
-.dc-card[data-dept="finance"]:hover{border-color:rgba(120,130,150,.55)}
-.dc-card[data-dept="legal"]:hover{border-color:rgba(130,115,160,.55)}
-.dc-photo{flex:1;min-height:0;overflow:hidden;background:#080c18;position:relative}
-.dc-avatar-wrap{width:100%;height:100%;position:relative;transform-origin:center 78%}
-.dc-card.is-talking .dc-avatar-wrap{animation:dcNod .36s ease-in-out infinite alternate}
-@keyframes dcNod{
-  0%{transform:translateY(0) scale(1) rotate(0deg)}
-  100%{transform:translateY(-3px) scale(1.02) rotate(.4deg)}
+.dc-card.is-talking{
+  border-color:rgba(232,212,168,.42);
+  box-shadow:0 0 0 1px rgba(196,166,106,.2),0 12px 32px rgba(0,0,0,.5);
 }
-.dc-card[data-dept="finance"].is-talking .dc-avatar-wrap{animation-name:dcNodFin}
-@keyframes dcNodFin{
-  0%{transform:translateY(0) scale(1)}
-  100%{transform:translateY(-3px) scale(1.02) rotate(-.5deg)}
-}
+.dc-card[data-dept="secretary"]:hover{border-color:rgba(196,166,106,.45);box-shadow:0 12px 36px rgba(0,0,0,.5),0 0 18px rgba(91,108,255,.08)}
+.dc-card[data-dept="finance"]:hover{border-color:rgba(196,166,106,.45);box-shadow:0 12px 36px rgba(0,0,0,.5),0 0 18px rgba(140,150,170,.08)}
+.dc-card[data-dept="legal"]:hover{border-color:rgba(196,166,106,.45);box-shadow:0 12px 36px rgba(0,0,0,.5),0 0 18px rgba(150,135,175,.08)}
+.dc-photo{flex:1;min-height:0;overflow:hidden;background:#030405;position:relative}
+.dc-avatar-wrap{width:100%;height:100%;position:relative}
 .dc-mouth{
   position:absolute;left:50%;bottom:30%;z-index:2;
-  width:12px;height:5px;border-radius:50%;
-  background:rgba(200,90,110,.75);
+  width:14px;height:6px;border-radius:50%;
+  background:rgba(180,90,100,.8);
   transform:translateX(-50%);opacity:0;
   pointer-events:none;transition:opacity .15s;
-  box-shadow:0 0 4px rgba(0,0,0,.4);
 }
-.dc-card.is-talking .dc-mouth{opacity:.85;animation:dcMouth .24s steps(2,end) infinite}
+.dc-card.is-talking .dc-mouth{opacity:.9;animation:dcMouth .18s ease-in-out infinite}
 @keyframes dcMouth{
-  0%,45%{height:5px;width:11px;border-radius:50%}
-  55%,95%{height:11px;width:9px;border-radius:45% 45% 55% 55%}
-  100%{height:5px;width:11px}
+  0%,100%{height:5px;width:12px;border-radius:50%}
+  25%{height:9px;width:10px;border-radius:45% 45% 50% 50%}
+  50%{height:5px;width:13px;border-radius:50%}
+  75%{height:10px;width:9px;border-radius:40% 40% 55% 55%}
 }
 .dc-bubble{
   position:absolute;top:6px;left:6px;right:6px;z-index:4;
-  background:var(--glass);backdrop-filter:blur(8px);
-  border:1px solid var(--line-strong);border-radius:var(--radius-sm);
+  background:rgba(6,7,10,.92);backdrop-filter:blur(10px);
+  border:1px solid rgba(196,166,106,.28);border-radius:var(--radius-sm);
   padding:6px 10px;
   font-size:11px;line-height:1.5;color:var(--text);font-family:var(--font-body);
-  box-shadow:var(--shadow);
+  box-shadow:0 8px 24px rgba(0,0,0,.45);
   animation:dcBubbleIn .22s ease;
   pointer-events:none;
 }
 .dc-bubble[hidden]{display:none!important}
 .dc-bubble::after{
   content:"";position:absolute;bottom:-5px;left:50%;
-  width:8px;height:8px;background:rgba(6,10,20,.94);
-  border-right:1px solid rgba(232,184,75,.45);
-  border-bottom:1px solid rgba(232,184,75,.45);
+  width:8px;height:8px;background:rgba(6,7,10,.94);
+  border-right:1px solid rgba(196,166,106,.35);
+  border-bottom:1px solid rgba(196,166,106,.35);
   transform:translateX(-50%) rotate(45deg);
 }
 .dc-bubble-txt{display:block}
@@ -666,13 +770,14 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .dc-card[data-dept="secretary"] .dc-bubble{border-color:rgba(91,108,255,.55)}
 .dc-card[data-dept="finance"] .dc-bubble{border-color:rgba(140,150,170,.55)}
 .dc-card[data-dept="legal"] .dc-bubble{border-color:rgba(150,135,175,.55)}
-.dc-card[data-dept="secretary"] .dc-photo{background:linear-gradient(160deg,#f0ecff,#faf8ff)}
-.dc-card[data-dept="finance"] .dc-photo{background:linear-gradient(160deg,#e8eaef,#f4f5f7)}
-.dc-card[data-dept="legal"] .dc-photo{background:linear-gradient(160deg,#e6e4ec,#f2f0f6)}
+.dc-card[data-dept="secretary"] .dc-photo{background:linear-gradient(160deg,#12101a,#060608)}
+.dc-card[data-dept="finance"] .dc-photo{background:linear-gradient(160deg,#101218,#060608)}
+.dc-card[data-dept="legal"] .dc-photo{background:linear-gradient(160deg,#12101a,#060608)}
 .dc-photo img{
-  width:100%;height:100%;object-fit:cover;object-position:center 18%;
+  width:100%;height:100%;object-fit:cover;object-position:center 8%;
   display:block;position:relative;z-index:1;
-  filter:brightness(1.03) saturate(1.02);
+  filter:brightness(.96) saturate(.95) contrast(1.02);
+  transform:scale(1.06);transform-origin:center 22%;
 }
 .dc-photo img[data-fallback="1"]{opacity:0}
 .dc-photo::before{
@@ -683,94 +788,59 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 .dc-photo::after{
   content:"";position:absolute;inset:0;z-index:1;
-  background:linear-gradient(180deg,transparent 58%,rgba(8,12,24,.5));
+  background:linear-gradient(180deg,transparent 50%,rgba(4,5,6,.75));
   pointer-events:none;
 }
 .dc-name{
-  flex-shrink:0;font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--text);
-  text-align:center;padding:8px 4px 0;letter-spacing:.04em;
+  flex-shrink:0;font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--gold-hi);
+  text-align:center;padding:9px 4px 0;letter-spacing:.06em;position:relative;z-index:2;
+  border-top:1px solid rgba(196,166,106,.14);
+  background:linear-gradient(180deg,rgba(196,166,106,.06),transparent);
 }
-.dc-name-en{font-size:9px;color:var(--muted);letter-spacing:.12em;margin-left:5px;font-family:var(--font-num);font-weight:400}
+.dc-name-en{font-size:9px;color:var(--gold-dim);letter-spacing:.14em;margin-left:5px;font-family:var(--font-num);font-weight:400}
 .dc-role{
-  flex-shrink:0;font-size:11px;color:var(--muted);text-align:center;
-  padding:2px 8px 10px;line-height:1.4;font-weight:500;
-}
-.dc-round{
-  flex-shrink:0;display:flex;align-items:center;gap:14px;
-  padding:14px 18px;border-radius:var(--radius);
-  border:1px solid var(--line-strong);
-  background:var(--panel2);
-  cursor:pointer;transition:.2s;
-  position:relative;overflow:hidden;
-}
-.dc-round::before{
-  content:"";position:absolute;inset:0;border-radius:var(--radius);pointer-events:none;
-  background:linear-gradient(135deg,rgba(196,166,106,.06),rgba(122,171,222,.04));
-}
-.dc-round::after{display:none}
-.dc-round:hover{
-  border-color:rgba(196,166,106,.4);
-  box-shadow:0 8px 28px rgba(0,0,0,.2);
-  transform:translateY(-1px);
-}
-.dc-round-ic{
-  font-size:18px;color:var(--gold);line-height:1;flex-shrink:0;
-  width:42px;height:42px;display:flex;align-items:center;justify-content:center;
-  border-radius:50%;border:1px solid var(--line-strong);
-  background:var(--panel);
+  flex-shrink:0;font-size:11px;color:var(--muted);text-align:center;position:relative;z-index:2;
+  padding:2px 8px 11px;line-height:1.4;font-weight:500;
 }
 .dc-round-t{font-family:var(--font-display);font-size:13px;font-weight:600;color:var(--text);letter-spacing:.02em}
 .dc-round-s{font-size:11px;color:var(--muted);line-height:1.5;margin-top:3px}
-/* ===== 円卓会議ターミナル（Claude） ===== */
-.entaku-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(6,10,18,.75);backdrop-filter:blur(8px);padding:16px}
-.entaku-win{
-  width:min(760px,96vw);height:min(80vh,680px);display:flex;flex-direction:column;
-  background:var(--panel);border:1px solid var(--line-strong);border-radius:var(--radius);
-  overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.5);
-  position:relative;
-}
-.entaku-win::before{display:none}
-.entaku-bar{
-  display:flex;align-items:center;gap:10px;padding:12px 18px;
-  background:var(--panel2);
-  border-bottom:1px solid var(--line-strong);
-}
-.entaku-title{flex:1;font-family:var(--font-display);font-size:13px;font-weight:600;color:var(--text);letter-spacing:.02em}
-.entaku-dot{width:8px;height:8px;border-radius:50%;background:var(--in)}
-.entaku-x{background:var(--panel);border:1px solid var(--line-strong);color:var(--muted);border-radius:8px;width:28px;height:26px;cursor:pointer;font-size:13px;transition:.15s}
-.entaku-x:hover{color:var(--text);border-color:var(--gold)}
-.entaku-body{
-  flex:1;min-height:0;overflow:auto;padding:16px 20px;
-  font-family:var(--font-body);font-size:14px;line-height:1.7;
-  background:var(--bg);
-}
-.entaku-input{
-  display:flex;gap:10px;padding:14px 18px;
-  border-top:1px solid var(--line-strong);
-  background:var(--panel2);
-}
+/* entaku modal styles kept for class reuse in inline */
+.entaku-bar{display:none}
 .ent-who{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.06em;padding:2px 8px;border-radius:6px;margin-bottom:5px;font-family:var(--font-display)}
 .ent-me .ent-who{color:#1a1510;background:var(--gold)}
-.ent-ai .ent-who{color:var(--in);border:1px solid rgba(93,217,173,.35);background:rgba(93,217,173,.08)}
+.ent-ai .ent-who{color:var(--gold-hi);border:1px solid rgba(196,166,106,.3);background:rgba(196,166,106,.08)}
 .entaku-jump{font-family:var(--font-body);font-size:11px;font-weight:600;color:#1a1510;background:var(--gold);border:none;border-radius:8px;padding:5px 12px;cursor:pointer}
-#entakuText{flex:1;background:var(--bg);border:1px solid var(--line-strong);border-radius:var(--radius-sm);color:var(--text);font:inherit;font-size:14px;padding:10px;resize:none;line-height:1.5}
-#entakuSend{background:var(--gold);color:#1a1510;border:none;border-radius:var(--radius-sm);padding:0 20px;font-weight:600;cursor:pointer;font-family:var(--font-display);font-size:13px;transition:.15s}
+#entakuText{
+  flex:1;background:#040506;border:1px solid rgba(196,166,106,.2);border-radius:var(--radius-sm);
+  color:var(--text);font:inherit;font-size:13px;padding:10px;resize:none;line-height:1.5;
+  box-shadow:inset 0 2px 8px rgba(0,0,0,.35);
+}
+#entakuText:focus{outline:none;border-color:rgba(232,212,168,.4);box-shadow:inset 0 2px 8px rgba(0,0,0,.35),0 0 0 2px rgba(196,166,106,.12)}
+#entakuSend{
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold));
+  color:#1a1510;border:1px solid rgba(232,212,168,.5);border-radius:var(--radius-sm);
+  padding:0 20px;font-weight:600;cursor:pointer;font-family:var(--font-display);font-size:13px;
+  box-shadow:0 4px 14px rgba(0,0,0,.35);transition:.15s;
+}
 #entakuSend:hover{filter:brightness(1.06)}
 #entakuSend:disabled{opacity:.5;cursor:default}
 .entaku-modal.hidden{display:none}
-.ent-msg{margin-bottom:14px}
+.ent-msg{margin-bottom:14px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.02);border:1px solid rgba(196,166,106,.06)}
+.ent-msg.ent-me{background:rgba(196,166,106,.04);border-color:rgba(196,166,106,.12)}
 .ent-txt{color:var(--text)}
 .ent-me .ent-txt{color:var(--text)}
 .ent-typing{color:var(--muted)}
 .entaku-jumps{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 @media(max-width:980px){
+  #portal-shell{height:100dvh;overflow:hidden;}
   #quests-row{
     grid-template-columns:1fr;
     grid-template-areas:"dashboard" "office" "treasury";
-    grid-template-rows:auto auto minmax(60vh,1fr);
+    grid-template-rows:minmax(0,34fr) minmax(0,28fr) minmax(0,38fr);
+    overflow:hidden;
   }
-  #dashboard-pane,#office-pane{min-height:44vh;}
-  #office-pane{min-height:40vh;}
+  #dashboard-pane,#office-pane{min-height:0;overflow:hidden;}
+  .dc-cards{flex:0 0 72%;}
 }
 @media(max-width:600px){#portal-bar .pt-hint{display:none;}}
 /* ===== スマホ対応（横画面前提） ===== */
@@ -791,7 +861,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 <div id="portal-shell">
 <div id="portal-bar">
   <span class="pt-logo">GOONER PORTAL</span>
-  <span class="pt-hint"><b>Dashboard</b> 左　<b>オフィスクエスト</b> 右　<b>入出金</b> 下段</span>
+  <span class="pt-hint"><b>Dashboard</b> 60%　<b>クエスト</b> 40%　画面固定・各枠内スクロール</span>
 </div>
 
 <div id="quests-row">
@@ -833,22 +903,30 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
           <div class="dc-role">法務部長</div>
         </div>
       </div>
-      <div class="dc-round" id="dcRound" role="button" tabindex="0" onclick="openEntaku()" title="クリックで円卓会議ターミナル（Claude）を開く">
-        <span class="dc-round-ic">⌨</span>
-        <div class="dc-round-body">
-          <div class="dc-round-t">円卓会議ターミナル</div>
-          <div class="dc-round-s">凛・紬・陽翔へ振り分け。経理／法務／CFを案内します</div>
+      <div class="entaku-inline" id="entaku-inline">
+        <div class="entaku-inline-head" onclick="toggleEntaku()" title="クリックで開閉">
+          <span class="entaku-inline-dot"></span>
+          <span class="entaku-inline-title">円卓会議 ─ Claude</span>
+          <button type="button" class="entaku-inline-toggle" id="entakuToggle" onclick="event.stopPropagation();toggleEntaku()" aria-label="開閉">▼</button>
         </div>
+        <div class="entaku-inline-body" id="entakuBody"></div>
+        <form class="entaku-input" id="entakuForm" onsubmit="return sendEntaku(event)">
+          <textarea id="entakuText" rows="1" placeholder="相談・領収書・契約書… Enter送信"></textarea>
+          <button type="submit" id="entakuSend">送信</button>
+        </form>
       </div>
     </div>
     <div id="root" hidden></div>
   </section>
   <section class="quest-pane" id="office-pane">
     <div class="pane-cap">オフィスクエスト</div>
-    <iframe src="office.html" title="オフィスクエスト マップ"></iframe>
+    <div class="office-frame">
+      <iframe src="office.html" title="オフィスクエスト マップ"></iframe>
+    </div>
   </section>
   <section class="quest-pane" id="treasury-pane">
     <div class="pane-cap">入出金クエスト（本丸）</div>
+    <div id="aiWorkLog" class="ai-work-log" hidden>円卓AIが入出金データを参照・整理しています…</div>
     <div id="app-treasury">
 
 
@@ -860,6 +938,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
     <div class="xp-bar"><div class="xp-fill" id="xpFill"></div></div>
   </div>
   <div class="hud-right">
+    <span class="ai-work-badge" id="aiWorkBadge" hidden>AI 作業中</span>
     <span class="streak" id="streakLabel">🔥 0日連続</span>
     <div class="month-nav">
       <button id="mPrev" aria-label="前の月">◀</button>
@@ -1888,14 +1967,10 @@ window.Treasury={
 /* 旧タブ切替は廃止（常時 オフィスクエスト｜入出金｜下にダッシュボード） */
 (function(){
   if(location.hash==='#treasury'){
-    const el=document.getElementById('treasury-pane');
-    if(el)try{el.scrollIntoView({behavior:'smooth',block:'start'});}catch(e){}
+    try{document.querySelector('.gamenav button[data-s="dash"]')?.click();}catch(e){}
   }
   if(location.hash==='#inrou'){
-    try{
-      document.querySelector('.gamenav button[data-s="cf-inrou"]')?.click();
-      document.getElementById('treasury-pane')?.scrollIntoView({behavior:'smooth',block:'start'});
-    }catch(e){}
+    try{document.querySelector('.gamenav button[data-s="cf-inrou"]')?.click();}catch(e){}
   }
 })();
 </script>
@@ -1970,27 +2045,12 @@ window.Treasury={
 })();
 </script>
 
-<!-- ===== 円卓会議ターミナル（Claude） ===== -->
-<div id="entaku-modal" class="entaku-modal hidden" onclick="if(event.target===this)closeEntaku()">
-  <div class="entaku-win">
-    <div class="entaku-bar">
-      <span class="entaku-dot"></span>
-      <span class="entaku-title">円卓会議 ─ Claude Opus 4.8</span>
-      <button class="entaku-x" onclick="closeEntaku()" aria-label="閉じる">✕</button>
-    </div>
-    <div class="entaku-body" id="entakuBody"></div>
-    <form class="entaku-input" id="entakuForm" onsubmit="return sendEntaku(event)">
-      <textarea id="entakuText" rows="2" placeholder="情報を投げる（領収書/請求書の内容・契約書・入出金・相談…）→ Enterで送信、Shift+Enterで改行"></textarea>
-      <button type="submit" id="entakuSend">送信</button>
-    </form>
-  </div>
-</div>
+<!-- 円卓会議：Dashboard内インライン（下の #entaku-inline を使用） -->
 <script>
 (function(){
-  const S = { history: [], busy: false };
+  const S = { history: [], busy: false, open: false, tour: null, lastScreen: 'dash' };
   function el(id){ return document.getElementById(id); }
   function esc(s){ return String(s==null?'':s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
-  // 振り分け先 → CFナビの遷移先
   const ROUTES = [
     { key:'口座', s:'cf-bank', label:'口座・CSVへ' },
     { key:'明細突合', s:'cf-link', label:'明細突合へ' },
@@ -2001,11 +2061,42 @@ window.Treasury={
     { key:'印籠', s:'cf-inrou', label:'印籠レポートへ' },
     { key:'精算', s:'quest', label:'精算クエストへ' },
   ];
+  const AI_TOUR = ['cf-bank','cf-cases','cf-link','cf-flow','cf-forecast','cf-inrou'];
+  function setAiWorking(on){
+    document.getElementById('treasury-pane')?.classList.toggle('ai-working', on);
+    const b=el('aiWorkBadge'), l=el('aiWorkLog');
+    if(b) b.hidden=!on;
+    if(l) l.hidden=!on;
+    if(on) startAiTour();
+    else stopAiTour();
+  }
+  function activeScreen(){
+    const on=document.querySelector('.gamenav button.on');
+    return on ? on.dataset.s : 'dash';
+  }
   function gotoScreen(sid){
+    if(!sid) return;
     try{
-      document.getElementById('treasury-pane')?.scrollIntoView({behavior:'smooth',block:'start'});
+      const cur=activeScreen();
+      if(cur && cur!=='dash') S.lastScreen=cur;
       document.querySelector('.gamenav button[data-s="'+sid+'"]')?.click();
     }catch(e){}
+  }
+  function pickScreen(text){
+    const hit=ROUTES.find(r=>text.includes(r.key));
+    return hit ? hit.s : null;
+  }
+  function startAiTour(){
+    stopAiTour();
+    let i=0;
+    gotoScreen(AI_TOUR[0]);
+    S.tour=setInterval(()=>{
+      i=(i+1)%AI_TOUR.length;
+      gotoScreen(AI_TOUR[i]);
+    }, 2200);
+  }
+  function stopAiTour(){
+    if(S.tour){ clearInterval(S.tour); S.tour=null; }
   }
   function jumpButtons(text){
     const hits = ROUTES.filter(r=>text.includes(r.key));
@@ -2022,13 +2113,13 @@ window.Treasury={
     }).join('') + (S.busy?'<div class="ent-msg ent-ai"><span class="ent-who">円卓</span><div class="ent-txt ent-typing">…考え中</div></div>':'');
     body.scrollTop = body.scrollHeight;
     body.querySelectorAll('.entaku-jump').forEach(b=>b.onclick=()=>gotoScreen(b.dataset.s));
-    if(S.busy) window.DashTalk?.speak('secretary', '円卓が考え中です…', 99999);
+    setAiWorking(S.busy);
+    if(S.busy) window.DashTalk?.speak('secretary', '円卓が考え中…', 99999);
     else if(S.history.length > 1){
       const last = S.history[S.history.length-1];
       if(last?.role==='assistant') window.DashTalk?.reactToText(last.content);
     }
   }
-  // 現在のCF状況を軽く要約してcontextに渡す
   function cfContext(){
     try{
       const S2 = window.Treasury && window.Treasury.S;
@@ -2036,24 +2127,38 @@ window.Treasury={
       return '案件 '+(S2.cases?.length||0)+'件 / 口座 '+(S2.accounts?.length||0)+'件 / 銀行明細 '+(S2.bankTx?.length||0)+'件 / 関連者 '+(S2.relatedParties?.length||0)+'件';
     }catch(e){ return ''; }
   }
+  function syncToggle(){
+    const box=el('entaku-inline'), btn=el('entakuToggle');
+    if(box) box.classList.toggle('collapsed', !S.open);
+    if(btn) btn.textContent = S.open ? '▼' : '▲';
+  }
+  window.toggleEntaku = function(){
+    S.open = !S.open;
+    syncToggle();
+    if(S.open) setTimeout(()=>el('entakuText')?.focus(), 30);
+  };
   window.openEntaku = function(){
-    el('entaku-modal').classList.remove('hidden');
+    S.open = true;
+    syncToggle();
     if(!S.history.length){
-      S.history.push({role:'assistant', content:'円卓会議へようこそ。ここに情報を投げてください。\n・お金（領収書/請求書/入出金/経費/税）は「経理」へ\n・契約（契約書/覚書）は「法務」へ振り分けます。\n契約書は支払サイトを抜き出して経理のCF予測へつなぎます。何から始めますか？'});
+      S.history.push({role:'assistant', content:'円卓会議へようこそ。お金のことは経理、契約は法務へ振り分けます。他の画面を見ながら話せます。'});
       render();
-      window.DashTalk?.speak('secretary', '円卓会議、始めましょう。', 3500);
+      window.DashTalk?.speak('secretary', '何でも聞いてくださいね。', 3000);
     }
     setTimeout(()=>el('entakuText')?.focus(), 50);
   };
   window.closeEntaku = function(){
-    el('entaku-modal').classList.add('hidden');
+    S.open = false;
+    syncToggle();
     window.DashTalk?.stop();
+    setAiWorking(false);
   };
   window.sendEntaku = function(ev){
     if(ev) ev.preventDefault();
     if(S.busy) return false;
     const ta = el('entakuText'); const q = (ta.value||'').trim();
     if(!q) return false;
+    if(!S.open){ S.open=true; syncToggle(); }
     S.history.push({role:'user', content:q}); ta.value=''; S.busy=true; render();
     window.DashTalk?.reactToText(q);
     el('entakuSend').disabled = true;
@@ -2065,22 +2170,25 @@ window.Treasury={
       return r.json();
     }).then(res=>{
       S.busy=false; el('entakuSend').disabled=false;
-      S.history.push({role:'assistant', content: res.text || '（応答が空でした）'});
+      const text=res.text || '（応答が空でした）';
+      S.history.push({role:'assistant', content: text});
       render();
+      const sid=pickScreen(text);
+      if(sid) setTimeout(()=>gotoScreen(sid), 400);
     }).catch(e=>{
       S.busy=false; el('entakuSend').disabled=false;
-      S.history.push({role:'assistant', content:'⚠ Claudeに接続できませんでした（'+e.message+'）。\nAIが動くのはVercel版のみです。サーバーに ANTHROPIC_API_KEY の設定が必要です。'});
+      S.history.push({role:'assistant', content:'⚠ Claudeに接続できませんでした（'+e.message+'）。Vercel版＋APIキーが必要です。'});
       render();
     });
     return false;
   };
-  // Enter送信 / Shift+Enter改行
   document.addEventListener('keydown', function(e){
     if(e.key==='Enter' && !e.shiftKey){
       const ta = document.getElementById('entakuText');
       if(ta && document.activeElement===ta){ e.preventDefault(); sendEntaku(); }
     }
   });
+  syncToggle();
 })();
 </script>
 
