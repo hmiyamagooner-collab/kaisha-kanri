@@ -42,28 +42,46 @@ h1{
   width:222.3%;height:222.3%;border:none;display:block;
   transform:scale(0.45);transform-origin:0 0;
 }
-body.embedded{padding:0;height:100%;overflow:hidden;background:#050608;}
+body.embedded{padding:0;height:100%;width:100%;overflow:hidden;background:#050608;font-family:'Zen Kaku Gothic New',sans-serif;}
 body.embedded,html:has(body.embedded){height:100%;width:100%;overflow:hidden;}
 body.embedded h1,body.embedded .sub{display:none;}
 body.embedded .cards{display:none;}
-body.embedded .layout,body.embedded .toprow{height:100%;margin:0;}
+body.embedded .layout,body.embedded .toprow{
+  height:100%;width:100%;margin:0;display:flex;flex-direction:column;min-height:0;
+}
 body.embedded .stage{
   flex:1 1 auto;max-width:none;min-width:0;width:100%;height:100%;
   display:flex;flex-direction:column;min-height:0;border:none;box-shadow:none;
+  position:relative;
 }
 body.embedded .hud-dock,
 body.embedded .panel.overlays{display:none!important;}
 body.embedded .stage-game{
-  flex:1;position:relative;min-height:0;overflow:hidden;
-  display:flex;align-items:center;justify-content:center;
-  background:#050608;
+  flex:1;position:relative;min-height:0;overflow:auto;
+  display:flex;align-items:flex-start;justify-content:center;
+  padding:10px;
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 35%,rgba(196,166,106,.05),transparent 60%),
+    linear-gradient(180deg,#0c0d11 0%,#050608 100%);
+  scrollbar-width:thin;
+  scrollbar-color:rgba(196,166,106,.35) transparent;
+}
+body.embedded .stage-game::before{
+  content:"";position:absolute;inset:8px;border-radius:12px;pointer-events:none;z-index:0;
+  border:1px solid rgba(196,166,106,.16);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 0 0 1px rgba(0,0,0,.35);
 }
 body.embedded canvas#game{
-  display:block;margin:0;
-  object-fit:contain;object-position:center center;
+  position:relative;z-index:1;
+  display:block;margin:0 auto;
+  width:auto;height:auto;
+  max-width:100%;
+  object-fit:contain;
   image-rendering:auto;
-  border:none;border-radius:0;box-shadow:none;
-  max-width:100%;max-height:100%;
+  border:1px solid rgba(196,166,106,.22);
+  border-radius:10px;
+  box-shadow:0 10px 28px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.03);
+  background:#0a1424;
 }
 /* 埋め込み(ポータル)では縦長ペインでも「よこ画面推奨」を出さずマップを描画する */
 body.embedded #rotate-note{display:none!important;}
@@ -1230,19 +1248,24 @@ function fitCanvas(){
   const wrap=document.querySelector('.stage-game');
   const cv=document.getElementById('game');
   if(!wrap||!cv)return;
+  const pad=20;
   const r=wrap.getBoundingClientRect();
-  if(r.width<8||r.height<8)return;
-  const mapAspect=cv.width/cv.height;
-  const boxAspect=r.width/r.height;
-  if(boxAspect>mapAspect){
-    cv.style.height=Math.floor(r.height)+'px';
-    cv.style.width=Math.floor(r.height*mapAspect)+'px';
+  const availW=Math.max(8,r.width-pad);
+  const availH=Math.max(8,r.height-pad);
+  if(availW<8||availH<8)return;
+  /* 幅いっぱいに拡大。縦が長い分は枠内スクロールで見る */
+  const scale=availW/cv.width;
+  const w=Math.max(1,Math.floor(cv.width*scale));
+  const h=Math.max(1,Math.floor(cv.height*scale));
+  cv.style.width=w+'px';
+  cv.style.height=h+'px';
+  cv.style.maxWidth=availW+'px';
+  cv.style.maxHeight='none';
+  if(h<=availH){
+    wrap.style.alignItems='center';
   }else{
-    cv.style.width=Math.floor(r.width)+'px';
-    cv.style.height=Math.floor(r.width/mapAspect)+'px';
+    wrap.style.alignItems='flex-start';
   }
-  cv.style.maxWidth='100%';
-  cv.style.maxHeight='100%';
 }
 if(EMBEDDED){
   const sg=document.querySelector('.stage-game');
@@ -1250,6 +1273,8 @@ if(EMBEDDED){
     new ResizeObserver(fitCanvas).observe(sg);
   }
   fitCanvas();
+  requestAnimationFrame(fitCanvas);
+  setTimeout(fitCanvas,120);
   window.addEventListener('resize',fitCanvas);
 }
 requestAnimationFrame(loop);

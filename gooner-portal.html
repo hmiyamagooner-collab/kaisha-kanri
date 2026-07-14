@@ -10,9 +10,9 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 
-  html, body { background: #050608; margin: 0; height: 100%; overflow: hidden; }
-  html { font-size: 15px; -webkit-font-smoothing: antialiased; }
-  body { font-family: 'Zen Kaku Gothic New', sans-serif; line-height: 1.6; color: #eceff4; }
+  html, body { background: #050608; margin: 0; min-height: 100%; }
+  html { font-size: 15px; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+  body { font-family: 'Zen Kaku Gothic New', sans-serif; line-height: 1.6; color: #eceff4; overflow-x: hidden; }
   @keyframes cardIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 
@@ -81,26 +81,84 @@ input,select,textarea{font-family:inherit}
 .month-nav button:hover{border-color:var(--gold);color:var(--gold-hi)}
 
 /* ===== レイアウト ===== */
-.layout{display:flex;min-height:0;height:100%;}
+.layout{display:block;min-height:0;}
 .gamenav{
-  width:200px;flex-shrink:0;padding:16px 12px;border-right:1px solid var(--line-strong);
-  display:flex;flex-direction:column;gap:4px;
-  background:rgba(14,18,28,.5);
+  width:228px;flex-shrink:0;padding:14px 12px 24px;
+  display:flex;flex-direction:column;gap:6px;
+  background:
+    linear-gradient(180deg,#12141a 0%,#0a0b0e 40%,#07080a 100%);
+  border-right:1px solid rgba(196,166,106,.22);
+  box-shadow:inset -1px 0 0 rgba(255,255,255,.03),8px 0 28px rgba(0,0,0,.35);
+}
+.gamenav .nav-group{
+  font-size:10px;color:var(--gold-dim);letter-spacing:.14em;
+  padding:14px 10px 6px;font-family:var(--font-display);font-weight:600;
+  text-transform:uppercase;
 }
 .gamenav button{
   display:flex;align-items:center;gap:10px;width:100%;text-align:left;
-  background:transparent;border:1px solid transparent;color:var(--muted);
-  padding:10px 12px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;transition:.15s;
-  font-family:var(--font-body);
+  color:var(--text);
+  padding:11px 12px;border-radius:11px;font-size:13px;font-weight:600;
+  font-family:var(--font-body);letter-spacing:.02em;
+  position:relative;
+  background:linear-gradient(180deg,#1c2028 0%,#12151c 55%,#0c0e13 100%);
+  border:1px solid rgba(196,166,106,.22);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.1),
+    inset 0 -2px 0 rgba(0,0,0,.45),
+    0 3px 0 #050607,
+    0 6px 14px rgba(0,0,0,.4);
+  transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease, filter .12s ease;
 }
-.gamenav button .nico{font-family:var(--font-num);font-size:12px;width:24px;text-align:center;opacity:.7}
-.gamenav button:hover{color:var(--text);background:var(--panel2)}
+.gamenav button::before{
+  content:"";position:absolute;inset:1px;border-radius:10px;pointer-events:none;
+  background:linear-gradient(135deg,rgba(232,212,168,.1),transparent 42%);
+  opacity:.7;
+}
+.gamenav button .nico{
+  font-family:var(--font-num);font-size:11px;width:28px;height:28px;
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+  border-radius:8px;color:var(--gold-hi);
+  background:linear-gradient(180deg,#2a303c,#151820);
+  border:1px solid rgba(196,166,106,.28);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 4px rgba(0,0,0,.35);
+}
+.gamenav button:hover{
+  color:#fff;border-color:rgba(232,212,168,.45);
+  transform:translateY(-1px);
+  filter:brightness(1.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.14),
+    inset 0 -2px 0 rgba(0,0,0,.4),
+    0 4px 0 #050607,
+    0 10px 18px rgba(0,0,0,.45),
+    0 0 16px rgba(196,166,106,.08);
+}
+.gamenav button:active{
+  transform:translateY(2px);
+  box-shadow:
+    inset 0 2px 6px rgba(0,0,0,.55),
+    inset 0 1px 0 rgba(255,255,255,.04),
+    0 1px 0 #050607;
+}
 .gamenav button.on{
-  background:var(--panel2);
-  border-color:var(--line-strong);color:var(--text);
-  box-shadow:inset 3px 0 0 var(--gold);
-  font-weight:600;
+  color:#1a1510;
+  border-color:rgba(232,212,168,.65);
+  background:linear-gradient(180deg,#f0dfa8 0%,var(--gold-hi) 35%,var(--gold) 78%,#9a7d42 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.55),
+    inset 0 -2px 0 rgba(120,90,30,.45),
+    0 3px 0 #5c4a22,
+    0 8px 18px rgba(196,166,106,.28),
+    0 0 20px rgba(232,212,168,.12);
 }
+.gamenav button.on .nico{
+  color:#1a1510;
+  background:linear-gradient(180deg,#fff6d8,#e2c878);
+  border-color:rgba(120,90,30,.35);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 1px 3px rgba(0,0,0,.2);
+}
+.gamenav button.on:hover{filter:brightness(1.04);color:#1a1510}
 .main{flex:1;padding:24px 28px 90px;max-width:1120px;min-width:0}
 .screen{display:none}
 .screen.on{display:block;animation:screenIn .35s ease}
@@ -477,36 +535,47 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 
 /* ===== モバイル ===== */
 @media(max-width:760px){
-  .gamenav{
-    position:fixed;bottom:0;left:0;right:0;width:auto;z-index:60;
-    flex-direction:row;justify-content:flex-start;overflow-x:auto;
-    padding:6px 8px calc(6px + env(safe-area-inset-bottom));
-    background:rgba(8,10,18,.97);border-top:1px solid rgba(232,184,75,.35);border-right:none;
-    -webkit-overflow-scrolling:touch;scrollbar-width:none;
-  }
-  .gamenav::-webkit-scrollbar{display:none}
-  .gamenav .nav-group{display:none}
-  .gamenav button{flex-direction:column;gap:2px;padding:6px 8px;font-size:9px;align-items:center;width:auto;min-width:52px;flex-shrink:0}
-  .gamenav button .nico{font-size:13px;width:auto}
-  .gamenav button.on{box-shadow:inset 0 -2px 0 var(--gold);border-color:transparent;background:rgba(232,184,75,.08)}
-  .main{padding:16px 14px 110px}
+  .main{padding:16px 14px 40px}
   .hud-xp{order:3;flex-basis:100%}
+  #app-treasury .hud{top:0;position:relative}
 }
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
-  .dc-card.is-talking .dc-photo img,.dc-card.is-talking .dc-avatar-wrap::after{animation:none!important}
+  .dc-card.is-talking{border-color:rgba(232,212,168,.42)}
 }
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
 </style>
 <style>
 /* ===== 統合ポータル：上段クエスト2列＋下段ダッシュボード ===== */
+#portal-shell{
+  display:grid;
+  grid-template-columns:228px minmax(0,1fr);
+  align-items:start;
+  min-height:100dvh;
+  background:var(--bg);
+  background-image:
+    radial-gradient(ellipse 90% 45% at 50% -8%,rgba(196,166,106,.035),transparent),
+    radial-gradient(ellipse 60% 30% at 85% 5%,rgba(122,171,222,.025),transparent);
+}
+#portal-shell > .gamenav{
+  position:sticky;top:0;left:0;
+  height:100dvh;max-height:100dvh;
+  overflow-y:auto;overflow-x:hidden;
+  z-index:400;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(196,166,106,.35) transparent;
+}
+#portal-main{
+  min-width:0;display:flex;flex-direction:column;
+}
 #portal-bar{
   flex-shrink:0;z-index:300;display:flex;gap:14px;align-items:center;
   padding:10px 22px;
   background:rgba(5,6,8,.96);backdrop-filter:blur(16px);
   border-bottom:1px solid rgba(196,166,106,.14);
   box-shadow:0 4px 24px rgba(0,0,0,.4);
+  position:sticky;top:0;
 }
 #portal-bar .pt-logo{
   font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--text);letter-spacing:.1em;
@@ -522,21 +591,13 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   display:flex;gap:16px;flex-wrap:wrap;
 }
 #portal-bar .pt-hint b{color:var(--text);font-weight:600}
-#portal-shell{
-  display:flex;flex-direction:column;
-  height:100dvh;max-height:100dvh;overflow:hidden;
-  background:var(--bg);
-  background-image:
-    radial-gradient(ellipse 90% 45% at 50% -8%,rgba(196,166,106,.035),transparent),
-    radial-gradient(ellipse 60% 30% at 85% 5%,rgba(122,171,222,.025),transparent);
-}
 #quests-row{
   display:grid;
   grid-template-columns:minmax(0,6fr) minmax(0,4fr);
-  grid-template-areas:"dashboard office" "treasury treasury";
-  grid-template-rows:minmax(0,62fr) minmax(0,38fr);
-  gap:8px;flex:1;min-height:0;overflow:hidden;
-  padding:8px;
+  grid-template-areas:"dashboard office";
+  grid-template-rows:minmax(420px,62vh);
+  gap:8px;
+  padding:8px 8px 0;
   background:#030405;
 }
 .quest-pane{
@@ -562,44 +623,38 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 #office-pane .pane-cap::before{content:"";width:3px;height:12px;border-radius:2px;background:var(--in);margin-right:4px}
 #treasury-pane .pane-cap::before{content:"";width:3px;height:12px;border-radius:2px;background:var(--gold);margin-right:4px}
 #treasury-pane .pane-cap::after{background:var(--gold)}
-#office-pane{grid-area:office;background:var(--panel);overflow:hidden;}
+#office-pane{grid-area:office;background:var(--panel);overflow:hidden;display:flex;flex-direction:column;}
 .office-frame{
-  flex:1;min-height:0;overflow:hidden;display:flex;
-  background:#050608;
+  flex:1;min-height:0;overflow:hidden;display:flex;position:relative;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 30%,rgba(196,166,106,.04),transparent),
+    linear-gradient(180deg,#0c0d11,#050608);
 }
-#office-pane iframe{flex:1;width:100%;height:100%;min-height:0;border:none;display:block;background:#050608;overflow:hidden;}
+#office-pane iframe{
+  flex:1;width:100%;height:100%;min-height:0;border:none;display:block;
+  background:transparent;overflow:hidden;
+}
 #dashboard-pane,#office-pane{min-height:0;overflow:hidden;}
 #treasury-pane{
-  grid-area:treasury;background:var(--bg);border-radius:var(--radius);
-  overflow:hidden;min-height:0;display:flex;flex-direction:column;
+  margin:8px;background:var(--bg);border-radius:var(--radius);
+  overflow:visible;min-height:0;display:flex;flex-direction:column;
+  border:1px solid rgba(196,166,106,.14);
+  box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.03);
+  height:auto;
 }
 #app-treasury{
-  display:flex!important;flex-direction:column;flex:1;min-height:0;overflow:hidden;
+  display:flex!important;flex-direction:column;flex:1;min-height:0;overflow:visible;
 }
-#app-treasury .layout{min-height:0;flex:1;overflow:hidden;display:flex;}
+#app-treasury .layout{min-height:0;display:block;overflow:visible;}
 #app-treasury .hud{
-  position:sticky;top:0;flex-shrink:0;
+  position:sticky;top:48px;flex-shrink:0;z-index:40;
   padding:10px 18px;gap:10px;
-  background:var(--glass);
+  background:rgba(5,6,8,.96);backdrop-filter:blur(12px);
   border-bottom:1px solid var(--line-strong);
-  box-shadow:none;
+  box-shadow:0 4px 16px rgba(0,0,0,.25);
 }
 #app-treasury .hud-logo{font-size:16px}
-#app-treasury .gamenav{
-  width:200px;padding:14px 10px;gap:3px;
-  background:rgba(14,18,28,.4);
-  border-right:1px solid var(--line-strong);
-  overflow-y:auto;
-}
-#app-treasury .gamenav .nav-group{
-  font-size:10px;color:var(--muted);letter-spacing:.1em;
-  padding:12px 12px 5px;font-family:var(--font-display);font-weight:600;
-  opacity:.8;text-transform:uppercase;
-}
-#app-treasury .gamenav button{
-  padding:9px 10px;font-size:13px;border-radius:8px;
-}
-#app-treasury .main{padding:18px 20px 28px;max-width:none;overflow:auto;min-height:0;flex:1;}
+#app-treasury .main{padding:18px 20px 48px;max-width:none;overflow:visible;min-height:0;}
 #dashboard-pane{grid-area:dashboard;overflow:hidden;}
 #dashboard-pane #root{display:none!important;}
 .dash-compact{
@@ -672,9 +727,13 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 /* AI作業中：入出金ペイン */
 #treasury-pane.ai-working .hud{box-shadow:inset 0 -2px 0 var(--accent)}
 #treasury-pane.ai-working .xp-fill{animation:aiXpPulse 1.2s ease-in-out infinite}
-#treasury-pane.ai-working .gamenav button.on{
-  box-shadow:inset 3px 0 0 var(--accent),0 0 14px rgba(122,171,222,.2);
-  border-color:rgba(122,171,222,.35);
+#portal-shell.ai-working > .gamenav button.on{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.55),
+    inset 0 -2px 0 rgba(120,90,30,.45),
+    0 3px 0 #5c4a22,
+    0 0 18px rgba(122,171,222,.35);
+  border-color:rgba(122,171,222,.55);
 }
 @keyframes aiXpPulse{0%,100%{opacity:1}50%{opacity:.55}}
 .ai-work-badge{
@@ -727,30 +786,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .dc-card[data-dept="finance"]:hover{border-color:rgba(196,166,106,.45);box-shadow:0 12px 36px rgba(0,0,0,.5),0 0 18px rgba(140,150,170,.08)}
 .dc-card[data-dept="legal"]:hover{border-color:rgba(196,166,106,.45);box-shadow:0 12px 36px rgba(0,0,0,.5),0 0 18px rgba(150,135,175,.08)}
 .dc-photo{flex:1;min-height:0;overflow:hidden;background:#030405;position:relative}
-.dc-avatar-wrap{width:100%;height:100%;position:relative}
 .dc-avatar-wrap{width:100%;height:100%;position:relative;overflow:hidden}
-.dc-avatar-wrap::after{
-  content:"";position:absolute;left:38%;top:57%;width:24%;height:8%;
-  border-radius:50%;pointer-events:none;opacity:0;z-index:2;
-  background:radial-gradient(ellipse at 50% 55%,rgba(255,255,255,.22),transparent 72%);
-}
-.dc-card[data-dept="secretary"] .dc-avatar-wrap::after{left:40%;top:56%;width:22%;height:7%}
-.dc-card[data-dept="finance"] .dc-avatar-wrap::after{left:37%;top:58%;width:24%;height:8%}
-.dc-card[data-dept="legal"] .dc-avatar-wrap::after{left:39%;top:57%;width:23%;height:7%}
-.dc-card.is-talking .dc-photo img{animation:dcJawTalk .36s ease-in-out infinite}
-.dc-card.is-talking .dc-avatar-wrap::after{animation:dcMouthGlow .36s ease-in-out infinite}
-@keyframes dcJawTalk{
-  0%,100%{transform:scale(1.06) translateY(0)}
-  28%{transform:scale(1.06) translateY(1.2px)}
-  48%{transform:scale(1.06) translateY(0)}
-  72%{transform:scale(1.06) translateY(0.9px)}
-}
-@keyframes dcMouthGlow{
-  0%,100%{opacity:0;transform:scaleY(.55)}
-  28%,72%{opacity:.55;transform:scaleY(1.05)}
-  48%{opacity:.15;transform:scaleY(.7)}
-}
-.dc-mouth{display:none}
 .dc-bubble{
   position:absolute;top:6px;left:6px;right:6px;z-index:4;
   background:rgba(6,7,10,.92);backdrop-filter:blur(10px);
@@ -758,7 +794,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   padding:6px 10px;
   font-size:11px;line-height:1.5;color:var(--text);font-family:var(--font-body);
   box-shadow:0 8px 24px rgba(0,0,0,.45);
-  animation:dcBubbleIn .22s ease;
+  animation:dcBubbleIn .55s ease;
   pointer-events:none;
 }
 .dc-bubble[hidden]{display:none!important}
@@ -772,9 +808,9 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .dc-bubble-txt{display:block}
 .dc-bubble-dots{
   display:inline-block;margin-left:2px;letter-spacing:1px;
-  animation:dcDots 1s steps(4,end) infinite;
+  animation:dcDots 1.6s steps(4,end) infinite;
 }
-@keyframes dcBubbleIn{from{opacity:0;transform:translateY(4px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes dcBubbleIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @keyframes dcDots{0%{content:""}25%{opacity:.4}50%{opacity:.7}75%,100%{opacity:1}}
 .dc-card[data-dept="secretary"] .dc-bubble{border-color:rgba(91,108,255,.55)}
 .dc-card[data-dept="finance"] .dc-bubble{border-color:rgba(140,150,170,.55)}
@@ -841,15 +877,27 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .ent-typing{color:var(--muted)}
 .entaku-jumps{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 @media(max-width:980px){
-  #portal-shell{height:100dvh;overflow:hidden;}
+  #portal-shell{grid-template-columns:1fr;min-height:0;}
+  #portal-shell > .gamenav{
+    position:sticky;top:0;height:auto;max-height:none;
+    width:100%;flex-direction:row;flex-wrap:nowrap;
+    overflow-x:auto;overflow-y:hidden;gap:8px;padding:10px 12px;
+    border-right:none;border-bottom:1px solid rgba(196,166,106,.22);
+    z-index:450;
+  }
+  #portal-shell > .gamenav .nav-group{display:none}
+  #portal-shell > .gamenav button{
+    width:auto;min-width:88px;flex-shrink:0;flex-direction:column;gap:4px;
+    padding:8px 10px;font-size:11px;align-items:center;
+  }
   #quests-row{
     grid-template-columns:1fr;
-    grid-template-areas:"dashboard" "office" "treasury";
-    grid-template-rows:minmax(0,34fr) minmax(0,28fr) minmax(0,38fr);
-    overflow:hidden;
+    grid-template-areas:"dashboard" "office";
+    grid-template-rows:minmax(280px,42vh) minmax(240px,36vh);
   }
   #dashboard-pane,#office-pane{min-height:0;overflow:hidden;}
   .dc-cards{flex:0 0 72%;}
+  #app-treasury .hud{top:0}
 }
 @media(max-width:600px){#portal-bar .pt-hint{display:none;}}
 /* ===== スマホ対応（横画面前提） ===== */
@@ -868,9 +916,29 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 
 <div id="rotate-note"><span class="ic">📱↻</span>スマホでは よこ画面で ごらんください</div>
 <div id="portal-shell">
+<nav class="gamenav" aria-label="メインメニュー">
+  <div class="nav-group">本丸・印籠</div>
+  <button data-s="dash" class="on"><span class="nico">◆</span>金庫室</button>
+  <button data-s="cf-bank"><span class="nico">口座</span>口座・CSV</button>
+  <button data-s="cf-cases"><span class="nico">案</span>案件ボード</button>
+  <button data-s="cf-link"><span class="nico">⇔</span>明細突合</button>
+  <button data-s="cf-flow"><span class="nico">印</span>案件フロー</button>
+  <button data-s="cf-legal"><span class="nico">法</span>契約リーガル</button>
+  <button data-s="cf-party"><span class="nico">貸</span>関連者貸借</button>
+  <button data-s="cf-forecast"><span class="nico">予</span>CF予測</button>
+  <button data-s="cf-inrou"><span class="nico">籠</span>印籠レポート</button>
+  <div class="nav-group">記録・精算</div>
+  <button data-s="entry"><span class="nico">＋</span>記録する</button>
+  <button data-s="quest"><span class="nico">⚔</span>精算クエスト</button>
+  <div class="nav-group">分析・台帳</div>
+  <button data-s="flow"><span class="nico">≋</span>商流マップ</button>
+  <button data-s="ledger"><span class="nico">▤</span>台帳</button>
+  <button data-s="tax"><span class="nico">Ⓣ</span>納税タンク</button>
+</nav>
+<div id="portal-main">
 <div id="portal-bar">
   <span class="pt-logo">GOONER PORTAL</span>
-  <span class="pt-hint"><b>Dashboard</b> 60%　<b>クエスト</b> 40%　画面固定・各枠内スクロール</span>
+  <span class="pt-hint"><b>左ナビ</b>全高　<b>上段</b>Dashboard/クエスト　<b>下段</b>入出金（ページ全体スクロール）</span>
 </div>
 
 <div id="quests-row">
@@ -883,7 +951,6 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
             <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
             <div class="dc-avatar-wrap">
               <img src="dash-secretary.png" alt="凛" onerror="this.dataset.fallback='1'">
-              <span class="dc-mouth" aria-hidden="true"></span>
             </div>
           </div>
           <div class="dc-name">凛<span class="dc-name-en">RIN</span></div>
@@ -894,7 +961,6 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
             <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
             <div class="dc-avatar-wrap">
               <img src="dash-finance.png" alt="紬" onerror="this.dataset.fallback='1'">
-              <span class="dc-mouth" aria-hidden="true"></span>
             </div>
           </div>
           <div class="dc-name">紬<span class="dc-name-en">TUMUGI</span></div>
@@ -905,7 +971,6 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
             <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
             <div class="dc-avatar-wrap">
               <img src="dash-legal.png" alt="陽翔" onerror="this.dataset.fallback='1'">
-              <span class="dc-mouth" aria-hidden="true"></span>
             </div>
           </div>
           <div class="dc-name">陽翔<span class="dc-name-en">HARUTO</span></div>
@@ -933,6 +998,8 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
       <iframe src="office.html" title="オフィスクエスト マップ"></iframe>
     </div>
   </section>
+</div><!-- /#quests-row -->
+
   <section class="quest-pane" id="treasury-pane">
     <div class="pane-cap">入出金クエスト（本丸）</div>
     <div id="aiWorkLog" class="ai-work-log" hidden>円卓AIが入出金データを参照・整理しています…</div>
@@ -962,27 +1029,6 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 </header>
 
 <div class="layout">
-<!-- ===== ゲームメニュー ===== -->
-<nav class="gamenav" aria-label="メインメニュー">
-  <div class="nav-group">本丸・印籠</div>
-  <button data-s="dash" class="on"><span class="nico">◆</span>金庫室</button>
-  <button data-s="cf-bank"><span class="nico">口座</span>口座・CSV</button>
-  <button data-s="cf-cases"><span class="nico">案</span>案件ボード</button>
-  <button data-s="cf-link"><span class="nico">⇔</span>明細突合</button>
-  <button data-s="cf-flow"><span class="nico">印</span>案件フロー</button>
-  <button data-s="cf-legal"><span class="nico">法</span>契約リーガル</button>
-  <button data-s="cf-party"><span class="nico">貸</span>関連者貸借</button>
-  <button data-s="cf-forecast"><span class="nico">予</span>CF予測</button>
-  <button data-s="cf-inrou"><span class="nico">籠</span>印籠レポート</button>
-  <div class="nav-group">記録・精算</div>
-  <button data-s="entry"><span class="nico">＋</span>記録する</button>
-  <button data-s="quest"><span class="nico">⚔</span>精算クエスト</button>
-  <div class="nav-group">分析・台帳</div>
-  <button data-s="flow"><span class="nico">≋</span>商流マップ</button>
-  <button data-s="ledger"><span class="nico">▤</span>台帳</button>
-  <button data-s="tax"><span class="nico">Ⓣ</span>納税タンク</button>
-</nav>
-
 <main class="main">
 
 <!-- ===== 金庫室（ダッシュボード） ===== -->
@@ -1295,8 +1341,8 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 
 </div><!-- /#app-treasury -->
   </section>
-</div><!-- /#quests-row -->
 
+</div><!-- /#portal-main -->
 </div><!-- /#portal-shell -->
 
 <script>/**
@@ -1716,6 +1762,13 @@ $$(".gamenav button").forEach(b=>b.onclick=()=>{
   $$(".gamenav button").forEach(x=>x.classList.remove("on")); b.classList.add("on");
   $$(".screen").forEach(x=>x.classList.remove("on")); $("#s-"+b.dataset.s).classList.add("on");
   renderAll();
+  try{
+    const pane=document.getElementById("treasury-pane");
+    if(pane){
+      const top=pane.getBoundingClientRect().top+window.scrollY-56;
+      if(Math.abs(window.scrollY-top)>40) window.scrollTo({top:Math.max(0,top),behavior:"smooth"});
+    }
+  }catch(e){}
 });
 
 /* ---------- 消費税計算 ---------- */
@@ -2015,7 +2068,7 @@ window.Treasury={
       if(hoverDept === dept) return;
       el.classList.remove('is-talking');
       bubble.hidden = true;
-    }, ms || Math.max(2200, text.length * 95));
+    }, ms || Math.max(3800, text.length * 140));
     return el;
   }
   function pickLine(c){
@@ -2044,13 +2097,13 @@ window.Treasury={
     stop: stopAll,
     reactToText(text){
       if(!text) return;
-      if(/経理|入出金|経費|税|CF|精算|口座|明細/.test(text)) speak('finance', '承知しました、確認しますね。', 3200);
-      else if(/契約|法務|リーガル|印籠|コンプラ/.test(text)) speak('legal', '法務の観点から見ます。', 3200);
-      else speak('secretary', '円卓へお繋ぎしますね。', 2800);
+      if(/経理|入出金|経費|税|CF|精算|口座|明細/.test(text)) speak('finance', '承知しました、確認しますね。', 4200);
+      else if(/契約|法務|リーガル|印籠|コンプラ/.test(text)) speak('legal', '法務の観点から見ます。', 4200);
+      else speak('secretary', '円卓へお繋ぎしますね。', 3600);
     }
   };
-  setTimeout(idleTurn, 1200);
-  setInterval(idleTurn, 4500);
+  setTimeout(idleTurn, 2800);
+  setInterval(idleTurn, 9000);
 })();
 </script>
 
@@ -2073,6 +2126,7 @@ window.Treasury={
   const AI_TOUR = ['cf-bank','cf-cases','cf-link','cf-flow','cf-forecast','cf-inrou'];
   function setAiWorking(on){
     document.getElementById('treasury-pane')?.classList.toggle('ai-working', on);
+    document.getElementById('portal-shell')?.classList.toggle('ai-working', on);
     const b=el('aiWorkBadge'), l=el('aiWorkLog');
     if(b) b.hidden=!on;
     if(l) l.hidden=!on;
