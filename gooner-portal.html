@@ -2445,15 +2445,16 @@ window.PortalTTS=(function(){
       window.dispatchEvent(new CustomEvent('portal-audio-change',{detail:{enabled}}));
     },
     toggle(){api.setEnabled(!enabled);},
-    speak(text){
-      if(!enabled||!text||!window.speechSynthesis)return;
+    speak(text,onend){
+      if(!enabled||!text||!window.speechSynthesis){if(typeof onend==='function')try{onend();}catch(e){}return;}
       try{
         speechSynthesis.cancel();
         const u=new SpeechSynthesisUtterance(text);
         u.lang='ja-JP';u.rate=1.05;u.volume=1;
         const v=pickVoice();if(v)u.voice=v;
+        if(typeof onend==='function'){u.onend=onend;u.onerror=onend;}
         speechSynthesis.speak(u);
-      }catch(e){}
+      }catch(e){if(typeof onend==='function')try{onend();}catch(e2){}}
     },
     stop(){if(window.speechSynthesis)speechSynthesis.cancel();}
   };

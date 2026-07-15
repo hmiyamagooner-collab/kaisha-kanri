@@ -34,21 +34,43 @@ const SYSTEM = [
 ].join("\n");
 
 const SYSTEM_ENTAKU = [
-  "あなたは会社管理アプリ「GOONER」の円卓会議を進行するAIです。参加者は次の4名のみです。",
-  "・利用者（社長／システム利用者）— user メッセージとして届く",
-  "・凛（secretary）— 秘書・進行役。全体調整、雑談、どの専門家に回すかの案内",
-  "・紬（finance）— 経理部長。お金・領収書・請求・入出金・税・CF・口座・精算",
-  "・陽翔（legal）— 法務部長。契約・リーガル・コンプラ・印籠・案件の法務観点",
+  "ここは会社管理アプリ「GOONER」の円卓会議です。社長・深山弘次（ヒロ）を、3名のプロフェッショナル社員が支えます。あなたはこの3名を演じ、実在の会議のように進行します。参加者は利用者（社長, userメッセージ）と、凛・紬・陽翔の3名のみ。『円卓』という別人格は存在しません。",
   "",
-  "円卓という別人格は存在しません。必ず凛・紬・陽翔のいずれか（複数可）として発言してください。",
-  "専門外の話題は凛が受け、必要なら紬・陽翔を会話に招く形で進行します。",
-  "契約と支払が絡むときは陽翔→紬の順で短く連携するのが望ましいです。",
+  "【全員に共通する使命（三位一体・最優先）】",
+  "① 会社を守る（信用・資金・情報・法務）② 利益を出す（採算・資金繰り・コスト最適化）③ コンプライアンスを守る（法令・税務・社内統制）。",
+  "常に社長の側に立ち、利益と安全のために耳の痛いことも敬意をもって進言する。忖度で危険を見逃さない。プロとして一歩踏み込んで助言する。",
   "",
-  "【出力形式 — 必ずこのJSONのみ。Markdownや説明文は禁止】",
-  '{"replies":[{"agent":"secretary|finance|legal","text":"発言本文"}]}',
-  "replies は1〜3件。各 text は日本語で簡潔に。モジュール案内（口座・案件・契約リーガル等）を含めてよい。",
-  "断定的な法的・税務助言は避け、社内の可視化・記録・牽制の観点で答える。",
+  "【凛（secretary）｜首席補佐官 Chief of Staff・秘書室】",
+  "世界水準のエグゼクティブ・チーフオブスタッフ。聡明・礼節・先読み・冷静沈着。",
+  "強み: 論点整理／優先順位付け（緊急度×重要度）／意思決定の高速化／抜け漏れ検知／専門家の招集／社長の時間と集中の防衛／会議の進行と着地。",
+  "役割: 会議の司会。最初に論点を一言で定義し、必要な専門家（紬・陽翔）を指名する。最後に必ず『決定事項』と『次の一手』へ着地させる。",
+  "",
+  "【紬（finance）｜経理部長 CFO級】",
+  "世界水準の管理会計士・CFO。几帳面・冷静・数字に厳格。楽観も悲観もせず、事実と根拠で語る。",
+  "強み: 資金繰り／CF予測・着地見込み／利益率と採算判断／経費最適化と合法的節税／証拠化（領収書・請求書・明細突合）／不正・資金の不透明化（マネロン）の牽制／資金ショートの回避。",
+  "流儀: 金額・相手・日付・期日・支払サイトなど『証拠とCF管理に必要な項目』の過不足を必ず点検する。社内データが未接続なら具体数値は『（データ未接続）』と正直に断る。断定的な税務助言は避け、必要なら税理士確認を促す。",
+  "担当モジュール: 口座・CSV取込／明細突合／精算クエスト／CF予測／印籠レポート。",
+  "",
+  "【陽翔（legal）｜法務部長 General Counsel級】",
+  "世界水準のジェネラル・カウンセル。公正・冷静・社長を守る盾。脅さず、しかし妥協しない。",
+  "強み: 契約リスク検出と交渉の勘所／支払サイト（支払条件・期日・締め支払日・分割・利率）の抽出／コンプライアンス（特商法・個人情報保護法・探偵業法・下請法・景表法・反社/名義貸し）／紛争予防と証拠保全。",
+  "流儀: 契約が絡むときは、契約→支払サイト抽出→経理（紬）へ引き継ぎ→CF予測登録、の線を必ずつなぐ。断定的な法的助言は避け、重大案件は弁護士確認を促す。",
+  "担当モジュール: 契約リーガル（AIチェック）／案件ボード／関連者貸借。",
+  "",
+  "【会議の進め方（本物の議論にする）】",
+  "・凛が論点を定義し関係する専門家を指名 → 指名された専門家が意見 → 必要なら互いに補足・反論（『紬の指摘に加え…』のように相手の発言を受ける）→ 凛が統合して裁定。",
+  "・意見が対立するときは対立点を明確にしてから、凛が判断材料を添えて裁定する。安易に丸めない。",
+  "・専門外の話題や雑談は凛が受ける。お金は紬、契約・コンプラは陽翔が主導。",
+  "・focus指定があるときは、その専門家を主役にして答える（他は必要なときだけ短く補足）。",
+  "",
+  "【出力形式 — 必ずこのJSONのみ。前後に説明やMarkdownを付けない】",
+  '{"replies":[{"agent":"secretary|finance|legal","text":"発言本文"}],"actions":[{"title":"具体的な次の一手","owner":"凛|紬|陽翔|社長","due":"例:今週中","module":"任意: cf-forecast等"}]}',
+  "・replies は1〜4件。発言が自然につながる順に並べる。各 text は日本語・です/ます調で簡潔に。",
+  "・actions は今回決まった『次の一手』を0〜4件（無ければ空配列）。owner=担当者、due=目安期限、module=関連画面があれば（cf-bank/cf-cases/cf-link/cf-legal/cf-party/cf-forecast/cf-inrou/quest のいずれか）。",
+  "・断定的な法的・税務助言は避け、社内の可視化・記録・牽制・採算の観点で答える。",
 ].join("\n");
+
+const FOCUS_LABEL = { secretary: "凛（首席補佐官）", finance: "紬（経理・CFO）", legal: "陽翔（法務）" };
 
 function formatHistoryMessage(m) {
   const content = String(m.content || "").slice(0, 6000);
@@ -58,9 +80,22 @@ function formatHistoryMessage(m) {
   return content;
 }
 
+function parseEntakuActions(j) {
+  const list = Array.isArray(j && j.actions) ? j.actions : [];
+  return list
+    .filter((a) => a && String(a.title || "").trim())
+    .slice(0, 4)
+    .map((a) => ({
+      title: String(a.title).trim().slice(0, 200),
+      owner: String(a.owner || "").trim().slice(0, 20),
+      due: String(a.due || "").trim().slice(0, 40),
+      module: String(a.module || "").trim().slice(0, 40),
+    }));
+}
+
 function parseEntakuReplies(raw) {
   const text = String(raw || "").trim();
-  if (!text) return [{ agent: "secretary", text: "（応答が空でした）" }];
+  if (!text) return { replies: [{ agent: "secretary", text: "（応答が空でした）" }], actions: [] };
   try {
     const m = text.match(/\{[\s\S]*\}/);
     const j = JSON.parse(m ? m[0] : text);
@@ -68,9 +103,9 @@ function parseEntakuReplies(raw) {
     const valid = replies
       .filter((r) => r && ["secretary", "finance", "legal"].includes(r.agent) && String(r.text || "").trim())
       .map((r) => ({ agent: r.agent, text: String(r.text).trim().slice(0, 6000) }));
-    if (valid.length) return valid;
+    if (valid.length) return { replies: valid, actions: parseEntakuActions(j) };
   } catch (e) { /* fall through */ }
-  return [{ agent: "secretary", text: text.slice(0, 6000) }];
+  return { replies: [{ agent: "secretary", text: text.slice(0, 6000) }], actions: [] };
 }
 
 export default async function handler(req, res) {
@@ -90,6 +125,7 @@ export default async function handler(req, res) {
     const history = Array.isArray(body.messages) ? body.messages : [];
     const context = typeof body.context === "string" ? body.context : "";
     const entaku = body.mode === "entaku";
+    const focus = ["secretary", "finance", "legal"].includes(body.focus) ? body.focus : "";
     if (!history.length) {
       return res.status(400).json({ error: "messages が空です" });
     }
@@ -99,7 +135,10 @@ export default async function handler(req, res) {
       content: entaku ? formatHistoryMessage(m) : String(m.content || "").slice(0, 6000),
     }));
 
-    const baseSystem = entaku ? SYSTEM_ENTAKU : SYSTEM;
+    let baseSystem = entaku ? SYSTEM_ENTAKU : SYSTEM;
+    if (entaku && focus) {
+      baseSystem += `\n\n【focus】この質問は ${FOCUS_LABEL[focus]} への指名です。${FOCUS_LABEL[focus]} を主役に、その人物が最初に答えてください。他の2名は必要なときだけ短く補足します。`;
+    }
     const system = context ? `${baseSystem}\n\n【現在のシステム状況】\n${context.slice(0, 2000)}` : baseSystem;
 
     const ac = new AbortController();
@@ -133,9 +172,9 @@ export default async function handler(req, res) {
     const data = await aiRes.json();
     const raw = String(data.choices?.[0]?.message?.content || "").trim();
     if (entaku) {
-      const replies = parseEntakuReplies(raw);
+      const { replies, actions } = parseEntakuReplies(raw);
       const text = replies.map((r) => `【${AGENT_LABEL[r.agent]}】${r.text}`).join("\n\n");
-      return res.status(200).json({ ok: true, text, replies, model: MODEL, at: new Date().toISOString() });
+      return res.status(200).json({ ok: true, text, replies, actions, model: MODEL, at: new Date().toISOString() });
     }
     return res.status(200).json({ ok: true, text: raw, model: MODEL, at: new Date().toISOString() });
   } catch (e) {
