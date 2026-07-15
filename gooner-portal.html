@@ -1070,6 +1070,46 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   border-top:1px solid rgba(210,173,99,.12);
   background:linear-gradient(180deg,rgba(10,14,20,.92),rgba(8,10,14,.98));
 }
+.dc-card-info{
+  flex-shrink:0;min-height:112px;
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:8px 10px 10px;
+  border-top:1px solid rgba(210,173,99,.1);
+  background:linear-gradient(180deg,rgba(8,10,14,.96),rgba(6,8,12,.99));
+}
+.dc-info-grid{
+  display:grid;gap:5px;min-height:54px;
+}
+.dc-info-item{
+  display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+  min-height:16px;line-height:1.35;
+}
+.dc-info-label{
+  font-size:10px;color:var(--muted);letter-spacing:.02em;flex-shrink:0;
+}
+.dc-info-val{
+  font-size:10px;font-family:var(--font-num);font-weight:500;color:var(--text);
+  text-align:right;white-space:nowrap;
+}
+.dc-info-val.is-up{color:var(--in)}
+.dc-info-val.is-down{color:var(--out)}
+.dc-info-val.is-warn{color:#f0b86c}
+.dc-info-detail{
+  width:100%;margin-top:6px;padding:6px 10px;
+  font-family:var(--font-body);font-size:10px;font-weight:600;letter-spacing:.04em;
+  color:var(--gold-hi);cursor:pointer;
+  border:1px solid rgba(210,173,99,.28);border-radius:8px;
+  background:rgba(210,173,99,.04);
+  transition:border-color .2s ease,background .2s ease,color .2s ease;
+}
+@media(hover:hover){
+  .dc-info-detail:hover{
+    border-color:rgba(210,173,99,.45);
+    background:rgba(210,173,99,.1);
+    color:#fff;
+  }
+}
+.dc-info-detail:active{transform:scale(.98)}
 .dc-name{
   flex:1 1 0;min-height:36px;max-height:36px;
   font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--gold-hi);
@@ -1278,6 +1318,10 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
             <div class="dc-name">凛<span class="dc-name-en">RIN</span></div>
             <div class="dc-role">ヒロ社長秘書</div>
           </div>
+          <div class="dc-card-info" data-dept="secretary">
+            <div class="dc-info-grid" data-info-grid></div>
+            <button type="button" class="dc-info-detail" data-dept="secretary">詳細を見る</button>
+          </div>
         </div>
         <div class="dc-card" data-dept="finance">
           <div class="dc-photo" data-initial="紬">
@@ -1290,6 +1334,10 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
             <div class="dc-name">紬<span class="dc-name-en">TUMUGI</span></div>
             <div class="dc-role">経理部長</div>
           </div>
+          <div class="dc-card-info" data-dept="finance">
+            <div class="dc-info-grid" data-info-grid></div>
+            <button type="button" class="dc-info-detail" data-dept="finance">詳細を見る</button>
+          </div>
         </div>
         <div class="dc-card" data-dept="legal">
           <div class="dc-photo" data-initial="陽">
@@ -1301,6 +1349,10 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
           <div class="dc-card-foot">
             <div class="dc-name">陽翔<span class="dc-name-en">HARUTO</span></div>
             <div class="dc-role">法務部長</div>
+          </div>
+          <div class="dc-card-info" data-dept="legal">
+            <div class="dc-info-grid" data-info-grid></div>
+            <button type="button" class="dc-info-detail" data-dept="legal">詳細を見る</button>
           </div>
         </div>
       </div>
@@ -2587,6 +2639,148 @@ window.Treasury={
   if(location.hash==='#inrou'){
     try{document.querySelector('.gamenav button[data-s="cf-inrou"]')?.click();}catch(e){}
   }
+})();
+</script>
+
+<script>
+/* キャラクターカード情報パネル（API差し替え用） */
+(function(){
+  const SCHEMA={
+    secretary:{
+      fields:[
+        {key:'schedule',label:'今日の予定',format:'text'},
+        {key:'pendingTasks',label:'未処理タスク',format:'count'}
+      ]
+    },
+    finance:{
+      fields:[
+        {key:'monthlySales',label:'今月売上',format:'currency'},
+        {key:'momChange',label:'前月比',format:'percent'},
+        {key:'unapproved',label:'未承認',format:'count'}
+      ]
+    },
+    legal:{
+      fields:[
+        {key:'contractRenewals',label:'契約更新',format:'count'},
+        {key:'legalReviews',label:'法務確認',format:'count'},
+        {key:'deadlineSoon',label:'期限間近',format:'count',warnIfPositive:true}
+      ]
+    }
+  };
+
+  async function fetchSecretaryData(){
+    /* API差し替え: GET /api/dashboard/secretary 等に置換 */
+    return {
+      schedule:'会議 3件',
+      pendingTasks:5
+    };
+  }
+  async function fetchFinanceData(){
+    /* API差し替え: GET /api/dashboard/finance 等に置換 */
+    return {
+      monthlySales:12480000,
+      momChange:8.4,
+      unapproved:7
+    };
+  }
+  async function fetchLegalData(){
+    /* API差し替え: GET /api/dashboard/legal 等に置換 */
+    return {
+      contractRenewals:4,
+      legalReviews:12,
+      deadlineSoon:2
+    };
+  }
+  const FETCHERS={
+    secretary:fetchSecretaryData,
+    finance:fetchFinanceData,
+    legal:fetchLegalData
+  };
+
+  function formatValue(value,format){
+    if(value==null||value==='')return '—';
+    switch(format){
+      case 'currency':return '¥'+Number(value).toLocaleString('ja-JP');
+      case 'percent':{
+        const n=Number(value);
+        return (n>=0?'+':'')+n+'%';
+      }
+      case 'count':return Number(value).toLocaleString('ja-JP')+'件';
+      default:return String(value);
+    }
+  }
+  function valueClass(key,value,field){
+    if(field.warnIfPositive&&Number(value)>0)return 'is-warn';
+    if(field.format==='percent'){
+      const n=Number(value);
+      if(n>0)return 'is-up';
+      if(n<0)return 'is-down';
+    }
+    if(key==='pendingTasks'&&Number(value)>=5)return 'is-warn';
+    if(key==='unapproved'&&Number(value)>=5)return 'is-warn';
+    return '';
+  }
+  function renderCardInfo(dept,data){
+    const cfg=SCHEMA[dept];
+    const host=document.querySelector('.dc-card-info[data-dept="'+dept+'"]');
+    if(!cfg||!host)return;
+    const grid=host.querySelector('[data-info-grid]');
+    if(!grid)return;
+    grid.innerHTML=cfg.fields.map(function(field){
+      const raw=data[field.key];
+      const cls=valueClass(field.key,raw,field);
+      return '<div class="dc-info-item">'
+        +'<span class="dc-info-label">'+field.label+'</span>'
+        +'<span class="dc-info-val'+((cls)?' '+cls:'')+'" data-field="'+field.key+'">'
+        +formatValue(raw,field.format)+'</span></div>';
+    }).join('');
+  }
+  async function refreshOne(dept){
+    const fetcher=FETCHERS[dept];
+    if(!fetcher)return null;
+    try{
+      const data=await fetcher();
+      renderCardInfo(dept,data);
+      return data;
+    }catch(err){
+      console.error('[CharacterCards] refresh failed:',dept,err);
+      renderCardInfo(dept,{});
+      return null;
+    }
+  }
+  async function refreshAll(){
+    const keys=Object.keys(FETCHERS);
+    return Promise.all(keys.map(refreshOne));
+  }
+  function onDetailClick(dept,evt){
+    if(evt) evt.stopPropagation();
+    /* イベント差し替え: CustomEvent またはルーティングへ接続 */
+    document.dispatchEvent(new CustomEvent('character-card:detail',{
+      detail:{dept:dept,source:'dummy'}
+    }));
+    if(window.DashTalk){
+      const msg={secretary:'秘書タスクの詳細を開きます。',finance:'経理サマリーの詳細を開きます。',legal:'法務案件の詳細を開きます。'};
+      window.DashTalk.speak(dept,msg[dept]||'詳細を表示します。',3200);
+    }
+  }
+  document.querySelectorAll('.dc-info-detail').forEach(function(btn){
+    btn.addEventListener('click',function(e){
+      e.stopPropagation();
+      onDetailClick(btn.dataset.dept,e);
+    });
+  });
+  window.CharacterCards={
+    SCHEMA:SCHEMA,
+    FETCHERS:FETCHERS,
+    fetchSecretaryData:fetchSecretaryData,
+    fetchFinanceData:fetchFinanceData,
+    fetchLegalData:fetchLegalData,
+    renderCardInfo:renderCardInfo,
+    refresh:refreshAll,
+    refreshOne:refreshOne,
+    onDetailClick:onDetailClick
+  };
+  refreshAll();
 })();
 </script>
 
