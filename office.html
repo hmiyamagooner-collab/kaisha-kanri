@@ -12,6 +12,10 @@
   --win-border:#fff;
   --accent:#ffd75e;
   --text:#fff;
+  --ui-margin:16px;
+  --label-bg:#FFFDF8;
+  --label-fg:#222222;
+  --label-border:#333333;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html{height:100%;}
@@ -72,8 +76,13 @@ body.embedded canvas#game{
   background:#54963a;
 }
 body.embedded .wx{
-  top:6px;left:6px;bottom:auto;right:auto;
-  z-index:8;font-size:10px;padding:2px 8px;
+  top:var(--ui-margin);left:var(--ui-margin);bottom:auto;right:auto;
+  z-index:8;font-size:10px;padding:8px 10px;
+  background:var(--label-bg);color:var(--label-fg);
+  border:1px solid var(--label-border);border-radius:0;
+  box-shadow:0 1px 4px rgba(0,0,0,.25);
+  font-family:'Zen Kaku Gothic New',sans-serif;font-weight:600;
+  text-shadow:none;
 }
 /* 埋め込み(ポータル)では縦長ペインでも「よこ画面推奨」を出さずマップを描画する */
 body.embedded #rotate-note{display:none!important;}
@@ -116,10 +125,10 @@ canvas#game{
   background:rgba(0,6,22,0.92);backdrop-filter:blur(4px);
   border-width:2px;border-radius:0;box-shadow:0 0 0 1px #000;
 }
-.panel.overlays .win.ov[data-panel="clock"]{top:4px;left:4px;max-height:none;width:min(72px,24%);}
-.panel.overlays .win.ov[data-panel="members"]{top:4px;right:4px;width:min(72px,24%);max-height:22%;}
-.panel.overlays .win.ov[data-panel="log"]{bottom:4px;left:4px;width:min(76px,26%);max-height:16%;}
-.panel.overlays .win.ov[data-panel="detail"]{bottom:4px;right:4px;width:min(72px,24%);max-height:18%;}
+.panel.overlays .win.ov[data-panel="clock"]{top:var(--ui-margin);left:var(--ui-margin);max-height:none;width:min(72px,24%);}
+.panel.overlays .win.ov[data-panel="members"]{top:var(--ui-margin);right:var(--ui-margin);width:min(72px,24%);max-height:22%;}
+.panel.overlays .win.ov[data-panel="log"]{bottom:var(--ui-margin);left:var(--ui-margin);width:min(76px,26%);max-height:16%;}
+.panel.overlays .win.ov[data-panel="detail"]{bottom:var(--ui-margin);right:var(--ui-margin);width:min(72px,24%);max-height:18%;}
 .ov-bar{
   display:flex;align-items:center;gap:2px;padding:2px 3px;
   border-bottom:1px dashed #446;background:rgba(0,0,0,0.35);flex-shrink:0;
@@ -204,13 +213,15 @@ body.embedded .hud-dock{padding:0 0 4px;}
 .helplist .btn{display:block;width:100%;text-align:left;margin:6px 0;}
 #syncstat{font-size:10px;color:#8fa3d9;margin-top:6px;}
 #members{max-height:180px;overflow-y:auto;}
-/* お天気バッジ（枠の左上に固定・キャンバスのトリミングに影響されない） */
+/* お天気バッジ（ゲームUI・マージン統一） */
 .wx{
-  position:absolute;bottom:8px;right:8px;z-index:7;pointer-events:none;
-  font-family:'DotGothic16',monospace;font-size:12px;letter-spacing:.08em;font-weight:600;
-  border:2px solid rgba(0,0,0,.35);
-  padding:3px 9px;border-radius:4px;display:flex;gap:6px;align-items:center;
-  text-shadow:0 1px 0 rgba(255,255,255,.35);box-shadow:0 2px 8px rgba(0,0,0,.45);
+  position:absolute;top:var(--ui-margin);left:var(--ui-margin);z-index:8;pointer-events:none;
+  font-family:'Zen Kaku Gothic New',sans-serif;font-size:10px;font-weight:600;letter-spacing:.04em;
+  padding:8px 10px;border-radius:0;display:flex;gap:6px;align-items:center;
+  background:var(--label-bg);color:var(--label-fg);
+  border:1px solid var(--label-border);
+  box-shadow:0 1px 4px rgba(0,0,0,.25);
+  text-shadow:none;
 }
 .wx .wc{font-size:15px;line-height:1;}
 .wx:empty{display:none;}
@@ -402,8 +413,8 @@ const ROADS={
   coast:{x:364,y:44,w:40,h:230}     /* ビーチ沿いの海岸通り */
 };
 const ZONES={
-  shacho:{label:'社長室',x:14,y:48,w:112,h:86,links:['honsha','parking']},
-  honsha:{label:'本社オフィス',x:178,y:44,w:122,h:92,links:['kaigi','shacho','parking','day']},
+  shacho:{label:'受付',x:14,y:48,w:112,h:86,links:['honsha','parking']},
+  honsha:{label:'オフィス',x:178,y:44,w:122,h:92,links:['kaigi','shacho','parking','day']},
   pool:{label:'プール',x:304,y:48,w:56,h:86,links:['parking','park','beach']},
   day:{label:'デイサービス',x:14,y:188,w:116,h:86,links:['honsha','parking']},
   kaigi:{label:'会議・応接',x:178,y:188,w:122,h:86,links:['honsha','day']},
@@ -412,6 +423,11 @@ const ZONES={
   beach:{label:'稲毛海浜',x:408,y:8,w:22,h:304,links:['pool','park','parking','umi']},
   umi:{label:'海',x:432,y:8,w:44,h:304,links:['beach']}
 };
+const LABEL_ZONE_IDS=['shacho','honsha','pool','day','kaigi','park','parking'];
+const LABEL_PAD=8,LABEL_FONT_SIZE=10,LABEL_LINE_H=12;
+const LABEL_BOX_H=LABEL_PAD*2+LABEL_LINE_H;
+const LABEL_FONT='600 '+LABEL_FONT_SIZE+'px "Zen Kaku Gothic New",sans-serif';
+const MAP_UI_MARGIN=16,LABEL_GAP_MIN=10;
 const COAST_X=408, OCEAN_X=432;
 const ROOMS=ZONES;
 function pt(zone,nx,ny){
@@ -867,15 +883,71 @@ function shade(hex,amt){
 }
 function rotFor(dir){return {n:0,e:Math.PI/2,s:Math.PI,w:-Math.PI/2}[dir]||0;}
 /* ---- ドット描画ヘルパー ---- */
-function drawSign(g,x,y,text){
-  if(!text)return;
-  g.font='9px "DotGothic16",monospace';g.textBaseline='alphabetic';
+/* ---- 建物ラベル（最前面・ゲームUI統一） ---- */
+function labelRectOverlap(ax,ay,aw,ah,bx,by,bw,bh){
+  return ax<bx+bw&&ax+aw>bx&&ay<by+bh&&ay+ah>by;
+}
+function labelHitsRoad(rx,ry,rw,rh){
+  for(const r of Object.values(ROADS)){
+    if(labelRectOverlap(rx,ry,rw,rh,r.x,r.y,r.w,r.h))return true;
+  }
+  return false;
+}
+function labelHitsBuilding(rx,ry,rw,rh,skipId){
+  for(const [id,z] of Object.entries(ZONES)){
+    if(id===skipId||id==='beach'||id==='umi')continue;
+    if(labelRectOverlap(rx,ry,rw,rh,z.x,z.y,z.w,z.h))return true;
+  }
+  return false;
+}
+function measureZoneLabel(g,text){
+  g.font=LABEL_FONT;
   const tw=Math.ceil(g.measureText(text).width);
-  x=Math.max(1,Math.min(x,COAST_X-tw-9));
-  y=EMBEDDED?Math.max(2,y+18):Math.max(1,y);
-  px(g,x,y,tw+8,13,'#0a1024');
-  px(g,x+1,y+1,tw+6,11,'#f4ecd0');
-  g.fillStyle='#1a2030';g.fillText(text,x+4,y+10);
+  return {w:tw+LABEL_PAD*2,h:LABEL_BOX_H};
+}
+function findZoneLabelPos(zoneId,z,boxW,boxH,placed){
+  const cx=z.x+z.w/2;
+  for(let gap=LABEL_GAP_MIN;gap<=72;gap+=2){
+    let bx=Math.round(cx-boxW/2);
+    let by=Math.round(z.y-boxH-gap);
+    bx=Math.max(MAP_UI_MARGIN,Math.min(bx,MAP_W-boxW-MAP_UI_MARGIN));
+    by=Math.max(MAP_UI_MARGIN,Math.min(by,MAP_H-boxH-MAP_UI_MARGIN));
+    if(by+boxH>z.y-LABEL_GAP_MIN)continue;
+    if(labelHitsRoad(bx,by,boxW,boxH))continue;
+    if(labelHitsBuilding(bx,by,boxW,boxH,zoneId))continue;
+    let hit=false;
+    for(const p of placed){if(labelRectOverlap(bx,by,boxW,boxH,p.x,p.y,p.w,p.h)){hit=true;break;}}
+    if(hit)continue;
+    return {bx,by};
+  }
+  let bx=Math.max(MAP_UI_MARGIN,Math.min(Math.round(cx-boxW/2),MAP_W-boxW-MAP_UI_MARGIN));
+  let by=Math.max(MAP_UI_MARGIN,Math.min(z.y-boxH-LABEL_GAP_MIN,MAP_H-boxH-MAP_UI_MARGIN));
+  return {bx,by};
+}
+function drawUiTag(g,bx,by,bw,bh,text){
+  g.fillStyle='#FFFDF8';
+  g.fillRect(bx,by,bw,bh);
+  g.strokeStyle='#333333';
+  g.lineWidth=1;
+  g.strokeRect(bx+.5,by+.5,bw-1,bh-1);
+  g.fillStyle='#222222';
+  g.font=LABEL_FONT;
+  g.textBaseline='middle';
+  g.textAlign='center';
+  g.fillText(text,bx+bw/2,by+bh/2);
+  g.textAlign='left';
+  g.textBaseline='alphabetic';
+}
+function drawAllZoneLabels(g){
+  const placed=[];
+  for(const id of LABEL_ZONE_IDS){
+    const z=ZONES[id];
+    if(!z||!z.label)continue;
+    const m=measureZoneLabel(g,z.label);
+    const pos=findZoneLabelPos(id,z,m.w,m.h,placed);
+    drawUiTag(g,pos.bx,pos.by,m.w,m.h,z.label);
+    placed.push({x:pos.bx,y:pos.by,w:m.w,h:m.h});
+  }
 }
 function drawPixCar(g,cx,cy,dir,col){
   cx=cx|0;cy=cy|0;col=col||'#d0d6e0';
@@ -961,7 +1033,6 @@ function drawBuilding(g,z,type){
   const dw=8,dx=x+((w-dw)>>1);
   px(g,dx,y+h-9,dw,9,door);
   px(g,dx,y+h-9,dw,1,shade(door,30));
-  drawSign(g,x+2,y-15,label);
 }
 function drawParkingLot(g,z){
   const {x,y,w,h,label}=z;
@@ -969,7 +1040,6 @@ function drawParkingLot(g,z){
   const n=6;for(let i=1;i<n;i++)px(g,x+((w*i/n)|0),y+4,1,h-8,'#d8dce4');
   const cars=[['#e0e6f0',0.13],['#c85a5a',0.32],['#5a8ad0',0.55],['#e0c060',0.78]];
   cars.forEach(([col,nx])=>drawPixCar(g,x+w*nx,y+h*0.5,'n',col));
-  drawSign(g,x+2,y-13,label);
 }
 function drawPoolArea(g,z){
   const {x,y,w,h,label}=z;
@@ -978,7 +1048,6 @@ function drawPoolArea(g,z){
   px(g,x+9,y+11,w-18,h-22,'#2fa8e0');
   for(let i=y+15;i<y+h-14;i+=8)px(g,x+13,i,w-26,1,'#bfe6ff');
   drawTree(g,x+9,y+h-8,4);drawTree(g,x+w-9,y+h-8,4);
-  drawSign(g,x+2,y-13,label);
 }
 function drawBeachStrip(g,z){
   const {x,y,w,h,label}=z;
@@ -1020,7 +1089,6 @@ function drawParkVenue(g,z){
     px(g,tx-1,ty,2,7,shade(tent[i],-40));
   });
   drawTree(g,x+9,y+10,4);drawTree(g,x+w-10,y+10,4);
-  drawSign(g,x+2,y-13,label);
 }
 function drawBoulevard(g,z){
   const {x,y,w,h}=z;
@@ -1039,7 +1107,6 @@ function drawFloor(g,z,col,label){
   px(g,x,y+h-3,w,3,wc);px(g,x,y+h-1,w,1,'#4c525a');
   px(g,x,y,3,h,wc);px(g,x,y,1,h,'#9aa2ad');
   px(g,x+w-3,y,3,h,wc);px(g,x+w-1,y,1,h,'#4c525a');
-  drawSign(g,x+2,y-15,label);
 }
 function drawShelf(g,x,y,w,h){          /* 書庫 */
   x=x|0;y=y|0;w=w|0;h=Math.max(5,h|0);
@@ -1225,29 +1292,27 @@ function draw(){
       ctx.strokeRect(((c.px-12)|0)+.5,((c.py-16)|0)+.5,24,33);
     }
     drawPerson(ctx,c,walking,frame);
-    if(!c.guest&&(c===hovered||c===selected)){       /* 名前はホバー/選択時のみ */
+    if(!c.guest&&(c===hovered||c===selected)){
       const label=c.short;
-      ctx.font='11px "DotGothic16",monospace';ctx.textBaseline='alphabetic';
-      const tw=Math.ceil(ctx.measureText(label).width),lw=tw+8;
-      const lx=(c.px-lw/2)|0,ly=(c.py-32)|0;
-      px(ctx,lx,ly,lw,15,'#0a1024');
-      px(ctx,lx+1,ly+1,lw-2,13,'#f4ecd0');
-      ctx.fillStyle='#1a2030';ctx.fillText(label,lx+4,ly+11);
+      g.font=LABEL_FONT;
+      const tw=Math.ceil(g.measureText(label).width),lw=tw+LABEL_PAD*2;
+      const lx=Math.max(MAP_UI_MARGIN,Math.min((c.px-lw/2)|0,MAP_W-lw-MAP_UI_MARGIN));
+      const ly=Math.max(MAP_UI_MARGIN,(c.py-36)|0);
+      drawUiTag(g,lx,ly,lw,LABEL_BOX_H,label);
     }
   }
   for(const c of order){
     if(c.bubble&&now<c.bubble.until){
-      const txt=c.bubble.text,isTask=c.bubble.task;
-      ctx.font='13px "DotGothic16",monospace';
-      const tw=Math.ceil(ctx.measureText(txt).width),w=Math.min(tw+12,MAP_W-12),h=20;
-      let bx=(c.px-w/2)|0;bx=Math.max(4,Math.min(MAP_W-w-4,bx));
-      const by=(c.py-54)|0;
-      px(ctx,bx,by,w,h,isTask?'#5a0a12':'#0a1024');                  /* 未完了タスクは赤 */
-      px(ctx,bx+1,by+1,w-2,h-2,isTask?'#e23b3b':'#ffffff');
-      ctx.fillStyle=isTask?'#ffffff':'#1a2030';ctx.fillText(txt,bx+6,by+14);
+      const txt=c.bubble.text;
+      g.font=LABEL_FONT;
+      const tw=Math.ceil(g.measureText(txt).width),w=Math.min(tw+LABEL_PAD*2,MAP_W-MAP_UI_MARGIN*2),h=LABEL_BOX_H;
+      let bx=(c.px-w/2)|0;bx=Math.max(MAP_UI_MARGIN,Math.min(MAP_W-w-MAP_UI_MARGIN,bx));
+      const by=Math.max(MAP_UI_MARGIN,(c.py-54)|0);
+      drawUiTag(g,bx,by,w,h,txt);
     }else if(c.bubble&&now>=c.bubble.until)c.bubble=null;
   }
   drawWeatherFx(ctx,now);
+  drawAllZoneLabels(ctx);
 }
 
 /* ================= UI ================= */
