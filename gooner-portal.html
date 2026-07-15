@@ -1237,7 +1237,7 @@ video.dc-card__image{animation:none;background:transparent}
             <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
             <span class="dc-photo-fallback" aria-hidden="true">紬</span>
             <div class="dc-avatar-wrap">
-              <video class="dc-card__image" src="tumugi.mp4" poster="dash-finance.png" muted loop playsinline autoplay preload="metadata" aria-label="紬"></video>
+              <video class="dc-card__image" src="tumugi.mp4" poster="dash-finance.png" data-has-audio="1" muted loop playsinline autoplay preload="metadata" aria-label="紬"></video>
             </div>
           </div>
           <div class="dc-card-foot">
@@ -2583,6 +2583,20 @@ window.Treasury={
   document.querySelectorAll('video.dc-card__image').forEach(function(video){
     video.addEventListener('error',function(){swapToPoster(video);});
   });
+  var audioVideo=document.querySelector('.dc-card[data-dept="finance"] video[data-has-audio]');
+  var financeCard=document.querySelector('.dc-card[data-dept="finance"]');
+  if(audioVideo&&financeCard){
+    function enableAudio(){
+      audioVideo.muted=false;
+      audioVideo.play().catch(function(){});
+    }
+    function disableAudio(){
+      audioVideo.muted=true;
+    }
+    financeCard.addEventListener('mouseenter',enableAudio);
+    financeCard.addEventListener('mouseleave',disableAudio);
+    financeCard.addEventListener('touchstart',enableAudio,{passive:true});
+  }
   syncVideos();
   reduced.addEventListener('change',syncVideos);
 })();
