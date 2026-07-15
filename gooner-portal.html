@@ -730,7 +730,9 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 #app-treasury .main{padding:18px 20px 48px;max-width:none;overflow:visible;min-height:0;}
 #dashboard-pane>.pane-cap,
 .dash-entaku-pane>.pane-cap,
-#office-pane>.pane-cap{display:none;}
+#office-pane>.pane-cap,
+.dash-entaku-pane .entaku-inline-head,
+.dash-entaku-pane .entaku-status-name{display:none!important;}
 #dashboard-pane #root{display:none!important;}
 .dash-cards-wrap{
   flex:1;min-height:0;min-width:0;overflow:hidden;
@@ -848,7 +850,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 .entaku-empty{
   flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
-  padding:20px 16px;text-align:center;
+  padding:20px 16px;text-align:center;cursor:pointer;
   font-size:12px;color:var(--muted);line-height:1.6;
   background:linear-gradient(180deg,rgba(8,10,14,.5),rgba(5,7,11,.8));
 }
@@ -1309,12 +1311,7 @@ video.dc-card__image{
   <div class="dash-split-row">
     <section class="quest-pane dash-entaku-pane">
       <div class="entaku-inline collapsed" id="entaku-inline">
-        <div class="entaku-inline-head" onclick="toggleEntaku()" title="クリックで開閉">
-          <span class="entaku-inline-dot"></span>
-          <span class="entaku-inline-title">円卓会議</span>
-          <button type="button" class="entaku-inline-toggle" id="entakuToggle" onclick="event.stopPropagation();toggleEntaku()" aria-label="開閉">▼</button>
-        </div>
-        <div class="entaku-empty" id="entakuEmpty">現在進行中の会議はありません</div>
+        <div class="entaku-empty" id="entakuEmpty" onclick="openEntaku()" role="button" tabindex="0">現在進行中の会議はありません</div>
         <div class="entaku-status-panel" id="entakuStatusPanel" hidden>
           <div class="entaku-status-main">
             <div class="entaku-status-name">円卓会議 ─ GPT</div>
@@ -1334,7 +1331,7 @@ video.dc-card__image{
     </section>
     <section class="quest-pane" id="office-pane">
       <div class="office-frame">
-        <iframe src="office.html" title="オフィスクエスト マップ"></iframe>
+        <iframe src="office.html?embedded=1" title="オフィスクエスト マップ"></iframe>
       </div>
     </section>
   </div>
