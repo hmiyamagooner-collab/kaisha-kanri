@@ -1249,12 +1249,92 @@ video.dc-card__image{
 /* 下段：円卓・オフィスの各パネルは下段いっぱい＋中身は内部スクロール（ページ全体はスクロールさせない） */
 .dash-split-row>.dash-entaku-pane,
 .dash-split-row>#office-pane{height:100%;min-height:0;overflow:hidden;}
+/* ===== ログイン ===== */
+#portal-login{
+  min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px 16px;
+  background:var(--bg);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%,rgba(196,166,106,.08),transparent),
+    radial-gradient(ellipse 50% 40% at 100% 80%,rgba(122,171,222,.04),transparent);
+}
+#portal-login[hidden]{display:none!important}
+.portal-login-card{
+  width:min(420px,100%);padding:28px 26px 24px;border-radius:var(--radius);
+  border:1px solid rgba(210,173,99,.28);
+  background:linear-gradient(165deg,rgba(18,22,30,.98),rgba(8,10,14,.98));
+  box-shadow:var(--shadow),0 0 0 1px rgba(255,255,255,.03) inset;
+}
+.portal-login-card h1{
+  font-family:var(--font-display);font-size:20px;font-weight:600;color:var(--gold-hi);
+  letter-spacing:.08em;margin-bottom:6px;
+}
+.portal-login-card .sub{font-size:12px;color:var(--muted);margin-bottom:20px;line-height:1.6}
+.portal-login-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.portal-login-field label{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.04em}
+.portal-login-field input,.portal-login-field select{
+  background:#040506;border:1px solid rgba(196,166,106,.22);border-radius:var(--radius-sm);
+  color:var(--text);font-size:14px;padding:10px 12px;
+}
+.portal-login-field input:focus,.portal-login-field select:focus{
+  outline:none;border-color:rgba(232,212,168,.4);box-shadow:0 0 0 2px rgba(196,166,106,.12);
+}
+.portal-login-submit{
+  width:100%;margin-top:8px;padding:12px 16px;border:none;border-radius:var(--radius-sm);cursor:pointer;
+  font-family:var(--font-display);font-size:14px;font-weight:600;
+  background:linear-gradient(180deg,var(--gold-hi),var(--gold));color:#1a1510;
+  box-shadow:0 4px 14px rgba(0,0,0,.35);
+}
+.portal-login-submit:hover{filter:brightness(1.06)}
+.portal-login-err{font-size:12px;color:var(--out);min-height:18px;margin-top:8px}
+#portal-shell[hidden]{display:none!important}
+.pt-user{
+  margin-left:auto;font-size:11px;color:var(--muted);padding:4px 10px;border-radius:99px;
+  border:1px solid rgba(196,166,106,.2);background:rgba(255,255,255,.03);white-space:nowrap;
+}
+.pt-logout{
+  font-size:11px;padding:5px 10px;border-radius:8px;cursor:pointer;
+  border:1px solid rgba(143,152,166,.35);background:transparent;color:var(--muted);
+}
+.pt-logout:hover{color:var(--text);border-color:rgba(196,166,106,.35)}
 </style>
 </head>
 <body>
 
 <div id="rotate-note"><span class="ic">📱↻</span>スマホでは よこ画面で ごらんください</div>
-<div id="portal-shell">
+
+<div id="portal-login" role="dialog" aria-labelledby="portal-login-title">
+  <div class="portal-login-card">
+    <h1 id="portal-login-title">GOONER PORTAL</h1>
+    <p class="sub">利用者の役職・名前・メールを登録してからご利用ください。<br>円卓会議で誰が利用しているか把握します。</p>
+    <form id="portalLoginForm" autocomplete="on">
+      <div class="portal-login-field">
+        <label for="loginRole">役職</label>
+        <select id="loginRole" required>
+          <option value="">選択してください</option>
+          <option value="社長">社長</option>
+          <option value="経理">経理</option>
+          <option value="法務">法務</option>
+          <option value="秘書">秘書</option>
+          <option value="社員">社員</option>
+          <option value="承認者">承認者</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+      <div class="portal-login-field">
+        <label for="loginName">お名前</label>
+        <input id="loginName" type="text" required maxlength="40" placeholder="例：深山 弘次" autocomplete="name">
+      </div>
+      <div class="portal-login-field">
+        <label for="loginEmail">メールアドレス</label>
+        <input id="loginEmail" type="email" required maxlength="120" placeholder="name@example.com" autocomplete="email">
+      </div>
+      <button type="submit" class="portal-login-submit">ログインして開始</button>
+      <p class="portal-login-err" id="portalLoginErr" aria-live="polite"></p>
+    </form>
+  </div>
+</div>
+
+<div id="portal-shell" hidden>
 <nav class="gamenav" aria-label="メインメニュー">
   <div class="nav-group">事業ユニット</div>
   <button type="button" class="nav-biz" data-s="biz-paradise" style="--nav-photo:url(nav-paradise.png)">
@@ -1311,6 +1391,8 @@ video.dc-card__image{
 <div id="portal-bar">
   <span class="pt-logo">GOONER PORTAL</span>
   <span class="pt-hint"><b>左ナビ</b>全高　<b>上段</b>キャラカード全幅　<b>下段</b>円卓｜クエスト横並び</span>
+  <span class="pt-user" id="portalUserChip" hidden></span>
+  <button type="button" class="pt-logout" id="portalLogoutBtn" hidden>ログアウト</button>
 </div>
 
 <div id="quests-row">
@@ -1379,7 +1461,7 @@ video.dc-card__image{
               <span class="entaku-status-badge" id="entakuStatusBadge">待機中</span>
             </div>
             <div class="entaku-participants" aria-label="参加者">
-              <span class="entaku-participant is-user">利用者</span>
+              <span class="entaku-participant is-user" id="entakuUserBadge">利用者</span>
               <span class="entaku-participant is-secretary">凛</span>
               <span class="entaku-participant is-finance">紬</span>
               <span class="entaku-participant is-legal">陽翔</span>
@@ -2319,6 +2401,7 @@ $$(".gamenav button").forEach(b=>b.onclick=()=>{
   $$(".screen").forEach(x=>x.classList.remove("on")); $("#s-"+b.dataset.s).classList.add("on");
   renderAll();
   try{
+    if(window._entakuSuppressScroll)return;
     const pane=document.getElementById("treasury-pane");
     if(pane){
       const top=pane.getBoundingClientRect().top+window.scrollY-56;
@@ -2893,6 +2976,106 @@ window.Treasury={
 })();
 </script>
 
+<!-- 利用者ログイン・セッション -->
+<script>
+window.PortalAuth=(function(){
+  const USER_KEY='gooner_portal_user';
+  const LOG_KEY='gooner_portal_access_log';
+  function getUser(){
+    try{
+      const u=JSON.parse(localStorage.getItem(USER_KEY)||'null');
+      if(u&&u.name&&u.email&&u.role)return u;
+    }catch(e){}
+    return null;
+  }
+  function saveLog(entry){
+    try{
+      const logs=JSON.parse(localStorage.getItem(LOG_KEY)||'[]');
+      logs.push(entry);
+      if(logs.length>200)logs.splice(0,logs.length-200);
+      localStorage.setItem(LOG_KEY,JSON.stringify(logs));
+    }catch(e){}
+  }
+  function serverLog(action,detail){
+    const u=getUser();if(!u)return;
+    fetch('/api/portal-log',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:action,name:u.name,role:u.role,email:u.email,detail:detail||''})
+    }).catch(function(){});
+  }
+  function syncUi(){
+    const u=getUser();
+    const login=document.getElementById('portal-login');
+    const shell=document.getElementById('portal-shell');
+    const chip=document.getElementById('portalUserChip');
+    const logout=document.getElementById('portalLogoutBtn');
+    const badge=document.getElementById('entakuUserBadge');
+    if(u){
+      if(login)login.hidden=true;
+      if(shell)shell.hidden=false;
+      if(chip){chip.hidden=false;chip.textContent=u.role+'　'+u.name;}
+      if(logout)logout.hidden=false;
+      if(badge)badge.textContent=u.name;
+    }else{
+      if(login)login.hidden=false;
+      if(shell)shell.hidden=true;
+      if(chip)chip.hidden=true;
+      if(logout)logout.hidden=true;
+      if(badge)badge.textContent='利用者';
+    }
+  }
+  function login(user){
+    const u={
+      role:String(user.role||'').trim(),
+      name:String(user.name||'').trim(),
+      email:String(user.email||'').trim().toLowerCase(),
+      at:new Date().toISOString()
+    };
+    if(!u.role||!u.name||!u.email)return false;
+    localStorage.setItem(USER_KEY,JSON.stringify(u));
+    const entry={...u,action:'login',ts:Date.now()};
+    saveLog(entry);
+    serverLog('login','portal-open');
+    syncUi();
+    return true;
+  }
+  function logout(){
+    const u=getUser();
+    if(u){saveLog({...u,action:'logout',ts:Date.now()});serverLog('logout','');}
+    localStorage.removeItem(USER_KEY);
+    syncUi();
+  }
+  function userContext(){
+    const u=getUser();
+    if(!u)return '';
+    return '利用者: '+u.name+'（'+u.role+'）<'+u.email+'>';
+  }
+  document.addEventListener('DOMContentLoaded',function(){
+    syncUi();
+    const form=document.getElementById('portalLoginForm');
+    const err=document.getElementById('portalLoginErr');
+    if(form)form.addEventListener('submit',function(ev){
+      ev.preventDefault();
+      if(err)err.textContent='';
+      const ok=login({
+        role:document.getElementById('loginRole')?.value,
+        name:document.getElementById('loginName')?.value,
+        email:document.getElementById('loginEmail')?.value
+      });
+      if(!ok&&err)err.textContent='役職・名前・メールを入力してください。';
+    });
+    document.getElementById('portalLogoutBtn')?.addEventListener('click',logout);
+    const prev=getUser();
+    if(prev){
+      document.getElementById('loginRole').value=prev.role;
+      document.getElementById('loginName').value=prev.name;
+      document.getElementById('loginEmail').value=prev.email;
+    }
+  });
+  return{getUser,login,logout,userContext,syncUi,serverLog};
+})();
+</script>
+
 <!-- 円卓AI：3エージェント会話 API ブリッジ -->
 <script>
 window.EntakuAI=(function(){
@@ -2956,9 +3139,24 @@ window.EntakuAI=(function(){
   function el(id){ return document.getElementById(id); }
   function agentOf(id){ return AGENTS[id] || AGENTS.secretary; }
   function agentLabel(m){
-    if(m.role==='user') return 'あなた';
+    if(m.role==='user'){
+      const u=window.PortalAuth?.getUser?.();
+      return u?(u.role+'　'+u.name):'あなた';
+    }
     const a=agentOf(m.agent);
     return a.role+'　'+a.name;
+  }
+  function keepPageScroll(fn){
+    const y=window.scrollY;
+    fn();
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){window.scrollTo(0,y);});
+    });
+  }
+  function focusEntakuInput(){
+    const ta=el('entakuText');
+    if(!ta)return;
+    try{ta.focus({preventScroll:true});}catch(e){ta.focus();}
   }
   function entakuTtsPlain(s){
     return String(s||'').replace(/⚠[^\n]*/g,'').replace(/【[^】]+】/g,'').replace(/\n+/g,'。').trim();
@@ -3000,26 +3198,31 @@ window.EntakuAI=(function(){
     { key:'精算', s:'quest', label:'精算クエストへ' },
   ];
   const AI_TOUR = ['cf-bank','cf-cases','cf-link','cf-flow','cf-forecast','cf-inrou'];
-  function setAiWorking(on){
+  function setAiWorking(on,opts){
+    opts=opts||{};
     document.getElementById('treasury-pane')?.classList.toggle('ai-working', on);
     document.getElementById('portal-shell')?.classList.toggle('ai-working', on);
     const b=el('aiWorkBadge'), l=el('aiWorkLog');
     if(b) b.hidden=!on;
     if(l) l.hidden=!on;
-    if(on) startAiTour();
+    if(on&&opts.tour!==false) startAiTour();
     else stopAiTour();
   }
   function activeScreen(){
     const on=document.querySelector('.gamenav button.on');
     return on ? on.dataset.s : 'dash';
   }
-  function gotoScreen(sid){
+  function gotoScreen(sid,opts){
     if(!sid) return;
+    opts=opts||{};
+    const prev=window._entakuSuppressScroll;
+    if(opts.noScroll)window._entakuSuppressScroll=true;
     try{
       const cur=activeScreen();
       if(cur && cur!=='dash') S.lastScreen=cur;
       document.querySelector('.gamenav button[data-s="'+sid+'"]')?.click();
     }catch(e){}
+    window._entakuSuppressScroll=prev;
   }
   function pickScreen(text){
     const hit=ROUTES.find(r=>text.includes(r.key));
@@ -3051,18 +3254,24 @@ window.EntakuAI=(function(){
       return '<div class="ent-msg '+cls+'"><span class="ent-who">'+who+'</span><div class="ent-txt">'+esc(m.content).replace(/\n/g,'<br>')+jumps+'</div></div>';
     }).join('') + (S.busy?'<div class="ent-msg ent-ai ent-agent-secretary"><span class="ent-who">秘書　凛</span><div class="ent-txt ent-typing">凛・紬・陽翔が協議中…</div></div>':'');
     body.scrollTop = body.scrollHeight;
-    body.querySelectorAll('.entaku-jump').forEach(b=>b.onclick=()=>gotoScreen(b.dataset.s));
-    setAiWorking(S.busy);
+    body.querySelectorAll('.entaku-jump').forEach(b=>b.onclick=()=>gotoScreen(b.dataset.s,{noScroll:true}));
+    setAiWorking(S.busy,{tour:false});
+    el('entaku-inline')?.classList.toggle('is-busy',S.busy);
     updateEntakuStatus();
     if(S.busy) window.DashTalk?.speak('secretary', '少々お待ちください…', 99999);
     else highlightLatestAgents();
   }
   function cfContext(){
+    const parts=[];
+    const user=window.PortalAuth?.userContext?.();
+    if(user)parts.push(user);
     try{
       const S2 = window.Treasury && window.Treasury.S;
-      if(!S2) return '';
-      return '案件 '+(S2.cases?.length||0)+'件 / 口座 '+(S2.accounts?.length||0)+'件 / 銀行明細 '+(S2.bankTx?.length||0)+'件 / 関連者 '+(S2.relatedParties?.length||0)+'件';
-    }catch(e){ return ''; }
+      if(S2){
+        parts.push('案件 '+(S2.cases?.length||0)+'件 / 口座 '+(S2.accounts?.length||0)+'件 / 銀行明細 '+(S2.bankTx?.length||0)+'件 / 関連者 '+(S2.relatedParties?.length||0)+'件');
+      }
+    }catch(e){}
+    return parts.join('\n');
   }
   function updateEntakuStatus(){
     const empty=el('entakuEmpty'), panel=el('entakuStatusPanel');
@@ -3080,7 +3289,7 @@ window.EntakuAI=(function(){
       badge.className='entaku-status-badge'+(S.history.length?' is-live':'');
       if(S.history.length){
         const last=S.history[S.history.length-1];
-        const who=last.role==='user'?'あなた':agentOf(last.agent).name;
+        const who=last.role==='user'?(window.PortalAuth?.getUser?.()?.name||'あなた'):agentOf(last.agent).name;
         desc.textContent=who+'：'+last.content.slice(0,48)+(last.content.length>48?'…':'');
       }else{
         desc.textContent='利用者と3名のAIエージェントが同席しています。';
@@ -3103,17 +3312,21 @@ window.EntakuAI=(function(){
   window.toggleEntaku = function(){
     S.open = !S.open;
     syncToggle();
-    if(S.open) setTimeout(()=>el('entakuText')?.focus(), 30);
+    if(S.open) setTimeout(focusEntakuInput, 30);
   };
   window.openEntaku = function(){
     S.open = true;
     syncToggle();
     if(!S.history.length){
-      S.history.push({role:'assistant', agent:'secretary', content:'円卓会議へようこそ。秘書の凛です。経理の紬と法務の陽翔も同席しています。お金のことは紬、契約は陽翔が担当します。他の画面を見ながら話せます。'});
+      const u=window.PortalAuth?.getUser?.();
+      const greet=u
+        ?(u.name+'さん、円卓会議へようこそ。秘書の凛です。経理の紬と法務の陽翔も同席しています。')
+        :'円卓会議へようこそ。秘書の凛です。経理の紬と法務の陽翔も同席しています。お金のことは紬、契約は陽翔が担当します。他の画面を見ながら話せます。';
+      S.history.push({role:'assistant', agent:'secretary', content:greet});
       render();
       window.DashTalk?.speak('secretary', '何でも聞いてくださいね。', 3000);
     }
-    setTimeout(()=>el('entakuText')?.focus(), 50);
+    setTimeout(focusEntakuInput, 50);
   };
   window.closeEntaku = function(){
     S.open = false;
@@ -3131,7 +3344,11 @@ window.EntakuAI=(function(){
     const ta = el('entakuText'); const q = (ta.value||'').trim();
     if(!q) return false;
     if(!S.open){ S.open=true; syncToggle(); }
-    S.history.push({role:'user', content:q}); ta.value=''; S.busy=true; render();
+    const scrollY=window.scrollY;
+    keepPageScroll(function(){
+      S.history.push({role:'user', content:q}); ta.value=''; S.busy=true; render();
+    });
+    window.PortalAuth?.serverLog?.('entaku-send',q.slice(0,120));
     const routeDept=/経理|入出金|経費|税|CF|精算|口座|明細/.test(q)?'finance'
       :/契約|法務|リーガル|印籠|コンプラ/.test(q)?'legal':'secretary';
     window.DashTalk?.speak(routeDept, '承知しました。', 2800);
@@ -3153,9 +3370,8 @@ window.EntakuAI=(function(){
         S.history.push({role:'assistant', agent:agent, content:r.text||''});
       });
       render();
-      var jumpSrc=replies.map(function(r){return r.text;}).join('\n');
-      var sid=pickScreen(jumpSrc);
-      if(sid) setTimeout(function(){gotoScreen(sid);}, 400);
+      focusEntakuInput();
+      requestAnimationFrame(function(){window.scrollTo(0,scrollY);});
     }).catch(function(e){
       S.busy=false; el('entakuSend').disabled=false;
       var msg=e&&e.message==='AI_NOT_CONNECTED'
@@ -3163,7 +3379,11 @@ window.EntakuAI=(function(){
         :'⚠ OpenAIに接続できませんでした（'+(e&&e.message||e)+'）。Vercel版＋OPENAI_API_KEYの設定が必要です。';
       S.history.push({role:'assistant', agent:'secretary', content:msg});
       render();
+      focusEntakuInput();
+      requestAnimationFrame(function(){window.scrollTo(0,scrollY);});
     });
+    requestAnimationFrame(function(){window.scrollTo(0,scrollY);});
+    focusEntakuInput();
     return false;
   };
   window.summonOfficeToEntaku=function(payload){
@@ -3174,7 +3394,7 @@ window.EntakuAI=(function(){
     const msg=payload.greet||'円卓へお呼びしました。';
     S.history.push({role:'assistant', agent, content:msg});
     render();
-    setTimeout(()=>el('entakuText')?.focus(),50);
+    setTimeout(focusEntakuInput,50);
   };
   document.addEventListener('keydown', function(e){
     if(e.key==='Enter' && !e.shiftKey){
