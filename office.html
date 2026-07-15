@@ -75,15 +75,6 @@ body.embedded canvas#game{
   border:none;border-radius:0;box-shadow:none;
   background:#54963a;
 }
-body.embedded .wx{
-  top:var(--ui-margin);right:var(--ui-margin);left:auto;bottom:auto;
-  z-index:8;font-size:10px;padding:8px 10px;
-  background:var(--label-bg);color:var(--label-fg);
-  border:1px solid var(--label-border);border-radius:0;
-  box-shadow:0 1px 4px rgba(0,0,0,.25);
-  font-family:'Zen Kaku Gothic New',sans-serif;font-weight:600;
-  text-shadow:none;
-}
 /* 埋め込み(ポータル)では縦長ペインでも「よこ画面推奨」を出さずマップを描画する */
 body.embedded #rotate-note{display:none!important;}
 @media(max-width:1000px) and (orientation:portrait){
@@ -213,20 +204,8 @@ body.embedded .hud-dock{padding:0 0 4px;}
 .helplist .btn{display:block;width:100%;text-align:left;margin:6px 0;}
 #syncstat{font-size:10px;color:#8fa3d9;margin-top:6px;}
 #members{max-height:180px;overflow-y:auto;}
-/* お天気バッジ（ゲームUI・マージン統一） */
-.wx{
-  position:absolute;top:var(--ui-margin);right:var(--ui-margin);left:auto;bottom:auto;z-index:8;pointer-events:none;
-  font-family:'Zen Kaku Gothic New',sans-serif;font-size:10px;font-weight:600;letter-spacing:.04em;
-  padding:8px 10px;border-radius:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px;
-  background:var(--label-bg);color:var(--label-fg);
-  border:1px solid var(--label-border);
-  box-shadow:0 1px 4px rgba(0,0,0,.25);
-  text-shadow:none;
-}
-.wx-main{display:flex;gap:6px;align-items:center;line-height:1;}
-.wx-sub{font-size:9px;font-weight:600;letter-spacing:.06em;line-height:1.2;opacity:.92;}
-.wx .wc{font-size:15px;line-height:1;}
-.wx:empty{display:none;}
+/* お天気バッジ（HTMLは非表示・キャンバス描画に移行） */
+.wx{display:none!important;}
 </style>
 </head>
 <body>
@@ -658,22 +637,8 @@ const WEATHERS=[
 ];
 let weatherIdx=0;
 function weather(){return WEATHERS[((weatherIdx%WEATHERS.length)+WEATHERS.length)%WEATHERS.length];}
-const WX_STYLE={
-  'はれ':{ic:'☀',bg:'linear-gradient(180deg,#ffe27a,#ffb638)',fg:'#6b3e00'},
-  'くもり':{ic:'☁',bg:'linear-gradient(180deg,#d7dee6,#a9b6c4)',fg:'#2b3742'},
-  'あめ':{ic:'☔',bg:'linear-gradient(180deg,#6db4ec,#2f7fd0)',fg:'#062647'}
-};
 const DOW=['日','月','火','水','木','金','土'];
 function dayOfWeekText(){return DOW[new Date().getDay()]+'曜日';}
-function updateWx(){
-  const el=document.getElementById('wx');if(!el)return;
-  const w=weather(),s=WX_STYLE[w.k]||WX_STYLE['はれ'];
-  const h=simHour(),hh=Math.floor(h),mm=Math.floor((h-hh)*60);
-  const time=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
-  el.style.background=s.bg;el.style.color=s.fg;
-  el.innerHTML='<div class="wx-main"><span class="wc">'+s.ic+'</span>'+w.k+'</div>'
-    +'<div class="wx-sub">'+time+'　'+dayOfWeekText()+'</div>';
-}
 
 /* ================= TIME ================= */
 let demoMode=true;
@@ -1268,23 +1233,43 @@ function drawWeatherFx(g,now){
     g.fillStyle='rgba(44,54,70,.13)';g.fillRect(0,0,MAP_W,MAP_H);
   }
 }
-function drawWeatherBadge(g){
-  const wz=weather(),x=4,y=4,W=76,H=17;
-  px(g,x,y,W,H,'rgba(6,12,30,.74)');
-  px(g,x,y,W,1,'rgba(150,180,230,.5)');
-  const ix=x+4,iy=y+4;
-  if(wz.ic==='sun'){
-    px(g,ix+3,iy+3,4,4,'#ffd54a');
-    px(g,ix+4,iy,2,2,'#ffd54a');px(g,ix+4,iy+8,2,2,'#ffd54a');
-    px(g,ix,iy+4,2,2,'#ffd54a');px(g,ix+8,iy+4,2,2,'#ffd54a');
-  }else if(wz.ic==='cloud'){
-    px(g,ix,iy+5,10,4,'#e6ecf2');px(g,ix+2,iy+2,6,4,'#f2f6fa');
+function drawDqWindow(g,x,y,w,h){
+  px(g,x,y,w,h,'#f8f0d8');
+  g.strokeStyle='#101010';g.lineWidth=2;
+  g.strokeRect(x+.5,y+.5,w-1,h-1);
+  px(g,x+2,y+2,w-4,2,'#fffdf8');
+  px(g,x+2,y+2,2,h-4,'#fffdf8');
+  px(g,x+4,y+h-4,w-8,2,'#8a7a62');
+  px(g,x+w-4,y+4,2,h-8,'#8a7a62');
+}
+function drawWxPixelIcon(g,ix,iy,ic){
+  if(ic==='sun'){
+    px(g,ix+4,iy+4,4,4,'#e8b020');
+    px(g,ix+5,iy,2,2,'#e8b020');px(g,ix+5,iy+10,2,2,'#e8b020');
+    px(g,ix,iy+5,2,2,'#e8b020');px(g,ix+10,iy+5,2,2,'#e8b020');
+    px(g,ix+2,iy+2,2,2,'#f0c840');px(g,ix+8,iy+2,2,2,'#f0c840');
+    px(g,ix+2,iy+8,2,2,'#f0c840');px(g,ix+8,iy+8,2,2,'#f0c840');
+  }else if(ic==='cloud'){
+    px(g,ix+1,iy+6,12,5,'#c8d0dc');
+    px(g,ix+3,iy+3,8,5,'#eef2f8');
+    px(g,ix+7,iy+2,5,4,'#f4f8fc');
   }else{
-    px(g,ix,iy+2,10,4,'#c2ccd6');
-    px(g,ix+1,iy+7,1,3,'#6fb8e8');px(g,ix+4,iy+7,1,3,'#6fb8e8');px(g,ix+7,iy+7,1,3,'#6fb8e8');
+    px(g,ix+1,iy+3,12,5,'#98a8b8');
+    px(g,ix+2,iy+9,1,4,'#3888c8');px(g,ix+6,iy+9,1,5,'#3888c8');px(g,ix+10,iy+9,1,4,'#3888c8');
   }
-  g.font='9px "DotGothic16",monospace';g.textBaseline='alphabetic';g.fillStyle='#eaf1ff';
-  g.fillText('天気 '+wz.k,x+16,y+12);
+}
+function drawStatusHud(g){
+  const wz=weather(),W=124,H=54;
+  const x=MAP_W-W-MAP_UI_MARGIN,y=MAP_UI_MARGIN;
+  drawDqWindow(g,x,y,W,H);
+  drawWxPixelIcon(g,x+8,y+8,wz.ic);
+  g.font='14px "DotGothic16",monospace';
+  g.textBaseline='alphabetic';g.fillStyle='#181410';
+  g.fillText('天気 '+wz.k,x+28,y+22);
+  const h=simHour(),hh=Math.floor(h),mm=Math.floor((h-hh)*60);
+  const time=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
+  g.font='13px "DotGothic16",monospace';
+  g.fillText(time+'　'+dayOfWeekText(),x+10,y+42);
 }
 function prerenderCity(){
   const g=cityCv.getContext('2d');
@@ -1374,6 +1359,7 @@ function draw(){
   drawSpeechBubbles(ctx,order,now);
   drawWeatherFx(ctx,now);
   drawAllZoneLabels(ctx);
+  drawStatusHud(ctx);
 }
 
 /* ================= UI ================= */
@@ -1434,9 +1420,37 @@ function selectChar(c){
   document.getElementById('detail').innerHTML=html;
   renderMembers();
 }
-/* キャラ→ポータルのタブ対応（クリックでその人のタブへ飛ぶ） */
+/* キャラ→ポータルのタブ・円卓・音声対応 */
+const CHAR_PORTAL={
+  shacho:{dash:'secretary',entaku:'secretary',lines:['お呼びでしょうか。','円卓の準備をします。']},
+  koshiishi:{dash:'finance',entaku:'finance',lines:['振込、確認しますね。','経理のこと、任せて。']},
+  sayaka:{dash:'secretary',entaku:'finance',lines:['実装、進めます！','コード、任せてください。']},
+  yuzuru:{dash:'secretary',entaku:'secretary',lines:['イベント準備中です！','盛り上げますよ。']},
+  tanji:{dash:'secretary',entaku:'secretary',lines:['商談のご相談を。','営業、丹治です。']},
+  okabe:{dash:'legal',entaku:'legal',lines:['契約を確認します。','法務、岡部です。']},
+  tokita:{dash:null,entaku:'secretary',lines:['デイは順調です。','施設長、鴇田です。']},
+  takahashi:{dash:null,entaku:'secretary',lines:['記録、つけておきます。','高橋です。']},
+  shinagawa:{dash:null,entaku:'secretary',lines:['送迎の準備できました。','品川です。']}
+};
 const CHAR_TAB={shacho:'dash',koshiishi:'cf-bank',sayaka:'biz-it',yuzuru:'biz-paradise',
   tanji:'biz-cf',okabe:'cf-legal',tokita:'biz-care',takahashi:'biz-care',shinagawa:'biz-care'};
+function hoverLine(c){
+  const p=CHAR_PORTAL[c.id];
+  const ls=p&&p.lines;
+  if(!ls||!ls.length)return c.short+'です。';
+  return ls[Math.floor(Math.random()*ls.length)];
+}
+let _lastHoverId=null;
+function portalMsg(msg){if(window.parent&&window.parent!==window)window.parent.postMessage(msg,'*');}
+function onCharHover(c){
+  if(!c||c.guest)return;
+  const line=hoverLine(c);
+  c.bubble={text:line,until:performance.now()+3200,quiet:true};
+  portalMsg({type:'office-hover',charId:c.id,name:c.name,short:c.short,line:line,dash:CHAR_PORTAL[c.id]?.dash||null});
+}
+function onCharHoverEnd(){
+  portalMsg({type:'office-hover-end'});
+}
 function mapPointFromEvent(e){
   const t=(e.touches&&e.touches[0])||e;
   if(EMBEDDED&&_embedFit){
@@ -1468,19 +1482,27 @@ cv.addEventListener('click',e=>{
   const best=charAtEvent(e);
   if(!best)return;
   hovered=best;selectChar(best);
-  const tab=CHAR_TAB[best.id];
-  if(tab&&window.parent&&window.parent!==window){
-    window.parent.postMessage({type:'office-goto',tab:tab,charId:best.id},'*');
-  }
+  const p=CHAR_PORTAL[best.id];
+  portalMsg({
+    type:'office-entaku',charId:best.id,name:best.name,short:best.short,
+    entaku:p?.entaku||'secretary',dash:p?.dash||null,line:hoverLine(best)
+  });
+  say(best,'円卓へ お呼びしました');
 });
 cv.addEventListener('mousemove',e=>{
   const c=charAtEvent(e);
   hovered=c||null;
   cv.style.cursor=c?'pointer':'default';
+  const id=c?c.id:null;
+  if(id===_lastHoverId)return;
+  _lastHoverId=id;
+  if(c)onCharHover(c);
+  else onCharHoverEnd();
 });
-cv.addEventListener('mouseleave',()=>{hovered=null;cv.style.cursor='default';});
+cv.addEventListener('mouseleave',()=>{hovered=null;_lastHoverId=null;cv.style.cursor='default';onCharHoverEnd();});
 /* タップでも名前を出す（ポインタ端末） */
-cv.addEventListener('touchstart',e=>{const c=charAtEvent(e);if(c)hovered=c;},{passive:true});
+cv.addEventListener('touchstart',e=>{const c=charAtEvent(e);if(c){hovered=c;onCharHover(c);}},{passive:true});
+cv.addEventListener('touchend',()=>{hovered=null;_lastHoverId=null;onCharHoverEnd();},{passive:true});
 
 /* ================= HELP ================= */
 function openHelp(){
@@ -1625,14 +1647,12 @@ function loop(now){
   updateTraffic(dt);
   tickWork(now);
   document.getElementById('clock').textContent=clockText();
-  updateWx();
   draw();
   requestAnimationFrame(loop);
 }
 loadSettings();
 prerenderCity();
 renderMembers();
-updateWx();
 log('オフィスクエストが はじまった！');
 function fitCanvas(){
   const wrap=document.querySelector('.stage-game');

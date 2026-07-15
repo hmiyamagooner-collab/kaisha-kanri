@@ -2290,10 +2290,63 @@ $$(".gamenav button").forEach(b=>b.onclick=()=>{
   }catch(e){}
 });
 
-/* オフィスクエスト（iframe）でキャラをクリック → その人のタブへ */
+/* オフィスクエスト（iframe）でキャラをホバー／クリック → 音声・円卓 */
+(function(){
+  const OFFICE_ENTAKU_NAME={
+    secretary:'凛',finance:'紬',legal:'陽翔'
+  };
+  let officeHoverId=null;
+  function deptCard(dept){return document.querySelector('.dc-card[data-dept="'+dept+'"]');}
+  function setDeptAudio(dept,on){
+    const card=deptCard(dept);if(!card)return;
+    const video=card.querySelector('video');if(!video)return;
+    video.muted=!on;
+    if(on){const p=video.play();if(p&&p.catch)p.catch(function(){});}
+  }
+  function speakOfficeTTS(text){
+    if(!text||!window.speechSynthesis)return;
+    try{
+      window.speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance(text);
+      u.lang='ja-JP';u.rate=1.08;u.volume=0.9;
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  }
+  window.OfficeBridge={
+    hover(d){
+      if(!d||!d.charId||officeHoverId===d.charId)return;
+      officeHoverId=d.charId;
+      if(d.dash){
+        setDeptAudio(d.dash,true);
+        window.DashTalk?.speak(d.dash,d.line||d.short+'です。',99999);
+      }else{
+        speakOfficeTTS(d.line||d.short+'です。');
+      }
+    },
+    hoverEnd(){
+      officeHoverId=null;
+      window.DashTalk?.stop();
+      document.querySelectorAll('.dc-card video').forEach(v=>{v.muted=true;});
+      if(window.speechSynthesis)window.speechSynthesis.cancel();
+    },
+    summon(d){
+      if(!d||!d.charId)return;
+      const agent=OFFICE_ENTAKU_NAME[d.entaku]||'凛';
+      const greet=(d.short||d.name)+'を円卓へお呼びしました。'+agent+'がお繋ぎします。';
+      if(window.summonOfficeToEntaku)window.summonOfficeToEntaku({greet:greet,charId:d.charId,short:d.short});
+      const dash=d.dash||(d.entaku==='finance'?'finance':d.entaku==='legal'?'legal':'secretary');
+      window.DashTalk?.speak(dash,(d.short||d.name)+'、円卓へどうぞ。',4500);
+      if(dash)setDeptAudio(dash,true);
+    }
+  };
+})();
 window.addEventListener("message",e=>{
   const d=e.data;
-  if(!d||d.type!=="office-goto"||!d.tab)return;
+  if(!d||!d.type)return;
+  if(d.type==="office-hover"){window.OfficeBridge?.hover(d);return;}
+  if(d.type==="office-hover-end"){window.OfficeBridge?.hoverEnd();return;}
+  if(d.type==="office-entaku"){window.OfficeBridge?.summon(d);return;}
+  if(d.type!=="office-goto"||!d.tab)return;
   const b=document.querySelector('.gamenav button[data-s="'+d.tab+'"]');
   if(b)b.click();
 });
@@ -2659,10 +2712,12 @@ window.Treasury={
   var financeCard=document.querySelector('.dc-card[data-dept="finance"]');
   if(audioVideo&&financeCard){
     function enableAudio(){
+      if(window.OfficeBridge&&document.querySelector('.office-frame iframe'))return;
       audioVideo.muted=false;
       audioVideo.play().catch(function(){});
     }
     function disableAudio(){
+      if(window.OfficeBridge&&document.querySelector('.office-frame iframe'))return;
       audioVideo.muted=true;
     }
     financeCard.addEventListener('mouseenter',enableAudio);
@@ -2909,6 +2964,15 @@ window.Treasury={
       render();
     });
     return false;
+  };
+  window.summonOfficeToEntaku=function(payload){
+    if(!payload)return;
+    S.open=true;
+    syncToggle();
+    const msg=payload.greet||'円卓へお呼びしました。';
+    S.history.push({role:'assistant',content:msg});
+    render();
+    setTimeout(()=>el('entakuText')?.focus(),50);
   };
   document.addEventListener('keydown', function(e){
     if(e.key==='Enter' && !e.shiftKey){
