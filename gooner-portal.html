@@ -84,7 +84,7 @@ input,select,textarea{font-family:inherit}
 /* ===== レイアウト ===== */
 .layout{display:block;min-height:0;}
 .gamenav{
-  width:260px;flex-shrink:0;padding:14px 10px 24px;
+  width:180px;flex-shrink:0;padding:14px 8px 24px;
   display:flex;flex-direction:column;gap:5px;
   background:linear-gradient(180deg,#0d1219 0%,#080b10 55%,#05070b 100%);
   border-right:1px solid rgba(116,185,232,.14);
@@ -163,37 +163,31 @@ input,select,textarea{font-family:inherit}
     transform:translate3d(4px,0,0);
   }
 }
-/* 事業ボタン：実写アイコンを浸透させた立体デザイン */
+/* 事業ボタン：実写アイコンをボタン全面に浸透＋文字を上に載せる */
 .gamenav button.nav-biz{
-  padding:0 12px 0 0;gap:0;min-height:var(--nav-h);overflow:hidden;
-}
-.gamenav button.nav-biz::after{
-  content:"";position:absolute;left:0;top:0;bottom:0;width:72px;pointer-events:none;
-  background-image:var(--nav-photo);background-size:cover;background-position:center;
-  opacity:.16;filter:saturate(1.05);
-  transition:opacity .24s ease,filter .24s ease;
+  padding:0;gap:0;min-height:var(--nav-h);overflow:hidden;align-items:center;
 }
 .gamenav button.nav-biz .nav-photo{
-  width:56px;min-height:var(--nav-h);align-self:stretch;flex-shrink:0;position:relative;z-index:1;
+  position:absolute;inset:0;width:auto;z-index:0;
   background-size:cover;background-position:center;
-  border-radius:var(--radius-sm) 0 0 var(--radius-sm);
-  box-shadow:inset -10px 0 18px rgba(0,0,0,.42);
 }
 .gamenav button.nav-biz .nav-photo::after{
   content:"";position:absolute;inset:0;
-  background:linear-gradient(100deg,rgba(0,0,0,.06) 0%,rgba(13,18,25,.9) 68%);
+  background:linear-gradient(90deg,rgba(6,9,14,.30) 0%,rgba(6,9,14,.66) 100%);
+  transition:background .24s ease;
 }
 .gamenav button.nav-biz .nav-label{
-  flex:1;min-width:0;position:relative;z-index:1;
-  padding:0 0 0 10px;line-height:1.35;font-size:12px;
+  position:relative;z-index:2;width:100%;padding:0 9px;
+  line-height:1.2;font-size:12px;font-weight:700;color:#fff;
+  text-shadow:0 1px 2px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.7);
   display:flex;align-items:center;
 }
 @media(hover:hover){
-  .gamenav button.nav-biz:hover .nav-photo::after{opacity:.92}
+  .gamenav button.nav-biz:hover .nav-photo::after{background:linear-gradient(90deg,rgba(6,9,14,.12) 0%,rgba(6,9,14,.48) 100%)}
 }
-.gamenav button.nav-biz.on::after{opacity:.22}
+.gamenav button.nav-biz.on{border-left:3px solid var(--gold-hi)}
 .gamenav button.nav-biz.on .nav-photo::after{
-  background:linear-gradient(100deg,rgba(210,173,99,.12) 0%,rgba(18,24,35,.88) 68%);
+  background:linear-gradient(90deg,rgba(210,173,99,.10) 0%,rgba(6,9,14,.60) 100%);
 }
 /* 事業画面タブ */
 .biz-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
@@ -610,7 +604,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 /* ===== 統合ポータル：上段クエスト2列＋下段ダッシュボード ===== */
 #portal-shell{
   display:grid;
-  grid-template-columns:260px minmax(0,1fr);
+  grid-template-columns:180px minmax(0,1fr);
   align-items:start;
   min-height:100dvh;
   background:var(--bg);
@@ -887,7 +881,8 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .ai-work-log[hidden]{display:none!important}
 .dc-card{
   min-height:0;height:100%;max-height:100%;
-  display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:1;
+  display:grid;grid-template-rows:minmax(0,1fr) 76px;
+  overflow:hidden;position:relative;z-index:1;
   background:linear-gradient(180deg,#121823 0%,#0a0e14 100%);
   border:1px solid rgba(210,173,99,.16);border-radius:var(--radius);
   cursor:default;
@@ -930,8 +925,8 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .dc-card[data-dept="finance"]:hover{border-color:rgba(196,166,106,.45);box-shadow:0 18px 48px rgba(0,0,0,.62),0 10px 24px rgba(0,0,0,.38),0 0 28px rgba(140,150,170,.1)}
 .dc-card[data-dept="legal"]:hover{border-color:rgba(196,166,106,.45);box-shadow:0 18px 48px rgba(0,0,0,.62),0 10px 24px rgba(0,0,0,.38),0 0 28px rgba(150,135,175,.1)}
 .dc-photo.dc-card__media{
-  position:relative;overflow:hidden;flex:1 1 0;min-height:0;
-  width:100%;aspect-ratio:3/4;max-height:100%;
+  position:relative;overflow:hidden;min-height:0;
+  width:100%;height:100%;
   background:#030405;
 }
 .dc-card__media::before{
@@ -1036,14 +1031,14 @@ video.dc-card__image{animation:none;background:transparent}
   pointer-events:none;
 }
 .dc-card-foot{
-  flex:0 0 76px;height:76px;min-height:76px;max-height:76px;
-  display:flex;flex-direction:column;
+  flex-shrink:0;height:76px;min-height:76px;max-height:76px;
+  display:flex;flex-direction:column;position:relative;z-index:3;
   border-top:1px solid rgba(210,173,99,.12);
-  background:linear-gradient(180deg,rgba(10,14,20,.92),rgba(8,10,14,.98));
+  background:linear-gradient(180deg,rgba(10,14,20,.98),rgba(8,10,14,1));
 }
 .dc-name{
-  flex:1 1 0;min-height:36px;max-height:36px;
-  font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--gold-hi);
+  flex:1 1 0;min-height:34px;max-height:34px;
+  font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--gold-hi);
   text-align:center;padding:0 8px;letter-spacing:.06em;position:relative;z-index:2;
   background:linear-gradient(180deg,rgba(210,173,99,.05),transparent);
   display:flex;align-items:center;justify-content:center;gap:5px;
@@ -1120,11 +1115,11 @@ video.dc-card__image{animation:none;background:transparent}
     min-width:96px;flex-direction:column;padding:6px 8px;gap:4px;
   }
   #portal-shell > .gamenav button.nav-biz .nav-photo{
-    width:52px;height:40px;min-height:40px;border-radius:8px;
+    position:relative;inset:auto;width:52px;height:40px;min-height:40px;border-radius:8px;z-index:0;
     box-shadow:inset 0 -8px 16px rgba(0,0,0,.35);
   }
-  #portal-shell > .gamenav button.nav-biz .nav-label{padding:0;font-size:10px;text-align:center}
-  #portal-shell > .gamenav button.nav-biz::after{display:none}
+  #portal-shell > .gamenav button.nav-biz .nav-photo::after{background:linear-gradient(180deg,rgba(6,9,14,.05),rgba(6,9,14,.5))}
+  #portal-shell > .gamenav button.nav-biz .nav-label{padding:0;font-size:10px;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.9)}
   #quests-row{
     grid-template-columns:1fr;
     grid-template-areas:"dashboard" "office";
@@ -1225,7 +1220,7 @@ video.dc-card__image{animation:none;background:transparent}
             </div>
           </div>
           <div class="dc-card-foot">
-            <div class="dc-name">凛<span class="dc-name-en">RIN</span></div>
+            <div class="dc-name">秘書　凛<span class="dc-name-en">RIN</span></div>
             <div class="dc-role">ヒロ社長秘書</div>
           </div>
         </div>
@@ -1239,7 +1234,7 @@ video.dc-card__image{animation:none;background:transparent}
             </div>
           </div>
           <div class="dc-card-foot">
-            <div class="dc-name">紬<span class="dc-name-en">TUMUGI</span></div>
+            <div class="dc-name">経理　紬<span class="dc-name-en">TUMUGI</span></div>
             <div class="dc-role">経理部長</div>
           </div>
         </div>
@@ -1253,7 +1248,7 @@ video.dc-card__image{animation:none;background:transparent}
             </div>
           </div>
           <div class="dc-card-foot">
-            <div class="dc-name">陽翔<span class="dc-name-en">HARUTO</span></div>
+            <div class="dc-name">法務　陽翔<span class="dc-name-en">HARUTO</span></div>
             <div class="dc-role">法務部長</div>
           </div>
         </div>
