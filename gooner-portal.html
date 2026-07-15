@@ -647,13 +647,18 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 #portal-bar .pt-hint b{color:var(--text);font-weight:600}
 #quests-row{
   display:grid;
-  grid-template-columns:minmax(0,13fr) minmax(0,7fr);
-  grid-template-areas:"dashboard office";
-  grid-template-rows:minmax(420px,62vh);
+  grid-template-rows:minmax(280px,52vh) minmax(240px,1fr);
+  grid-template-columns:1fr;
   gap:8px;
   padding:8px 8px 0;
   background:#05070b;
 }
+.dash-split-row{
+  min-height:0;display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:8px;
+}
+.dash-entaku-pane{min-height:0}
 .quest-pane{
   min-width:0;min-height:0;display:flex;flex-direction:column;
   position:relative;background:var(--panel);overflow:hidden;
@@ -685,7 +690,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 #office-pane .pane-cap::after{background:rgba(116,185,232,.45);box-shadow:0 0 8px rgba(116,185,232,.2)}
 #treasury-pane .pane-cap::before{background:linear-gradient(180deg,var(--gold-hi),var(--gold))}
 #treasury-pane .pane-cap::after{background:var(--gold)}
-#office-pane{grid-area:office;background:var(--panel);overflow:hidden;display:flex;flex-direction:column;}
+#office-pane{background:var(--panel);overflow:hidden;display:flex;flex-direction:column;min-height:0;}
 .office-frame{
   flex:1;min-height:0;overflow:hidden;display:flex;position:relative;
   background:
@@ -717,11 +722,12 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 #app-treasury .hud-logo{font-size:16px}
 #app-treasury .main{padding:18px 20px 48px;max-width:none;overflow:visible;min-height:0;}
-#dashboard-pane{grid-area:dashboard;overflow:hidden;}
+#dashboard-pane{overflow:hidden;min-height:0;}
 #dashboard-pane #root{display:none!important;}
-.dash-compact{
-  flex:1;min-height:0;display:grid;grid-template-rows:minmax(0,1fr) auto;
-  overflow:hidden;padding:10px 12px 10px;gap:10px;
+.dash-cards-wrap{
+  flex:1;min-height:0;overflow:hidden;
+  display:flex;flex-direction:column;
+  padding:10px 12px 10px;
   background:
     radial-gradient(ellipse 80% 55% at 50% 0%,rgba(210,173,99,.03),transparent),
     #05070b;
@@ -733,15 +739,14 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 /* ===== 円卓会議（Dashboard内インライン） ===== */
 .entaku-inline{
-  flex-shrink:0;min-height:44px;max-height:42%;
-  display:flex;flex-direction:column;position:relative;z-index:2;
-  border:1px solid rgba(210,173,99,.2);border-radius:var(--radius);
+  flex:1;min-height:0;display:flex;flex-direction:column;position:relative;
+  border:none;border-radius:0;
   background:linear-gradient(180deg,#0d1219 0%,#05070b 100%);
   overflow:hidden;
-  box-shadow:
-    0 10px 36px rgba(0,0,0,.55),
-    inset 0 1px 0 rgba(225,194,125,.06),
-    inset 0 0 24px rgba(0,0,0,.35);
+  box-shadow:none;
+}
+.dash-entaku-pane .entaku-inline{
+  border-top:1px solid rgba(210,173,99,.1);
 }
 .entaku-inline::before{
   content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;
@@ -1117,13 +1122,15 @@ video.dc-card__image{animation:none;background:transparent}
   #portal-shell > .gamenav button.nav-biz .nav-photo::after{background:linear-gradient(180deg,rgba(6,9,14,.05),rgba(6,9,14,.5))}
   #portal-shell > .gamenav button.nav-biz .nav-label{padding:0;font-size:10px;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.9)}
   #quests-row{
-    grid-template-columns:1fr;
-    grid-template-areas:"dashboard" "office";
-    grid-template-rows:minmax(280px,42vh) minmax(240px,36vh);
+    grid-template-rows:minmax(220px,40vh) minmax(180px,1fr);
   }
-  #dashboard-pane,#office-pane{min-height:0;overflow:hidden;}
+  .dash-split-row{
+    grid-template-columns:1fr;
+    grid-template-rows:minmax(180px,1fr) minmax(200px,1fr);
+  }
+  #dashboard-pane,#office-pane,.dash-entaku-pane{min-height:0;overflow:hidden;}
   .dc-cards{min-height:0;height:100%;grid-auto-rows:minmax(0,1fr);}
-  .entaku-inline{max-height:36%;min-height:44px;}
+  .entaku-inline{max-height:none;min-height:0;}
   #app-treasury .hud{top:0}
 }
 @media(max-width:600px){#portal-bar .pt-hint{display:none;}}
@@ -1204,7 +1211,7 @@ video.dc-card__image{animation:none;background:transparent}
 <div id="quests-row">
   <section class="quest-pane" id="dashboard-pane">
     <div class="pane-cap">Company Dashboard</div>
-    <div class="dash-compact" id="dashCompact">
+    <div class="dash-cards-wrap" id="dashCompact">
       <div class="dc-cards">
         <div class="dc-card" data-dept="secretary">
           <div class="dc-photo dc-card__media" data-initial="凛">
@@ -1249,6 +1256,12 @@ video.dc-card__image{animation:none;background:transparent}
           </div>
         </div>
       </div>
+    </div>
+    <div id="root" hidden></div>
+  </section>
+  <div class="dash-split-row">
+    <section class="quest-pane dash-entaku-pane">
+      <div class="pane-cap">円卓会議</div>
       <div class="entaku-inline collapsed" id="entaku-inline">
         <div class="entaku-inline-head" onclick="toggleEntaku()" title="クリックで開閉">
           <span class="entaku-inline-dot"></span>
@@ -1272,15 +1285,14 @@ video.dc-card__image{animation:none;background:transparent}
           <button type="submit" id="entakuSend">送信</button>
         </form>
       </div>
-    </div>
-    <div id="root" hidden></div>
-  </section>
-  <section class="quest-pane" id="office-pane">
-    <div class="pane-cap">オフィスクエスト</div>
-    <div class="office-frame">
-      <iframe src="office.html" title="オフィスクエスト マップ"></iframe>
-    </div>
-  </section>
+    </section>
+    <section class="quest-pane" id="office-pane">
+      <div class="pane-cap">オフィスクエスト</div>
+      <div class="office-frame">
+        <iframe src="office.html" title="オフィスクエスト マップ"></iframe>
+      </div>
+    </section>
+  </div>
 </div><!-- /#quests-row -->
 
   <section class="quest-pane" id="treasury-pane">
