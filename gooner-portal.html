@@ -621,11 +621,13 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   scrollbar-color:rgba(196,166,106,.35) transparent;
 }
 #portal-main{
-  min-width:0;display:block;
+  min-width:0;display:grid;
+  grid-template-rows:auto minmax(0,1fr);
+  height:100dvh;
 }
 #portal-bar{
   flex-shrink:0;z-index:300;display:flex;gap:14px;align-items:center;
-  padding:10px 22px;
+  padding:8px 22px;
   background:rgba(5,6,8,.96);backdrop-filter:blur(16px);
   border-bottom:1px solid rgba(196,166,106,.14);
   box-shadow:0 4px 24px rgba(0,0,0,.4);
@@ -646,13 +648,12 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 #portal-bar .pt-hint b{color:var(--text);font-weight:600}
 #quests-row{
-  height:calc(100dvh - 44px);
-  min-height:420px;
+  min-height:0;
   display:grid;
-  grid-template-rows:minmax(0,58fr) minmax(0,42fr);
+  grid-template-rows:minmax(0,44fr) minmax(0,56fr);
   grid-template-columns:1fr;
-  gap:8px;
-  padding:8px 8px 0;
+  gap:6px;
+  padding:4px 6px 4px;
   overflow:hidden;
   background:#05070b;
 }
@@ -663,7 +664,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   gap:8px;
 }
 #office-pane .office-frame{
-  align-items:center;justify-content:center;
+  align-items:stretch;justify-content:stretch;
 }
 .dash-entaku-pane{min-height:0;display:flex;flex-direction:column}
 #dashboard-pane{display:flex;flex-direction:column}
@@ -741,7 +742,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   flex:1;min-height:0;min-width:0;overflow:hidden;
   display:flex;flex-direction:column;
   width:100%;
-  padding:4px 6px 6px;
+  padding:2px 4px 4px;
   background:
     radial-gradient(ellipse 80% 55% at 50% 0%,rgba(210,173,99,.03),transparent),
     #05070b;
