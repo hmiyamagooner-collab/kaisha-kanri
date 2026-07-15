@@ -205,13 +205,13 @@ body.embedded .hud-dock{padding:0 0 4px;}
 #members{max-height:180px;overflow-y:auto;}
 /* お天気バッジ（枠の左上に固定・キャンバスのトリミングに影響されない） */
 .wx{
-  position:absolute;top:8px;left:8px;z-index:7;pointer-events:none;
-  font-family:'DotGothic16',monospace;font-size:12px;color:#eaf1ff;letter-spacing:.08em;
-  background:rgba(6,12,30,.78);border:1px solid rgba(150,180,230,.4);
-  padding:3px 8px;border-radius:3px;display:flex;gap:6px;align-items:center;
-  text-shadow:1px 1px 0 #000;box-shadow:0 2px 8px rgba(0,0,0,.4);
+  position:absolute;bottom:8px;right:8px;z-index:7;pointer-events:none;
+  font-family:'DotGothic16',monospace;font-size:12px;letter-spacing:.08em;font-weight:600;
+  border:2px solid rgba(0,0,0,.35);
+  padding:3px 9px;border-radius:4px;display:flex;gap:6px;align-items:center;
+  text-shadow:0 1px 0 rgba(255,255,255,.35);box-shadow:0 2px 8px rgba(0,0,0,.45);
 }
-.wx .wc{font-size:14px;line-height:1;}
+.wx .wc{font-size:15px;line-height:1;}
 .wx:empty{display:none;}
 </style>
 </head>
@@ -500,7 +500,7 @@ const GUEST_CLOTH=['#ef5da8','#38bdf8','#f59e0b','#34d399','#a78bfa','#f472b6','
 const GUEST_HAIR=['#3f3f46','#57534e','#713f12','#1c1917','#52341d','#a16207','#292524'];
 function makeGuest(i){
   const p=zoneCenter('beach');
-  return {guest:true,cloth:GUEST_CLOTH[i%GUEST_CLOTH.length],hair:GUEST_HAIR[i%GUEST_HAIR.length],
+  return {guest:true,female:(i%2===0),cloth:GUEST_CLOTH[i%GUEST_CLOTH.length],hair:GUEST_HAIR[i%GUEST_HAIR.length],
     px:p.x,py:p.y,path:[],hidden:true,zone:null,wanderAt:0,spd:0.75+(i%5)*0.06,bubble:null,pendingBubble:null};
 }
 const GUESTS=Array.from({length:22},(_,i)=>makeGuest(i));
@@ -544,14 +544,14 @@ function updateGuest(gst,dt){
 /* ================= 道路を走るいろいろな車 ================= */
 const CAR_COLORS=['#e0e6f0','#c85a5a','#5a8ad0','#e0c060','#4ea36a','#d0d6e0','#e08a3a','#8a7ad0'];
 const TRAFFIC=[
-  {axis:'h',dir:'e',x:6,  y:120,spd:0.42,col:CAR_COLORS[0],min:0,max:278},
-  {axis:'h',dir:'w',x:278,y:112,spd:0.36,col:CAR_COLORS[1],min:0,max:278},
-  {axis:'h',dir:'e',x:120,y:286,spd:0.40,col:CAR_COLORS[2],min:0,max:278},
-  {axis:'h',dir:'w',x:60, y:278,spd:0.46,col:CAR_COLORS[3],min:0,max:278},
-  {axis:'h',dir:'e',x:200,y:346,spd:0.34,col:CAR_COLORS[4],min:0,max:278},
-  {axis:'h',dir:'w',x:30, y:338,spd:0.5, col:CAR_COLORS[6],min:0,max:278},
-  {axis:'v',dir:'s',x:257,y:60, spd:0.44,col:CAR_COLORS[5],min:44,max:340},
-  {axis:'v',dir:'n',x:269,y:320,spd:0.5, col:CAR_COLORS[7],min:44,max:340}
+  {axis:'h',dir:'e',x:6,  y:120,spd:0.055,col:CAR_COLORS[0],min:0,max:278},
+  {axis:'h',dir:'w',x:278,y:112,spd:0.045,col:CAR_COLORS[1],min:0,max:278},
+  {axis:'h',dir:'e',x:120,y:286,spd:0.05, col:CAR_COLORS[2],min:0,max:278},
+  {axis:'h',dir:'w',x:60, y:278,spd:0.06, col:CAR_COLORS[3],min:0,max:278},
+  {axis:'h',dir:'e',x:200,y:346,spd:0.042,col:CAR_COLORS[4],min:0,max:278},
+  {axis:'h',dir:'w',x:30, y:338,spd:0.065,col:CAR_COLORS[6],min:0,max:278},
+  {axis:'v',dir:'s',x:257,y:60, spd:0.05, col:CAR_COLORS[5],min:44,max:340},
+  {axis:'v',dir:'n',x:269,y:320,spd:0.06, col:CAR_COLORS[7],min:44,max:340}
 ];
 function updateTraffic(dt){
   TRAFFIC.forEach(t=>{
@@ -579,7 +579,7 @@ const WORK_LINES={
  '商談':['先方と打合せ','見積提示','クロージング'],
  '送迎':['お迎え中','安全運転で']
 };
-function sayQuiet(c,text){c.bubble={text:text,until:performance.now()+3200};}
+function sayQuiet(c,text){c.bubble={text:text,until:performance.now()+3200,task:true};}
 function tickWork(now){
   CHARS.forEach(c=>{
     if(c.hidden||c.bubble)return;
@@ -606,11 +606,17 @@ const WEATHERS=[
 let weatherIdx=0;
 function weather(){return WEATHERS[((weatherIdx%WEATHERS.length)+WEATHERS.length)%WEATHERS.length];}
 let _wxLast=-1;
+const WX_STYLE={
+  'はれ':{ic:'☀',bg:'linear-gradient(180deg,#ffe27a,#ffb638)',fg:'#6b3e00'},
+  'くもり':{ic:'☁',bg:'linear-gradient(180deg,#d7dee6,#a9b6c4)',fg:'#2b3742'},
+  'あめ':{ic:'☔',bg:'linear-gradient(180deg,#6db4ec,#2f7fd0)',fg:'#062647'}
+};
 function updateWx(){
   const el=document.getElementById('wx');if(!el)return;
   if(weatherIdx===_wxLast)return;_wxLast=weatherIdx;
-  const w=weather(),ic={'はれ':'☀','くもり':'☁','あめ':'☔'}[w.k]||'';
-  el.innerHTML='<span class="wc">'+ic+'</span>'+w.k;
+  const w=weather(),s=WX_STYLE[w.k]||WX_STYLE['はれ'];
+  el.style.background=s.bg;el.style.color=s.fg;
+  el.innerHTML='<span class="wc">'+s.ic+'</span>'+w.k;
 }
 
 /* ================= TIME ================= */
@@ -840,21 +846,20 @@ function drawSign(g,x,y,text){
 }
 function drawPixCar(g,cx,cy,dir,col){
   cx=cx|0;cy=cy|0;col=col||'#d0d6e0';
-  if(dir==='e'||dir==='w'){        /* 横向き */
-    px(g,cx-6,cy-3,12,6,col);
-    px(g,cx-6,cy-3,1,6,shade(col,-45));px(g,cx+5,cy-3,1,6,shade(col,-45));
-    px(g,cx-4,cy-2,3,4,'#bfe6ff');px(g,cx+1,cy-2,3,4,'#9fc8e8');
-    px(g,cx-5,cy-4,3,1,'#20242a');px(g,cx+2,cy-4,3,1,'#20242a');
-    px(g,cx-5,cy+3,3,1,'#20242a');px(g,cx+2,cy+3,3,1,'#20242a');
-    px(g,cx+(dir==='e'?5:-6),cy-1,1,2,'#ffe37a');
-  }else{                            /* 縦向き */
-    px(g,cx-3,cy-6,6,12,col);
-    px(g,cx-3,cy-6,6,1,shade(col,-45));
-    px(g,cx-3,cy+5,6,1,shade(col,-45));
-    px(g,cx-2,cy-4,4,3,'#bfe6ff');
-    px(g,cx-2,cy+1,4,3,'#9fc8e8');
-    px(g,cx-4,cy-5,1,3,'#20242a');px(g,cx+3,cy-5,1,3,'#20242a');
-    px(g,cx-4,cy+2,1,3,'#20242a');px(g,cx+3,cy+2,1,3,'#20242a');
+  if(dir==='e'||dir==='w'){        /* 横向き 18x10 */
+    px(g,cx-9,cy-5,18,10,col);
+    px(g,cx-9,cy-5,1,10,shade(col,-45));px(g,cx+8,cy-5,1,10,shade(col,-45));
+    px(g,cx-6,cy-3,4,6,'#bfe6ff');px(g,cx+1,cy-3,5,6,'#9fc8e8');   /* 窓 */
+    px(g,cx-7,cy-6,4,1,'#20242a');px(g,cx+3,cy-6,4,1,'#20242a');   /* タイヤ */
+    px(g,cx-7,cy+5,4,1,'#20242a');px(g,cx+3,cy+5,4,1,'#20242a');
+    px(g,cx+(dir==='e'?8:-9),cy-2,1,4,'#ffe37a');                  /* ライト */
+  }else{                            /* 縦向き 10x18 */
+    px(g,cx-5,cy-9,10,18,col);
+    px(g,cx-5,cy-9,10,1,shade(col,-45));px(g,cx-5,cy+8,10,1,shade(col,-45));
+    px(g,cx-3,cy-6,6,4,'#bfe6ff');px(g,cx-3,cy+2,6,5,'#9fc8e8');
+    px(g,cx-6,cy-7,1,4,'#20242a');px(g,cx+5,cy-7,1,4,'#20242a');
+    px(g,cx-6,cy+3,1,4,'#20242a');px(g,cx+5,cy+3,1,4,'#20242a');
+    px(g,cx-4,cy+(dir==='s'?8:-9),8,1,'#ffe37a');
   }
 }
 function drawPixVan(g,cx,cy,dir){
@@ -988,7 +993,6 @@ function drawBoulevard(g,z){
   const {x,y,w,h}=z;
   drawRoad(g,x,y,w,h,false);
   for(let ly=y+16;ly<y+h-10;ly+=32){px(g,x+4,ly,1,9,'#7a8494');px(g,x+3,ly-2,3,3,'#ffe37a');}
-  drawPixVan(g,x+(w>>1),y+h-16,'s');
 }
 /* ===== 室内（俯瞰）：床・壁・家具 ===== */
 function drawFloor(g,z,col,label){
@@ -1125,17 +1129,38 @@ function prerenderCity(){
   drawOcean(g,ZONES.umi);
 }
 function drawPerson(g,c,walking,frame){
-  const x=c.px|0,y=c.py|0,sw=walking&&frame;
-  px(g,x-6,y+11,12,3,'rgba(0,0,0,.2)');                     /* 影 */
-  px(g,x-4,y+5,3,6,'#2b2f38');px(g,x+1,y+5,3,6,'#2b2f38');  /* 脚 */
-  px(g,x-5,y-2,10,8,c.cloth);                               /* 胴 */
-  px(g,x-5,y+5,10,1,shade(c.cloth,-40));
-  px(g,x-7,y+(sw?1:0),2,6,shade(c.cloth,-18));              /* 腕 */
-  px(g,x+5,y+(sw?0:1),2,6,shade(c.cloth,-18));
-  px(g,x-4,y-8,8,7,'#f2c9a0');                              /* 顔 */
-  px(g,x-4,y-9,8,3,c.hair);                                 /* 髪 */
-  px(g,x-4,y-8,1,4,c.hair);px(g,x+3,y-8,1,4,c.hair);
-  px(g,x-2,y-4,1,2,'#2a2a2a');px(g,x+1,y-4,1,2,'#2a2a2a');  /* 目 */
+  const x=c.px|0,y=c.py|0,sw=walking&&frame,skin='#f2c9a0';
+  const fem=c.female;
+  px(g,x-8,y+15,16,3,'rgba(0,0,0,.2)');                       /* 影 */
+  if(c.guest){                                                /* 海水浴・イベント客＝水着 */
+    px(g,x-5,y+7,4,8,skin);px(g,x+1,y+7,4,8,skin);            /* 素足 */
+    px(g,x-7,y-3,14,11,skin);                                 /* 素肌の胴 */
+    px(g,x-7,y+3,14,5,c.cloth);                               /* 水着（下） */
+    if(fem)px(g,x-7,y-3,14,3,c.cloth);                        /* ビキニ上（女子） */
+    px(g,x-10,y+(sw?1:0),3,8,skin);px(g,x+7,y+(sw?0:1),3,8,skin); /* 素腕 */
+    px(g,x-5,y-12,11,9,skin);                                 /* 顔 */
+    px(g,x-5,y-14,11,4,c.hair);
+    if(fem){px(g,x-6,y-13,2,10,c.hair);px(g,x+4,y-13,2,10,c.hair);}  /* ロングヘア */
+    else{px(g,x-5,y-12,2,5,c.hair);px(g,x+4,y-12,2,5,c.hair);}
+    px(g,x-3,y-7,2,2,'#2a2a2a');px(g,x+1,y-7,2,2,'#2a2a2a');
+    return;
+  }
+  px(g,x-7,y-3,14,11,c.cloth);                                /* 胴 */
+  px(g,x-7,y+7,14,1,shade(c.cloth,-40));
+  if(fem){                                                    /* 女の子：スカート＋素足 */
+    px(g,x-8,y+6,16,4,c.cloth);
+    px(g,x-8,y+9,16,1,shade(c.cloth,-40));
+    px(g,x-4,y+10,3,5,skin);px(g,x+1,y+10,3,5,skin);
+  }else{
+    px(g,x-5,y+7,4,8,'#2b2f38');px(g,x+1,y+7,4,8,'#2b2f38');  /* 脚 */
+  }
+  px(g,x-10,y+(sw?1:0),3,8,shade(c.cloth,-18));               /* 腕 */
+  px(g,x+7,y+(sw?0:1),3,8,shade(c.cloth,-18));
+  px(g,x-5,y-12,11,9,skin);                                   /* 顔 */
+  px(g,x-5,y-14,11,4,c.hair);                                 /* 髪 */
+  if(fem){px(g,x-6,y-13,2,10,c.hair);px(g,x+4,y-13,2,10,c.hair);}  /* ロングヘア */
+  else{px(g,x-5,y-12,2,5,c.hair);px(g,x+4,y-12,2,5,c.hair);}
+  px(g,x-3,y-7,2,2,'#2a2a2a');px(g,x+1,y-7,2,2,'#2a2a2a');    /* 目 */
 }
 function drawCar(g){drawPixVan(g,CAR.x,CAR.y,CAR.facing||'n');}
 let selected=null;
@@ -1145,36 +1170,35 @@ function draw(){
   ctx.drawImage(cityCv,0,0,MAP_W,MAP_H);
   drawOceanWaves(ctx,performance.now());
   drawTraffic(ctx);
-  drawCar(ctx);
   const now=performance.now();
   const order=[...CHARS,...ELDERS,...GUESTS].filter(c=>!c.hidden).sort((a,b)=>a.py-b.py);
   for(const c of order){
     const walking=c.path.length>0,frame=Math.floor(now/150)%2===0;
     if(selected===c){
       ctx.strokeStyle='#ffd75e';ctx.lineWidth=1;
-      ctx.strokeRect(((c.px-9)|0)+.5,((c.py-11)|0)+.5,18,26);
+      ctx.strokeRect(((c.px-12)|0)+.5,((c.py-16)|0)+.5,24,33);
     }
     drawPerson(ctx,c,walking,frame);
     if(!c.guest){                                    /* 群衆は名前を出さない */
       const label=c.short;
-      ctx.font='9px "DotGothic16",monospace';ctx.textBaseline='alphabetic';
-      const tw=Math.ceil(ctx.measureText(label).width),lw=tw+6;
-      const lx=(c.px-lw/2)|0,ly=(c.py-24)|0;
-      px(ctx,lx,ly,lw,12,'#0a1024');
-      px(ctx,lx+1,ly+1,lw-2,10,'#f4ecd0');
-      ctx.fillStyle='#1a2030';ctx.fillText(label,lx+3,ly+9);
+      ctx.font='11px "DotGothic16",monospace';ctx.textBaseline='alphabetic';
+      const tw=Math.ceil(ctx.measureText(label).width),lw=tw+8;
+      const lx=(c.px-lw/2)|0,ly=(c.py-32)|0;
+      px(ctx,lx,ly,lw,15,'#0a1024');
+      px(ctx,lx+1,ly+1,lw-2,13,'#f4ecd0');
+      ctx.fillStyle='#1a2030';ctx.fillText(label,lx+4,ly+11);
     }
   }
   for(const c of order){
     if(c.bubble&&now<c.bubble.until){
-      const txt=c.bubble.text;
-      ctx.font='9px "DotGothic16",monospace';
-      const tw=Math.ceil(ctx.measureText(txt).width),w=Math.min(tw+8,MAP_W-12),h=14;
+      const txt=c.bubble.text,isTask=c.bubble.task;
+      ctx.font='13px "DotGothic16",monospace';
+      const tw=Math.ceil(ctx.measureText(txt).width),w=Math.min(tw+12,MAP_W-12),h=20;
       let bx=(c.px-w/2)|0;bx=Math.max(4,Math.min(MAP_W-w-4,bx));
-      const by=(c.py-42)|0;
-      px(ctx,bx,by,w,h,'#0a1024');
-      px(ctx,bx+1,by+1,w-2,h-2,'#ffffff');
-      ctx.fillStyle='#1a2030';ctx.fillText(txt,bx+4,by+10);
+      const by=(c.py-54)|0;
+      px(ctx,bx,by,w,h,isTask?'#5a0a12':'#0a1024');                  /* 未完了タスクは赤 */
+      px(ctx,bx+1,by+1,w-2,h-2,isTask?'#e23b3b':'#ffffff');
+      ctx.fillStyle=isTask?'#ffffff':'#1a2030';ctx.fillText(txt,bx+6,by+14);
     }else if(c.bubble&&now>=c.bubble.until)c.bubble=null;
   }
   drawWeatherFx(ctx,now);
