@@ -384,21 +384,21 @@ else{const f=document.getElementById('cardframe');f.src=f.dataset.src;}
   }
   refreshDock();
 })();
-/* ================= MAP（縦長・ドット／海=右端の外側で遮らない） ================= */
-const MAP_W=360, MAP_H=480, DPR=2;
+/* ================= MAP（横長・ドット／海=右端の外側で遮らない・道路は施設を一周） ================= */
+const MAP_W=600, MAP_H=260, DPR=2;
 const PAD=6;
+const RING={x:20,y:36,w:480,h:188,t:12};   /* 施設をぐるり囲む一周道路 */
 const ZONES={
-  shacho:{label:'社長室',x:6,y:50,w:116,h:58,links:['kaigi','honsha']},
-  kaigi:{label:'会議・応接',x:126,y:50,w:120,h:58,links:['shacho','honsha']},
-  honsha:{label:'本社オフィス',x:6,y:124,w:240,h:150,links:['shacho','kaigi','parking']},
-  parking:{label:'駐車場',x:6,y:290,w:240,h:44,links:['honsha','road','pool','park','beach']},
-  pool:{label:'プール',x:6,y:350,w:116,h:74,links:['parking','park','beach']},
-  park:{label:'イベント会場',x:126,y:350,w:120,h:74,links:['parking','pool','beach']},
-  beach:{label:'稲毛海浜',x:280,y:8,w:30,h:464,links:['pool','park','parking','umi']},
-  umi:{label:'海',x:312,y:8,w:42,h:464,links:['beach']},
-  road:{label:'',x:250,y:50,w:26,h:284,links:['parking'],lane:true}
+  shacho:{label:'社長室',x:46,y:58,w:150,h:68,links:['kaigi','honsha']},
+  kaigi:{label:'会議・応接',x:46,y:132,w:150,h:68,links:['shacho','honsha']},
+  honsha:{label:'本社オフィス',x:204,y:58,w:150,h:142,links:['shacho','kaigi','parking']},
+  parking:{label:'駐車場',x:364,y:58,w:110,h:40,links:['honsha','pool','park','beach']},
+  pool:{label:'プール',x:364,y:104,w:110,h:44,links:['parking','park','beach']},
+  park:{label:'イベント会場',x:364,y:154,w:110,h:46,links:['parking','pool','beach']},
+  beach:{label:'稲毛海浜',x:516,y:8,w:32,h:244,links:['pool','park','parking','umi']},
+  umi:{label:'海',x:548,y:8,w:44,h:244,links:['beach']}
 };
-const COAST_X=280, OCEAN_X=312;
+const COAST_X=516, OCEAN_X=548;
 const ROOMS=ZONES;
 function pt(zone,nx,ny){
   const z=ZONES[zone];
@@ -411,7 +411,7 @@ function zoneCenter(id){
 function zoneAt(x,y){
   if(x>=OCEAN_X)return'umi';
   if(x>=COAST_X)return'beach';
-  for(const id of ['road','shacho','kaigi','honsha','parking','pool','park']){
+  for(const id of ['shacho','kaigi','honsha','parking','pool','park']){
     const z=ZONES[id];
     if(x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h)return id;
   }
@@ -540,23 +540,23 @@ function updateGuest(gst,dt){
 
 /* ================= 道路を走るいろいろな車 ================= */
 const CAR_COLORS=['#e0e6f0','#c85a5a','#5a8ad0','#e0c060','#4ea36a','#d0d6e0','#e08a3a','#8a7ad0'];
-/* 車は道路網のウェイポイントを辿り、交差点で曲がる（海に飛び出さない） */
+/* 車は施設を囲む一周道路をぐるぐる（交差点＝四隅で曲がる／海に飛び出さない） */
+const RING_LOOP=[
+  [RING.x+RING.t/2, RING.y+RING.t/2],
+  [RING.x+RING.w-RING.t/2, RING.y+RING.t/2],
+  [RING.x+RING.w-RING.t/2, RING.y+RING.h-RING.t/2],
+  [RING.x+RING.t/2, RING.y+RING.h-RING.t/2]
+];
 const TRAFFIC=[
-  {route:[[20,116],[263,116],[263,282],[20,282]],x:20,y:116,ti:1,dir:1,spd:0.05, col:CAR_COLORS[2],face:'e'},
-  {route:[[20,342],[263,342],[263,116],[20,116]],x:20,y:342,ti:1,dir:1,spd:0.045,col:CAR_COLORS[5],face:'e'}
+  {route:RING_LOOP,x:RING_LOOP[0][0],y:RING_LOOP[0][1],ti:1,dir:1, spd:0.05, col:CAR_COLORS[2],face:'e'},
+  {route:RING_LOOP,x:RING_LOOP[2][0],y:RING_LOOP[2][1],ti:1,dir:-1,spd:0.045,col:CAR_COLORS[5],face:'w'}
 ];
 function updateTraffic(dt){
   TRAFFIC.forEach(c=>{
     const rt=c.route,tg=rt[c.ti];
     const dx=tg[0]-c.x,dy=tg[1]-c.y,dist=Math.hypot(dx,dy),s=c.spd*dt;
-    if(dist<=s){
-      c.x=tg[0];c.y=tg[1];c.ti+=c.dir;
-      if(c.ti>rt.length-1){c.ti=rt.length-2;c.dir=-1;}
-      else if(c.ti<0){c.ti=1;c.dir=1;}
-    }else{
-      c.x+=dx/dist*s;c.y+=dy/dist*s;
-      c.face=Math.abs(dx)>Math.abs(dy)?(dx>0?'e':'w'):(dy>0?'s':'n');
-    }
+    if(dist<=s){c.x=tg[0];c.y=tg[1];c.ti=(c.ti+c.dir+rt.length)%rt.length;}
+    else{c.x+=dx/dist*s;c.y+=dy/dist*s;c.face=Math.abs(dx)>Math.abs(dy)?(dx>0?'e':'w'):(dy>0?'s':'n');}
   });
 }
 function drawTraffic(g){TRAFFIC.forEach(c=>drawPixCar(g,c.x,c.y,c.face,c.col));}
@@ -1106,23 +1106,24 @@ function prerenderCity(){
   const g=cityCv.getContext('2d');
   g.setTransform(DPR,0,0,DPR,0,0);
   g.imageSmoothingEnabled=false;
-  /* 陸地（左側）：ドットの芝チェッカー */
+  /* 陸地：ドットの芝チェッカー（海より左） */
   for(let yy=0;yy<MAP_H;yy+=8)for(let xx=0;xx<COAST_X;xx+=8){
     px(g,xx,yy,8,8,(((xx>>3)+(yy>>3))&1)?'#5a9e3c':'#54963a');
   }
-  /* 建物の間の連絡道（幅広・縦の送迎バス道 x250-276 まで延ばして接続） */
-  drawRoad(g,6,108,270,16,true);
-  drawRoad(g,6,274,270,16,true);
-  drawRoad(g,6,334,270,16,true);
-  drawBoulevard(g,ZONES.road);
-  drawTree(g,22,28,6);drawTree(g,120,24,5);drawTree(g,228,30,6);   /* 上マージンの緑 */
+  /* 施設を囲む一周道路 */
+  drawRoad(g,RING.x,RING.y,RING.w,RING.t,true);                       /* 上 */
+  drawRoad(g,RING.x,RING.y+RING.h-RING.t,RING.w,RING.t,true);         /* 下 */
+  drawRoad(g,RING.x,RING.y,RING.t,RING.h,false);                      /* 左 */
+  drawRoad(g,RING.x+RING.w-RING.t,RING.y,RING.t,RING.h,false);        /* 右 */
   drawExecRoom(g,ZONES.shacho);
   drawMeetingRoom(g,ZONES.kaigi);
   drawOfficeRoom(g,ZONES.honsha);
   drawParkingLot(g,ZONES.parking);
   drawPoolArea(g,ZONES.pool);
   drawParkVenue(g,ZONES.park);
-  drawTree(g,30,446,6);drawTree(g,86,464,5);drawTree(g,150,450,6);drawTree(g,214,466,5);drawTree(g,244,448,6);
+  drawTree(g,34,20,6);drawTree(g,300,20,5);drawTree(g,470,22,6);       /* 上マージン */
+  drawTree(g,40,242,6);drawTree(g,240,244,5);drawTree(g,470,242,6);    /* 下マージン */
+  drawTree(g,505,60,6);drawTree(g,505,150,6);                          /* 海ぎわの緑 */
   /* 右端の外側：砂浜→海（建物や壁でふさがない） */
   drawBeachStrip(g,ZONES.beach);
   drawOcean(g,ZONES.umi);
