@@ -217,12 +217,14 @@ body.embedded .hud-dock{padding:0 0 4px;}
 .wx{
   position:absolute;top:var(--ui-margin);right:var(--ui-margin);left:auto;bottom:auto;z-index:8;pointer-events:none;
   font-family:'Zen Kaku Gothic New',sans-serif;font-size:10px;font-weight:600;letter-spacing:.04em;
-  padding:8px 10px;border-radius:0;display:flex;gap:6px;align-items:center;
+  padding:8px 10px;border-radius:0;display:flex;flex-direction:column;align-items:flex-start;gap:4px;
   background:var(--label-bg);color:var(--label-fg);
   border:1px solid var(--label-border);
   box-shadow:0 1px 4px rgba(0,0,0,.25);
   text-shadow:none;
 }
+.wx-main{display:flex;gap:6px;align-items:center;line-height:1;}
+.wx-sub{font-size:9px;font-weight:600;letter-spacing:.06em;line-height:1.2;opacity:.92;}
 .wx .wc{font-size:15px;line-height:1;}
 .wx:empty{display:none;}
 </style>
@@ -630,7 +632,7 @@ const WORK_LINES={
  '商談':['先方と打合せ','見積提示','クロージング'],
  '送迎':['お迎え中','安全運転で']
 };
-function sayQuiet(c,text){c.bubble={text:text,until:performance.now()+3200,task:true};}
+function sayQuiet(c,text){c.bubble={text:text,until:performance.now()+2600,quiet:true};}
 function tickWork(now){
   CHARS.forEach(c=>{
     if(c.hidden||c.bubble)return;
@@ -656,18 +658,21 @@ const WEATHERS=[
 ];
 let weatherIdx=0;
 function weather(){return WEATHERS[((weatherIdx%WEATHERS.length)+WEATHERS.length)%WEATHERS.length];}
-let _wxLast=-1;
 const WX_STYLE={
   'はれ':{ic:'☀',bg:'linear-gradient(180deg,#ffe27a,#ffb638)',fg:'#6b3e00'},
   'くもり':{ic:'☁',bg:'linear-gradient(180deg,#d7dee6,#a9b6c4)',fg:'#2b3742'},
   'あめ':{ic:'☔',bg:'linear-gradient(180deg,#6db4ec,#2f7fd0)',fg:'#062647'}
 };
+const DOW=['日','月','火','水','木','金','土'];
+function dayOfWeekText(){return DOW[new Date().getDay()]+'曜日';}
 function updateWx(){
   const el=document.getElementById('wx');if(!el)return;
-  if(weatherIdx===_wxLast)return;_wxLast=weatherIdx;
   const w=weather(),s=WX_STYLE[w.k]||WX_STYLE['はれ'];
+  const h=simHour(),hh=Math.floor(h),mm=Math.floor((h-hh)*60);
+  const time=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
   el.style.background=s.bg;el.style.color=s.fg;
-  el.innerHTML='<span class="wc">'+s.ic+'</span>'+w.k;
+  el.innerHTML='<div class="wx-main"><span class="wc">'+s.ic+'</span>'+w.k+'</div>'
+    +'<div class="wx-sub">'+time+'　'+dayOfWeekText()+'</div>';
 }
 
 /* ================= TIME ================= */
@@ -921,28 +926,98 @@ function drawAllZoneLabels(g){
     drawZoneLabel(g,z,z.label);
   }
 }
-function drawSpeechBubble(g,bx,by,bw,bh,text,isTask,tailX){
-  const bg=isTask?'#e23b3b':'#ffffff';
-  const fg=isTask?'#ffffff':'#222222';
-  const border='#333333';
-  const r=5;
+const BUBBLE_FONT='600 8px "Zen Kaku Gothic New",sans-serif';
+const BUBBLE_PAD_X=5,BUBBLE_H=17,BUBBLE_MAX_W=72,BUBBLE_R=3;
+function bubbleRectOverlap(a,b){
+  return a.bx<b.bx+b.w&&a.bx+a.w>b.bx&&a.by<b.by+b.h&&a.by+a.h>b.by;
+}
+function measureBubble(g,text){
+  g.font=BUBBLE_FONT;
+  let t=text,tw=Math.ceil(g.measureText(t).width);
+  const maxInner=BUBBLE_MAX_W-BUBBLE_PAD_X*2;
+  if(tw>maxInner){
+    while(t.length>1&&g.measureText(t+'…').width>maxInner)t=t.slice(0,-1);
+    t+='…';tw=Math.ceil(g.measureText(t).width);
+  }
+  return {text:t,w:Math.min(tw+BUBBLE_PAD_X*2,BUBBLE_MAX_W),h:BUBBLE_H};
+}
+function placeSpeechBubble(c,m,placed){
+  const margin=MAP_UI_MARGIN,headY=c.py-10;
+  const tries=[
+    {bx:(c.px-m.w/2)|0,by:headY-m.h-5,tailX:c.px,tailY:headY,dir:'down'},
+    {bx:(c.px+10)|0,by:(c.py-m.h-8)|0,tailX:c.px+6,tailY:c.py-12,dir:'right'},
+    {bx:(c.px-m.w-10)|0,by:(c.py-m.h-8)|0,tailX:c.px-6,tailY:c.py-12,dir:'left'},
+    {bx:(c.px-m.w/2)|0,by:headY-m.h-16,tailX:c.px,tailY:headY-6,dir:'down'},
+    {bx:(c.px-m.w/2)|0,by:headY-m.h-27,tailX:c.px,tailY:headY-12,dir:'down'}
+  ];
+  for(const p of tries){
+    const bx=Math.max(margin,Math.min(p.bx,MAP_W-m.w-margin));
+    const by=Math.max(margin,p.by);
+    const r={bx,by,w:m.w,h:m.h};
+    if(!placed.some(o=>bubbleRectOverlap(r,o)))return{...r,tailX:p.tailX,tailY:p.tailY,dir:p.dir};
+  }
+  const bx=Math.max(margin,Math.min((c.px-m.w/2)|0,MAP_W-m.w-margin));
+  return{bx,by:Math.max(margin,headY-m.h-5),w:m.w,h:m.h,tailX:c.px,tailY:headY,dir:'down'};
+}
+function drawSpeechBubble(g,bx,by,bw,bh,text,style,tailX,tailY,dir){
+  const bg=style==='task'?'#e23b3b':style==='quiet'?'#f4f2ea':'#ffffff';
+  const fg=style==='task'?'#ffffff':'#333333';
+  const border=style==='quiet'?'#b8b4a8':'#333333';
+  const r=BUBBLE_R;
   g.fillStyle=bg;
   if(g.roundRect){g.beginPath();g.roundRect(bx,by,bw,bh,r);g.fill();}
   else g.fillRect(bx,by,bw,bh);
   g.strokeStyle=border;g.lineWidth=1;
   if(g.roundRect){g.beginPath();g.roundRect(bx+.5,by+.5,bw-1,bh-1,r);g.stroke();}
   else g.strokeRect(bx+.5,by+.5,bw-1,bh-1);
-  const tcx=Math.max(bx+7,Math.min(tailX||bx+bw/2,bx+bw-7));
-  const ty=by+bh;
+  const ty=tailY==null?by+bh/2:tailY;
   g.beginPath();
-  g.moveTo(tcx-5,ty);g.lineTo(tcx+5,ty);g.lineTo(tcx,ty+6);g.closePath();
+  if(dir==='left'){
+    const ly=Math.max(by+4,Math.min(ty,by+bh-4));
+    g.moveTo(bx,ly-3);g.lineTo(bx,ly+3);g.lineTo(bx-4,ly);
+  }else if(dir==='right'){
+    const ry=Math.max(by+4,Math.min(ty,by+bh-4));
+    g.moveTo(bx+bw,ry-3);g.lineTo(bx+bw,ry+3);g.lineTo(bx+bw+4,ry);
+  }else{
+    const tcx=Math.max(bx+5,Math.min(tailX||bx+bw/2,bx+bw-5));
+    const tby=by+bh;
+    g.moveTo(tcx-3,tby);g.lineTo(tcx+3,tby);g.lineTo(tcx,tby+4);
+  }
+  g.closePath();
   g.fillStyle=bg;g.fill();
   g.strokeStyle=border;g.stroke();
   g.fillStyle=fg;
-  g.font='600 10px "Zen Kaku Gothic New",sans-serif';
+  g.font=BUBBLE_FONT;
   g.textBaseline='middle';g.textAlign='center';
   g.fillText(text,bx+bw/2,by+bh/2);
   g.textAlign='left';g.textBaseline='alphabetic';
+}
+function drawSpeechBubbles(g,chars,now){
+  const active=chars.filter(c=>c.bubble&&now<c.bubble.until);
+  if(!active.length)return;
+  const crowd=active.length,maxQuiet=crowd>5?2:crowd>3?3:99;
+  let quietShown=0;
+  const placed=[];
+  const prio=(a,b)=>{
+    const ap=a===selected||a===hovered?1:0,bp=b===selected||b===hovered?1:0;
+    if(ap!==bp)return bp-ap;
+    return b.bubble.until-a.bubble.until;
+  };
+  active.sort(prio);
+  for(const c of active){
+    const b=c.bubble;
+    const isQuiet=!!b.quiet;
+    if(isQuiet&&quietShown>=maxQuiet)continue;
+    const style=b.task?'task':isQuiet?'quiet':'say';
+    const m=measureBubble(g,b.text);
+    const pos=placeSpeechBubble(c,m,placed);
+    placed.push({bx:pos.bx,by:pos.by,w:pos.w,h:pos.h});
+    drawSpeechBubble(g,pos.bx,pos.by,pos.w,pos.h,m.text,style,pos.tailX,pos.tailY,pos.dir);
+    if(isQuiet)quietShown++;
+  }
+  for(const c of chars){
+    if(c.bubble&&now>=c.bubble.until)c.bubble=null;
+  }
 }
 function drawPixCar(g,cx,cy,dir,col){
   cx=cx|0;cy=cy|0;col=col||'#d0d6e0';
@@ -1296,16 +1371,7 @@ function draw(){
       drawUiTag(ctx,lx,ly,lw,LABEL_BOX_H,label);
     }
   }
-  for(const c of order){
-    if(c.bubble&&now<c.bubble.until){
-      const txt=c.bubble.text,isTask=!!c.bubble.task;
-      ctx.font='600 10px "Zen Kaku Gothic New",sans-serif';
-      const tw=Math.ceil(ctx.measureText(txt).width),w=Math.min(tw+16,MAP_W-MAP_UI_MARGIN*2),h=28;
-      let bx=(c.px-w/2)|0;bx=Math.max(MAP_UI_MARGIN,Math.min(MAP_W-w-MAP_UI_MARGIN,bx));
-      const by=Math.max(MAP_UI_MARGIN,(c.py-h-14)|0);
-      drawSpeechBubble(ctx,bx,by,w,h,txt,isTask,c.px);
-    }else if(c.bubble&&now>=c.bubble.until)c.bubble=null;
-  }
+  drawSpeechBubbles(ctx,order,now);
   drawWeatherFx(ctx,now);
   drawAllZoneLabels(ctx);
 }
