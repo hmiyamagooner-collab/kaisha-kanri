@@ -1258,7 +1258,8 @@ function drawWxPixelIcon(g,ix,iy,ic){
 function drawStatusHud(g){
   const wz=weather(),W=124,H=54;
   const sw=W*STATUS_HUD_SCALE,sh=H*STATUS_HUD_SCALE;
-  const x=MAP_W-sw-MAP_UI_MARGIN,y=MAP_UI_MARGIN;
+  const x=MAP_W-sw-MAP_UI_MARGIN;
+  const y=EMBEDDED?EMBED_VIEW_Y0+6:MAP_UI_MARGIN;
   g.save();
   g.translate(x,y);
   g.scale(STATUS_HUD_SCALE,STATUS_HUD_SCALE);
@@ -1475,7 +1476,7 @@ function onCharHover(c){
   const line=hoverLine(c);
   const dash=CHAR_PORTAL[c.id]?.dash||null;
   c.bubble={text:line,until:performance.now()+3200,quiet:true};
-  speakLocalTTS(line);
+  if(!dash)speakLocalTTS(line);
   portalBridge({type:'office-hover',charId:c.id,name:c.name,short:c.short,line:line,dash:dash});
 }
 function onCharHoverEnd(){

@@ -761,11 +761,25 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   background:#090909;
 }
 .entaku-cap{
-  position:absolute;top:7px;left:10px;z-index:6;pointer-events:none;
+  position:absolute;top:7px;left:10px;right:10px;z-index:6;pointer-events:none;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
   font-family:var(--font-display);font-size:10px;font-weight:600;
   color:#F5D67A;letter-spacing:.14em;
   text-shadow:0 1px 10px rgba(0,0,0,.85);
 }
+.entaku-audio-btn{
+  pointer-events:auto;flex-shrink:0;
+  font-family:var(--font-body);font-size:14px;line-height:1;
+  width:32px;height:28px;padding:0;
+  border-radius:8px;cursor:pointer;
+  border:1px solid rgba(210,173,99,.35);
+  background:rgba(8,10,14,.72);color:#F5D67A;
+  box-shadow:0 2px 8px rgba(0,0,0,.35);
+  transition:filter .15s ease,border-color .15s ease,opacity .15s ease;
+}
+.entaku-audio-btn:hover{filter:brightness(1.08)}
+.entaku-audio-btn.is-off{opacity:.72;border-color:rgba(143,152,166,.35);color:var(--muted)}
+.entaku-inline .entaku-audio-btn{width:36px;height:36px;font-size:15px}
 .entaku-bg-art{
   position:absolute;inset:0;z-index:0;pointer-events:none;
   display:flex;align-items:center;justify-content:center;
@@ -1338,7 +1352,10 @@ video.dc-card__image{
   <div class="dash-split-row">
     <section class="quest-pane dash-entaku-pane">
       <div class="entaku-inline collapsed" id="entaku-inline">
-        <div class="entaku-cap">AI円卓会議</div>
+        <div class="entaku-cap">
+          <span>AI円卓会議</span>
+          <button type="button" class="entaku-audio-btn" id="entakuAudioBtn" data-portal-audio-btn onclick="PortalTTS.toggle()" aria-pressed="true" title="音声をOFFにする" aria-label="音声ON"><span class="portal-audio-lbl" aria-hidden="true">🔊</span></button>
+        </div>
         <div class="entaku-bg-art" aria-hidden="true"><img src="entaku.png" alt="" decoding="async" draggable="false"></div>
         <div class="entaku-empty" id="entakuEmpty" onclick="openEntaku()" role="button" tabindex="0">現在進行中の会議はありません</div>
         <div class="entaku-status-panel" id="entakuStatusPanel" hidden>
@@ -2290,8 +2307,10 @@ $$(".gamenav button").forEach(b=>b.onclick=()=>{
   }catch(e){}
 });
 
-/* TTS（日本語読み上げ） */
+/* TTS（日本語読み上げ）＋ 音声ON/OFF */
 window.PortalTTS=(function(){
+  const LS_KEY='portal-audio-on';
+  let enabled=localStorage.getItem(LS_KEY)!=='0';
   let jpVoice=null;
   function pickVoice(){
     if(jpVoice)return jpVoice;
@@ -2299,10 +2318,32 @@ window.PortalTTS=(function(){
     jpVoice=vs.find(v=>/ja/i.test(v.lang))||null;
     return jpVoice;
   }
+  function muteAllVideos(){
+    document.querySelectorAll('.dc-card video').forEach(v=>{v.muted=true;});
+  }
+  function syncUi(){
+    document.querySelectorAll('[data-portal-audio-btn]').forEach(btn=>{
+      btn.classList.toggle('is-off', !enabled);
+      btn.setAttribute('aria-pressed', enabled?'true':'false');
+      btn.title=enabled?'音声をOFFにする':'音声をONにする';
+      btn.setAttribute('aria-label', enabled?'音声ON':'音声OFF');
+      const lbl=btn.querySelector('.portal-audio-lbl');
+      if(lbl)lbl.textContent=enabled?'🔊':'🔇';
+    });
+  }
   if(window.speechSynthesis)speechSynthesis.addEventListener('voiceschanged',()=>{jpVoice=null;});
-  return{
+  const api={
+    isEnabled(){return enabled;},
+    setEnabled(on){
+      enabled=!!on;
+      localStorage.setItem(LS_KEY, enabled?'1':'0');
+      if(!enabled){api.stop();muteAllVideos();}
+      syncUi();
+      window.dispatchEvent(new CustomEvent('portal-audio-change',{detail:{enabled}}));
+    },
+    toggle(){api.setEnabled(!enabled);},
     speak(text){
-      if(!text||!window.speechSynthesis)return;
+      if(!enabled||!text||!window.speechSynthesis)return;
       try{
         speechSynthesis.cancel();
         const u=new SpeechSynthesisUtterance(text);
@@ -2313,6 +2354,9 @@ window.PortalTTS=(function(){
     },
     stop(){if(window.speechSynthesis)speechSynthesis.cancel();}
   };
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',syncUi);
+  else syncUi();
+  return api;
 })();
 
 /* オフィスクエスト（iframe）でキャラをホバー／クリック → 音声・円卓 */
@@ -2324,7 +2368,7 @@ window.PortalTTS=(function(){
   function deptCard(dept){return document.querySelector('.dc-card[data-dept="'+dept+'"]');}
   function setDeptAudio(dept,on){
     document.querySelectorAll('.dc-card video').forEach(v=>{v.muted=true;});
-    if(!on||!dept)return;
+    if(!on||!dept||!window.PortalTTS?.isEnabled?.())return;
     const card=deptCard(dept);if(!card)return;
     const video=card.querySelector('video');if(!video)return;
     video.muted=false;video.volume=1;
@@ -2359,7 +2403,6 @@ window.PortalTTS=(function(){
       if(window.summonOfficeToEntaku)window.summonOfficeToEntaku({greet:greet,charId:d.charId,short:d.short});
       const dash=d.dash||(d.entaku==='finance'?'finance':d.entaku==='legal'?'legal':'secretary');
       window.DashTalk?.speak(dash,(d.short||d.name)+'、円卓へどうぞ。',4500);
-      window.PortalTTS.speak((d.short||d.name)+'、円卓へどうぞ。');
       if(dash)setDeptAudio(dash,true);
     }
   };
@@ -2737,13 +2780,12 @@ window.Treasury={
     var video=card.querySelector('video[data-has-audio]');
     if(!video)return;
     function enableAudio(){
-      if(window.OfficeBridge&&document.querySelector('.office-frame iframe'))return;
+      if(window.PortalTTS&&!window.PortalTTS.isEnabled())return;
       document.querySelectorAll('.dc-card video').forEach(function(v){v.muted=true;});
       video.muted=false;video.volume=1;
       video.play().catch(function(){});
     }
     function disableAudio(){
-      if(window.OfficeBridge&&document.querySelector('.office-frame iframe'))return;
       video.muted=true;
     }
     card.addEventListener('mouseenter',enableAudio);
@@ -2752,6 +2794,11 @@ window.Treasury={
   });
   syncVideos();
   reduced.addEventListener('change',syncVideos);
+  window.addEventListener('portal-audio-change',function(e){
+    if(e.detail&&!e.detail.enabled){
+      document.querySelectorAll('.dc-card video').forEach(function(v){v.muted=true;});
+    }
+  });
 })();
 </script>
 
@@ -2775,7 +2822,6 @@ window.Treasury={
   function speak(dept, text, ms){
     if(REDUCED) return;
     stopAll();
-    window.PortalTTS?.speak(text);
     const el = card(dept); if(!el) return;
     const bubble = el.querySelector('.dc-bubble');
     const txt = el.querySelector('.dc-bubble-txt');
@@ -2831,7 +2877,23 @@ window.Treasury={
 <script>
 (function(){
   const S = { history: [], busy: false, open: false, tour: null, lastScreen: 'dash' };
+  let lastSpokenIdx = -1;
   function el(id){ return document.getElementById(id); }
+  function entakuTtsPlain(s){
+    return String(s||'').replace(/⚠[^\n]*/g,'').replace(/【[^】]+】/g,'').replace(/\n+/g,'。').trim();
+  }
+  function speakEntakuMessage(){
+    if(!window.PortalTTS?.isEnabled?.()||S.busy)return;
+    const idx=S.history.length-1;
+    if(idx<0||idx===lastSpokenIdx)return;
+    const m=S.history[idx];
+    if(m?.role!=='assistant')return;
+    lastSpokenIdx=idx;
+    let text=entakuTtsPlain(m.content);
+    if(!text)return;
+    if(text.length>480)text=text.slice(0,480)+'…以降は画面でご確認ください。';
+    window.PortalTTS.speak(text);
+  }
   function esc(s){ return String(s==null?'':s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
   const ROUTES = [
     { key:'口座', s:'cf-bank', label:'口座・CSVへ' },
@@ -2901,8 +2963,11 @@ window.Treasury={
     if(S.busy) window.DashTalk?.speak('secretary', '円卓が考え中…', 99999);
     else if(S.history.length > 1){
       const last = S.history[S.history.length-1];
-      if(last?.role==='assistant') window.DashTalk?.reactToText(last.content);
-    }
+      if(last?.role==='assistant'){
+        window.DashTalk?.reactToText(last.content);
+        speakEntakuMessage();
+      }
+    }else speakEntakuMessage();
   }
   function cfContext(){
     try{
@@ -2962,8 +3027,12 @@ window.Treasury={
     S.open = false;
     syncToggle();
     window.DashTalk?.stop();
+    window.PortalTTS?.stop();
     setAiWorking(false);
   };
+  window.addEventListener('portal-audio-change', function(e){
+    if(e.detail&&!e.detail.enabled) window.PortalTTS?.stop();
+  });
   window.sendEntaku = function(ev){
     if(ev) ev.preventDefault();
     if(S.busy) return false;
