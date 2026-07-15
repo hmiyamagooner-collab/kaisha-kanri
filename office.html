@@ -1465,9 +1465,9 @@ function fitCanvas(){
   const availW=Math.max(8,r.width);
   const availH=Math.max(8,r.height);
   if(availW<8||availH<8)return;
-  /* 均等スケールのみ（contain）。max-width等で縦横別伸縮すると文字・人物が横倒しに見える */
+  /* 均等スケール。埋め込みは枠いっぱい(cover)＝はみ出した芝生はトリミング。単体はcontain */
   const scale=EMBEDDED
-    ?Math.min(availW/MAP_W,availH/MAP_H)
+    ?Math.max(availW/MAP_W,availH/MAP_H)
     :Math.min(availW/MAP_W,availH/MAP_H,1);
   const w=Math.max(1,Math.floor(MAP_W*scale));
   const h=Math.max(1,Math.floor(MAP_H*scale));
