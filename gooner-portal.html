@@ -1147,6 +1147,20 @@ video.dc-card__image{
 .ent-who{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.06em;padding:2px 8px;border-radius:6px;margin-bottom:5px;font-family:var(--font-display)}
 .ent-me .ent-who{color:#1a1510;background:var(--gold)}
 .ent-ai .ent-who{color:var(--gold-hi);border:1px solid rgba(196,166,106,.3);background:rgba(196,166,106,.08)}
+.ent-agent-secretary .ent-who{color:#f5e6c8;border-color:rgba(232,212,168,.35);background:rgba(196,166,106,.12)}
+.ent-agent-finance .ent-who{color:#b8dcff;border-color:rgba(122,171,222,.35);background:rgba(122,171,222,.12)}
+.ent-agent-legal .ent-who{color:#b8e8c8;border-color:rgba(120,190,140,.35);background:rgba(120,190,140,.12)}
+.entaku-participants{
+  display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;
+}
+.entaku-participant{
+  font-size:9px;font-weight:600;letter-spacing:.04em;padding:2px 7px;border-radius:99px;
+  border:1px solid rgba(196,166,106,.2);color:var(--muted);background:rgba(255,255,255,.03);
+}
+.entaku-participant.is-user{color:#1a1510;background:var(--gold);border-color:rgba(232,212,168,.45)}
+.entaku-participant.is-secretary{color:#f5e6c8;border-color:rgba(232,212,168,.28)}
+.entaku-participant.is-finance{color:#b8dcff;border-color:rgba(122,171,222,.28)}
+.entaku-participant.is-legal{color:#b8e8c8;border-color:rgba(120,190,140,.28)}
 .entaku-jump{font-family:var(--font-body);font-size:11px;font-weight:600;color:#1a1510;background:var(--gold);border:none;border-radius:8px;padding:5px 12px;cursor:pointer}
 #entakuText{
   flex:1;background:#040506;border:1px solid rgba(196,166,106,.2);border-radius:var(--radius-sm);
@@ -1360,11 +1374,17 @@ video.dc-card__image{
         <div class="entaku-empty" id="entakuEmpty" onclick="openEntaku()" role="button" tabindex="0">現在進行中の会議はありません</div>
         <div class="entaku-status-panel" id="entakuStatusPanel" hidden>
           <div class="entaku-status-main">
-            <div class="entaku-status-name">円卓会議 ─ GPT</div>
+            <div class="entaku-status-name">円卓会議 ─ 凛・紬・陽翔</div>
             <div class="entaku-status-row">
               <span class="entaku-status-badge" id="entakuStatusBadge">待機中</span>
             </div>
-            <p class="entaku-status-desc" id="entakuStatusDesc">今期の戦略方針とリスク管理について協議中です。</p>
+            <div class="entaku-participants" aria-label="参加者">
+              <span class="entaku-participant is-user">利用者</span>
+              <span class="entaku-participant is-secretary">凛</span>
+              <span class="entaku-participant is-finance">紬</span>
+              <span class="entaku-participant is-legal">陽翔</span>
+            </div>
+            <p class="entaku-status-desc" id="entakuStatusDesc">利用者と3名のAIエージェントが同席しています。</p>
           </div>
           <button type="button" class="entaku-join-btn" id="entakuJoinBtn" onclick="openEntaku()">参加する<span class="entaku-join-arrow" aria-hidden="true">→</span></button>
         </div>
@@ -2398,10 +2418,10 @@ window.PortalTTS=(function(){
     },
     summon(d){
       if(!d||!d.charId)return;
-      const agent=OFFICE_ENTAKU_NAME[d.entaku]||'凛';
-      const greet=(d.short||d.name)+'を円卓へお呼びしました。'+agent+'がお繋ぎします。';
-      if(window.summonOfficeToEntaku)window.summonOfficeToEntaku({greet:greet,charId:d.charId,short:d.short});
       const dash=d.dash||(d.entaku==='finance'?'finance':d.entaku==='legal'?'legal':'secretary');
+      const agentName=OFFICE_ENTAKU_NAME[d.entaku]||OFFICE_ENTAKU_NAME[dash]||'凛';
+      const greet='円卓へお越しください。'+agentName+'です。'+(d.short||d.name)+'の件、お聞かせください。';
+      if(window.summonOfficeToEntaku)window.summonOfficeToEntaku({greet:greet,charId:d.charId,short:d.short,agent:dash});
       window.DashTalk?.speak(dash,(d.short||d.name)+'、円卓へどうぞ。',4500);
       if(dash)setDeptAudio(dash,true);
     }
@@ -2873,23 +2893,97 @@ window.Treasury={
 })();
 </script>
 
+<!-- 円卓AI：3エージェント会話 API ブリッジ -->
+<script>
+window.EntakuAI=(function(){
+  function endpoint(){
+    return (typeof AI_ENDPOINT!=='undefined'&&AI_ENDPOINT)||'/api/openai';
+  }
+  function normalizeReplies(data){
+    if(Array.isArray(data.replies)&&data.replies.length){
+      return data.replies.map(function(r){
+        return{
+          agent:['secretary','finance','legal'].includes(r.agent)?r.agent:'secretary',
+          text:String(r.text||'').trim()
+        };
+      }).filter(function(r){return r.text;});
+    }
+    var text=String(data.text||'').trim();
+    return text?[{agent:'secretary',text:text}]:[];
+  }
+  return{
+    isConnected:function(){return!!endpoint();},
+    chat:function(messages,context){
+      var ep=endpoint();
+      if(!ep)return Promise.reject(new Error('AI_NOT_CONNECTED'));
+      return fetch(ep,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({mode:'entaku',messages:messages,context:context||''})
+      }).then(function(r){
+        return r.json().catch(function(){return{};}).then(function(data){
+          if(!r.ok)throw new Error(data.error||('HTTP '+r.status));
+          var replies=normalizeReplies(data);
+          if(!replies.length)throw new Error('EMPTY_REPLY');
+          return replies;
+        });
+      });
+    },
+    askAgents:function(question){
+      if(typeof route!=='function'||typeof askAgent!=='function')
+        return Promise.resolve(null);
+      return route(question).then(function(depts){
+        return Promise.all(depts.map(function(d){return askAgent(d,question);}));
+      }).then(function(agents){
+        return agents.map(function(a){return{agent:a.id,text:a.answer};});
+      });
+    }
+  };
+})();
+</script>
+
 <!-- 円卓会議：Dashboard内インライン（下の #entaku-inline を使用） -->
 <script>
 (function(){
+  const AGENTS={
+    secretary:{id:'secretary',name:'凛',role:'秘書',dept:'secretary'},
+    finance:{id:'finance',name:'紬',role:'経理',dept:'finance'},
+    legal:{id:'legal',name:'陽翔',role:'法務',dept:'legal'}
+  };
   const S = { history: [], busy: false, open: false, tour: null, lastScreen: 'dash' };
   let lastSpokenIdx = -1;
+  let lastDashIdx = -1;
   function el(id){ return document.getElementById(id); }
+  function agentOf(id){ return AGENTS[id] || AGENTS.secretary; }
+  function agentLabel(m){
+    if(m.role==='user') return 'あなた';
+    const a=agentOf(m.agent);
+    return a.role+'　'+a.name;
+  }
   function entakuTtsPlain(s){
     return String(s||'').replace(/⚠[^\n]*/g,'').replace(/【[^】]+】/g,'').replace(/\n+/g,'。').trim();
   }
-  function speakEntakuMessage(){
+  function highlightLatestAgents(){
+    if(S.busy)return;
+    const start=lastDashIdx+1;
+    const newMsgs=S.history.slice(start).filter(m=>m.role==='assistant');
+    if(!newMsgs.length)return;
+    lastDashIdx=S.history.length-1;
+    const first=newMsgs[0];
+    const dept=first.agent||'secretary';
+    window.DashTalk?.speak(dept, first.content.slice(0,120), 5200);
+    speakNewEntakuMessages();
+  }
+  function speakNewEntakuMessages(){
     if(!window.PortalTTS?.isEnabled?.()||S.busy)return;
-    const idx=S.history.length-1;
-    if(idx<0||idx===lastSpokenIdx)return;
-    const m=S.history[idx];
-    if(m?.role!=='assistant')return;
-    lastSpokenIdx=idx;
-    let text=entakuTtsPlain(m.content);
+    const start=lastSpokenIdx+1;
+    const newMsgs=S.history.slice(start).filter(m=>m.role==='assistant');
+    if(!newMsgs.length)return;
+    lastSpokenIdx=S.history.length-1;
+    let text=newMsgs.map(m=>{
+      const a=agentOf(m.agent);
+      return a.name+'です。'+entakuTtsPlain(m.content);
+    }).join(' ');
     if(!text)return;
     if(text.length>480)text=text.slice(0,480)+'…以降は画面でご確認ください。';
     window.PortalTTS.speak(text);
@@ -2951,23 +3045,17 @@ window.Treasury={
   function render(){
     const body = el('entakuBody'); if(!body) return;
     body.innerHTML = S.history.map(m=>{
-      const who = m.role==='assistant' ? '円卓' : 'あなた';
-      const cls = m.role==='assistant' ? 'ent-ai' : 'ent-me';
+      const who = agentLabel(m);
+      const cls = m.role==='user' ? 'ent-me' : ('ent-ai ent-agent-'+(m.agent||'secretary'));
       const jumps = m.role==='assistant' ? jumpButtons(m.content) : '';
       return '<div class="ent-msg '+cls+'"><span class="ent-who">'+who+'</span><div class="ent-txt">'+esc(m.content).replace(/\n/g,'<br>')+jumps+'</div></div>';
-    }).join('') + (S.busy?'<div class="ent-msg ent-ai"><span class="ent-who">円卓</span><div class="ent-txt ent-typing">…考え中</div></div>':'');
+    }).join('') + (S.busy?'<div class="ent-msg ent-ai ent-agent-secretary"><span class="ent-who">秘書　凛</span><div class="ent-txt ent-typing">凛・紬・陽翔が協議中…</div></div>':'');
     body.scrollTop = body.scrollHeight;
     body.querySelectorAll('.entaku-jump').forEach(b=>b.onclick=()=>gotoScreen(b.dataset.s));
     setAiWorking(S.busy);
     updateEntakuStatus();
-    if(S.busy) window.DashTalk?.speak('secretary', '円卓が考え中…', 99999);
-    else if(S.history.length > 1){
-      const last = S.history[S.history.length-1];
-      if(last?.role==='assistant'){
-        window.DashTalk?.reactToText(last.content);
-        speakEntakuMessage();
-      }
-    }else speakEntakuMessage();
+    if(S.busy) window.DashTalk?.speak('secretary', '少々お待ちください…', 99999);
+    else highlightLatestAgents();
   }
   function cfContext(){
     try{
@@ -2986,19 +3074,23 @@ window.Treasury={
     if(S.busy){
       badge.textContent='進行中';
       badge.className='entaku-status-badge is-live';
-      desc.textContent='円卓が回答を準備しています。';
+      desc.textContent='凛・紬・陽翔が回答を準備しています。';
     }else if(S.open){
       badge.textContent=S.history.length?'進行中':'待機中';
       badge.className='entaku-status-badge'+(S.history.length?' is-live':'');
-      desc.textContent=S.history.length
-        ? (S.history[S.history.length-1].content.slice(0,52)+(S.history[S.history.length-1].content.length>52?'…':''))
-        : '今期の戦略方針とリスク管理について協議中です。';
+      if(S.history.length){
+        const last=S.history[S.history.length-1];
+        const who=last.role==='user'?'あなた':agentOf(last.agent).name;
+        desc.textContent=who+'：'+last.content.slice(0,48)+(last.content.length>48?'…':'');
+      }else{
+        desc.textContent='利用者と3名のAIエージェントが同席しています。';
+      }
     }else if(S.history.length){
       badge.textContent='終了';
       badge.className='entaku-status-badge is-done';
       const last=S.history[S.history.length-1];
       desc.textContent=last.role==='assistant'
-        ? last.content.slice(0,56)+(last.content.length>56?'…':'')
+        ? agentOf(last.agent).name+'：'+last.content.slice(0,52)+(last.content.length>52?'…':'')
         : '会議は一時停止中です。再開するには参加してください。';
     }
   }
@@ -3017,7 +3109,7 @@ window.Treasury={
     S.open = true;
     syncToggle();
     if(!S.history.length){
-      S.history.push({role:'assistant', content:'円卓会議へようこそ。お金のことは経理、契約は法務へ振り分けます。他の画面を見ながら話せます。'});
+      S.history.push({role:'assistant', agent:'secretary', content:'円卓会議へようこそ。秘書の凛です。経理の紬と法務の陽翔も同席しています。お金のことは紬、契約は陽翔が担当します。他の画面を見ながら話せます。'});
       render();
       window.DashTalk?.speak('secretary', '何でも聞いてくださいね。', 3000);
     }
@@ -3040,24 +3132,36 @@ window.Treasury={
     if(!q) return false;
     if(!S.open){ S.open=true; syncToggle(); }
     S.history.push({role:'user', content:q}); ta.value=''; S.busy=true; render();
-    window.DashTalk?.reactToText(q);
+    const routeDept=/経理|入出金|経費|税|CF|精算|口座|明細/.test(q)?'finance'
+      :/契約|法務|リーガル|印籠|コンプラ/.test(q)?'legal':'secretary';
+    window.DashTalk?.speak(routeDept, '承知しました。', 2800);
     el('entakuSend').disabled = true;
-    fetch('/api/openai', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ messages: S.history, context: cfContext() })
-    }).then(async r=>{
-      if(!r.ok){ const e=await r.json().catch(()=>({})); throw new Error(e.error||('HTTP '+r.status)); }
-      return r.json();
-    }).then(res=>{
+    var ctx=cfContext();
+    var userTurns=S.history.filter(function(m){return m.role==='user';}).length;
+    var chatReq=window.EntakuAI&&window.EntakuAI.isConnected()
+      ?(userTurns===1
+        ?window.EntakuAI.askAgents(q).then(function(orchestrated){
+          if(orchestrated&&orchestrated.length)return orchestrated;
+          return window.EntakuAI.chat(S.history,ctx);
+        })
+        :window.EntakuAI.chat(S.history,ctx))
+      :Promise.reject(new Error('AI_NOT_CONNECTED'));
+    chatReq.then(function(replies){
       S.busy=false; el('entakuSend').disabled=false;
-      const text=res.text || '（応答が空でした）';
-      S.history.push({role:'assistant', content: text});
+      replies.forEach(function(r){
+        var agent=['secretary','finance','legal'].includes(r.agent)?r.agent:'secretary';
+        S.history.push({role:'assistant', agent:agent, content:r.text||''});
+      });
       render();
-      const sid=pickScreen(text);
-      if(sid) setTimeout(()=>gotoScreen(sid), 400);
-    }).catch(e=>{
+      var jumpSrc=replies.map(function(r){return r.text;}).join('\n');
+      var sid=pickScreen(jumpSrc);
+      if(sid) setTimeout(function(){gotoScreen(sid);}, 400);
+    }).catch(function(e){
       S.busy=false; el('entakuSend').disabled=false;
-      S.history.push({role:'assistant', content:'⚠ OpenAIに接続できませんでした（'+e.message+'）。Vercel版＋OPENAI_API_KEYの設定が必要です。'});
+      var msg=e&&e.message==='AI_NOT_CONNECTED'
+        ?'⚠ AIは未接続です。Vercel版で開き、OPENAI_API_KEY を設定してください。'
+        :'⚠ OpenAIに接続できませんでした（'+(e&&e.message||e)+'）。Vercel版＋OPENAI_API_KEYの設定が必要です。';
+      S.history.push({role:'assistant', agent:'secretary', content:msg});
       render();
     });
     return false;
@@ -3066,8 +3170,9 @@ window.Treasury={
     if(!payload)return;
     S.open=true;
     syncToggle();
+    const agent=['secretary','finance','legal'].includes(payload.agent)?payload.agent:'secretary';
     const msg=payload.greet||'円卓へお呼びしました。';
-    S.history.push({role:'assistant',content:msg});
+    S.history.push({role:'assistant', agent, content:msg});
     render();
     setTimeout(()=>el('entakuText')?.focus(),50);
   };

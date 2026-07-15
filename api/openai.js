@@ -7,6 +7,8 @@ export const config = { maxDuration: 60 };
 const OPENAI_TIMEOUT_MS = 50000;
 const MODEL = process.env.OPENAI_MODEL || "gpt-4o";
 
+const AGENT_LABEL = { secretary: "凛", finance: "紬", legal: "陽翔" };
+
 const SYSTEM = [
   "あなたは会社管理アプリ「GOONER」の円卓会議ターミナルに常駐するAI秘書です。名前は「円卓（Entaku）」。ダッシュボードの秘書室の立場で、経理・法務の2部署へ情報を振り分けます。",
   "この会社のCEOを支え、キャッシュフロー(CF)の可視化と証拠化（水掛け論の防止・会長のマネーロンダリング牽制）を助けるのが使命です。",
@@ -28,6 +30,46 @@ const SYSTEM = [
   "単なる相談は振り分け先を省いて普通に助言してよい。断定的な法的・税務助言は避け、社内の可視化・記録・牽制の観点で日本語で簡潔に答える。",
 ].join("\n");
 
+const SYSTEM_ENTAKU = [
+  "あなたは会社管理アプリ「GOONER」の円卓会議を進行するAIです。参加者は次の4名のみです。",
+  "・利用者（社長／システム利用者）— user メッセージとして届く",
+  "・凛（secretary）— 秘書・進行役。全体調整、雑談、どの専門家に回すかの案内",
+  "・紬（finance）— 経理部長。お金・領収書・請求・入出金・税・CF・口座・精算",
+  "・陽翔（legal）— 法務部長。契約・リーガル・コンプラ・印籠・案件の法務観点",
+  "",
+  "円卓という別人格は存在しません。必ず凛・紬・陽翔のいずれか（複数可）として発言してください。",
+  "専門外の話題は凛が受け、必要なら紬・陽翔を会話に招く形で進行します。",
+  "契約と支払が絡むときは陽翔→紬の順で短く連携するのが望ましいです。",
+  "",
+  "【出力形式 — 必ずこのJSONのみ。Markdownや説明文は禁止】",
+  '{"replies":[{"agent":"secretary|finance|legal","text":"発言本文"}]}',
+  "replies は1〜3件。各 text は日本語で簡潔に。モジュール案内（口座・案件・契約リーガル等）を含めてよい。",
+  "断定的な法的・税務助言は避け、社内の可視化・記録・牽制の観点で答える。",
+].join("\n");
+
+function formatHistoryMessage(m) {
+  const content = String(m.content || "").slice(0, 6000);
+  if (m.role === "assistant" && m.agent && AGENT_LABEL[m.agent]) {
+    return `【${AGENT_LABEL[m.agent]}】${content}`;
+  }
+  return content;
+}
+
+function parseEntakuReplies(raw) {
+  const text = String(raw || "").trim();
+  if (!text) return [{ agent: "secretary", text: "（応答が空でした）" }];
+  try {
+    const m = text.match(/\{[\s\S]*\}/);
+    const j = JSON.parse(m ? m[0] : text);
+    const replies = Array.isArray(j.replies) ? j.replies : [];
+    const valid = replies
+      .filter((r) => r && ["secretary", "finance", "legal"].includes(r.agent) && String(r.text || "").trim())
+      .map((r) => ({ agent: r.agent, text: String(r.text).trim().slice(0, 6000) }));
+    if (valid.length) return valid;
+  } catch (e) { /* fall through */ }
+  return [{ agent: "secretary", text: text.slice(0, 6000) }];
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -41,16 +83,18 @@ export default async function handler(req, res) {
     const body = req.body || {};
     const history = Array.isArray(body.messages) ? body.messages : [];
     const context = typeof body.context === "string" ? body.context : "";
+    const entaku = body.mode === "entaku";
     if (!history.length) {
       return res.status(400).json({ error: "messages が空です" });
     }
 
     const messages = history.slice(-16).map((m) => ({
       role: m.role === "assistant" ? "assistant" : "user",
-      content: String(m.content || "").slice(0, 6000),
+      content: entaku ? formatHistoryMessage(m) : String(m.content || "").slice(0, 6000),
     }));
 
-    const system = context ? `${SYSTEM}\n\n【現在のシステム状況】\n${context.slice(0, 2000)}` : SYSTEM;
+    const baseSystem = entaku ? SYSTEM_ENTAKU : SYSTEM;
+    const system = context ? `${baseSystem}\n\n【現在のシステム状況】\n${context.slice(0, 2000)}` : baseSystem;
 
     const ac = new AbortController();
     const timer = setTimeout(() => ac.abort(), OPENAI_TIMEOUT_MS);
@@ -65,7 +109,8 @@ export default async function handler(req, res) {
         body: JSON.stringify({
           model: MODEL,
           max_tokens: 1500,
-          temperature: 0.4,
+          temperature: entaku ? 0.5 : 0.4,
+          ...(entaku ? { response_format: { type: "json_object" } } : {}),
           messages: [{ role: "system", content: system }, ...messages],
         }),
         signal: ac.signal,
@@ -80,8 +125,13 @@ export default async function handler(req, res) {
     }
 
     const data = await aiRes.json();
-    const text = String(data.choices?.[0]?.message?.content || "").trim();
-    return res.status(200).json({ ok: true, text, model: MODEL, at: new Date().toISOString() });
+    const raw = String(data.choices?.[0]?.message?.content || "").trim();
+    if (entaku) {
+      const replies = parseEntakuReplies(raw);
+      const text = replies.map((r) => `【${AGENT_LABEL[r.agent]}】${r.text}`).join("\n\n");
+      return res.status(200).json({ ok: true, text, replies, model: MODEL, at: new Date().toISOString() });
+    }
+    return res.status(200).json({ ok: true, text: raw, model: MODEL, at: new Date().toISOString() });
   } catch (e) {
     const aborted = e && e.name === "AbortError";
     return res.status(aborted ? 504 : 500).json({
