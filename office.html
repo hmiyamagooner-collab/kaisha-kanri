@@ -58,18 +58,22 @@ body.embedded .hud-dock,
 body.embedded .panel.overlays{display:none!important;}
 body.embedded .stage-game{
   flex:1;position:relative;min-height:0;overflow:hidden;
-  display:flex;align-items:center;justify-content:center;
+  display:block;
   padding:0;
   background:linear-gradient(180deg,#0a0c10 0%,#050608 100%);
 }
 body.embedded canvas#game{
-  position:relative;z-index:1;
+  position:absolute;z-index:1;
   display:block;margin:0;
   width:auto;height:auto;
   max-width:none;max-height:none;
   image-rendering:pixelated;image-rendering:crisp-edges;
   border:none;border-radius:0;box-shadow:none;
   background:#54963a;
+}
+body.embedded .wx{
+  top:6px;left:6px;bottom:auto;right:auto;
+  z-index:8;font-size:10px;padding:2px 8px;
 }
 /* 埋め込み(ポータル)では縦長ペインでも「よこ画面推奨」を出さずマップを描画する */
 body.embedded #rotate-note{display:none!important;}
@@ -388,7 +392,7 @@ else{const f=document.getElementById('cardframe');f.src=f.dataset.src;}
 /* ================= MAP（横長・ドット／町：社長室独立・オフィス+会議併設・デイ独立・右端に海） ================= */
 const MAP_W=480, MAP_H=320, DPR=2;
 /* 埋め込み表示：道路・建物エリアだけ見せる（上下の芝生マージンをカット） */
-const EMBED_VIEW_Y0=36, EMBED_VIEW_Y1=286, EMBED_VIEW_H=EMBED_VIEW_Y1-EMBED_VIEW_Y0;
+const EMBED_VIEW_Y0=28, EMBED_VIEW_Y1=280, EMBED_VIEW_H=EMBED_VIEW_Y1-EMBED_VIEW_Y0;
 let _embedFit=null;
 const PAD=6;
 /* 道路：横のメイン通り＋縦のメイン(十字路)＋右のT字 */
@@ -867,7 +871,8 @@ function drawSign(g,x,y,text){
   if(!text)return;
   g.font='9px "DotGothic16",monospace';g.textBaseline='alphabetic';
   const tw=Math.ceil(g.measureText(text).width);
-  x=Math.max(1,Math.min(x,COAST_X-tw-9));y=Math.max(1,y);
+  x=Math.max(1,Math.min(x,COAST_X-tw-9));
+  y=EMBEDDED?Math.max(2,y+18):Math.max(1,y);
   px(g,x,y,tw+8,13,'#0a1024');
   px(g,x+1,y+1,tw+6,11,'#f4ecd0');
   g.fillStyle='#1a2030';g.fillText(text,x+4,y+10);
@@ -1501,6 +1506,7 @@ function loop(now){
 loadSettings();
 prerenderCity();
 renderMembers();
+updateWx();
 log('オフィスクエストが はじまった！');
 function fitCanvas(){
   const wrap=document.querySelector('.stage-game');
@@ -1518,11 +1524,10 @@ function fitCanvas(){
     const offY=(availH-viewDispH)/2-vy0*scale;
     cv.style.width=Math.max(1,Math.floor(dispW))+'px';
     cv.style.height=Math.max(1,Math.floor(dispFullH))+'px';
-    cv.style.marginLeft='0';
-    cv.style.marginRight='0';
-    cv.style.marginTop='0';
-    cv.style.marginBottom='0';
-    cv.style.transform='translate('+Math.round(offX)+'px,'+Math.round(offY)+'px)';
+    cv.style.position='absolute';
+    cv.style.left=Math.round(offX)+'px';
+    cv.style.top=Math.round(offY)+'px';
+    cv.style.transform='none';
     cv.style.maxWidth='none';
     cv.style.maxHeight='none';
     wrap.style.alignItems='stretch';
@@ -1531,6 +1536,9 @@ function fitCanvas(){
     return;
   }
   _embedFit=null;
+  cv.style.position='';
+  cv.style.left='';
+  cv.style.top='';
   const scale=Math.min(availW/MAP_W,availH/MAP_H,1);
   const w=Math.max(1,Math.floor(MAP_W*scale));
   const h=Math.max(1,Math.floor(MAP_H*scale));

@@ -649,7 +649,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   height:calc(100dvh - 44px);
   min-height:420px;
   display:grid;
-  grid-template-rows:minmax(0,50fr) minmax(0,50fr);
+  grid-template-rows:minmax(0,54fr) minmax(0,46fr);
   grid-template-columns:1fr;
   gap:6px;
   padding:4px 6px 4px;
@@ -756,9 +756,28 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .entaku-inline{
   flex:1;min-height:0;display:flex;flex-direction:column;position:relative;
   border:none;border-radius:0;
-  background:linear-gradient(180deg,#0d1219 0%,#05070b 100%);
   overflow:hidden;
   box-shadow:none;
+  background:
+    radial-gradient(ellipse 78% 58% at 50% 52%,rgba(210,173,99,.11) 0%,rgba(210,173,99,.03) 42%,transparent 68%),
+    radial-gradient(circle at 50% 55%,transparent 41%,rgba(210,173,99,.09) 42%,rgba(210,173,99,.04) 48%,transparent 53%),
+    linear-gradient(180deg,rgba(12,16,22,.78) 0%,rgba(5,7,11,.92) 100%);
+}
+.entaku-cap{
+  position:absolute;top:7px;left:10px;z-index:6;pointer-events:none;
+  font-family:var(--font-display);font-size:10px;font-weight:600;
+  color:var(--gold-hi);letter-spacing:.14em;
+  text-shadow:0 1px 10px rgba(0,0,0,.85);
+}
+.entaku-round-deco{
+  position:absolute;left:50%;top:54%;
+  width:min(86%,210px);aspect-ratio:1;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  border:1px solid rgba(210,173,99,.16);
+  box-shadow:inset 0 0 36px rgba(210,173,99,.07),0 0 20px rgba(0,0,0,.35);
+  background:radial-gradient(circle at center,rgba(210,173,99,.06) 0%,transparent 68%);
+  pointer-events:none;z-index:0;
 }
 .dash-entaku-pane .entaku-inline{
   border-top:1px solid rgba(210,173,99,.1);
@@ -810,9 +829,9 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 .entaku-status-panel{
   flex-shrink:0;display:flex;align-items:center;gap:12px;
-  padding:12px 14px;position:relative;z-index:3;
-  border-bottom:1px solid rgba(210,173,99,.12);
-  background:linear-gradient(180deg,rgba(18,24,35,.65),rgba(8,10,14,.4));
+  padding:28px 14px 12px;position:relative;z-index:3;
+  border-bottom:1px solid rgba(210,173,99,.1);
+  background:linear-gradient(180deg,rgba(18,24,35,.35),rgba(8,10,14,.15));
 }
 .entaku-status-panel[hidden]{display:none!important}
 .entaku-status-main{flex:1;min-width:0}
@@ -854,20 +873,21 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 .entaku-empty{
   flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
-  padding:20px 16px;text-align:center;cursor:pointer;
+  padding:28px 16px 20px;text-align:center;cursor:pointer;
   font-size:12px;color:var(--muted);line-height:1.6;
-  background:linear-gradient(180deg,rgba(8,10,14,.5),rgba(5,7,11,.8));
+  background:transparent;position:relative;z-index:2;
 }
 .entaku-empty[hidden]{display:none!important}
 .entaku-inline-body{
-  flex:1;min-height:0;overflow:auto;padding:12px 14px;position:relative;z-index:1;
+  flex:1;min-height:0;overflow:auto;padding:28px 14px 12px;position:relative;z-index:2;
   font-family:var(--font-body);font-size:12px;line-height:1.6;
-  background:#040506;
+  background:transparent;
 }
 .entaku-inline .entaku-input{
-  flex-shrink:0;display:flex;gap:8px;padding:10px 12px;position:relative;z-index:1;
-  border-top:1px solid rgba(196,166,106,.16);
-  background:linear-gradient(180deg,#0a0b0e,#060708);
+  flex-shrink:0;display:flex;gap:8px;padding:10px 12px;position:relative;z-index:3;
+  border-top:1px solid rgba(210,173,99,.18);
+  background:linear-gradient(180deg,rgba(10,12,16,.45),rgba(6,8,10,.62));
+  backdrop-filter:blur(8px);
 }
 .entaku-inline #entakuText{rows:1;min-height:36px;max-height:72px;font-size:12px;padding:8px}
 .entaku-inline #entakuSend{padding:0 14px;font-size:12px}
@@ -1314,6 +1334,8 @@ video.dc-card__image{
   <div class="dash-split-row">
     <section class="quest-pane dash-entaku-pane">
       <div class="entaku-inline collapsed" id="entaku-inline">
+        <div class="entaku-cap">AI円卓会議</div>
+        <div class="entaku-round-deco" aria-hidden="true"></div>
         <div class="entaku-empty" id="entakuEmpty" onclick="openEntaku()" role="button" tabindex="0">現在進行中の会議はありません</div>
         <div class="entaku-status-panel" id="entakuStatusPanel" hidden>
           <div class="entaku-status-main">
