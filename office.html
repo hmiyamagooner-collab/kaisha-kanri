@@ -59,7 +59,7 @@ body.embedded .panel.overlays{display:none!important;}
 body.embedded .stage-game{
   flex:1;position:relative;min-height:0;overflow:hidden;
   display:flex;align-items:center;justify-content:center;
-  padding:4px;
+  padding:0;
   background:linear-gradient(180deg,#0a0c10 0%,#050608 100%);
 }
 body.embedded canvas#game{
@@ -69,9 +69,9 @@ body.embedded canvas#game{
   max-width:100%;max-height:100%;
   object-fit:contain;
   image-rendering:pixelated;image-rendering:crisp-edges;
-  border:2px solid rgba(20,30,50,.7);
-  border-radius:2px;
-  box-shadow:0 4px 20px rgba(0,0,0,.45);
+  border:none;
+  border-radius:0;
+  box-shadow:none;
   background:#54963a;
 }
 /* 埋め込み(ポータル)では縦長ペインでも「よこ画面推奨」を出さずマップを描画する */
@@ -382,15 +382,15 @@ const PAD=6;
 const ZONES={
   shacho:{label:'社長室',x:6,y:8,w:116,h:44,links:['kaigi','honsha']},
   kaigi:{label:'会議・応接',x:126,y:8,w:120,h:44,links:['shacho','honsha']},
-  honsha:{label:'本社オフィス',x:6,y:58,w:240,h:52,links:['shacho','kaigi','day','client','parking']},
-  day:{label:'デイサービス',x:6,y:116,w:116,h:56,links:['honsha','client','parking']},
-  client:{label:'取引先',x:126,y:116,w:120,h:56,links:['honsha','day','parking']},
-  parking:{label:'駐車場',x:6,y:178,w:240,h:36,links:['honsha','day','client','road','pool','park','beach']},
-  pool:{label:'プール',x:6,y:220,w:116,h:64,links:['parking','park','beach']},
-  park:{label:'イベント会場',x:126,y:220,w:120,h:64,links:['parking','pool','beach']},
+  honsha:{label:'本社オフィス',x:6,y:66,w:240,h:48,links:['shacho','kaigi','day','client','parking']},
+  day:{label:'デイサービス',x:6,y:128,w:116,h:52,links:['honsha','client','parking']},
+  client:{label:'取引先',x:126,y:128,w:120,h:52,links:['honsha','day','parking']},
+  parking:{label:'駐車場',x:6,y:194,w:240,h:34,links:['honsha','day','client','road','pool','park','beach']},
+  pool:{label:'プール',x:6,y:234,w:116,h:62,links:['parking','park','beach']},
+  park:{label:'イベント会場',x:126,y:234,w:120,h:62,links:['parking','pool','beach']},
   beach:{label:'稲毛海浜',x:280,y:8,w:30,h:346,links:['pool','park','parking','umi']},
   umi:{label:'海',x:312,y:8,w:42,h:346,links:['beach']},
-  road:{label:'',x:250,y:8,w:26,h:206,links:['parking'],lane:true}
+  road:{label:'',x:250,y:8,w:26,h:220,links:['parking'],lane:true}
 };
 const COAST_X=280, OCEAN_X=312;
 const ROOMS=ZONES;
@@ -607,7 +607,7 @@ function updateChar(c,dt){
 }
 
 /* ================= 送迎（2部制・車） ================= */
-const BV_X=263, PARK_Y=196, BOARD_PT=pt('parking',0.9,0.5);
+const BV_X=263, PARK_Y=211, BOARD_PT=pt('parking',0.9,0.5);
 const CAR={homeX:BV_X,homeY:PARK_Y,x:BV_X,y:PARK_Y,facing:'n'};
 let escort=null;
 function carRouteOut(){return [{x:BV_X,y:PARK_Y},{x:BV_X,y:130},{x:BV_X,y:40},{x:BV_X,y:-50}];}
@@ -863,10 +863,10 @@ function prerenderCity(){
   for(let yy=0;yy<MAP_H;yy+=8)for(let xx=0;xx<COAST_X;xx+=8){
     px(g,xx,yy,8,8,(((xx>>3)+(yy>>3))&1)?'#5a9e3c':'#54963a');
   }
-  /* 建物の間の連絡道 */
-  drawRoad(g,6,52,240,6,true);
-  drawRoad(g,6,110,240,6,true);
-  drawRoad(g,6,172,240,6,true);
+  /* 建物の間の連絡道（幅広・縦の送迎バス道 x250-276 まで延ばして接続） */
+  drawRoad(g,6,52,270,14,true);
+  drawRoad(g,6,114,270,14,true);
+  drawRoad(g,6,180,270,14,true);
   drawBoulevard(g,ZONES.road);
   drawBuilding(g,ZONES.shacho,'exec');
   drawBuilding(g,ZONES.kaigi,'shop');
@@ -876,7 +876,7 @@ function prerenderCity(){
   drawParkingLot(g,ZONES.parking);
   drawPoolArea(g,ZONES.pool);
   drawParkVenue(g,ZONES.park);
-  drawTree(g,20,300,6);drawTree(g,62,322,5);drawTree(g,120,306,6);drawTree(g,178,322,5);drawTree(g,228,300,6);
+  drawTree(g,20,322,6);drawTree(g,62,342,5);drawTree(g,120,326,6);drawTree(g,178,344,5);drawTree(g,228,322,6);
   /* 右端の外側：砂浜→海（建物や壁でふさがない） */
   drawBeachStrip(g,ZONES.beach);
   drawOcean(g,ZONES.umi);
@@ -930,10 +930,6 @@ function draw(){
       px(ctx,bx+1,by+1,w-2,h-2,'#ffffff');
       ctx.fillStyle='#1a2030';ctx.fillText(txt,bx+4,by+10);
     }else if(c.bubble&&now>=c.bubble.until)c.bubble=null;
-  }
-  if(EMBEDDED){
-    ctx.strokeStyle='rgba(10,16,36,.55)';ctx.lineWidth=2;
-    ctx.strokeRect(1,1,MAP_W-2,MAP_H-2);
   }
 }
 
@@ -1148,12 +1144,13 @@ function fitCanvas(){
   const wrap=document.querySelector('.stage-game');
   const cv=document.getElementById('game');
   if(!wrap||!cv)return;
-  const pad=EMBEDDED?8:0;
+  const pad=0;
   const r=wrap.getBoundingClientRect();
   const availW=Math.max(8,r.width-pad);
   const availH=Math.max(8,r.height-pad);
   if(availW<8||availH<8)return;
-  const scale=EMBEDDED?Math.min(availW/MAP_W,availH/MAP_H):Math.min(availW/MAP_W,1);
+  /* 枠いっぱい：はみ出しは許容し、枠を完全に埋める（cover） */
+  const scale=EMBEDDED?Math.max(availW/MAP_W,availH/MAP_H):Math.min(availW/MAP_W,1);
   const w=Math.max(1,Math.floor(MAP_W*scale));
   const h=Math.max(1,Math.floor(MAP_H*scale));
   cv.style.width=w+'px';
