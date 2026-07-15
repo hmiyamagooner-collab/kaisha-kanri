@@ -732,7 +732,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   flex:1;min-height:0;min-width:0;overflow:hidden;
   display:flex;flex-direction:column;
   width:100%;
-  padding:10px 12px 10px;
+  padding:4px 6px 6px;
   background:
     radial-gradient(ellipse 80% 55% at 50% 0%,rgba(210,173,99,.03),transparent),
     #05070b;
@@ -740,7 +740,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .dc-cards{
   flex:1;min-height:0;min-width:0;width:100%;overflow:hidden;
   display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);
-  gap:10px;align-items:stretch;
+  gap:6px;align-items:stretch;
 }
 /* ===== 円卓会議（Dashboard内インライン） ===== */
 .entaku-inline{
@@ -913,17 +913,17 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .dc-cards .dc-card:nth-child(3){--dc-in-delay:.16s}
 .dc-card[data-dept="secretary"]{
   --dc-bg-image:url('dash-secretary.png');
-  --dc-img-pos:center top;
+  --dc-img-pos:center 24%;
   --dc-img-scale:1.16;
 }
 .dc-card[data-dept="finance"]{
   --dc-bg-image:url('dash-finance.png');
-  --dc-img-pos:center top;
+  --dc-img-pos:center 24%;
   --dc-img-scale:1.2;
 }
 .dc-card[data-dept="legal"]{
   --dc-bg-image:url('dash-legal.png');
-  --dc-img-pos:center top;
+  --dc-img-pos:center 24%;
   --dc-img-scale:1.18;
 }
 @keyframes dcCardIn{
