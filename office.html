@@ -76,7 +76,7 @@ body.embedded canvas#game{
   background:#54963a;
 }
 body.embedded .wx{
-  top:var(--ui-margin);left:var(--ui-margin);bottom:auto;right:auto;
+  top:var(--ui-margin);right:var(--ui-margin);left:auto;bottom:auto;
   z-index:8;font-size:10px;padding:8px 10px;
   background:var(--label-bg);color:var(--label-fg);
   border:1px solid var(--label-border);border-radius:0;
@@ -215,7 +215,7 @@ body.embedded .hud-dock{padding:0 0 4px;}
 #members{max-height:180px;overflow-y:auto;}
 /* お天気バッジ（ゲームUI・マージン統一） */
 .wx{
-  position:absolute;top:var(--ui-margin);left:var(--ui-margin);z-index:8;pointer-events:none;
+  position:absolute;top:var(--ui-margin);right:var(--ui-margin);left:auto;bottom:auto;z-index:8;pointer-events:none;
   font-family:'Zen Kaku Gothic New',sans-serif;font-size:10px;font-weight:600;letter-spacing:.04em;
   padding:8px 10px;border-radius:0;display:flex;gap:6px;align-items:center;
   background:var(--label-bg);color:var(--label-fg);
@@ -413,7 +413,7 @@ const ROADS={
   coast:{x:364,y:44,w:40,h:230}     /* ビーチ沿いの海岸通り */
 };
 const ZONES={
-  shacho:{label:'受付',x:14,y:48,w:112,h:86,links:['honsha','parking']},
+  shacho:{label:'社長室',x:14,y:48,w:112,h:86,links:['honsha','parking']},
   honsha:{label:'オフィス',x:178,y:44,w:122,h:92,links:['kaigi','shacho','parking','day']},
   pool:{label:'プール',x:304,y:48,w:56,h:86,links:['parking','park','beach']},
   day:{label:'デイサービス',x:14,y:188,w:116,h:86,links:['honsha','parking']},
@@ -424,9 +424,13 @@ const ZONES={
   umi:{label:'海',x:432,y:8,w:44,h:304,links:['beach']}
 };
 const LABEL_ZONE_IDS=['shacho','honsha','pool','day','kaigi','park','parking'];
+const ROOM_LABEL_IDS=new Set(['honsha','day']);
 const LABEL_PAD=8,LABEL_FONT_SIZE=10,LABEL_LINE_H=12;
 const LABEL_BOX_H=LABEL_PAD*2+LABEL_LINE_H;
 const LABEL_FONT='600 '+LABEL_FONT_SIZE+'px "Zen Kaku Gothic New",sans-serif';
+const ROOM_LABEL_PAD=4,ROOM_LABEL_FONT_SIZE=8,ROOM_LABEL_LINE_H=10;
+const ROOM_LABEL_BOX_H=ROOM_LABEL_PAD*2+ROOM_LABEL_LINE_H;
+const ROOM_LABEL_FONT='600 '+ROOM_LABEL_FONT_SIZE+'px "Zen Kaku Gothic New",sans-serif';
 const MAP_UI_MARGIN=16,LABEL_GAP_MIN=10;
 const COAST_X=408, OCEAN_X=432;
 const ROOMS=ZONES;
@@ -924,25 +928,62 @@ function findZoneLabelPos(zoneId,z,boxW,boxH,placed){
   let by=Math.max(MAP_UI_MARGIN,Math.min(z.y-boxH-LABEL_GAP_MIN,MAP_H-boxH-MAP_UI_MARGIN));
   return {bx,by};
 }
-function drawUiTag(g,bx,by,bw,bh,text){
+function drawUiTag(g,bx,by,bw,bh,text,font){
   g.fillStyle='#FFFDF8';
   g.fillRect(bx,by,bw,bh);
   g.strokeStyle='#333333';
   g.lineWidth=1;
   g.strokeRect(bx+.5,by+.5,bw-1,bh-1);
   g.fillStyle='#222222';
-  g.font=LABEL_FONT;
+  g.font=font||LABEL_FONT;
   g.textBaseline='middle';
   g.textAlign='center';
   g.fillText(text,bx+bw/2,by+bh/2);
   g.textAlign='left';
   g.textBaseline='alphabetic';
 }
+function drawRoomLabel(g,z,text){
+  g.font=ROOM_LABEL_FONT;
+  const tw=Math.ceil(g.measureText(text).width);
+  const bw=tw+ROOM_LABEL_PAD*2,bh=ROOM_LABEL_BOX_H;
+  const bx=Math.max(z.x+5,Math.min(z.x+z.w-bw-5,z.x+6));
+  const by=Math.max(z.y+5,z.y+z.h-bh-6);
+  drawUiTag(g,bx,by,bw,bh,text,ROOM_LABEL_FONT);
+  return {x:bx,y:by,w:bw,h:bh};
+}
+function drawSpeechBubble(g,bx,by,bw,bh,text,isTask,tailX){
+  const bg=isTask?'#e23b3b':'#ffffff';
+  const fg=isTask?'#ffffff':'#222222';
+  const border='#333333';
+  const r=5;
+  g.fillStyle=bg;
+  if(g.roundRect){g.beginPath();g.roundRect(bx,by,bw,bh,r);g.fill();}
+  else g.fillRect(bx,by,bw,bh);
+  g.strokeStyle=border;g.lineWidth=1;
+  if(g.roundRect){g.beginPath();g.roundRect(bx+.5,by+.5,bw-1,bh-1,r);g.stroke();}
+  else g.strokeRect(bx+.5,by+.5,bw-1,bh-1);
+  const tcx=Math.max(bx+7,Math.min(tailX||bx+bw/2,bx+bw-7));
+  const ty=by+bh;
+  g.beginPath();
+  g.moveTo(tcx-5,ty);g.lineTo(tcx+5,ty);g.lineTo(tcx,ty+6);g.closePath();
+  g.fillStyle=bg;g.fill();
+  g.strokeStyle=border;g.stroke();
+  g.fillStyle=fg;
+  g.font='600 10px "Zen Kaku Gothic New",sans-serif';
+  g.textBaseline='middle';g.textAlign='center';
+  g.fillText(text,bx+bw/2,by+bh/2);
+  g.textAlign='left';g.textBaseline='alphabetic';
+}
 function drawAllZoneLabels(g){
   const placed=[];
   for(const id of LABEL_ZONE_IDS){
     const z=ZONES[id];
     if(!z||!z.label)continue;
+    if(ROOM_LABEL_IDS.has(id)){
+      const r=drawRoomLabel(g,z,z.label);
+      placed.push(r);
+      continue;
+    }
     const m=measureZoneLabel(g,z.label);
     const pos=findZoneLabelPos(id,z,m.w,m.h,placed);
     drawUiTag(g,pos.bx,pos.by,m.w,m.h,z.label);
@@ -1303,12 +1344,12 @@ function draw(){
   }
   for(const c of order){
     if(c.bubble&&now<c.bubble.until){
-      const txt=c.bubble.text;
-      ctx.font=LABEL_FONT;
-      const tw=Math.ceil(ctx.measureText(txt).width),w=Math.min(tw+LABEL_PAD*2,MAP_W-MAP_UI_MARGIN*2),h=LABEL_BOX_H;
+      const txt=c.bubble.text,isTask=!!c.bubble.task;
+      ctx.font='600 10px "Zen Kaku Gothic New",sans-serif';
+      const tw=Math.ceil(ctx.measureText(txt).width),w=Math.min(tw+16,MAP_W-MAP_UI_MARGIN*2),h=28;
       let bx=(c.px-w/2)|0;bx=Math.max(MAP_UI_MARGIN,Math.min(MAP_W-w-MAP_UI_MARGIN,bx));
-      const by=Math.max(MAP_UI_MARGIN,(c.py-54)|0);
-      drawUiTag(ctx,bx,by,w,h,txt);
+      const by=Math.max(MAP_UI_MARGIN,(c.py-h-14)|0);
+      drawSpeechBubble(ctx,bx,by,w,h,txt,isTask,c.px);
     }else if(c.bubble&&now>=c.bubble.until)c.bubble=null;
   }
   drawWeatherFx(ctx,now);
