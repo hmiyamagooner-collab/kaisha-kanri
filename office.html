@@ -585,21 +585,14 @@ function mkCar(route,x,y,ti,spd,col,face){
   return{route:route,x:x,y:y,ti:ti,dir:1,spd:spd,col:col,face:face};
 }
 const TRAFFIC=[
-  /* メイン横道路：内側レーンで東西すれ違い */
-  mkCar([[12,ROAD_CY-LANE_IN],[372,ROAD_CY-LANE_IN]],48,ROAD_CY-LANE_IN,1,0.048,CAR_COLORS[2],'e'),
-  mkCar([[372,ROAD_CY+LANE_IN],[12,ROAD_CY+LANE_IN]],300,ROAD_CY+LANE_IN,1,0.044,CAR_COLORS[0],'w'),
-  /* メイン横道路：外側レーンで東西すれ違い */
-  mkCar([[12,ROAD_CY-LANE_OUT],[372,ROAD_CY-LANE_OUT]],120,ROAD_CY-LANE_OUT,1,0.052,CAR_COLORS[3],'e'),
-  mkCar([[372,ROAD_CY+LANE_OUT],[12,ROAD_CY+LANE_OUT]],220,ROAD_CY+LANE_OUT,1,0.046,CAR_COLORS[1],'w'),
-  /* 縦メイン：内側レーンで南北すれ違い */
-  mkCar([[ROAD_VMX-LANE_IN,268],[ROAD_VMX-LANE_IN,48]],ROAD_VMX-LANE_IN,220,1,0.04,CAR_COLORS[4],'n'),
-  mkCar([[ROAD_VMX+LANE_IN,48],[ROAD_VMX+LANE_IN,268]],ROAD_VMX+LANE_IN,90,1,0.038,CAR_COLORS[6],'s'),
-  /* 海岸縦道路：内側レーンで南北すれ違い */
-  mkCar([[ROAD_CX-LANE_IN,268],[ROAD_CX-LANE_IN,48]],ROAD_CX-LANE_IN,180,1,0.041,CAR_COLORS[7],'n'),
-  mkCar([[ROAD_CX+LANE_IN,48],[ROAD_CX+LANE_IN,268]],ROAD_CX+LANE_IN,130,1,0.039,CAR_COLORS[5],'s'),
-  /* L字コース（内側レーン同士で逆回り） */
-  mkCar([[ROAD_VMX-LANE_IN,268],[ROAD_VMX-LANE_IN,ROAD_CY-LANE_IN],[372,ROAD_CY-LANE_IN],[ROAD_CX-LANE_IN,ROAD_CY-LANE_IN],[ROAD_CX-LANE_IN,268]],ROAD_VMX-LANE_IN,268,1,0.042,CAR_COLORS[2],'n'),
-  mkCar([[ROAD_CX+LANE_IN,48],[ROAD_CX+LANE_IN,ROAD_CY+LANE_IN],[12,ROAD_CY+LANE_IN],[ROAD_VMX+LANE_IN,ROAD_CY+LANE_IN],[ROAD_VMX+LANE_IN,48]],ROAD_CX+LANE_IN,48,1,0.04,CAR_COLORS[4],'s')
+  /* メイン横道路：内側1台（東行）・外側1台（西行） */
+  mkCar([[12,ROAD_CY-LANE_IN],[372,ROAD_CY-LANE_IN]],80,ROAD_CY-LANE_IN,1,0.048,CAR_COLORS[2],'e'),
+  mkCar([[372,ROAD_CY+LANE_OUT],[12,ROAD_CY+LANE_OUT]],240,ROAD_CY+LANE_OUT,1,0.044,CAR_COLORS[0],'w'),
+  /* 縦メイン：内側1台（北行）・外側1台（南行） */
+  mkCar([[ROAD_VMX-LANE_IN,268],[ROAD_VMX-LANE_IN,48]],ROAD_VMX-LANE_IN,200,1,0.04,CAR_COLORS[4],'n'),
+  mkCar([[ROAD_VMX+LANE_OUT,48],[ROAD_VMX+LANE_OUT,268]],ROAD_VMX+LANE_OUT,100,1,0.038,CAR_COLORS[6],'s'),
+  /* 海岸縦道路：内側1台（北行） */
+  mkCar([[ROAD_CX-LANE_IN,268],[ROAD_CX-LANE_IN,48]],ROAD_CX-LANE_IN,160,1,0.041,CAR_COLORS[7],'n')
 ];
 function updateTraffic(dt){
   TRAFFIC.forEach(c=>{
