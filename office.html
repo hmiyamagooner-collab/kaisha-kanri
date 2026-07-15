@@ -1294,21 +1294,21 @@ function draw(){
     drawPerson(ctx,c,walking,frame);
     if(!c.guest&&(c===hovered||c===selected)){
       const label=c.short;
-      g.font=LABEL_FONT;
-      const tw=Math.ceil(g.measureText(label).width),lw=tw+LABEL_PAD*2;
+      ctx.font=LABEL_FONT;
+      const tw=Math.ceil(ctx.measureText(label).width),lw=tw+LABEL_PAD*2;
       const lx=Math.max(MAP_UI_MARGIN,Math.min((c.px-lw/2)|0,MAP_W-lw-MAP_UI_MARGIN));
       const ly=Math.max(MAP_UI_MARGIN,(c.py-36)|0);
-      drawUiTag(g,lx,ly,lw,LABEL_BOX_H,label);
+      drawUiTag(ctx,lx,ly,lw,LABEL_BOX_H,label);
     }
   }
   for(const c of order){
     if(c.bubble&&now<c.bubble.until){
       const txt=c.bubble.text;
-      g.font=LABEL_FONT;
-      const tw=Math.ceil(g.measureText(txt).width),w=Math.min(tw+LABEL_PAD*2,MAP_W-MAP_UI_MARGIN*2),h=LABEL_BOX_H;
+      ctx.font=LABEL_FONT;
+      const tw=Math.ceil(ctx.measureText(txt).width),w=Math.min(tw+LABEL_PAD*2,MAP_W-MAP_UI_MARGIN*2),h=LABEL_BOX_H;
       let bx=(c.px-w/2)|0;bx=Math.max(MAP_UI_MARGIN,Math.min(MAP_W-w-MAP_UI_MARGIN,bx));
       const by=Math.max(MAP_UI_MARGIN,(c.py-54)|0);
-      drawUiTag(g,bx,by,w,h,txt);
+      drawUiTag(ctx,bx,by,w,h,txt);
     }else if(c.bubble&&now>=c.bubble.until)c.bubble=null;
   }
   drawWeatherFx(ctx,now);
