@@ -384,23 +384,24 @@ else{const f=document.getElementById('cardframe');f.src=f.dataset.src;}
   }
   refreshDock();
 })();
-/* ================= MAP（横長・ドット／海=右端の外側で遮らない・道路は施設を一周） ================= */
+/* ================= MAP（横長・ドット／町：社長室独立・オフィス+会議併設・デイ独立・右端に海） ================= */
 const MAP_W=600, MAP_H=260, DPR=2;
 const PAD=6;
-/* 道路：下のメイン通り＋縦の枝道（T字）＋右端のL字 */
+/* 道路：横のメイン通り＋T字の縦枝道 */
 const ROADS={
-  main:{x:24,y:222,w:476,h:12},
-  brA:{x:188,y:54,w:12,h:180},
-  brB:{x:360,y:94,w:12,h:140},
-  brR:{x:484,y:150,w:12,h:84}
+  main:{x:14,y:128,w:494,h:12},     /* 横のメイン通り */
+  up1:{x:132,y:40,w:12,h:100},      /* 社長室↔オフィス間（上へT字） */
+  up2:{x:418,y:40,w:12,h:100},      /* 会議↔デイ間（上へT字） */
+  dn1:{x:156,y:140,w:12,h:58}       /* 駐車場↔プール間（下へT字） */
 };
 const ZONES={
-  shacho:{label:'社長室',x:40,y:58,w:146,h:68,links:['kaigi','honsha']},
-  kaigi:{label:'会議・応接',x:40,y:132,w:146,h:68,links:['shacho','honsha']},
-  honsha:{label:'本社オフィス',x:206,y:58,w:150,h:142,links:['shacho','kaigi','parking']},
-  parking:{label:'駐車場',x:376,y:58,w:100,h:40,links:['honsha','pool','park','beach']},
-  pool:{label:'プール',x:376,y:104,w:100,h:44,links:['parking','park','beach']},
-  park:{label:'イベント会場',x:376,y:154,w:100,h:46,links:['parking','pool','beach']},
+  shacho:{label:'社長室',x:24,y:44,w:100,h:80,links:['honsha','parking']},
+  honsha:{label:'本社オフィス',x:150,y:40,w:150,h:84,links:['kaigi','shacho','parking','day']},
+  kaigi:{label:'会議・応接',x:300,y:40,w:112,h:84,links:['honsha','day']},
+  day:{label:'デイサービス',x:436,y:44,w:70,h:80,links:['kaigi','honsha','parking']},
+  parking:{label:'駐車場',x:24,y:150,w:126,h:50,links:['shacho','honsha','day','pool','park','beach']},
+  pool:{label:'プール',x:172,y:150,w:120,h:86,links:['parking','park','beach']},
+  park:{label:'イベント会場',x:300,y:150,w:160,h:86,links:['parking','pool','beach']},
   beach:{label:'稲毛海浜',x:516,y:8,w:32,h:244,links:['pool','park','parking','umi']},
   umi:{label:'海',x:548,y:8,w:44,h:244,links:['beach']}
 };
@@ -417,7 +418,7 @@ function zoneCenter(id){
 function zoneAt(x,y){
   if(x>=OCEAN_X)return'umi';
   if(x>=COAST_X)return'beach';
-  for(const id of ['shacho','kaigi','honsha','parking','pool','park']){
+  for(const id of ['shacho','kaigi','honsha','day','parking','pool','park']){
     const z=ZONES[id];
     if(x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h)return id;
   }
@@ -455,6 +456,7 @@ const SEATS={
   pool:[pt('pool',0.35,0.55),pt('pool',0.7,0.5),pt('pool',0.25,0.75),pt('pool',0.65,0.3)],
   umi:[pt('beach',0.5,0.24),pt('beach',0.4,0.44),pt('beach',0.6,0.62),pt('beach',0.45,0.8)],
   concert:[pt('park',0.15,0.55),pt('park',0.35,0.55),pt('park',0.6,0.55),pt('park',0.82,0.65)],
+  day:[pt('day',0.3,0.4),pt('day',0.68,0.4),pt('day',0.3,0.75),pt('day',0.68,0.72)],
   copier:pt('honsha',0.93,0.42),
   shelf:[pt('honsha',0.2,0.16),pt('honsha',0.4,0.16),pt('honsha',0.6,0.16)]
 };
@@ -474,11 +476,11 @@ const CHARS=[
   sched:[[9,10,'会議'],[10,12,'商談'],[12,13,'休憩'],[13,17,'商談'],[17,19,'デスクワーク']]},
  {id:'okabe',name:'岡部',short:'岡部',dept:'法務',female:false,cloth:'#64748b',hair:'#292524',seat:DESK[4],home:'honsha',
   sched:[[9,12,'デスクワーク'],[12,13,'休憩'],[13,14,'来客対応'],[14,16,'書類整理'],[16,19,'デスクワーク']]},
- {id:'tokita',name:'鴇田施設長',short:'鴇田',dept:'デイサービス',female:false,cloth:'#14b8a6',hair:'#57534e',seat:DESK[5],home:'honsha',
+ {id:'tokita',name:'鴇田施設長',short:'鴇田',dept:'デイサービス',female:false,cloth:'#14b8a6',hair:'#57534e',seat:pt('day',0.3,0.4),home:'day',
   sched:[[8,9,'デスクワーク'],[9,12,'デイサービス業務'],[12,13,'休憩'],[13,17,'デイサービス業務'],[17,19,'デスクワーク']]},
- {id:'takahashi',name:'高橋さん',short:'高橋',dept:'デイサービス',female:true,cloth:'#f472b6',hair:'#713f12',seat:DESK[6],home:'honsha',
+ {id:'takahashi',name:'高橋さん',short:'高橋',dept:'デイサービス',female:true,cloth:'#f472b6',hair:'#713f12',seat:pt('day',0.68,0.4),home:'day',
   sched:[[9,12,'デイサービス業務'],[12,13,'休憩'],[13,17,'デイサービス業務'],[17,19,'書類整理']]},
- {id:'shinagawa',name:'品川さん',short:'品川',dept:'デイサービス',female:true,cloth:'#f472b6',hair:'#3f3f46',seat:DESK[7],home:'honsha',
+ {id:'shinagawa',name:'品川さん',short:'品川',dept:'デイサービス',female:true,cloth:'#f472b6',hair:'#3f3f46',seat:pt('day',0.5,0.75),home:'day',
   sched:[[9,10,'送迎'],[10,12,'デイサービス業務'],[12,13,'送迎'],[13,14,'休憩'],[14,16,'デイサービス業務'],[16,17,'送迎'],[17,19,'デスクワーク']]}
 ];
 CHARS.forEach((c,i)=>{
@@ -544,12 +546,32 @@ function updateGuest(gst,dt){
   moveAlong(gst,dt);
 }
 
+/* ================= デイサービス利用者（営業時間9-17に来所・私服） ================= */
+const CARE_USERS=[
+  {care:true,female:true, cloth:'#c9bda8',hair:'#d9dbe0',px:0,py:0,path:[],hidden:true,wanderAt:0,spd:0.55,bubble:null,pendingBubble:null},
+  {care:true,female:false,cloth:'#aeb6a4',hair:'#e4e4e7',px:0,py:0,path:[],hidden:true,wanderAt:0,spd:0.5, bubble:null,pendingBubble:null},
+  {care:true,female:true, cloth:'#b3a9c2',hair:'#cbd5e1',px:0,py:0,path:[],hidden:true,wanderAt:0,spd:0.58,bubble:null,pendingBubble:null}
+];
+function updateCare(dt){
+  const h=simHour(),open=(h>=9&&h<17);
+  CARE_USERS.forEach(u=>{
+    if(open&&u.hidden){u.hidden=false;const p=randomPointIn('day');if(p){u.px=p.x;u.py=p.y;}u.path=[];u.wanderAt=0;}
+    else if(!open&&!u.hidden){u.hidden=true;u.path=[];}
+    if(u.hidden)return;
+    if(!u.path.length&&performance.now()>u.wanderAt){
+      u.wanderAt=performance.now()+2600+Math.random()*3600;
+      const p=randomPointIn('day');if(p)sendTo(u,p);
+    }
+    moveAlong(u,dt);
+  });
+}
+
 /* ================= 道路を走るいろいろな車 ================= */
 const CAR_COLORS=['#e0e6f0','#c85a5a','#5a8ad0','#e0c060','#4ea36a','#d0d6e0','#e08a3a','#8a7ad0'];
 /* 車：メイン通り＋枝道をT字/L字で行き来（端で折り返す・海に飛び出さない） */
 const TRAFFIC=[
-  {route:[[30,228],[490,228],[490,158]],x:30,y:228,ti:1,dir:1,spd:0.05, col:CAR_COLORS[2],face:'e'},
-  {route:[[194,60],[194,228],[366,228],[366,100]],x:194,y:60,ti:1,dir:1,spd:0.045,col:CAR_COLORS[5],face:'s'}
+  {route:[[138,44],[138,134],[500,134]],x:138,y:44,ti:1,dir:1,spd:0.05, col:CAR_COLORS[2],face:'s'},
+  {route:[[424,44],[424,134],[162,134],[162,196]],x:424,y:44,ti:1,dir:1,spd:0.045,col:CAR_COLORS[5],face:'s'}
 ];
 function updateTraffic(dt){
   TRAFFIC.forEach(c=>{
@@ -668,8 +690,9 @@ function actTarget(c,act){
     case '書類整理':return{spot:SEATS.shelf[c.idx%SEATS.shelf.length]};
     case '休憩':return{wander:'beach'};
     case '手すき':return{wander:c.home};
-    /* 外出扱い：デイサービス業務／商談／送迎／営業・外回り／退勤はマップから消える */
-    case 'デイサービス業務':case '商談':case '送迎':
+    case 'デイサービス業務':return{spot:SEATS.day[c.idx%SEATS.day.length]};
+    /* 外出扱い：商談／送迎／営業・外回り／退勤はマップから消える */
+    case '商談':case '送迎':
     case '営業・外回り':case '退勤':return{hidden:true};
     default:return{spot:c.seat};
   }
@@ -1076,6 +1099,15 @@ function drawMeetingRoom(g,z){
   for(let i=0;i<4;i++){const cx=tx+5+(i*(tw-10)/3)|0;px(g,cx,ty-4,4,3,'#48515e');px(g,cx,ty+th+1,4,3,'#48515e');}
   px(g,(x+w*0.5)|0,(y+h*0.74)|0,(w*0.42)|0,6,'#8a6a9a');   /* 応接ソファ */
 }
+function drawCareRoom(g,z){                 /* デイサービス（ベッド・テーブル・椅子） */
+  drawFloor(g,z,'#e9dfcf','デイサービス');
+  const {x,y,w,h}=z;
+  px(g,x+7,y+9,18,9,'#cbb78c');px(g,x+7,y+9,18,3,'#e2d3a8');       /* ベッド */
+  px(g,x+w-25,y+9,18,9,'#cbb78c');px(g,x+w-25,y+9,18,3,'#e2d3a8');
+  const tx=(x+w*0.5-11)|0,ty=(y+h-22)|0;
+  px(g,tx,ty,22,12,'#b98a5a');px(g,tx,ty,22,2,'#cda06a');          /* テーブル */
+  px(g,tx-4,ty+3,3,5,'#48515e');px(g,tx+23,ty+3,3,5,'#48515e');    /* 椅子 */
+}
 /* ===== お天気の描画 ===== */
 function drawWeatherFx(g,now){
   const wk=weather().k;
@@ -1117,20 +1149,21 @@ function prerenderCity(){
   for(let yy=0;yy<MAP_H;yy+=8)for(let xx=0;xx<COAST_X;xx+=8){
     px(g,xx,yy,8,8,(((xx>>3)+(yy>>3))&1)?'#5a9e3c':'#54963a');
   }
-  /* 道路：メイン通り＋T字の枝道＋右端L字 */
+  /* 道路：横のメイン通り＋T字の縦枝道 */
   drawRoad(g,ROADS.main.x,ROADS.main.y,ROADS.main.w,ROADS.main.h,true);
-  drawRoad(g,ROADS.brA.x,ROADS.brA.y,ROADS.brA.w,ROADS.brA.h,false);
-  drawRoad(g,ROADS.brB.x,ROADS.brB.y,ROADS.brB.w,ROADS.brB.h,false);
-  drawRoad(g,ROADS.brR.x,ROADS.brR.y,ROADS.brR.w,ROADS.brR.h,false);
-  drawExecRoom(g,ZONES.shacho);
-  drawMeetingRoom(g,ZONES.kaigi);
-  drawOfficeRoom(g,ZONES.honsha);
+  drawRoad(g,ROADS.up1.x,ROADS.up1.y,ROADS.up1.w,ROADS.up1.h,false);
+  drawRoad(g,ROADS.up2.x,ROADS.up2.y,ROADS.up2.w,ROADS.up2.h,false);
+  drawRoad(g,ROADS.dn1.x,ROADS.dn1.y,ROADS.dn1.w,ROADS.dn1.h,false);
+  drawExecRoom(g,ZONES.shacho);       /* 社長室（独立） */
+  drawOfficeRoom(g,ZONES.honsha);     /* 本社オフィス（会議室と併設） */
+  drawMeetingRoom(g,ZONES.kaigi);     /* 会議・応接（オフィスに併設） */
+  drawCareRoom(g,ZONES.day);          /* デイサービス（独立） */
   drawParkingLot(g,ZONES.parking);
   drawPoolArea(g,ZONES.pool);
   drawParkVenue(g,ZONES.park);
-  drawTree(g,70,22,6);drawTree(g,300,20,5);drawTree(g,452,24,6);       /* 上マージン */
-  drawTree(g,60,248,6);drawTree(g,300,250,5);drawTree(g,450,248,6);    /* 下マージン */
-  drawTree(g,505,70,6);drawTree(g,505,170,6);                          /* 海ぎわの緑 */
+  drawTree(g,138,22,5);drawTree(g,424,22,5);                          /* 上マージン */
+  drawTree(g,470,150,6);drawTree(g,485,200,5);                        /* 海ぎわの緑 */
+  drawTree(g,60,244,5);drawTree(g,470,244,6);                         /* 下マージン */
   /* 右端の外側：砂浜→海（建物や壁でふさがない） */
   drawBeachStrip(g,ZONES.beach);
   drawOcean(g,ZONES.umi);
@@ -1178,7 +1211,7 @@ function draw(){
   drawOceanWaves(ctx,performance.now());
   drawTraffic(ctx);
   const now=performance.now();
-  const order=[...CHARS,...ELDERS,...GUESTS].filter(c=>!c.hidden).sort((a,b)=>a.py-b.py);
+  const order=[...CHARS,...ELDERS,...GUESTS,...CARE_USERS].filter(c=>!c.hidden).sort((a,b)=>a.py-b.py);
   for(const c of order){
     const walking=c.path.length>0,frame=Math.floor(now/150)%2===0;
     if(selected===c){
@@ -1446,6 +1479,7 @@ function loop(now){
   updateEscort(dt);
   if(now>guestReassignAt){guestReassignAt=now+2500;assignGuests();renderMembers();}
   GUESTS.forEach(g=>updateGuest(g,dt));
+  updateCare(dt);
   updateTraffic(dt);
   tickWork(now);
   document.getElementById('clock').textContent=clockText();
