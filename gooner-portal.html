@@ -621,9 +621,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   scrollbar-color:rgba(196,166,106,.35) transparent;
 }
 #portal-main{
-  min-width:0;display:grid;
-  grid-template-rows:auto minmax(0,1fr);
-  height:100dvh;
+  min-width:0;display:block;
 }
 #portal-bar{
   flex-shrink:0;z-index:300;display:flex;gap:14px;align-items:center;
@@ -648,9 +646,10 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 #portal-bar .pt-hint b{color:var(--text);font-weight:600}
 #quests-row{
-  min-height:0;
+  height:calc(100dvh - 44px);
+  min-height:420px;
   display:grid;
-  grid-template-rows:auto minmax(0,1fr);
+  grid-template-rows:minmax(0,58fr) minmax(0,42fr);
   grid-template-columns:1fr;
   gap:8px;
   padding:8px 8px 0;
@@ -1193,7 +1192,6 @@ video.dc-card__image{
   object-fit:cover;
   object-position:center top;
   display:block;
-  transform:translateY(10%);
 }
 /* 下段：円卓・オフィスの各パネルは下段いっぱい＋中身は内部スクロール（ページ全体はスクロールさせない） */
 .dash-split-row>.dash-entaku-pane,
