@@ -1002,8 +1002,9 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   backface-visibility:hidden;
   animation:dcCharacterIdle 6s ease-in-out infinite;
   will-change:transform;
-  transition:filter 240ms ease;
+  transition:filter 240ms ease,transform 240ms ease;
 }
+video.dc-card__image{animation:none;background:transparent}
 @keyframes dcCharacterIdle{
   0%,100%{transform:translate3d(0,0,0) scale(1)}
   50%{transform:translate3d(0,-2px,0) scale(1.008)}
@@ -1213,7 +1214,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
             <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
             <span class="dc-photo-fallback" aria-hidden="true">凛</span>
             <div class="dc-avatar-wrap">
-              <img class="dc-card__image" src="dash-secretary.png" alt="凛" onerror="this.dataset.fallback='1'">
+              <video class="dc-card__image" src="rin.mp4" poster="dash-secretary.png" muted loop playsinline autoplay preload="metadata" aria-label="凛"></video>
             </div>
           </div>
           <div class="dc-card-foot">
@@ -1227,7 +1228,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
             <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
             <span class="dc-photo-fallback" aria-hidden="true">紬</span>
             <div class="dc-avatar-wrap">
-              <img class="dc-card__image" src="dash-finance.png" alt="紬" onerror="this.dataset.fallback='1'">
+              <video class="dc-card__image" src="tumugi.mp4" poster="dash-finance.png" muted loop playsinline autoplay preload="metadata" aria-label="紬"></video>
             </div>
           </div>
           <div class="dc-card-foot">
@@ -1241,7 +1242,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
             <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
             <span class="dc-photo-fallback" aria-hidden="true">陽</span>
             <div class="dc-avatar-wrap">
-              <img class="dc-card__image" src="dash-legal.png" alt="陽翔" onerror="this.dataset.fallback='1'">
+              <video class="dc-card__image" src="haruto.mp4" poster="dash-legal.png" muted loop playsinline autoplay preload="metadata" aria-label="陽翔"></video>
             </div>
           </div>
           <div class="dc-card-foot">
@@ -2533,6 +2534,35 @@ window.Treasury={
   if(location.hash==='#inrou'){
     try{document.querySelector('.gamenav button[data-s="cf-inrou"]')?.click();}catch(e){}
   }
+})();
+</script>
+
+<script>
+/* キャラクターカード動画 */
+(function(){
+  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
+  function swapToPoster(video){
+    if(!video||video.dataset.fallback==='1')return;
+    video.dataset.fallback='1';
+    const img=document.createElement('img');
+    img.className='dc-card__image';
+    img.src=video.getAttribute('poster')||'';
+    img.alt=video.getAttribute('aria-label')||'';
+    img.onerror=function(){img.dataset.fallback='1';};
+    video.replaceWith(img);
+  }
+  function syncVideos(){
+    document.querySelectorAll('video.dc-card__image').forEach(function(video){
+      if(reduced.matches){video.pause();return;}
+      const p=video.play();
+      if(p&&typeof p.catch==='function'){p.catch(function(){swapToPoster(video);});}
+    });
+  }
+  document.querySelectorAll('video.dc-card__image').forEach(function(video){
+    video.addEventListener('error',function(){swapToPoster(video);});
+  });
+  syncVideos();
+  reduced.addEventListener('change',syncVideos);
 })();
 </script>
 
