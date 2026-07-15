@@ -387,6 +387,9 @@ else{const f=document.getElementById('cardframe');f.src=f.dataset.src;}
 })();
 /* ================= MAP（横長・ドット／町：社長室独立・オフィス+会議併設・デイ独立・右端に海） ================= */
 const MAP_W=480, MAP_H=320, DPR=2;
+/* 埋め込み表示：道路・建物エリアだけ見せる（上下の芝生マージンをカット） */
+const EMBED_VIEW_Y0=36, EMBED_VIEW_Y1=286, EMBED_VIEW_H=EMBED_VIEW_Y1-EMBED_VIEW_Y0;
+let _embedFit=null;
 const PAD=6;
 /* 道路：横のメイン通り＋縦のメイン(十字路)＋右のT字 */
 const ROADS={
@@ -1304,9 +1307,19 @@ function selectChar(c){
 const CHAR_TAB={shacho:'dash',koshiishi:'cf-bank',sayaka:'biz-it',yuzuru:'biz-paradise',
   tanji:'biz-cf',okabe:'cf-legal',tokita:'biz-care',takahashi:'biz-care',shinagawa:'biz-care'};
 function mapPointFromEvent(e){
+  const t=(e.touches&&e.touches[0])||e;
+  if(EMBEDDED&&_embedFit){
+    const wrap=document.querySelector('.stage-game');
+    if(!wrap)return{mx:0,my:0};
+    const wr=wrap.getBoundingClientRect();
+    const f=_embedFit;
+    return{
+      mx:(t.clientX-wr.left-f.offX)/f.scale,
+      my:f.vy0+(t.clientY-wr.top-f.offY)/f.scale
+    };
+  }
   const cv=document.getElementById('game');
   const r=cv.getBoundingClientRect();
-  const t=(e.touches&&e.touches[0])||e;
   const w=Math.max(1,r.width),h=Math.max(1,r.height);
   return {mx:(t.clientX-r.left)/w*MAP_W,my:(t.clientY-r.top)/h*MAP_H};
 }
@@ -1497,24 +1510,37 @@ function fitCanvas(){
   const availW=Math.max(8,r.width);
   const availH=Math.max(8,r.height);
   if(availW<8||availH<8)return;
-  /* 均等スケール。埋め込みは枠いっぱい(cover)＝はみ出した芝生はトリミング。単体はcontain */
-  const scale=EMBEDDED
-    ?Math.max(availW/MAP_W,availH/MAP_H)
-    :Math.min(availW/MAP_W,availH/MAP_H,1);
+  if(EMBEDDED){
+    const vy0=EMBED_VIEW_Y0,vh=EMBED_VIEW_H;
+    const scale=Math.max(availW/MAP_W,availH/vh);
+    const dispW=MAP_W*scale,dispFullH=MAP_H*scale,viewDispH=vh*scale;
+    const offX=Math.max(0,(availW-dispW)/2);
+    const offY=(availH-viewDispH)/2-vy0*scale;
+    cv.style.width=Math.max(1,Math.floor(dispW))+'px';
+    cv.style.height=Math.max(1,Math.floor(dispFullH))+'px';
+    cv.style.marginLeft='0';
+    cv.style.marginRight='0';
+    cv.style.marginTop='0';
+    cv.style.marginBottom='0';
+    cv.style.transform='translate('+Math.round(offX)+'px,'+Math.round(offY)+'px)';
+    cv.style.maxWidth='none';
+    cv.style.maxHeight='none';
+    wrap.style.alignItems='stretch';
+    wrap.style.justifyContent='stretch';
+    _embedFit={scale,offX,offY,vy0,vh};
+    return;
+  }
+  _embedFit=null;
+  const scale=Math.min(availW/MAP_W,availH/MAP_H,1);
   const w=Math.max(1,Math.floor(MAP_W*scale));
   const h=Math.max(1,Math.floor(MAP_H*scale));
   cv.style.width=w+'px';
   cv.style.height=h+'px';
+  cv.style.transform='';
   cv.style.marginLeft='auto';
   cv.style.marginRight='auto';
   cv.style.marginTop='auto';
   cv.style.marginBottom='auto';
-  if(EMBEDDED){
-    cv.style.maxWidth='none';
-    cv.style.maxHeight='none';
-    wrap.style.alignItems='center';
-    wrap.style.justifyContent='center';
-  }
 }
 if(EMBEDDED){
   const sg=document.querySelector('.stage-game');
