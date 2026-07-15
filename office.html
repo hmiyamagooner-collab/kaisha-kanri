@@ -396,10 +396,10 @@ const ROADS={
 const ZONES={
   shacho:{label:'社長室',x:16,y:64,w:90,h:84,links:['honsha','parking']},
   honsha:{label:'本社オフィス',x:140,y:60,w:148,h:88,links:['kaigi','shacho','parking','day']},
-  kaigi:{label:'会議・応接',x:290,y:60,w:96,h:88,links:['honsha','day']},
+  kaigi:{label:'会議・応接',x:130,y:214,w:96,h:42,links:['honsha','day']},
   day:{label:'デイサービス',x:16,y:172,w:98,h:84,links:['honsha','parking']},
   parking:{label:'駐車場',x:130,y:172,w:96,h:38,links:['shacho','honsha','day','pool','park','beach']},
-  pool:{label:'プール',x:130,y:214,w:96,h:42,links:['parking','park','beach']},
+  pool:{label:'プール',x:290,y:60,w:96,h:88,links:['parking','park','beach']},
   park:{label:'イベント会場',x:244,y:172,w:142,h:84,links:['parking','pool','beach']},
   beach:{label:'稲毛海浜',x:410,y:8,w:28,h:304,links:['pool','park','parking','umi']},
   umi:{label:'海',x:442,y:8,w:34,h:304,links:['beach']}
