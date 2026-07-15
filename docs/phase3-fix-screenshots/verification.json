@@ -1,0 +1,21 @@
+{
+  "url": "http://127.0.0.1:3456/gooner-portal",
+  "reducedMotion": false,
+  "animation": {
+    "t0ms": {
+      "transform": "matrix(1.0052, 0, 0, 1.0052, 0, -1.30034)",
+      "animationName": "dcCharacterIdle"
+    },
+    "t3200ms": {
+      "transform": "matrix(1.00192, 0, 0, 1.00192, 0, -0.4793)",
+      "animationName": "dcCharacterIdle"
+    },
+    "idleDetected": true,
+    "transformChanged": true
+  },
+  "imageStyles": {
+    "objectFit": "contain",
+    "objectPosition": "50% 0%",
+    "transform": "matrix(1.00251, 0, 0, 1.00251, 0, -0.628047)"
+  }
+}

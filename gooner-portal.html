@@ -734,7 +734,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 .dc-cards{
   flex:0 0 72%;min-height:220px;
-  display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;
+  display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:390px;
   gap:15px;align-items:stretch;
 }
 /* ===== 円卓会議（Dashboard内インライン） ===== */
@@ -885,7 +885,8 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 .ai-work-log[hidden]{display:none!important}
 .dc-card{
-  min-height:0;height:100%;display:flex;flex-direction:column;overflow:hidden;position:relative;
+  min-height:350px;max-height:410px;height:100%;
+  display:flex;flex-direction:column;overflow:hidden;position:relative;
   background:linear-gradient(180deg,#121823 0%,#0a0e14 100%);
   border:1px solid rgba(210,173,99,.16);border-radius:var(--radius);
   cursor:default;
@@ -896,101 +897,30 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
     0 8px 28px rgba(0,0,0,.45),
     inset 0 1px 0 rgba(255,255,255,.04);
   transition:
-    transform .28s cubic-bezier(.22,1,.36,1),
-    border-color .25s ease,
-    box-shadow .28s ease;
-  animation:
-    dcCardIn .52s cubic-bezier(.22,1,.36,1) var(--dc-in-delay,0s) forwards,
-    dcCardBreathe 5.6s ease-in-out calc(var(--dc-in-delay,0s) + .52s) infinite;
+    transform 240ms ease,
+    box-shadow 240ms ease,
+    border-color 240ms ease;
+  animation:dcCardIn .52s cubic-bezier(.22,1,.36,1) var(--dc-in-delay,0s) forwards;
 }
 .dc-cards .dc-card:nth-child(1){--dc-in-delay:0s}
 .dc-cards .dc-card:nth-child(2){--dc-in-delay:.08s}
 .dc-cards .dc-card:nth-child(3){--dc-in-delay:.16s}
-.dc-card[data-dept="secretary"]{
-  --dc-img-pos:50% 22%;
-  --dc-img-origin:50% 36%;
-  --dc-img-zoom:1.09;
-}
-.dc-card[data-dept="finance"]{
-  --dc-img-pos:50% 17%;
-  --dc-img-origin:50% 32%;
-  --dc-img-zoom:1.12;
-}
-.dc-card[data-dept="legal"]{
-  --dc-img-pos:50% 21%;
-  --dc-img-origin:50% 35%;
-  --dc-img-zoom:1.09;
-}
+.dc-card[data-dept="secretary"]{--dc-bg-image:url('dash-secretary.png')}
+.dc-card[data-dept="finance"]{--dc-bg-image:url('dash-finance.png')}
+.dc-card[data-dept="legal"]{--dc-bg-image:url('dash-legal.png')}
 @keyframes dcCardIn{
   from{opacity:0;transform:translate3d(-10px,12px,0)}
   to{opacity:1;transform:translate3d(0,0,0)}
 }
-@keyframes dcCardBreathe{
-  0%,100%{transform:translate3d(0,0,0)}
-  50%{transform:translate3d(0,-1.5px,0)}
-}
-.dc-card::before{
-  content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;z-index:3;
-  background:linear-gradient(
-    105deg,
-    rgba(210,173,99,.08) 0%,
-    rgba(225,194,125,.42) 42%,
-    rgba(255,248,220,.5) 50%,
-    rgba(225,194,125,.42) 58%,
-    rgba(210,173,99,.08) 100%
-  );
-  background-size:220% 100%;
-  background-position:110% 50%;
-  opacity:0;
-  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
-  mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
-  -webkit-mask-composite:xor;mask-composite:exclude;
-  pointer-events:none;
-}
-@keyframes dcRingFlowOnce{
-  0%{background-position:110% 50%;opacity:0}
-  12%{opacity:1}
-  100%{background-position:-110% 50%;opacity:0}
-}
-.dc-card::after{
-  content:"";position:absolute;top:0;left:0;right:0;height:1px;z-index:4;
-  background:linear-gradient(90deg,
-    transparent 0%,
-    transparent 36%,
-    rgba(255,244,210,.85) 50%,
-    transparent 64%,
-    transparent 100%
-  );
-  background-size:200% 100%;
-  background-position:130% 0;
-  opacity:0;
-  pointer-events:none;
-}
-@keyframes dcTopGoldOnce{
-  0%{background-position:130% 0;opacity:0}
-  15%{opacity:.85}
-  100%{background-position:-130% 0;opacity:0}
-}
-@media(hover:hover){
-  .dc-card:hover::before{animation:dcRingFlowOnce .85s ease forwards}
-  .dc-card:hover::after{animation:dcTopGoldOnce .75s ease .08s forwards}
-}
 .dc-card:hover{
-  animation-play-state:paused,paused;
-  transform:translate3d(0,-6px,0);
+  transform:translate3d(0,-5px,0);
   border-color:rgba(225,194,125,.34);
   box-shadow:
     0 18px 48px rgba(0,0,0,.62),
     0 10px 24px rgba(0,0,0,.38),
     0 0 20px rgba(210,173,99,.08);
 }
-.dc-card:active{
-  transform:scale(.98) translateZ(0);
-  transition-duration:.12s;
-}
-.dc-card:hover:active{
-  transform:translate3d(0,-6px,0) scale(.98);
-}
+.dc-card:active{transform:translate3d(0,-2px,0) scale(.99);transition-duration:120ms}
 .dc-card.is-talking{
   border-color:rgba(232,212,168,.42);
   box-shadow:0 0 0 1px rgba(196,166,106,.2),0 12px 32px rgba(0,0,0,.5);
@@ -998,8 +928,40 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .dc-card[data-dept="secretary"]:hover{border-color:rgba(196,166,106,.45);box-shadow:0 18px 48px rgba(0,0,0,.62),0 10px 24px rgba(0,0,0,.38),0 0 28px rgba(91,108,255,.1)}
 .dc-card[data-dept="finance"]:hover{border-color:rgba(196,166,106,.45);box-shadow:0 18px 48px rgba(0,0,0,.62),0 10px 24px rgba(0,0,0,.38),0 0 28px rgba(140,150,170,.1)}
 .dc-card[data-dept="legal"]:hover{border-color:rgba(196,166,106,.45);box-shadow:0 18px 48px rgba(0,0,0,.62),0 10px 24px rgba(0,0,0,.38),0 0 28px rgba(150,135,175,.1)}
-.dc-photo{flex:1 1 0;min-height:0;overflow:hidden;background:#030405;position:relative}
-.dc-avatar-wrap{width:100%;height:100%;position:relative;overflow:hidden}
+.dc-photo.dc-card__media{
+  position:relative;overflow:hidden;flex:1 1 auto;min-height:0;
+  width:100%;aspect-ratio:4/5;max-height:308px;
+  background:#030405;
+}
+.dc-card__media::before{
+  content:"";position:absolute;inset:0;z-index:0;
+  background-image:var(--dc-bg-image);
+  background-size:cover;background-position:center;
+  filter:blur(14px) brightness(.45);
+  transform:scale(1.08);
+  opacity:.65;
+  pointer-events:none;
+}
+.dc-card__shine{
+  position:absolute;inset:0;z-index:4;pointer-events:none;opacity:0;
+  background:linear-gradient(105deg,transparent 28%,rgba(255,248,220,.22) 50%,transparent 72%);
+  transform:translate3d(-120%,0,0);
+}
+@keyframes dcCardShine{
+  0%{transform:translate3d(-120%,0,0);opacity:0}
+  18%{opacity:1}
+  100%{transform:translate3d(120%,0,0);opacity:0}
+}
+@media(hover:hover){
+  .dc-card:hover .dc-card__shine{
+    opacity:1;
+    animation:dcCardShine 900ms ease-out 1;
+  }
+}
+.dc-avatar-wrap{
+  position:absolute;inset:0;z-index:2;
+  display:flex;align-items:flex-start;justify-content:center;
+}
 .dc-bubble{
   position:absolute;top:6px;left:6px;right:6px;z-index:4;
   background:rgba(6,7,10,.92);backdrop-filter:blur(10px);
@@ -1031,85 +993,47 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .dc-card[data-dept="secretary"] .dc-photo{background:linear-gradient(160deg,#12101a,#060608)}
 .dc-card[data-dept="finance"] .dc-photo{background:linear-gradient(160deg,#101218,#060608)}
 .dc-card[data-dept="legal"] .dc-photo{background:linear-gradient(160deg,#12101a,#060608)}
-.dc-photo img{
-  width:100%;height:100%;object-fit:cover;
-  object-position:var(--dc-img-pos,50% 20%);
-  display:block;position:relative;z-index:1;
-  filter:brightness(.96) saturate(.95) contrast(1.02);
-  transform:scale(var(--dc-img-zoom,1.04)) translateZ(0);
-  transform-origin:var(--dc-img-origin,50% 34%);
+.dc-card__image{
+  width:100%;height:100%;
+  object-fit:contain;object-position:center top;
+  transform-origin:center center;
+  display:block;position:relative;z-index:2;
+  filter:brightness(.98) saturate(.96) contrast(1.02);
   backface-visibility:hidden;
-  transition:transform .28s cubic-bezier(.22,1,.36,1),filter .28s ease;
-  animation:dcImgBreathe 6.2s ease-in-out infinite;
+  animation:dcCharacterIdle 6s ease-in-out infinite;
+  will-change:transform;
+  transition:filter 240ms ease;
 }
-@keyframes dcImgBreathe{
-  0%,100%{transform:scale(var(--dc-img-zoom,1.04)) translateZ(0)}
-  50%{transform:scale(calc(var(--dc-img-zoom,1.04) * 1.003)) translateZ(0)}
+@keyframes dcCharacterIdle{
+  0%,100%{transform:translate3d(0,0,0) scale(1)}
+  50%{transform:translate3d(0,-2px,0) scale(1.008)}
 }
 @media(hover:hover){
-  .dc-card:hover .dc-photo img{
+  .dc-card:hover .dc-card__image{
     animation-play-state:paused;
-    transform:scale(calc(var(--dc-img-zoom,1.04) * 1.015)) translateZ(0);
-    filter:brightness(.99) saturate(.96) contrast(1.02);
+    transform:translate3d(0,-2px,0) scale(1.018);
+    filter:brightness(1) saturate(.98) contrast(1.02);
   }
 }
-.dc-photo img[data-fallback="1"]{opacity:0}
-.dc-photo::before{
-  content:attr(data-initial);position:absolute;inset:0;z-index:0;
-  display:flex;align-items:center;justify-content:center;
+.dc-card__image[data-fallback="1"]{opacity:0}
+.dc-photo-fallback{
+  position:absolute;inset:0;z-index:1;display:none;
+  align-items:center;justify-content:center;
   font-family:var(--font-display);font-size:40px;color:rgba(255,255,255,.15);
   pointer-events:none;
 }
+.dc-photo:has(.dc-card__image[data-fallback="1"]) .dc-photo-fallback{display:flex}
 .dc-photo::after{
-  content:"";position:absolute;inset:0;z-index:1;
-  background:linear-gradient(180deg,transparent 50%,rgba(4,5,6,.75));
+  content:"";position:absolute;inset:0;z-index:3;
+  background:linear-gradient(180deg,transparent 55%,rgba(4,5,6,.72));
   pointer-events:none;
 }
 .dc-card-foot{
-  flex-shrink:0;height:72px;display:flex;flex-direction:column;
+  flex-shrink:0;height:82px;min-height:82px;max-height:82px;
+  display:flex;flex-direction:column;
   border-top:1px solid rgba(210,173,99,.12);
   background:linear-gradient(180deg,rgba(10,14,20,.92),rgba(8,10,14,.98));
 }
-.dc-card-info{
-  flex-shrink:0;min-height:112px;
-  display:flex;flex-direction:column;justify-content:space-between;
-  padding:8px 10px 10px;
-  border-top:1px solid rgba(210,173,99,.1);
-  background:linear-gradient(180deg,rgba(8,10,14,.96),rgba(6,8,12,.99));
-}
-.dc-info-grid{
-  display:grid;gap:5px;min-height:54px;
-}
-.dc-info-item{
-  display:flex;align-items:baseline;justify-content:space-between;gap:8px;
-  min-height:16px;line-height:1.35;
-}
-.dc-info-label{
-  font-size:10px;color:var(--muted);letter-spacing:.02em;flex-shrink:0;
-}
-.dc-info-val{
-  font-size:10px;font-family:var(--font-num);font-weight:500;color:var(--text);
-  text-align:right;white-space:nowrap;
-}
-.dc-info-val.is-up{color:var(--in)}
-.dc-info-val.is-down{color:var(--out)}
-.dc-info-val.is-warn{color:#f0b86c}
-.dc-info-detail{
-  width:100%;margin-top:6px;padding:6px 10px;
-  font-family:var(--font-body);font-size:10px;font-weight:600;letter-spacing:.04em;
-  color:var(--gold-hi);cursor:pointer;
-  border:1px solid rgba(210,173,99,.28);border-radius:8px;
-  background:rgba(210,173,99,.04);
-  transition:border-color .2s ease,background .2s ease,color .2s ease;
-}
-@media(hover:hover){
-  .dc-info-detail:hover{
-    border-color:rgba(210,173,99,.45);
-    background:rgba(210,173,99,.1);
-    color:#fff;
-  }
-}
-.dc-info-detail:active{transform:scale(.98)}
 .dc-name{
   flex:1 1 0;min-height:36px;max-height:36px;
   font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--gold-hi);
@@ -1123,22 +1047,6 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   background:linear-gradient(90deg,transparent,rgba(210,173,99,.42),transparent);
   pointer-events:none;
 }
-.dc-name::after{
-  content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
-  background:linear-gradient(105deg,transparent 30%,rgba(255,248,220,.14) 50%,transparent 70%);
-  transform:translate3d(-120%,0,0);
-  opacity:0;
-}
-@media(hover:hover){
-  .dc-card:hover .dc-name::after{
-    animation:dcNameShineOnce .9s ease forwards;
-  }
-}
-@keyframes dcNameShineOnce{
-  0%{transform:translate3d(-120%,0,0);opacity:0}
-  20%{opacity:1}
-  100%{transform:translate3d(120%,0,0);opacity:0}
-}
 .dc-name-en{font-size:9px;color:var(--gold-dim);letter-spacing:.14em;font-family:var(--font-num);font-weight:400}
 .dc-role{
   flex:1 1 0;min-height:36px;max-height:36px;
@@ -1147,22 +1055,14 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   display:flex;align-items:center;justify-content:center;
 }
 @media(prefers-reduced-motion:reduce){
-  .dc-cards .dc-card{
-    opacity:1!important;
+  .dc-card,
+  .dc-card__image,
+  .dc-card__shine{
+    animation:none!important;
+    transition:none!important;
     transform:none!important;
-    animation:none!important;
-    transition:border-color .01ms,box-shadow .01ms!important;
   }
-  .dc-card::before,.dc-card::after,.dc-name::after{
-    animation:none!important;
-    opacity:0!important;
-  }
-  .dc-card:hover,.dc-card:active{transform:none!important}
-  .dc-photo img{
-    animation:none!important;
-    transform:scale(var(--dc-img-zoom,1.04))!important;
-    filter:brightness(.96) saturate(.95) contrast(1.02)!important;
-  }
+  .dc-cards .dc-card{opacity:1!important}
   .gamenav button:hover{transform:none!important}
   .entaku-join-btn:hover .entaku-join-arrow{transform:none!important}
 }
@@ -1224,7 +1124,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
     grid-template-rows:minmax(280px,42vh) minmax(240px,36vh);
   }
   #dashboard-pane,#office-pane{min-height:0;overflow:hidden;}
-  .dc-cards{flex:0 0 72%;}
+  .dc-cards{flex:0 0 72%;grid-auto-rows:minmax(350px,390px);}
   #app-treasury .hud{top:0}
 }
 @media(max-width:600px){#portal-bar .pt-hint{display:none;}}
@@ -1308,51 +1208,45 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
     <div class="dash-compact" id="dashCompact">
       <div class="dc-cards">
         <div class="dc-card" data-dept="secretary">
-          <div class="dc-photo" data-initial="凛">
+          <div class="dc-photo dc-card__media" data-initial="凛">
+            <div class="dc-card__shine" aria-hidden="true"></div>
             <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
+            <span class="dc-photo-fallback" aria-hidden="true">凛</span>
             <div class="dc-avatar-wrap">
-              <img src="dash-secretary.png" alt="凛" onerror="this.dataset.fallback='1'">
+              <img class="dc-card__image" src="dash-secretary.png" alt="凛" onerror="this.dataset.fallback='1'">
             </div>
           </div>
           <div class="dc-card-foot">
             <div class="dc-name">凛<span class="dc-name-en">RIN</span></div>
             <div class="dc-role">ヒロ社長秘書</div>
           </div>
-          <div class="dc-card-info" data-dept="secretary">
-            <div class="dc-info-grid" data-info-grid></div>
-            <button type="button" class="dc-info-detail" data-dept="secretary">詳細を見る</button>
-          </div>
         </div>
         <div class="dc-card" data-dept="finance">
-          <div class="dc-photo" data-initial="紬">
+          <div class="dc-photo dc-card__media" data-initial="紬">
+            <div class="dc-card__shine" aria-hidden="true"></div>
             <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
+            <span class="dc-photo-fallback" aria-hidden="true">紬</span>
             <div class="dc-avatar-wrap">
-              <img src="dash-finance.png" alt="紬" onerror="this.dataset.fallback='1'">
+              <img class="dc-card__image" src="dash-finance.png" alt="紬" onerror="this.dataset.fallback='1'">
             </div>
           </div>
           <div class="dc-card-foot">
             <div class="dc-name">紬<span class="dc-name-en">TUMUGI</span></div>
             <div class="dc-role">経理部長</div>
           </div>
-          <div class="dc-card-info" data-dept="finance">
-            <div class="dc-info-grid" data-info-grid></div>
-            <button type="button" class="dc-info-detail" data-dept="finance">詳細を見る</button>
-          </div>
         </div>
         <div class="dc-card" data-dept="legal">
-          <div class="dc-photo" data-initial="陽">
+          <div class="dc-photo dc-card__media" data-initial="陽">
+            <div class="dc-card__shine" aria-hidden="true"></div>
             <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
+            <span class="dc-photo-fallback" aria-hidden="true">陽</span>
             <div class="dc-avatar-wrap">
-              <img src="dash-legal.png" alt="陽翔" onerror="this.dataset.fallback='1'">
+              <img class="dc-card__image" src="dash-legal.png" alt="陽翔" onerror="this.dataset.fallback='1'">
             </div>
           </div>
           <div class="dc-card-foot">
             <div class="dc-name">陽翔<span class="dc-name-en">HARUTO</span></div>
             <div class="dc-role">法務部長</div>
-          </div>
-          <div class="dc-card-info" data-dept="legal">
-            <div class="dc-info-grid" data-info-grid></div>
-            <button type="button" class="dc-info-detail" data-dept="legal">詳細を見る</button>
           </div>
         </div>
       </div>
@@ -2639,148 +2533,6 @@ window.Treasury={
   if(location.hash==='#inrou'){
     try{document.querySelector('.gamenav button[data-s="cf-inrou"]')?.click();}catch(e){}
   }
-})();
-</script>
-
-<script>
-/* キャラクターカード情報パネル（API差し替え用） */
-(function(){
-  const SCHEMA={
-    secretary:{
-      fields:[
-        {key:'schedule',label:'今日の予定',format:'text'},
-        {key:'pendingTasks',label:'未処理タスク',format:'count'}
-      ]
-    },
-    finance:{
-      fields:[
-        {key:'monthlySales',label:'今月売上',format:'currency'},
-        {key:'momChange',label:'前月比',format:'percent'},
-        {key:'unapproved',label:'未承認',format:'count'}
-      ]
-    },
-    legal:{
-      fields:[
-        {key:'contractRenewals',label:'契約更新',format:'count'},
-        {key:'legalReviews',label:'法務確認',format:'count'},
-        {key:'deadlineSoon',label:'期限間近',format:'count',warnIfPositive:true}
-      ]
-    }
-  };
-
-  async function fetchSecretaryData(){
-    /* API差し替え: GET /api/dashboard/secretary 等に置換 */
-    return {
-      schedule:'会議 3件',
-      pendingTasks:5
-    };
-  }
-  async function fetchFinanceData(){
-    /* API差し替え: GET /api/dashboard/finance 等に置換 */
-    return {
-      monthlySales:12480000,
-      momChange:8.4,
-      unapproved:7
-    };
-  }
-  async function fetchLegalData(){
-    /* API差し替え: GET /api/dashboard/legal 等に置換 */
-    return {
-      contractRenewals:4,
-      legalReviews:12,
-      deadlineSoon:2
-    };
-  }
-  const FETCHERS={
-    secretary:fetchSecretaryData,
-    finance:fetchFinanceData,
-    legal:fetchLegalData
-  };
-
-  function formatValue(value,format){
-    if(value==null||value==='')return '—';
-    switch(format){
-      case 'currency':return '¥'+Number(value).toLocaleString('ja-JP');
-      case 'percent':{
-        const n=Number(value);
-        return (n>=0?'+':'')+n+'%';
-      }
-      case 'count':return Number(value).toLocaleString('ja-JP')+'件';
-      default:return String(value);
-    }
-  }
-  function valueClass(key,value,field){
-    if(field.warnIfPositive&&Number(value)>0)return 'is-warn';
-    if(field.format==='percent'){
-      const n=Number(value);
-      if(n>0)return 'is-up';
-      if(n<0)return 'is-down';
-    }
-    if(key==='pendingTasks'&&Number(value)>=5)return 'is-warn';
-    if(key==='unapproved'&&Number(value)>=5)return 'is-warn';
-    return '';
-  }
-  function renderCardInfo(dept,data){
-    const cfg=SCHEMA[dept];
-    const host=document.querySelector('.dc-card-info[data-dept="'+dept+'"]');
-    if(!cfg||!host)return;
-    const grid=host.querySelector('[data-info-grid]');
-    if(!grid)return;
-    grid.innerHTML=cfg.fields.map(function(field){
-      const raw=data[field.key];
-      const cls=valueClass(field.key,raw,field);
-      return '<div class="dc-info-item">'
-        +'<span class="dc-info-label">'+field.label+'</span>'
-        +'<span class="dc-info-val'+((cls)?' '+cls:'')+'" data-field="'+field.key+'">'
-        +formatValue(raw,field.format)+'</span></div>';
-    }).join('');
-  }
-  async function refreshOne(dept){
-    const fetcher=FETCHERS[dept];
-    if(!fetcher)return null;
-    try{
-      const data=await fetcher();
-      renderCardInfo(dept,data);
-      return data;
-    }catch(err){
-      console.error('[CharacterCards] refresh failed:',dept,err);
-      renderCardInfo(dept,{});
-      return null;
-    }
-  }
-  async function refreshAll(){
-    const keys=Object.keys(FETCHERS);
-    return Promise.all(keys.map(refreshOne));
-  }
-  function onDetailClick(dept,evt){
-    if(evt) evt.stopPropagation();
-    /* イベント差し替え: CustomEvent またはルーティングへ接続 */
-    document.dispatchEvent(new CustomEvent('character-card:detail',{
-      detail:{dept:dept,source:'dummy'}
-    }));
-    if(window.DashTalk){
-      const msg={secretary:'秘書タスクの詳細を開きます。',finance:'経理サマリーの詳細を開きます。',legal:'法務案件の詳細を開きます。'};
-      window.DashTalk.speak(dept,msg[dept]||'詳細を表示します。',3200);
-    }
-  }
-  document.querySelectorAll('.dc-info-detail').forEach(function(btn){
-    btn.addEventListener('click',function(e){
-      e.stopPropagation();
-      onDetailClick(btn.dataset.dept,e);
-    });
-  });
-  window.CharacterCards={
-    SCHEMA:SCHEMA,
-    FETCHERS:FETCHERS,
-    fetchSecretaryData:fetchSecretaryData,
-    fetchFinanceData:fetchFinanceData,
-    fetchLegalData:fetchLegalData,
-    renderCardInfo:renderCardInfo,
-    refresh:refreshAll,
-    refreshOne:refreshOne,
-    onDetailClick:onDetailClick
-  };
-  refreshAll();
 })();
 </script>
 
