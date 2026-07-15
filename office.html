@@ -423,15 +423,15 @@ const ZONES={
   beach:{label:'稲毛海浜',x:408,y:8,w:22,h:304,links:['pool','park','parking','umi']},
   umi:{label:'海',x:432,y:8,w:44,h:304,links:['beach']}
 };
-const LABEL_ZONE_IDS=['shacho','honsha','pool','day','kaigi','park','parking'];
-const ROOM_LABEL_IDS=new Set(['honsha','day']);
+const LABEL_ZONE_IDS=['shacho','honsha','day','kaigi','park'];
+const ZONE_LABEL_SCALE=2/5;
+const ZONE_LABEL_PAD=2,ZONE_LABEL_FONT_SIZE=6,ZONE_LABEL_LINE_H=5;
+const ZONE_LABEL_BOX_H=ZONE_LABEL_PAD*2+ZONE_LABEL_LINE_H;
+const ZONE_LABEL_FONT=ZONE_LABEL_FONT_SIZE+'px "DotGothic16",monospace';
 const LABEL_PAD=8,LABEL_FONT_SIZE=10,LABEL_LINE_H=12;
 const LABEL_BOX_H=LABEL_PAD*2+LABEL_LINE_H;
 const LABEL_FONT='600 '+LABEL_FONT_SIZE+'px "Zen Kaku Gothic New",sans-serif';
-const ROOM_LABEL_PAD=4,ROOM_LABEL_FONT_SIZE=8,ROOM_LABEL_LINE_H=10;
-const ROOM_LABEL_BOX_H=ROOM_LABEL_PAD*2+ROOM_LABEL_LINE_H;
-const ROOM_LABEL_FONT='600 '+ROOM_LABEL_FONT_SIZE+'px "Zen Kaku Gothic New",sans-serif';
-const MAP_UI_MARGIN=16,LABEL_GAP_MIN=10;
+const MAP_UI_MARGIN=16;
 const COAST_X=408, OCEAN_X=432;
 const ROOMS=ZONES;
 function pt(zone,nx,ny){
@@ -887,47 +887,7 @@ function shade(hex,amt){
 }
 function rotFor(dir){return {n:0,e:Math.PI/2,s:Math.PI,w:-Math.PI/2}[dir]||0;}
 /* ---- ドット描画ヘルパー ---- */
-/* ---- 建物ラベル（最前面・ゲームUI統一） ---- */
-function labelRectOverlap(ax,ay,aw,ah,bx,by,bw,bh){
-  return ax<bx+bw&&ax+aw>bx&&ay<by+bh&&ay+ah>by;
-}
-function labelHitsRoad(rx,ry,rw,rh){
-  for(const r of Object.values(ROADS)){
-    if(labelRectOverlap(rx,ry,rw,rh,r.x,r.y,r.w,r.h))return true;
-  }
-  return false;
-}
-function labelHitsBuilding(rx,ry,rw,rh,skipId){
-  for(const [id,z] of Object.entries(ZONES)){
-    if(id===skipId||id==='beach'||id==='umi')continue;
-    if(labelRectOverlap(rx,ry,rw,rh,z.x,z.y,z.w,z.h))return true;
-  }
-  return false;
-}
-function measureZoneLabel(g,text){
-  g.font=LABEL_FONT;
-  const tw=Math.ceil(g.measureText(text).width);
-  return {w:tw+LABEL_PAD*2,h:LABEL_BOX_H};
-}
-function findZoneLabelPos(zoneId,z,boxW,boxH,placed){
-  const cx=z.x+z.w/2;
-  for(let gap=LABEL_GAP_MIN;gap<=72;gap+=2){
-    let bx=Math.round(cx-boxW/2);
-    let by=Math.round(z.y-boxH-gap);
-    bx=Math.max(MAP_UI_MARGIN,Math.min(bx,MAP_W-boxW-MAP_UI_MARGIN));
-    by=Math.max(MAP_UI_MARGIN,Math.min(by,MAP_H-boxH-MAP_UI_MARGIN));
-    if(by+boxH>z.y-LABEL_GAP_MIN)continue;
-    if(labelHitsRoad(bx,by,boxW,boxH))continue;
-    if(labelHitsBuilding(bx,by,boxW,boxH,zoneId))continue;
-    let hit=false;
-    for(const p of placed){if(labelRectOverlap(bx,by,boxW,boxH,p.x,p.y,p.w,p.h)){hit=true;break;}}
-    if(hit)continue;
-    return {bx,by};
-  }
-  let bx=Math.max(MAP_UI_MARGIN,Math.min(Math.round(cx-boxW/2),MAP_W-boxW-MAP_UI_MARGIN));
-  let by=Math.max(MAP_UI_MARGIN,Math.min(z.y-boxH-LABEL_GAP_MIN,MAP_H-boxH-MAP_UI_MARGIN));
-  return {bx,by};
-}
+/* ---- 建物ラベル（最前面・建物左下・小型統一） ---- */
 function drawUiTag(g,bx,by,bw,bh,text,font){
   g.fillStyle='#FFFDF8';
   g.fillRect(bx,by,bw,bh);
@@ -942,14 +902,24 @@ function drawUiTag(g,bx,by,bw,bh,text,font){
   g.textAlign='left';
   g.textBaseline='alphabetic';
 }
-function drawRoomLabel(g,z,text){
-  g.font=ROOM_LABEL_FONT;
+function drawZoneLabel(g,z,text){
+  g.font=ZONE_LABEL_FONT;
   const tw=Math.ceil(g.measureText(text).width);
-  const bw=tw+ROOM_LABEL_PAD*2,bh=ROOM_LABEL_BOX_H;
-  const bx=Math.max(z.x+5,Math.min(z.x+z.w-bw-5,z.x+6));
-  const by=Math.max(z.y+5,z.y+z.h-bh-6);
-  drawUiTag(g,bx,by,bw,bh,text,ROOM_LABEL_FONT);
-  return {x:bx,y:by,w:bw,h:bh};
+  const bw=tw+ZONE_LABEL_PAD*2,bh=ZONE_LABEL_BOX_H;
+  const bx=z.x+2;
+  const by=z.y+z.h-bh*ZONE_LABEL_SCALE-2;
+  g.save();
+  g.translate(bx,by);
+  g.scale(ZONE_LABEL_SCALE,ZONE_LABEL_SCALE);
+  drawUiTag(g,0,0,bw,bh,text,ZONE_LABEL_FONT);
+  g.restore();
+}
+function drawAllZoneLabels(g){
+  for(const id of LABEL_ZONE_IDS){
+    const z=ZONES[id];
+    if(!z||!z.label)continue;
+    drawZoneLabel(g,z,z.label);
+  }
 }
 function drawSpeechBubble(g,bx,by,bw,bh,text,isTask,tailX){
   const bg=isTask?'#e23b3b':'#ffffff';
@@ -973,22 +943,6 @@ function drawSpeechBubble(g,bx,by,bw,bh,text,isTask,tailX){
   g.textBaseline='middle';g.textAlign='center';
   g.fillText(text,bx+bw/2,by+bh/2);
   g.textAlign='left';g.textBaseline='alphabetic';
-}
-function drawAllZoneLabels(g){
-  const placed=[];
-  for(const id of LABEL_ZONE_IDS){
-    const z=ZONES[id];
-    if(!z||!z.label)continue;
-    if(ROOM_LABEL_IDS.has(id)){
-      const r=drawRoomLabel(g,z,z.label);
-      placed.push(r);
-      continue;
-    }
-    const m=measureZoneLabel(g,z.label);
-    const pos=findZoneLabelPos(id,z,m.w,m.h,placed);
-    drawUiTag(g,pos.bx,pos.by,m.w,m.h,z.label);
-    placed.push({x:pos.bx,y:pos.by,w:m.w,h:m.h});
-  }
 }
 function drawPixCar(g,cx,cy,dir,col){
   cx=cx|0;cy=cy|0;col=col||'#d0d6e0';
