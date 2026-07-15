@@ -648,7 +648,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 #quests-row{
   height:calc(100dvh - 44px);
   display:grid;
-  grid-template-rows:minmax(0,55fr) minmax(0,45fr);
+  grid-template-rows:minmax(0,62fr) minmax(0,38fr);
   grid-template-columns:1fr;
   gap:8px;
   padding:8px 8px 0;
@@ -728,7 +728,9 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 #app-treasury .hud-logo{font-size:16px}
 #app-treasury .main{padding:18px 20px 48px;max-width:none;overflow:visible;min-height:0;}
-#dashboard-pane{overflow:hidden;min-height:0;}
+#dashboard-pane>.pane-cap,
+.dash-entaku-pane>.pane-cap,
+#office-pane>.pane-cap{display:none;}
 #dashboard-pane #root{display:none!important;}
 .dash-cards-wrap{
   flex:1;min-height:0;min-width:0;overflow:hidden;
@@ -1183,8 +1185,9 @@ video.dc-card__image{
   width:100%;
   height:100%;
   object-fit:cover;
-  object-position:center 20%;
+  object-position:center 42%;
   display:block;
+  transform:translateY(10%);
 }
 /* 下段：円卓・オフィスの各パネルは下段いっぱい＋中身は内部スクロール（ページ全体はスクロールさせない） */
 .dash-split-row>.dash-entaku-pane,
@@ -1255,7 +1258,6 @@ video.dc-card__image{
 
 <div id="quests-row">
   <section class="quest-pane" id="dashboard-pane">
-    <div class="pane-cap">Company Dashboard</div>
     <div class="dash-cards-wrap" id="dashCompact">
       <div class="dc-cards">
         <div class="dc-card" data-dept="secretary">
@@ -1306,7 +1308,6 @@ video.dc-card__image{
   </section>
   <div class="dash-split-row">
     <section class="quest-pane dash-entaku-pane">
-      <div class="pane-cap">円卓会議</div>
       <div class="entaku-inline collapsed" id="entaku-inline">
         <div class="entaku-inline-head" onclick="toggleEntaku()" title="クリックで開閉">
           <span class="entaku-inline-dot"></span>
@@ -1332,7 +1333,6 @@ video.dc-card__image{
       </div>
     </section>
     <section class="quest-pane" id="office-pane">
-      <div class="pane-cap">オフィスクエスト</div>
       <div class="office-frame">
         <iframe src="office.html" title="オフィスクエスト マップ"></iframe>
       </div>
