@@ -1233,14 +1233,11 @@ function drawWeatherFx(g,now){
     g.fillStyle='rgba(44,54,70,.13)';g.fillRect(0,0,MAP_W,MAP_H);
   }
 }
-function drawDqWindow(g,x,y,w,h){
-  px(g,x,y,w,h,'#f8f0d8');
-  g.strokeStyle='#101010';g.lineWidth=2;
+const STATUS_HUD_SCALE=0.7;
+function drawStatusWindow(g,x,y,w,h){
+  px(g,x,y,w,h,'#0a0a0a');
+  g.strokeStyle='#ffffff';g.lineWidth=2;
   g.strokeRect(x+.5,y+.5,w-1,h-1);
-  px(g,x+2,y+2,w-4,2,'#fffdf8');
-  px(g,x+2,y+2,2,h-4,'#fffdf8');
-  px(g,x+4,y+h-4,w-8,2,'#8a7a62');
-  px(g,x+w-4,y+4,2,h-8,'#8a7a62');
 }
 function drawWxPixelIcon(g,ix,iy,ic){
   if(ic==='sun'){
@@ -1260,16 +1257,21 @@ function drawWxPixelIcon(g,ix,iy,ic){
 }
 function drawStatusHud(g){
   const wz=weather(),W=124,H=54;
-  const x=MAP_W-W-MAP_UI_MARGIN,y=MAP_UI_MARGIN;
-  drawDqWindow(g,x,y,W,H);
-  drawWxPixelIcon(g,x+8,y+8,wz.ic);
+  const sw=W*STATUS_HUD_SCALE,sh=H*STATUS_HUD_SCALE;
+  const x=MAP_W-sw-MAP_UI_MARGIN,y=MAP_UI_MARGIN;
+  g.save();
+  g.translate(x,y);
+  g.scale(STATUS_HUD_SCALE,STATUS_HUD_SCALE);
+  drawStatusWindow(g,0,0,W,H);
+  drawWxPixelIcon(g,8,8,wz.ic);
   g.font='14px "DotGothic16",monospace';
-  g.textBaseline='alphabetic';g.fillStyle='#181410';
-  g.fillText('天気 '+wz.k,x+28,y+22);
+  g.textBaseline='alphabetic';g.fillStyle='#ffffff';
+  g.fillText('天気 '+wz.k,28,22);
   const h=simHour(),hh=Math.floor(h),mm=Math.floor((h-hh)*60);
   const time=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
   g.font='13px "DotGothic16",monospace';
-  g.fillText(time+'　'+dayOfWeekText(),x+10,y+42);
+  g.fillText(time+'　'+dayOfWeekText(),10,42);
+  g.restore();
 }
 function prerenderCity(){
   const g=cityCv.getContext('2d');
@@ -1441,15 +1443,45 @@ function hoverLine(c){
   return ls[Math.floor(Math.random()*ls.length)];
 }
 let _lastHoverId=null;
-function portalMsg(msg){if(window.parent&&window.parent!==window)window.parent.postMessage(msg,'*');}
+function speakLocalTTS(text){
+  try{
+    if(window.parent!==window&&window.parent.PortalTTS){
+      window.parent.PortalTTS.speak(text);return;
+    }
+  }catch(e){}
+  if(!text||!window.speechSynthesis)return;
+  try{
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.lang='ja-JP';u.rate=1.05;u.volume=1;
+    const v=speechSynthesis.getVoices().find(x=>/ja/i.test(x.lang));
+    if(v)u.voice=v;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+function portalBridge(msg){
+  if(window.parent===window)return;
+  try{
+    const b=window.parent.OfficeBridge;
+    if(!b){window.parent.postMessage(msg,'*');return;}
+    if(msg.type==='office-hover')b.hover(msg);
+    else if(msg.type==='office-hover-end')b.hoverEnd();
+    else if(msg.type==='office-entaku')b.summon(msg);
+    else window.parent.postMessage(msg,'*');
+  }catch(e){window.parent.postMessage(msg,'*');}
+}
 function onCharHover(c){
   if(!c||c.guest)return;
   const line=hoverLine(c);
+  const dash=CHAR_PORTAL[c.id]?.dash||null;
   c.bubble={text:line,until:performance.now()+3200,quiet:true};
-  portalMsg({type:'office-hover',charId:c.id,name:c.name,short:c.short,line:line,dash:CHAR_PORTAL[c.id]?.dash||null});
+  speakLocalTTS(line);
+  portalBridge({type:'office-hover',charId:c.id,name:c.name,short:c.short,line:line,dash:dash});
 }
 function onCharHoverEnd(){
-  portalMsg({type:'office-hover-end'});
+  try{window.parent.PortalTTS?.stop();}catch(e){}
+  if(window.speechSynthesis)window.speechSynthesis.cancel();
+  portalBridge({type:'office-hover-end'});
 }
 function mapPointFromEvent(e){
   const t=(e.touches&&e.touches[0])||e;
@@ -1478,12 +1510,15 @@ function charAtEvent(e){
   });
   return best;
 }
+cv.addEventListener('pointerdown',()=>{
+  try{window.parent.OfficeBridge?.unlockAudio?.();}catch(e){}
+},{capture:true,passive:true});
 cv.addEventListener('click',e=>{
   const best=charAtEvent(e);
   if(!best)return;
   hovered=best;selectChar(best);
   const p=CHAR_PORTAL[best.id];
-  portalMsg({
+  portalBridge({
     type:'office-entaku',charId:best.id,name:best.name,short:best.short,
     entaku:p?.entaku||'secretary',dash:p?.dash||null,line:hoverLine(best)
   });

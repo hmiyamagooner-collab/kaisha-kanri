@@ -1295,7 +1295,7 @@ video.dc-card__image{
             <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
             <span class="dc-photo-fallback" aria-hidden="true">凛</span>
             <div class="dc-avatar-wrap">
-              <video class="dc-card__image" src="rin.mp4" poster="dash-secretary.png" muted loop playsinline autoplay preload="metadata" aria-label="凛"></video>
+              <video class="dc-card__image" src="rin.mp4" poster="dash-secretary.png" data-has-audio="1" muted loop playsinline autoplay preload="metadata" aria-label="凛"></video>
             </div>
           </div>
           <div class="dc-card-foot">
@@ -1323,7 +1323,7 @@ video.dc-card__image{
             <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
             <span class="dc-photo-fallback" aria-hidden="true">陽</span>
             <div class="dc-avatar-wrap">
-              <video class="dc-card__image" src="haruto.mp4" poster="dash-legal.png" muted loop playsinline autoplay preload="metadata" aria-label="陽翔"></video>
+              <video class="dc-card__image" src="haruto.mp4" poster="dash-legal.png" data-has-audio="1" muted loop playsinline autoplay preload="metadata" aria-label="陽翔"></video>
             </div>
           </div>
           <div class="dc-card-foot">
@@ -2290,6 +2290,31 @@ $$(".gamenav button").forEach(b=>b.onclick=()=>{
   }catch(e){}
 });
 
+/* TTS（日本語読み上げ） */
+window.PortalTTS=(function(){
+  let jpVoice=null;
+  function pickVoice(){
+    if(jpVoice)return jpVoice;
+    const vs=window.speechSynthesis?speechSynthesis.getVoices():[];
+    jpVoice=vs.find(v=>/ja/i.test(v.lang))||null;
+    return jpVoice;
+  }
+  if(window.speechSynthesis)speechSynthesis.addEventListener('voiceschanged',()=>{jpVoice=null;});
+  return{
+    speak(text){
+      if(!text||!window.speechSynthesis)return;
+      try{
+        speechSynthesis.cancel();
+        const u=new SpeechSynthesisUtterance(text);
+        u.lang='ja-JP';u.rate=1.05;u.volume=1;
+        const v=pickVoice();if(v)u.voice=v;
+        speechSynthesis.speak(u);
+      }catch(e){}
+    },
+    stop(){if(window.speechSynthesis)speechSynthesis.cancel();}
+  };
+})();
+
 /* オフィスクエスト（iframe）でキャラをホバー／クリック → 音声・円卓 */
 (function(){
   const OFFICE_ENTAKU_NAME={
@@ -2298,36 +2323,34 @@ $$(".gamenav button").forEach(b=>b.onclick=()=>{
   let officeHoverId=null;
   function deptCard(dept){return document.querySelector('.dc-card[data-dept="'+dept+'"]');}
   function setDeptAudio(dept,on){
+    document.querySelectorAll('.dc-card video').forEach(v=>{v.muted=true;});
+    if(!on||!dept)return;
     const card=deptCard(dept);if(!card)return;
     const video=card.querySelector('video');if(!video)return;
-    video.muted=!on;
-    if(on){const p=video.play();if(p&&p.catch)p.catch(function(){});}
+    video.muted=false;video.volume=1;
+    const p=video.play();if(p&&p.catch)p.catch(function(){});
   }
-  function speakOfficeTTS(text){
-    if(!text||!window.speechSynthesis)return;
-    try{
-      window.speechSynthesis.cancel();
-      const u=new SpeechSynthesisUtterance(text);
-      u.lang='ja-JP';u.rate=1.08;u.volume=0.9;
-      window.speechSynthesis.speak(u);
-    }catch(e){}
+  function unlockPortalAudio(){
+    document.querySelectorAll('.dc-card video').forEach(v=>{
+      v.muted=true;v.volume=1;
+      const p=v.play();if(p&&p.catch)p.catch(function(){});
+    });
   }
   window.OfficeBridge={
+    unlockAudio:unlockPortalAudio,
     hover(d){
       if(!d||!d.charId||officeHoverId===d.charId)return;
       officeHoverId=d.charId;
       if(d.dash){
         setDeptAudio(d.dash,true);
         window.DashTalk?.speak(d.dash,d.line||d.short+'です。',99999);
-      }else{
-        speakOfficeTTS(d.line||d.short+'です。');
       }
     },
     hoverEnd(){
       officeHoverId=null;
       window.DashTalk?.stop();
+      window.PortalTTS.stop();
       document.querySelectorAll('.dc-card video').forEach(v=>{v.muted=true;});
-      if(window.speechSynthesis)window.speechSynthesis.cancel();
     },
     summon(d){
       if(!d||!d.charId)return;
@@ -2336,9 +2359,11 @@ $$(".gamenav button").forEach(b=>b.onclick=()=>{
       if(window.summonOfficeToEntaku)window.summonOfficeToEntaku({greet:greet,charId:d.charId,short:d.short});
       const dash=d.dash||(d.entaku==='finance'?'finance':d.entaku==='legal'?'legal':'secretary');
       window.DashTalk?.speak(dash,(d.short||d.name)+'、円卓へどうぞ。',4500);
+      window.PortalTTS.speak((d.short||d.name)+'、円卓へどうぞ。');
       if(dash)setDeptAudio(dash,true);
     }
   };
+  document.addEventListener('pointerdown',unlockPortalAudio,{once:true,capture:true});
 })();
 window.addEventListener("message",e=>{
   const d=e.data;
@@ -2708,22 +2733,23 @@ window.Treasury={
       video.play().catch(function(){});
     });
   });
-  var audioVideo=document.querySelector('.dc-card[data-dept="finance"] video[data-has-audio]');
-  var financeCard=document.querySelector('.dc-card[data-dept="finance"]');
-  if(audioVideo&&financeCard){
+  document.querySelectorAll('.dc-card').forEach(function(card){
+    var video=card.querySelector('video[data-has-audio]');
+    if(!video)return;
     function enableAudio(){
       if(window.OfficeBridge&&document.querySelector('.office-frame iframe'))return;
-      audioVideo.muted=false;
-      audioVideo.play().catch(function(){});
+      document.querySelectorAll('.dc-card video').forEach(function(v){v.muted=true;});
+      video.muted=false;video.volume=1;
+      video.play().catch(function(){});
     }
     function disableAudio(){
       if(window.OfficeBridge&&document.querySelector('.office-frame iframe'))return;
-      audioVideo.muted=true;
+      video.muted=true;
     }
-    financeCard.addEventListener('mouseenter',enableAudio);
-    financeCard.addEventListener('mouseleave',disableAudio);
-    financeCard.addEventListener('touchstart',enableAudio,{passive:true});
-  }
+    card.addEventListener('mouseenter',enableAudio);
+    card.addEventListener('mouseleave',disableAudio);
+    card.addEventListener('touchstart',enableAudio,{passive:true});
+  });
   syncVideos();
   reduced.addEventListener('change',syncVideos);
 })();
@@ -2744,10 +2770,12 @@ window.Treasury={
   function stopAll(){
     document.querySelectorAll('.dc-card.is-talking').forEach(c=>c.classList.remove('is-talking'));
     document.querySelectorAll('.dc-bubble').forEach(b=>{ b.hidden = true; });
+    window.PortalTTS?.stop();
   }
   function speak(dept, text, ms){
     if(REDUCED) return;
     stopAll();
+    window.PortalTTS?.speak(text);
     const el = card(dept); if(!el) return;
     const bubble = el.querySelector('.dc-bubble');
     const txt = el.querySelector('.dc-bubble-txt');
