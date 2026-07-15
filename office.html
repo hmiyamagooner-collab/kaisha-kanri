@@ -466,9 +466,9 @@ const CHARS=[
   sched:[[9,10,'会議'],[10,12,'デスクワーク'],[12,13,'休憩'],[13,14,'来客対応'],[14,16,'デスクワーク'],[16,17,'会議'],[17,19,'デスクワーク']]},
  {id:'koshiishi',name:'越石',short:'越石',dept:'本社',female:true,cloth:'#3b82f6',hair:'#52341d',seat:DESK[0],home:'honsha',
   sched:[[9,10,'会議'],[10,11,'振込作業'],[11,12,'書類整理'],[12,13,'休憩'],[13,15,'デスクワーク'],[15,16,'コピー'],[16,19,'デスクワーク']]},
- {id:'sayaka',name:'さやか',short:'さやか',dept:'本社',female:true,cloth:'#3b82f6',hair:'#a16207',seat:DESK[1],home:'honsha',
+ {id:'sayaka',name:'さやか',short:'さやか',dept:'本社',female:true,cloth:'#3b82f6',hair:'#a16207',seat:DESK[2],home:'honsha',
   sched:[[9,10,'会議'],[10,12,'プログラミング'],[12,13,'休憩'],[13,16,'プログラミング'],[16,17,'コピー'],[17,19,'プログラミング']]},
- {id:'yuzuru',name:'譲',short:'譲',dept:'イベント',female:false,cloth:'#f59e0b',hair:'#1c1917',seat:DESK[2],home:'honsha',
+ {id:'yuzuru',name:'譲',short:'譲',dept:'イベント',female:false,cloth:'#f59e0b',hair:'#1c1917',seat:DESK[1],home:'honsha',
   sched:[[9,10,'会議'],[10,12,'イベント（プール）'],[12,13,'休憩'],[13,15,'イベント（海）'],[15,17,'イベント（コンサート）'],[17,19,'デスクワーク']]},
  {id:'tanji',name:'丹治',short:'丹治',dept:'営業',female:false,cloth:'#10b981',hair:'#44403c',seat:DESK[3],home:'honsha',
   sched:[[9,10,'会議'],[10,12,'商談'],[12,13,'休憩'],[13,17,'商談'],[17,19,'デスクワーク']]},
@@ -514,7 +514,7 @@ function inSeason(){
 }
 function guestPlan(){
   const plan=[];
-  if(inSeason()){for(let i=0;i<6;i++)plan.push('beach');for(let i=0;i<3;i++)plan.push('pool');}
+  if(inSeason()){for(let i=0;i<3;i++)plan.push('beach');for(let i=0;i<2;i++)plan.push('pool');}
   CHARS.forEach(c=>{
     if(c.hidden)return;
     if(c.curAct==='イベント（プール）')for(let i=0;i<3;i++)plan.push('pool');
