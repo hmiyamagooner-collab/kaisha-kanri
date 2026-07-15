@@ -655,10 +655,14 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 .dash-split-row{
   min-height:0;display:grid;
-  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);
   gap:8px;
 }
-.dash-entaku-pane{min-height:0}
+#office-pane .office-frame{
+  align-items:center;justify-content:center;
+}
+.dash-entaku-pane{min-height:0;display:flex;flex-direction:column}
+#dashboard-pane{display:flex;flex-direction:column}
 .quest-pane{
   min-width:0;min-height:0;display:flex;flex-direction:column;
   position:relative;background:var(--panel);overflow:hidden;
@@ -1205,7 +1209,7 @@ video.dc-card__image{animation:none;background:transparent}
 <div id="portal-main">
 <div id="portal-bar">
   <span class="pt-logo">GOONER PORTAL</span>
-  <span class="pt-hint"><b>左ナビ</b>全高　<b>上段</b>Dashboard/クエスト　<b>下段</b>入出金（ページ全体スクロール）</span>
+  <span class="pt-hint"><b>左ナビ</b>全高　<b>上段</b>キャラカード全幅　<b>下段</b>円卓｜クエスト横並び</span>
 </div>
 
 <div id="quests-row">

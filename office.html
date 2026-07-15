@@ -66,12 +66,9 @@ body.embedded canvas#game{
   position:relative;z-index:1;
   display:block;margin:0;
   width:auto;height:auto;
-  max-width:100%;max-height:100%;
-  object-fit:contain;
+  max-width:none;max-height:none;
   image-rendering:pixelated;image-rendering:crisp-edges;
-  border:none;
-  border-radius:0;
-  box-shadow:none;
+  border:none;border-radius:0;box-shadow:none;
   background:#54963a;
 }
 /* 埋め込み(ポータル)では縦長ペインでも「よこ画面推奨」を出さずマップを描画する */
@@ -225,7 +222,7 @@ body.embedded .hud-dock{padding:0 0 4px;}
     <div class="stage">
       <div class="hud-dock" id="hud-dock"></div>
       <div class="stage-game">
-      <canvas id="game" width="960" height="720"></canvas>
+      <canvas id="game" width="720" height="960"></canvas>
       <div id="wx" class="wx"></div>
       <div class="panel overlays">
         <div class="win ov" data-panel="clock" id="p-clock">
@@ -1267,11 +1264,15 @@ function selectChar(c){
 /* キャラ→ポータルのタブ対応（クリックでその人のタブへ飛ぶ） */
 const CHAR_TAB={shacho:'dash',koshiishi:'cf-bank',sayaka:'biz-it',yuzuru:'biz-paradise',
   tanji:'biz-cf',okabe:'cf-legal',tokita:'biz-care',takahashi:'biz-care',shinagawa:'biz-care'};
-function charAtEvent(e){
+function mapPointFromEvent(e){
+  const cv=document.getElementById('game');
   const r=cv.getBoundingClientRect();
   const t=(e.touches&&e.touches[0])||e;
-  const mx=(t.clientX-r.left)/r.width*MAP_W;
-  const my=(t.clientY-r.top)/r.height*MAP_H;
+  const w=Math.max(1,r.width),h=Math.max(1,r.height);
+  return {mx:(t.clientX-r.left)/w*MAP_W,my:(t.clientY-r.top)/h*MAP_H};
+}
+function charAtEvent(e){
+  const {mx,my}=mapPointFromEvent(e);
   let best=null,bd=1e9;
   CHARS.forEach(c=>{
     if(c.hidden)return;
@@ -1452,20 +1453,25 @@ function fitCanvas(){
   const wrap=document.querySelector('.stage-game');
   const cv=document.getElementById('game');
   if(!wrap||!cv)return;
-  const pad=0;
   const r=wrap.getBoundingClientRect();
-  const availW=Math.max(8,r.width-pad);
-  const availH=Math.max(8,r.height-pad);
+  const availW=Math.max(8,r.width);
+  const availH=Math.max(8,r.height);
   if(availW<8||availH<8)return;
-  /* 枠いっぱい：はみ出しは許容し、枠を完全に埋める（cover） */
-  const scale=EMBEDDED?Math.max(availW/MAP_W,availH/MAP_H):Math.min(availW/MAP_W,1);
+  /* 均等スケールのみ（contain）。max-width等で縦横別伸縮すると文字・人物が横倒しに見える */
+  const scale=EMBEDDED
+    ?Math.min(availW/MAP_W,availH/MAP_H)
+    :Math.min(availW/MAP_W,availH/MAP_H,1);
   const w=Math.max(1,Math.floor(MAP_W*scale));
   const h=Math.max(1,Math.floor(MAP_H*scale));
   cv.style.width=w+'px';
   cv.style.height=h+'px';
+  cv.style.marginLeft='auto';
+  cv.style.marginRight='auto';
+  cv.style.marginTop='auto';
+  cv.style.marginBottom='auto';
   if(EMBEDDED){
-    cv.style.maxWidth=w+'px';
-    cv.style.maxHeight=h+'px';
+    cv.style.maxWidth='none';
+    cv.style.maxHeight='none';
     wrap.style.alignItems='center';
     wrap.style.justifyContent='center';
   }
