@@ -543,20 +543,26 @@ function updateGuest(gst,dt){
 
 /* ================= 道路を走るいろいろな車 ================= */
 const CAR_COLORS=['#e0e6f0','#c85a5a','#5a8ad0','#e0c060','#4ea36a','#d0d6e0','#e08a3a','#8a7ad0'];
+/* 車は道路網のウェイポイントを辿り、交差点で曲がる（海に飛び出さない） */
 const TRAFFIC=[
-  {axis:'h',dir:'e',x:6,  y:120,spd:0.05, col:CAR_COLORS[0],min:0,max:278},
-  {axis:'h',dir:'w',x:120,y:286,spd:0.045,col:CAR_COLORS[2],min:0,max:278},
-  {axis:'v',dir:'s',x:257,y:60, spd:0.05, col:CAR_COLORS[5],min:44,max:340},
-  {axis:'v',dir:'n',x:269,y:320,spd:0.055,col:CAR_COLORS[3],min:44,max:340}
+  {route:[[20,116],[263,116],[263,282],[20,282]],x:20,y:116,ti:1,dir:1,spd:0.05, col:CAR_COLORS[2],face:'e'},
+  {route:[[20,342],[263,342],[263,116],[20,116]],x:20,y:342,ti:1,dir:1,spd:0.045,col:CAR_COLORS[5],face:'e'}
 ];
 function updateTraffic(dt){
-  TRAFFIC.forEach(t=>{
-    const s=t.spd*dt;
-    if(t.axis==='h'){t.x+=(t.dir==='e'?s:-s);if(t.x>t.max+12)t.x=t.min-12;if(t.x<t.min-12)t.x=t.max+12;}
-    else{t.y+=(t.dir==='s'?s:-s);if(t.y>t.max+12)t.y=t.min-12;if(t.y<t.min-12)t.y=t.max+12;}
+  TRAFFIC.forEach(c=>{
+    const rt=c.route,tg=rt[c.ti];
+    const dx=tg[0]-c.x,dy=tg[1]-c.y,dist=Math.hypot(dx,dy),s=c.spd*dt;
+    if(dist<=s){
+      c.x=tg[0];c.y=tg[1];c.ti+=c.dir;
+      if(c.ti>rt.length-1){c.ti=rt.length-2;c.dir=-1;}
+      else if(c.ti<0){c.ti=1;c.dir=1;}
+    }else{
+      c.x+=dx/dist*s;c.y+=dy/dist*s;
+      c.face=Math.abs(dx)>Math.abs(dy)?(dx>0?'e':'w'):(dy>0?'s':'n');
+    }
   });
 }
-function drawTraffic(g){TRAFFIC.forEach(t=>drawPixCar(g,t.x,t.y,t.dir,t.col));}
+function drawTraffic(g){TRAFFIC.forEach(c=>drawPixCar(g,c.x,c.y,c.face,c.col));}
 
 /* ================= タスクから抽出した仕事（吹き出し） ================= */
 const WORK_LINES={
