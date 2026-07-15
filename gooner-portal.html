@@ -1173,6 +1173,11 @@ video.dc-card__image{
 @media(max-width:820px) and (orientation:portrait){
   #rotate-note{display:block;}
 }
+/* ダッシュボードのカード動画枠：3:4のcover表示で顔を上寄せに収める */
+.dc-card .dc-avatar-wrap{aspect-ratio:3/4;overflow:hidden;}
+.dc-card .dc-avatar-wrap>video{
+  width:100%;height:100%;object-fit:cover;object-position:center top;display:block;transform:none;
+}
 </style>
 </head>
 <body>
