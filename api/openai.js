@@ -1,6 +1,9 @@
 // Vercel Serverless Function: /api/openai
 // 会社管理 — 円卓会議ターミナルのAI（OpenAI GPT-4o）
 // Claude版(/api/claude)と同じ振り分けルール。APIキーはサーバー側のみで保持。
+// キー設定: Vercelの OPENAI_API_KEY 環境変数、または api/secrets.local.js（example をコピー）
+
+import { getOpenAIKey } from "./getOpenAIKey.js";
 
 export const config = { maxDuration: 60 };
 
@@ -74,9 +77,12 @@ export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = await getOpenAIKey();
   if (!apiKey) {
-    return res.status(500).json({ error: "OPENAI_API_KEY is not configured" });
+    return res.status(500).json({
+      error: "OPENAI_API_KEY is not configured",
+      hint: "Vercelの環境変数 OPENAI_API_KEY を設定するか、api/secrets.local.js.example を secrets.local.js にコピーしてキーを入れてください。",
+    });
   }
 
   try {

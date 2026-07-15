@@ -1,3 +1,6 @@
 .vercel
 node_modules/
 package-lock.json
+.env
+.env.local
+api/secrets.local.js

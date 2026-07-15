@@ -2,6 +2,8 @@
 // 会社管理 — 契約書テキストをAIでリーガルチェックし、案件/CFと突合するための構造化データを返す。
 // 目的は社内のキャッシュフロー証拠化・牽制（水掛け論の防止）。正式な法的助言や当局手続そのものではない。
 
+import { getOpenAIKey } from "./getOpenAIKey.js";
+
 export const config = { maxDuration: 60 };
 
 // OpenAI呼び出しの自前タイムアウト(ms)。VercelのmaxDuration(60s)より必ず短く。
@@ -11,9 +13,12 @@ export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = await getOpenAIKey();
   if (!apiKey) {
-    return res.status(500).json({ error: "OPENAI_API_KEY is not configured" });
+    return res.status(500).json({
+      error: "OPENAI_API_KEY is not configured",
+      hint: "Vercelの環境変数 OPENAI_API_KEY を設定するか、api/secrets.local.js.example を secrets.local.js にコピーしてキーを入れてください。",
+    });
   }
 
   try {
