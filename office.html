@@ -503,7 +503,7 @@ function makeGuest(i){
   return {guest:true,female:(i%2===0),cloth:GUEST_CLOTH[i%GUEST_CLOTH.length],hair:GUEST_HAIR[i%GUEST_HAIR.length],
     px:p.x,py:p.y,path:[],hidden:true,zone:null,wanderAt:0,spd:0.75+(i%5)*0.06,bubble:null,pendingBubble:null};
 }
-const GUESTS=Array.from({length:22},(_,i)=>makeGuest(i));
+const GUESTS=Array.from({length:12},(_,i)=>makeGuest(i));
 /* 7月中旬〜9月中旬は海・プールがにぎわう */
 function inSeason(){
   const d=new Date(),m=d.getMonth()+1,day=d.getDate();
@@ -511,12 +511,12 @@ function inSeason(){
 }
 function guestPlan(){
   const plan=[];
-  if(inSeason()){for(let i=0;i<11;i++)plan.push('beach');for(let i=0;i<6;i++)plan.push('pool');}
+  if(inSeason()){for(let i=0;i<6;i++)plan.push('beach');for(let i=0;i<3;i++)plan.push('pool');}
   CHARS.forEach(c=>{
     if(c.hidden)return;
-    if(c.curAct==='イベント（プール）')for(let i=0;i<6;i++)plan.push('pool');
-    else if(c.curAct==='イベント（海）')for(let i=0;i<6;i++)plan.push('beach');
-    else if(c.curAct==='イベント（コンサート）')for(let i=0;i<10;i++)plan.push('park');
+    if(c.curAct==='イベント（プール）')for(let i=0;i<3;i++)plan.push('pool');
+    else if(c.curAct==='イベント（海）')for(let i=0;i<3;i++)plan.push('beach');
+    else if(c.curAct==='イベント（コンサート）')for(let i=0;i<5;i++)plan.push('park');
   });
   return plan.slice(0,GUESTS.length);
 }
@@ -544,14 +544,10 @@ function updateGuest(gst,dt){
 /* ================= 道路を走るいろいろな車 ================= */
 const CAR_COLORS=['#e0e6f0','#c85a5a','#5a8ad0','#e0c060','#4ea36a','#d0d6e0','#e08a3a','#8a7ad0'];
 const TRAFFIC=[
-  {axis:'h',dir:'e',x:6,  y:120,spd:0.055,col:CAR_COLORS[0],min:0,max:278},
-  {axis:'h',dir:'w',x:278,y:112,spd:0.045,col:CAR_COLORS[1],min:0,max:278},
-  {axis:'h',dir:'e',x:120,y:286,spd:0.05, col:CAR_COLORS[2],min:0,max:278},
-  {axis:'h',dir:'w',x:60, y:278,spd:0.06, col:CAR_COLORS[3],min:0,max:278},
-  {axis:'h',dir:'e',x:200,y:346,spd:0.042,col:CAR_COLORS[4],min:0,max:278},
-  {axis:'h',dir:'w',x:30, y:338,spd:0.065,col:CAR_COLORS[6],min:0,max:278},
+  {axis:'h',dir:'e',x:6,  y:120,spd:0.05, col:CAR_COLORS[0],min:0,max:278},
+  {axis:'h',dir:'w',x:120,y:286,spd:0.045,col:CAR_COLORS[2],min:0,max:278},
   {axis:'v',dir:'s',x:257,y:60, spd:0.05, col:CAR_COLORS[5],min:44,max:340},
-  {axis:'v',dir:'n',x:269,y:320,spd:0.06, col:CAR_COLORS[7],min:44,max:340}
+  {axis:'v',dir:'n',x:269,y:320,spd:0.055,col:CAR_COLORS[3],min:44,max:340}
 ];
 function updateTraffic(dt){
   TRAFFIC.forEach(t=>{
@@ -1163,7 +1159,7 @@ function drawPerson(g,c,walking,frame){
   px(g,x-3,y-7,2,2,'#2a2a2a');px(g,x+1,y-7,2,2,'#2a2a2a');    /* 目 */
 }
 function drawCar(g){drawPixVan(g,CAR.x,CAR.y,CAR.facing||'n');}
-let selected=null;
+let selected=null,hovered=null;
 function draw(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.imageSmoothingEnabled=false;
@@ -1179,7 +1175,7 @@ function draw(){
       ctx.strokeRect(((c.px-12)|0)+.5,((c.py-16)|0)+.5,24,33);
     }
     drawPerson(ctx,c,walking,frame);
-    if(!c.guest){                                    /* 群衆は名前を出さない */
+    if(!c.guest&&(c===hovered||c===selected)){       /* 名前はホバー/選択時のみ */
       const label=c.short;
       ctx.font='11px "DotGothic16",monospace';ctx.textBaseline='alphabetic';
       const tw=Math.ceil(ctx.measureText(label).width),lw=tw+8;
@@ -1262,18 +1258,39 @@ function selectChar(c){
   document.getElementById('detail').innerHTML=html;
   renderMembers();
 }
-cv.addEventListener('click',e=>{
+/* キャラ→ポータルのタブ対応（クリックでその人のタブへ飛ぶ） */
+const CHAR_TAB={shacho:'dash',koshiishi:'cf-bank',sayaka:'biz-it',yuzuru:'biz-paradise',
+  tanji:'biz-cf',okabe:'cf-legal',tokita:'biz-care',takahashi:'biz-care',shinagawa:'biz-care'};
+function charAtEvent(e){
   const r=cv.getBoundingClientRect();
-  const mx=(e.clientX-r.left)/r.width*MAP_W;
-  const my=(e.clientY-r.top)/r.height*MAP_H;
+  const t=(e.touches&&e.touches[0])||e;
+  const mx=(t.clientX-r.left)/r.width*MAP_W;
+  const my=(t.clientY-r.top)/r.height*MAP_H;
   let best=null,bd=1e9;
   CHARS.forEach(c=>{
     if(c.hidden)return;
     const d=Math.hypot(c.px-mx,c.py-my);
-    if(d<16&&d<bd){bd=d;best=c;}
+    if(d<18&&d<bd){bd=d;best=c;}
   });
-  if(best)selectChar(best);
+  return best;
+}
+cv.addEventListener('click',e=>{
+  const best=charAtEvent(e);
+  if(!best)return;
+  hovered=best;selectChar(best);
+  const tab=CHAR_TAB[best.id];
+  if(tab&&window.parent&&window.parent!==window){
+    window.parent.postMessage({type:'office-goto',tab:tab,charId:best.id},'*');
+  }
 });
+cv.addEventListener('mousemove',e=>{
+  const c=charAtEvent(e);
+  hovered=c||null;
+  cv.style.cursor=c?'pointer':'default';
+});
+cv.addEventListener('mouseleave',()=>{hovered=null;cv.style.cursor='default';});
+/* タップでも名前を出す（ポインタ端末） */
+cv.addEventListener('touchstart',e=>{const c=charAtEvent(e);if(c)hovered=c;},{passive:true});
 
 /* ================= HELP ================= */
 function openHelp(){
