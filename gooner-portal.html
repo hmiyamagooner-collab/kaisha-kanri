@@ -230,6 +230,46 @@ h2.stitle::after{
 }
 p.sdesc{color:var(--muted);font-size:14px;margin-bottom:22px;line-height:1.7;max-width:68ch}
 
+/* 事業ページ：説明ヘッダーにナビと同じ実写アイコン背景 */
+.biz-hero{
+  position:relative;overflow:hidden;border-radius:14px;
+  border:1px solid rgba(196,166,106,.22);
+  margin:0 0 22px;min-height:128px;
+  box-shadow:0 10px 28px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
+}
+.biz-hero-photo{
+  position:absolute;inset:0;z-index:0;
+  background-size:cover;background-position:center;
+  background-image:var(--biz-photo);
+}
+.biz-hero-photo::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(105deg,rgba(6,9,14,.82) 0%,rgba(6,9,14,.58) 48%,rgba(6,9,14,.40) 100%);
+}
+.biz-hero-body{
+  position:relative;z-index:1;
+  padding:22px 24px 20px;
+  max-width:78ch;
+}
+.biz-hero .stitle{
+  color:#fff;margin-bottom:8px;
+  text-shadow:0 1px 2px rgba(0,0,0,.9),0 0 8px rgba(0,0,0,.45);
+}
+.biz-hero .stitle::after{
+  background:linear-gradient(90deg,rgba(232,212,168,.55),transparent);
+}
+.biz-hero .sdesc{
+  color:rgba(255,255,255,.88);margin-bottom:0;max-width:none;
+  text-shadow:0 1px 2px rgba(0,0,0,.75);
+}
+.biz-hero .sdesc b{color:#f3e2b0;font-weight:700}
+@media(max-width:640px){
+  .biz-hero{min-height:110px;border-radius:12px}
+  .biz-hero-body{padding:16px 16px 14px}
+  .biz-hero .stitle{font-size:17px}
+  .biz-hero .sdesc{font-size:13px}
+}
+
 /* ===== カード共通 ===== */
 .card{
   background:var(--panel);border:1px solid var(--line-strong);border-radius:var(--radius);
@@ -1050,6 +1090,11 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .dc-card[data-dept="secretary"] .dc-bubble{border-color:rgba(91,108,255,.55)}
 .dc-card[data-dept="finance"] .dc-bubble{border-color:rgba(140,150,170,.55)}
 .dc-card[data-dept="legal"] .dc-bubble{border-color:rgba(150,135,175,.55)}
+/* タスク未完了サイン：吹き出しを白く */
+.dc-bubble.task-alert{background:#fff!important;border-color:#fff!important;color:#111!important;box-shadow:0 8px 24px rgba(255,255,255,.28);animation:none}
+.dc-bubble.task-alert .dc-bubble-txt{color:#111}
+.dc-bubble.task-alert::after{background:#fff;border-color:#fff}
+.dc-bubble.task-alert .dc-task-count{display:inline-block;margin-right:5px;min-width:16px;height:16px;line-height:16px;text-align:center;background:#ff9d3c;color:#111;border-radius:99px;font-size:10px;font-weight:800;padding:0 3px}
 .dc-card .dc-photo{
   background:var(--dc-bg-image) center top/cover no-repeat,#060608;
 }
@@ -1440,6 +1485,7 @@ video.dc-card__image{
   <button data-s="cf-inrou"><span class="nico">籠</span>印籠レポート</button>
   <div class="nav-group">記録・精算</div>
   <button data-s="entry"><span class="nico">＋</span>記録する</button>
+  <button data-s="tasks"><span class="nico">✔</span>タスク管理</button>
   <button data-s="quest"><span class="nico">⚔</span>精算クエスト</button>
   <div class="nav-group">分析・台帳</div>
   <button data-s="flow"><span class="nico">≋</span>商流マップ</button>
@@ -1824,10 +1870,85 @@ video.dc-card__image{
   </div>
 </section>
 
+<!-- ===== タスク管理（社員タスク・吹き出し連動） ===== -->
+<style>
+#s-tasks{
+  --panel:#000;--panel2:#0f0f0f;
+  --line:rgba(255,255,255,.32);--line-strong:rgba(255,255,255,.6);
+  --gold:#ff9d3c;--gold-hi:#ffb15c;--muted:#d6d6d6;--text:#ffffff;--in:#4ade80;--out:#ff9d3c;
+}
+#s-tasks .tk-add{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+#s-tasks .tk-add-row{display:grid;grid-template-columns:150px 1.4fr 1fr auto;gap:8px}
+#s-tasks .tk-add-row select,#s-tasks .tk-add-row input{background:var(--panel2);border:1px solid var(--line-strong);border-radius:8px;padding:9px 11px;color:var(--text);font-size:13px;font-family:var(--font-body);outline:none}
+#s-tasks .tk-add-row select:focus,#s-tasks .tk-add-row input:focus{border-color:var(--gold)}
+#s-tasks .tk-add-row button{background:var(--in);color:#062012;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap}
+#s-tasks .tk-hint{font-size:11px;color:var(--muted);margin-top:8px}
+#s-tasks .tk-filter{display:flex;gap:8px;margin-bottom:14px}
+#s-tasks .tk-filter button{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:6px 15px;font-size:12px;font-weight:600;cursor:pointer}
+#s-tasks .tk-filter button.on{background:#fff;color:#111;border-color:#fff}
+#s-tasks .tk-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+#s-tasks .tk-col{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;min-height:120px}
+#s-tasks .tk-col-head{display:flex;justify-content:space-between;align-items:center;padding:11px 13px;border-bottom:1px solid var(--line)}
+#s-tasks .tk-col-name{font-size:13px;font-weight:700;color:var(--text)}
+#s-tasks .tk-col-role{font-size:10px;color:var(--muted);margin-left:6px}
+#s-tasks .tk-col-cnt{font-size:11px;font-weight:800;font-family:var(--font-num);min-width:20px;text-align:center;padding:2px 7px;border-radius:99px;background:var(--panel2);color:var(--muted)}
+#s-tasks .tk-col-cnt.hot{background:var(--out);color:#111}
+#s-tasks .tk-col-body{padding:10px;display:flex;flex-direction:column;gap:8px}
+#s-tasks .tk-card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 11px}
+#s-tasks .tk-card.done{opacity:.6}
+#s-tasks .tk-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+#s-tasks .tk-card-title{font-size:13px;font-weight:600;color:var(--text);line-height:1.4}
+#s-tasks .tk-card.done .tk-card-title{text-decoration:line-through;color:var(--muted)}
+#s-tasks .tk-card-detail{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5}
+#s-tasks .tk-card-meta{display:flex;align-items:center;gap:6px;margin-top:8px}
+#s-tasks .tk-src{font-size:9px;font-weight:700;border-radius:4px;padding:2px 6px}
+#s-tasks .tk-src.boss{background:rgba(255,157,60,.18);color:var(--out)}
+#s-tasks .tk-src.self{background:rgba(74,222,128,.16);color:var(--in)}
+#s-tasks .tk-date{font-size:10px;color:var(--muted);font-family:var(--font-num)}
+#s-tasks .tk-card-acts{display:flex;gap:6px;margin-top:9px}
+#s-tasks .tk-toggle{flex:1;border:none;border-radius:7px;padding:7px;font-size:12px;font-weight:700;cursor:pointer}
+#s-tasks .tk-toggle.todo{background:var(--in);color:#062012}
+#s-tasks .tk-toggle.done{background:var(--panel);color:var(--muted);border:1px solid var(--line-strong)}
+#s-tasks .tk-del{background:transparent;border:1px solid var(--line-strong);color:var(--out);border-radius:7px;width:30px;font-size:13px;cursor:pointer}
+#s-tasks .tk-empty{font-size:11px;color:var(--muted);padding:6px 2px}
+@media(max-width:760px){#s-tasks .tk-add-row{grid-template-columns:1fr 1fr}#s-tasks .tk-cols{grid-template-columns:1fr}}
+</style>
+<section class="screen" id="s-tasks">
+  <h2 class="stitle">✔ タスク管理</h2>
+  <p class="sdesc">社長から社員へ指示を出し、社員は自分のタスクを登録します。完了/未完了で進捗を管理。担当社員に未完了タスクがあると、円卓（ダッシュボード）のキャラ吹き出しが<b>白く点灯</b>してタスク名を知らせます。</p>
+
+  <div class="tk-add">
+    <div class="tk-add-row">
+      <select id="tkAssignee">
+        <option value="secretary">秘書　凛</option>
+        <option value="finance">経理　紬</option>
+        <option value="legal">法務　陽翔</option>
+      </select>
+      <input id="tkTitle" placeholder="タスク内容（例：契約書ドラフト作成）">
+      <input id="tkDetail" placeholder="補足・期日など（任意）">
+      <button type="button" id="tkAdd">＋ 追加</button>
+    </div>
+    <div class="tk-hint" id="tkHint">—</div>
+  </div>
+
+  <div class="tk-filter">
+    <button type="button" class="on" data-tk-filter="todo">未完了</button>
+    <button type="button" data-tk-filter="done">完了</button>
+    <button type="button" data-tk-filter="all">すべて</button>
+  </div>
+
+  <div class="tk-cols" id="tkCols"></div>
+</section>
+
 <!-- ===== 事業：パラダイスシティ ===== -->
 <section class="screen" id="s-biz-paradise">
-  <h2 class="stitle">パラダイスシティ事業</h2>
-  <p class="sdesc">韓国の制作会社 <b>A-WORKS</b> と直接契約（基本契約＋出演契約の2本）。日本アーティストを韓国VVIPディナーショーへ橋渡しする仲介事業。売上＝A-WORKSからの受注、原価＝紹介者・所属事務所への支払（興行前後で半金ずつ・随時変動）。</p>
+  <header class="biz-hero" style="--biz-photo:url(nav-paradise.png)">
+    <div class="biz-hero-photo" style="background-image:url(nav-paradise.png)" aria-hidden="true"></div>
+    <div class="biz-hero-body">
+      <h2 class="stitle">パラダイスシティ事業</h2>
+      <p class="sdesc">韓国の制作会社 <b>A-WORKS</b> と直接契約（基本契約＋出演契約の2本）。日本アーティストを韓国VVIPディナーショーへ橋渡しする仲介事業。売上＝A-WORKSからの受注、原価＝紹介者・所属事務所への支払（興行前後で半金ずつ・随時変動）。</p>
+    </div>
+  </header>
   <div class="biz-tabs">
     <button type="button" class="on" data-tab="sales">案件・採算</button>
     <button type="button" data-tab="close">前金・後金の管理</button>
@@ -1870,8 +1991,13 @@ video.dc-card__image{
 
 <!-- ===== 事業：稲毛海浜公園 ===== -->
 <section class="screen" id="s-biz-inage">
-  <h2 class="stitle">稲毛海浜公園事業</h2>
-  <p class="sdesc">指定管理会社 <b>株式会社ワールドパーク</b> と契約し、園内でイベント開催・スポンサー誘致。イベント利益（売上−原価）は<b>ワールドパークと折半</b>。紹介者がいる場合は紹介料（売上の20%）＋製作費が原価。</p>
+  <header class="biz-hero" style="--biz-photo:url(nav-inage.png)">
+    <div class="biz-hero-photo" style="background-image:url(nav-inage.png)" aria-hidden="true"></div>
+    <div class="biz-hero-body">
+      <h2 class="stitle">稲毛海浜公園事業</h2>
+      <p class="sdesc">指定管理会社 <b>株式会社ワールドパーク</b> と契約し、園内でイベント開催・スポンサー誘致。イベント利益（売上−原価）は<b>ワールドパークと折半</b>。紹介者がいる場合は紹介料（売上の20%）＋製作費が原価。</p>
+    </div>
+  </header>
   <div class="biz-tabs">
     <button type="button" class="on" data-tab="prod">イベント・採算</button>
     <button type="button" data-tab="close">折半・精算</button>
@@ -1912,8 +2038,13 @@ video.dc-card__image{
 
 <!-- ===== 事業：介護 ===== -->
 <section class="screen" id="s-biz-care">
-  <h2 class="stitle">介護事業（半日デイサービス）</h2>
-  <p class="sdesc">国保連合会からの介護給付費、県・国の補助金、利用者負担金、固定費・備品購入を一元管理します。</p>
+  <header class="biz-hero" style="--biz-photo:url(nav-care.png)">
+    <div class="biz-hero-photo" style="background-image:url(nav-care.png)" aria-hidden="true"></div>
+    <div class="biz-hero-body">
+      <h2 class="stitle">介護事業（半日デイサービス）</h2>
+      <p class="sdesc">国保連の介護給付費（実績から約2ヶ月後入金・〇月分で管理）、県・国の補助金、利用者負担金、固定費・備品購入を一元管理します。</p>
+    </div>
+  </header>
   <div class="biz-grid">
     <div class="card stat in biz-stat"><div class="label">今月入金計</div><div class="val" id="bcInTotal">¥0</div></div>
     <div class="card stat out biz-stat"><div class="label">今月経費計</div><div class="val" id="bcOutTotal">¥0</div></div>
@@ -1927,28 +2058,30 @@ video.dc-card__image{
   </div>
   <div class="biz-panel on" data-tab="income">
     <div class="biz-grid">
-      <div class="card stat in biz-stat"><div class="label">国保連（今月）</div><div class="val" id="bcKokuhoren">¥0</div></div>
+      <div class="card stat in biz-stat"><div class="label">国保連（今月入金）</div><div class="val" id="bcKokuhoren">¥0</div><div class="sub">実績から約2ヶ月遅れ</div></div>
       <div class="card stat in biz-stat"><div class="label">利用者負担（今月）</div><div class="val" id="bcUserPay">¥0</div></div>
       <div class="card stat in biz-stat"><div class="label">入金済／未入金</div><div class="val" id="bcIncomePaid">¥0</div><div class="sub" id="bcIncomeUnpaid">未入金 ¥0</div></div>
     </div>
     <div class="card">
-      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">入金を登録（国保連合会／利用者負担金）</div>
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">入金を登録（国保連は「〇月分」＝実績月／入金は約2ヶ月後）</div>
       <form id="bcInForm" class="bp-form">
         <select id="bcInKind" class="bp-span2" aria-label="入金区分">
           <option value="kokuhoren">国保連合会（介護給付費）</option>
           <option value="user">利用者負担金</option>
         </select>
-        <input id="bcInLabel" class="bp-span2" placeholder="内容（例：〇月分給付／山田様 自己負担）" required>
-        <input id="bcInDate" type="date" aria-label="対象月・入金予定日">
+        <input id="bcInLabel" class="bp-span2" placeholder="内容（例：給付請求／山田様 自己負担）" required>
+        <input id="bcInServiceMonth" type="month" aria-label="実績月（〇〇月分）" title="実績月（〇〇月分）" required>
+        <input id="bcInDate" type="date" aria-label="入金日（予定／実績）" title="入金日">
         <input id="bcInAmt" type="number" min="0" inputmode="numeric" placeholder="金額" required>
         <div class="bp-form-ctr">
+          <span class="bp-hint" id="bcInHint" style="font-size:11px;color:var(--muted)">実績月＝サービス提供月。国保連入金は概ね2ヶ月後です。</span>
           <label class="bp-ck"><input type="checkbox" id="bcInRecv"> 入金済</label>
           <button type="submit">入金を追加</button>
         </div>
       </form>
     </div>
     <div class="card">
-      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">入金ボード</div>
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">入金ボード（国保連は「〇月分」と入金日を併記）</div>
       <div id="bcInList" class="recent-list"></div>
     </div>
   </div>
@@ -2019,8 +2152,13 @@ video.dc-card__image{
 
 <!-- ===== 事業：IT ===== -->
 <section class="screen" id="s-biz-it">
-  <h2 class="stitle">IT事業</h2>
-  <p class="sdesc">AIシステム構築・アプリ開発の売上を案件単位で管理します。</p>
+  <header class="biz-hero" style="--biz-photo:url(nav-it.png)">
+    <div class="biz-hero-photo" style="background-image:url(nav-it.png)" aria-hidden="true"></div>
+    <div class="biz-hero-body">
+      <h2 class="stitle">IT事業</h2>
+      <p class="sdesc">AIシステム構築・アプリ開発の売上を案件単位で管理します。</p>
+    </div>
+  </header>
   <div class="biz-grid">
     <div class="card stat in biz-stat"><div class="label">今月売上</div><div class="val" id="bitSales">¥0</div></div>
     <div class="card biz-stat"><div class="label">進行案件</div><div class="val" id="bitCases">0件</div></div>
@@ -2030,8 +2168,13 @@ video.dc-card__image{
 
 <!-- ===== 事業：探偵 ===== -->
 <section class="screen" id="s-biz-detective">
-  <h2 class="stitle">探偵事業</h2>
-  <p class="sdesc">探偵紹介・依頼の受付と進捗管理です。</p>
+  <header class="biz-hero" style="--biz-photo:url(nav-detective.png)">
+    <div class="biz-hero-photo" style="background-image:url(nav-detective.png)" aria-hidden="true"></div>
+    <div class="biz-hero-body">
+      <h2 class="stitle">探偵事業</h2>
+      <p class="sdesc">探偵紹介・依頼の受付と進捗管理です。</p>
+    </div>
+  </header>
   <div class="card">
     <div class="entry-grid">
       <div class="fgroup"><label>依頼者名</label><input id="bdClient" placeholder="氏名・会社名"></div>
@@ -2048,8 +2191,13 @@ video.dc-card__image{
 
 <!-- ===== 事業：タスク評価 ===== -->
 <section class="screen" id="s-biz-task">
-  <h2 class="stitle">タスク評価</h2>
-  <p class="sdesc">社員の仕事量・納期遵守・納品速度でスコアリングします。</p>
+  <header class="biz-hero" style="--biz-photo:url(nav-task.png)">
+    <div class="biz-hero-photo" style="background-image:url(nav-task.png)" aria-hidden="true"></div>
+    <div class="biz-hero-body">
+      <h2 class="stitle">タスク評価</h2>
+      <p class="sdesc">社員の仕事量・納期遵守・納品速度でスコアリングします。</p>
+    </div>
+  </header>
   <div class="biz-tabs">
     <button type="button" class="on" data-tab="score">評価一覧</button>
     <button type="button" data-tab="deadline">納期管理</button>
@@ -2064,8 +2212,13 @@ video.dc-card__image{
 
 <!-- ===== 事業：CF ===== -->
 <section class="screen" id="s-biz-cf">
-  <h2 class="stitle">CF（キャッシュフロー）</h2>
-  <p class="sdesc">月のお金の出入りと予測を俯瞰します。詳細は本丸メニューから掘り下げできます。</p>
+  <header class="biz-hero" style="--biz-photo:url(nav-cf.png)">
+    <div class="biz-hero-photo" style="background-image:url(nav-cf.png)" aria-hidden="true"></div>
+    <div class="biz-hero-body">
+      <h2 class="stitle">CF（キャッシュフロー）</h2>
+      <p class="sdesc">月のお金の出入りと予測を俯瞰します。詳細は本丸メニューから掘り下げできます。</p>
+    </div>
+  </header>
   <div class="biz-tabs">
     <button type="button" class="on" data-tab="month">月次出入り</button>
     <button type="button" data-tab="forecast">予測</button>
@@ -2177,8 +2330,13 @@ video.dc-card__image{
 @media(max-width:640px){#s-biz-realestate .re-summary{grid-template-columns:1fr}#s-biz-realestate .re-pc-body{grid-template-columns:repeat(2,1fr)}}
 </style>
 <section class="screen" id="s-biz-realestate">
-  <h2 class="stitle">🏢 不動産事業</h2>
-  <p class="sdesc">開発案件ごとに、調達金の配分状況・GK通帳履歴・通帳外取引を一元管理します。上のタブで案件を切り替えられます。</p>
+  <header class="biz-hero" style="--biz-photo:url(nav-realestate.png)">
+    <div class="biz-hero-photo" style="background-image:url(nav-realestate.png)" aria-hidden="true"></div>
+    <div class="biz-hero-body">
+      <h2 class="stitle">不動産事業</h2>
+      <p class="sdesc">開発案件ごとに、調達金の配分状況・GK通帳履歴・通帳外取引を一元管理します。上のタブで案件を切り替えられます。</p>
+    </div>
+  </header>
 
   <div class="re-projtabs" id="reProjTabs"></div>
 
@@ -2291,8 +2449,13 @@ video.dc-card__image{
 
 <!-- ===== 商流マップ ===== -->
 <section class="screen" id="s-flow">
-  <h2 class="stitle">≋ 商流マップ</h2>
-  <p class="sdesc">左＝入金元、中央＝自社金庫、右＝支払先。線の太さは金額、流れる光はお金の動きです（表示中の月）。</p>
+  <header class="biz-hero" style="--biz-photo:url(nav-flow.png)">
+    <div class="biz-hero-photo" style="background-image:url(nav-flow.png)" aria-hidden="true"></div>
+    <div class="biz-hero-body">
+      <h2 class="stitle">商流マップ</h2>
+      <p class="sdesc">左＝入金元、中央＝自社金庫、右＝支払先。線の太さは金額、流れる光はお金の動きです（表示中の月）。</p>
+    </div>
+  </header>
   <div class="card flow-wrap"><svg id="flowSvg" xmlns="http://www.w3.org/2000/svg"></svg></div>
 </section>
 
@@ -3301,6 +3464,38 @@ const CARE_EXP_LABEL={fixed:"固定費",equip:"備品購入",var:"変動費"};
 function careUid(){return crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random();}
 function careNum(id){const v=parseInt(String($(id).value||"").replace(/[^\d-]/g,""),10);return isNaN(v)?0:v;}
 function careInMonth(d){return (d.date||"").slice(0,7)===viewMonthStr(view);}
+function careYmShift(ym,delta){
+  const p=String(ym||"").split("-");
+  let y=+p[0], m=+p[1];
+  if(!y||!m){const n=new Date();y=n.getFullYear();m=n.getMonth()+1;}
+  m+=delta;while(m<=0){m+=12;y--;}while(m>12){m-=12;y++;}
+  return y+"-"+String(m).padStart(2,"0");
+}
+function careFmtMonthBun(ym){
+  const p=String(ym||"").match(/^(\d{4})-(\d{1,2})/);
+  if(!p)return "";
+  return Number(p[1])+"年"+Number(p[2])+"月分";
+}
+function careDefaultInDates(kind){
+  const now=new Date();
+  const payYm=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+  const svcYm=kind==="kokuhoren"?careYmShift(payYm,-2):payYm;
+  const payDate=payYm+"-"+String(Math.min(28,now.getDate())).padStart(2,"0");
+  return {serviceMonth:svcYm, date:payDate};
+}
+function careSyncInFormDefaults(){
+  const kind=$("#bcInKind")?.value||"kokuhoren";
+  const d=careDefaultInDates(kind);
+  const sm=$("#bcInServiceMonth"), dt=$("#bcInDate"), hint=$("#bcInHint");
+  if(sm&&!sm.value)sm.value=d.serviceMonth;
+  if(sm)sm.required=true;
+  if(dt&&!dt.value)dt.value=d.date;
+  if(hint){
+    hint.textContent=kind==="kokuhoren"
+      ?"実績月＝サービス提供月。国保連の入金は概ね2ヶ月後です（例：5月分 → 7月入金）。"
+      :"実績月＝利用者の利用月。入金日は実際の受取日です。";
+  }
+}
 function renderCare(){
   const C=S.biz.care;
   const income=(C.income||[]).filter(careInMonth);
@@ -3338,23 +3533,33 @@ function renderCare(){
   if($("#bcVar"))$("#bcVar").textContent=yen(vexp);
   if($("#bcGoalAmt"))$("#bcGoalAmt").value=goal||"";
 
-  const sortByDate=(a,b)=>String(b.date||"").localeCompare(String(a.date||""));
+  const sortByDate=(a,b)=>{
+    const as=a.serviceMonth||a.date||"", bs=b.serviceMonth||b.date||"";
+    const c=String(bs).localeCompare(String(as));
+    return c||String(b.date||"").localeCompare(String(a.date||""));
+  };
   const inBoard=$("#bcInList");
   if(inBoard){
     const list=[...(C.income||[])].sort(sortByDate);
     inBoard.innerHTML=list.length?list.map(d=>{
       const tag=d.received?'<span class="bp-tag ok">入金済</span>':'<span class="bp-tag ng">未入金</span>';
+      const bun=careFmtMonthBun(d.serviceMonth)||(d.kind==="kokuhoren"?"月分未設定":"");
+      const bunTag=bun?`<span class="bp-tag ok" style="border-radius:8px">${esc(bun)}</span>`:"";
+      const title=d.kind==="kokuhoren"
+        ?(CARE_IN_LABEL.kokuhoren+(bun?"｜"+bun:""))
+        :(CARE_IN_LABEL[d.kind]||d.kind);
+      const subBits=[d.label||"", d.kind==="kokuhoren"?("入金日: "+(d.date||"未定")):("日付: "+(d.date||"—"))].filter(Boolean);
       return `<div class="bp-deal">
-        <div class="bp-deal-head"><span class="bp-artist">${esc(CARE_IN_LABEL[d.kind]||d.kind)}</span><span class="bp-date">${esc(d.date||"—")}</span></div>
-        <div class="bp-deal-sub">${esc(d.label||"")}</div>
-        <div class="bp-deal-nums"><span>金額 <b>${yen(+d.amount||0)}</b></span></div>
-        <div class="bp-deal-ctr">${tag}<label class="bp-ck"><input type="checkbox" data-bci="${esc(d.id)}" data-k="received"${d.received?" checked":""}> 入金済</label><button type="button" class="btn-reject bp-del" data-bci-del="${esc(d.id)}">削除</button></div>
+        <div class="bp-deal-head"><span class="bp-artist">${esc(title)}</span><span class="bp-date">${esc(d.date||"—")}</span></div>
+        <div class="bp-deal-sub">${esc(subBits.join(" ／ "))}</div>
+        <div class="bp-deal-nums"><span>金額 <b>${yen(+d.amount||0)}</b></span>${bun?`<span>実績 <b>${esc(bun)}</b></span>`:""}</div>
+        <div class="bp-deal-ctr">${bunTag}${tag}<label class="bp-ck"><input type="checkbox" data-bci="${esc(d.id)}" data-k="received"${d.received?" checked":""}> 入金済</label><button type="button" class="btn-reject bp-del" data-bci-del="${esc(d.id)}">削除</button></div>
       </div>`;
-    }).join(""):`<div class="memo" style="color:var(--muted);padding:8px">国保連の給付費や利用者負担金を登録するとここに集計されます。</div>`;
+    }).join(""):`<div class="memo" style="color:var(--muted);padding:8px">国保連は「〇月分（実績月）」と入金日を分けて登録してください。入金は実績から約2ヶ月後が目安です。</div>`;
   }
   const subBoard=$("#bcSubList");
   if(subBoard){
-    const list=[...(C.subsidy||[])].sort(sortByDate);
+    const list=[...(C.subsidy||[])].sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
     subBoard.innerHTML=list.length?list.map(d=>{
       const tags=`<span class="bp-tag ${d.applied?"ok":"ng"}">申請${d.applied?"済":"未"}</span><span class="bp-tag ${d.received?"ok":"ng"}">入金${d.received?"済":"未"}</span>`;
       return `<div class="bp-deal">
@@ -3371,7 +3576,7 @@ function renderCare(){
   }
   const expBoard=$("#bcExpList");
   if(expBoard){
-    const list=[...(C.expense||[])].sort(sortByDate);
+    const list=[...(C.expense||[])].sort((a,b)=>String(b.date||"").localeCompare(String(a.date||"")));
     expBoard.innerHTML=list.length?list.map(d=>{
       const tag=d.paid?'<span class="bp-tag ok">支払済</span>':'<span class="bp-tag ng">未払</span>';
       return `<div class="bp-deal">
@@ -3384,17 +3589,34 @@ function renderCare(){
   }
 }
 const bcInForm=$("#bcInForm");
-if(bcInForm)bcInForm.addEventListener("submit",e=>{
-  e.preventDefault();
-  const label=$("#bcInLabel").value.trim();
-  const amount=careNum("#bcInAmt");
-  if(!label||!amount){toast("内容と金額は必須です");return;}
-  S.biz.care.income.unshift({
-    id:careUid(), kind:$("#bcInKind").value, label, date:$("#bcInDate").value,
-    amount, received:$("#bcInRecv").checked, at:new Date().toISOString().slice(0,10)
+if(bcInForm){
+  careSyncInFormDefaults();
+  $("#bcInKind")?.addEventListener("change",()=>{
+    const kind=$("#bcInKind").value;
+    const d=careDefaultInDates(kind);
+    const sm=$("#bcInServiceMonth"), dt=$("#bcInDate");
+    if(sm)sm.value=d.serviceMonth;
+    if(dt)dt.value=d.date;
+    careSyncInFormDefaults();
   });
-  bcInForm.reset();saveAll();renderCare();toast("入金を追加しました");
-});
+  bcInForm.addEventListener("submit",e=>{
+    e.preventDefault();
+    const kind=$("#bcInKind").value;
+    const label=$("#bcInLabel").value.trim();
+    const amount=careNum("#bcInAmt");
+    const serviceMonth=$("#bcInServiceMonth").value;
+    if(!label||!amount){toast("内容と金額は必須です");return;}
+    if(!serviceMonth){toast("実績月（〇〇月分）を選択してください");return;}
+    S.biz.care.income.unshift({
+      id:careUid(), kind, label, serviceMonth, date:$("#bcInDate").value,
+      amount, received:$("#bcInRecv").checked, at:new Date().toISOString().slice(0,10)
+    });
+    bcInForm.reset();
+    careSyncInFormDefaults();
+    saveAll();renderCare();
+    toast(kind==="kokuhoren"?(careFmtMonthBun(serviceMonth)+"の国保連入金を追加"):"入金を追加しました");
+  });
+}
 document.getElementById("bcInList")?.addEventListener("click",e=>{
   const del=e.target.closest("[data-bci-del]");
   if(del){S.biz.care.income=S.biz.care.income.filter(d=>d.id!==del.dataset.bciDel);saveAll();renderCare();toast("削除しました");}
@@ -3746,6 +3968,99 @@ window.Treasury={
 </script>
 
 <script>
+/* ===== タスク管理（社員タスク・吹き出し連動・Treasury連携） ===== */
+(function(){
+  const T=window.Treasury; if(!T) return;
+  const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)], esc=T.esc;
+  const ASG={secretary:{name:'凛',role:'秘書'},finance:{name:'紬',role:'経理'},legal:{name:'陽翔',role:'法務'}};
+  const ORDER=['secretary','finance','legal'];
+
+  const S=T.S;
+  if(!Array.isArray(S.tasks)){
+    S.tasks=[
+      {id:1,assignee:'secretary',title:'本日の来客対応と円卓議事録の作成',detail:'',by:'boss',status:'todo',at:'2026-07-16'},
+      {id:2,assignee:'finance',title:'7月分の入出金チェックと精算クエストの確認',detail:'未精算の申請を承認待ちに整理',by:'boss',status:'todo',at:'2026-07-16'},
+      {id:3,assignee:'legal',title:'パラダイス出演契約のリーガル確認',detail:'基本契約・出演契約の2本立てを確認',by:'boss',status:'todo',at:'2026-07-16'}
+    ];
+    T.saveAll();
+  }
+
+  let filter='todo';
+
+  function updateBubbles(){
+    const cnt={secretary:0,finance:0,legal:0}, first={secretary:'',finance:'',legal:''};
+    S.tasks.forEach(t=>{ if(t.status==='todo'&&cnt[t.assignee]!==undefined){ cnt[t.assignee]++; if(!first[t.assignee])first[t.assignee]=t.title; } });
+    ORDER.forEach(dept=>{
+      const card=document.querySelector('.dc-card[data-dept="'+dept+'"]'); if(!card)return;
+      const bubble=card.querySelector('.dc-bubble'); if(!bubble)return;
+      const txt=bubble.querySelector('.dc-bubble-txt');
+      if(cnt[dept]>0){
+        bubble.hidden=false; bubble.classList.add('task-alert'); bubble.dataset.task='1';
+        if(txt) txt.innerHTML=(cnt[dept]>1?'<span class="dc-task-count">'+cnt[dept]+'</span>':'')+esc(first[dept]);
+      }else if(bubble.dataset.task==='1'){
+        bubble.classList.remove('task-alert'); bubble.dataset.task=''; bubble.hidden=true; if(txt)txt.textContent='';
+      }
+    });
+  }
+
+  function renderTasks(){
+    updateBubbles();
+    const cols=$("#tkCols"); if(!cols) return;
+    const hint=$("#tkHint");
+    if(hint) hint.textContent = T.role==='boss' ? '社長モード：社員へ指示タスクを割り当てます（「社長指示」として記録）。' : '社員モード：自分のタスクを登録します（「自己申告」として記録）。';
+    cols.innerHTML=ORDER.map(dept=>{
+      const a=ASG[dept];
+      const all=S.tasks.filter(t=>t.assignee===dept);
+      const todo=all.filter(t=>t.status==='todo').length;
+      const list=all.filter(t=>filter==='all'?true:t.status===filter)
+        .sort((x,y)=>(x.status===y.status?0:x.status==='todo'?-1:1));
+      const cards=list.length?list.map(t=>{
+        const src=t.by==='boss'?'<span class="tk-src boss">社長指示</span>':'<span class="tk-src self">自己申告</span>';
+        return `<div class="tk-card ${t.status==='done'?'done':''}">
+          <div class="tk-card-top"><div class="tk-card-title">${esc(t.title)}</div></div>
+          ${t.detail?`<div class="tk-card-detail">${esc(t.detail)}</div>`:''}
+          <div class="tk-card-meta">${src}<span class="tk-date">${esc(t.at||'')}</span></div>
+          <div class="tk-card-acts">
+            <button type="button" class="tk-toggle ${t.status==='todo'?'todo':'done'}" data-tk-toggle="${t.id}">${t.status==='todo'?'完了にする':'未完了に戻す'}</button>
+            <button type="button" class="tk-del" data-tk-del="${t.id}" title="削除">×</button>
+          </div>
+        </div>`;
+      }).join(''):`<div class="tk-empty">${filter==='done'?'完了タスクはありません。':filter==='todo'?'未完了タスクはありません。':'タスクはありません。'}</div>`;
+      return `<div class="tk-col">
+        <div class="tk-col-head">
+          <div><span class="tk-col-name">${a.name}</span><span class="tk-col-role">${a.role}</span></div>
+          <span class="tk-col-cnt ${todo>0?'hot':''}">${todo}</span>
+        </div>
+        <div class="tk-col-body">${cards}</div>
+      </div>`;
+    }).join('');
+  }
+
+  $("#tkAdd").onclick=()=>{
+    const assignee=$("#tkAssignee").value, title=$("#tkTitle").value.trim(), detail=$("#tkDetail").value.trim();
+    if(!title){ T.toast('タスク内容を入力してください'); return; }
+    S.tasks.push({ id:Date.now(), assignee, title, detail, by:T.role==='boss'?'boss':'self', status:'todo', at:new Date().toISOString().slice(0,10) });
+    $("#tkTitle").value=''; $("#tkDetail").value='';
+    T.saveAll(); renderTasks(); T.toast(ASG[assignee].name+'にタスクを追加しました');
+  };
+  $("#tkTitle").addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();$("#tkAdd").click();} });
+
+  $("#s-tasks").addEventListener('click', e=>{
+    const f=e.target.closest('[data-tk-filter]');
+    if(f){ filter=f.dataset.tkFilter; $$('#s-tasks .tk-filter button').forEach(b=>b.classList.toggle('on',b===f)); renderTasks(); return; }
+    const tg=e.target.closest('[data-tk-toggle]');
+    if(tg){ const t=S.tasks.find(x=>String(x.id)===tg.dataset.tkToggle); if(t){ t.status=t.status==='todo'?'done':'todo'; T.saveAll(); renderTasks(); if(t.status==='done')T.toast('タスク完了 ✔'); } return; }
+    const dl=e.target.closest('[data-tk-del]');
+    if(dl){ S.tasks=S.tasks.filter(x=>String(x.id)!==dl.dataset.tkDel); T.saveAll(); renderTasks(); return; }
+  });
+
+  window.TaskBubbles={restore:updateBubbles};
+  T.onRender(renderTasks);
+  renderTasks();
+})();
+</script>
+
+<script>
 /* 旧タブ切替は廃止（常時 オフィスクエスト｜入出金｜下にダッシュボード） */
 (function(){
   if(location.hash==='#treasury'){
@@ -3828,6 +4143,7 @@ window.Treasury={
     document.querySelectorAll('.dc-card.is-talking').forEach(c=>c.classList.remove('is-talking'));
     document.querySelectorAll('.dc-bubble').forEach(b=>{ b.hidden = true; });
     window.PortalTTS?.stop();
+    window.TaskBubbles&&window.TaskBubbles.restore();
   }
   function speak(dept, text, ms){
     if(REDUCED) return;
@@ -3844,6 +4160,7 @@ window.Treasury={
       if(hoverDept === dept) return;
       el.classList.remove('is-talking');
       bubble.hidden = true;
+      window.TaskBubbles&&window.TaskBubbles.restore();
     }, ms || Math.max(3800, text.length * 140));
     return el;
   }
