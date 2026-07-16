@@ -1199,6 +1199,45 @@ video.dc-card__image{
 /* クリックできるキャラカード */
 .dc-card.dc-clickable{cursor:pointer}
 .dc-card.dc-clickable:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+/* パラダイスシティ：案件ボード */
+.bp-form{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bp-form input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--text);font-size:13px}
+.bp-form input:focus{outline:none;border-color:rgba(196,166,106,.5)}
+.bp-form input#bpArtist{grid-column:1/-1}
+.bp-form-ctr{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:2px}
+.bp-ck{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);cursor:pointer}
+.bp-ck input{width:15px;height:15px;accent-color:var(--gold)}
+.bp-form-ctr button[type=submit],#bpAdd,#biAdd{margin-left:auto;padding:8px 18px;border:none;border-radius:9px;background:var(--gold);color:#1a1510;font-weight:700;font-size:13px;cursor:pointer;font-family:var(--font-display)}
+.bp-form-ctr button[type=submit]:hover,#bpAdd:hover,#biAdd:hover{filter:brightness(1.06)}
+.bp-form select{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--text);font-size:13px}
+.bp-form select:focus{outline:none;border-color:rgba(196,166,106,.5)}
+.bp-form input.bp-span2,.bp-form select.bp-span2{grid-column:1/-1}
+.bp-deal{padding:11px 12px;border-radius:11px;border:1px solid rgba(196,166,106,.16);background:rgba(255,255,255,.02);margin-bottom:10px}
+.bp-deal-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.bp-artist{font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--text)}
+.bp-date{font-size:11px;color:var(--muted)}
+.bp-deal-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+.bp-deal-nums{display:flex;flex-wrap:wrap;gap:14px;margin-top:7px;font-size:12px;color:var(--muted)}
+.bp-deal-nums b{color:var(--text);font-weight:700}
+.bp-margin b{color:#8fd6a6}
+.bp-margin.neg b{color:#e79a9a}
+.bp-deal-ctr{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:9px}
+.bp-tag{font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid}
+.bp-tag.ok{color:#8fd6a6;border-color:rgba(120,190,140,.4);background:rgba(120,190,140,.1)}
+.bp-tag.ng{color:#e0b36a;border-color:rgba(224,179,106,.4);background:rgba(224,179,106,.08)}
+.bp-deal-ctr .bp-del{margin-left:auto}
+.bp-close-sum{font-size:12.5px;color:var(--muted);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.bp-close-sum b{color:var(--gold-hi);font-weight:700}
+.bp-close-deal{padding:9px 0;border-bottom:1px solid var(--line)}
+.bp-close-title{font-size:12.5px;font-weight:700;color:var(--text);margin-bottom:7px}
+.bp-close-title span{font-weight:400;font-size:11px;color:var(--muted);margin-left:6px}
+.bp-close-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px 12px}
+.bp-chk{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--muted);cursor:pointer}
+.bp-chk input{width:15px;height:15px;accent-color:var(--gold);flex-shrink:0}
+.bp-chk span{flex:1;min-width:0}
+.bp-chk b{color:var(--text);font-weight:600}
+.bp-chk input:checked ~ span{color:var(--text)}
+@media(max-width:560px){.bp-form,.bp-close-grid{grid-template-columns:1fr}}
 @media(max-width:980px){
   #portal-shell{grid-template-columns:1fr;min-height:0;}
   #portal-shell > .gamenav{
@@ -1360,6 +1399,10 @@ video.dc-card__image{
   <button type="button" class="nav-biz" data-s="biz-inage" style="--nav-photo:url(nav-inage.png)">
     <span class="nav-photo" style="background-image:url(nav-inage.png)"></span>
     <span class="nav-label">稲毛海浜公園事業</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="biz-realestate" style="--nav-photo:url(nav-realestate.png)">
+    <span class="nav-photo" style="background-image:url(nav-realestate.png)"></span>
+    <span class="nav-label">不動産事業</span>
   </button>
   <button type="button" class="nav-biz" data-s="biz-care" style="--nav-photo:url(nav-care.png)">
     <span class="nav-photo" style="background-image:url(nav-care.png)"></span>
@@ -1784,25 +1827,42 @@ video.dc-card__image{
 <!-- ===== 事業：パラダイスシティ ===== -->
 <section class="screen" id="s-biz-paradise">
   <h2 class="stitle">パラダイスシティ事業</h2>
-  <p class="sdesc">ディナーショーの売上・原価管理と締め支払を一元管理します。</p>
+  <p class="sdesc">韓国の制作会社 <b>A-WORKS</b> と直接契約（基本契約＋出演契約の2本）。日本アーティストを韓国VVIPディナーショーへ橋渡しする仲介事業。売上＝A-WORKSからの受注、原価＝紹介者・所属事務所への支払（興行前後で半金ずつ・随時変動）。</p>
   <div class="biz-tabs">
-    <button type="button" class="on" data-tab="sales">売上・原価</button>
-    <button type="button" data-tab="close">締め支払</button>
+    <button type="button" class="on" data-tab="sales">案件・採算</button>
+    <button type="button" data-tab="close">前金・後金の管理</button>
   </div>
   <div class="biz-panel on" data-tab="sales">
     <div class="biz-grid">
-      <div class="card stat in biz-stat"><div class="label">今月売上（チケット）</div><div class="val" id="bpSales">¥0</div></div>
-      <div class="card stat out biz-stat"><div class="label">今月原価（出演・会場）</div><div class="val" id="bpCost">¥0</div></div>
+      <div class="card stat in biz-stat"><div class="label">今月受注（A-WORKS）</div><div class="val" id="bpSales">¥0</div></div>
+      <div class="card stat out biz-stat"><div class="label">今月原価（紹介者＋事務所）</div><div class="val" id="bpCost">¥0</div></div>
       <div class="card stat net biz-stat"><div class="label">粗利</div><div class="val" id="bpMargin">¥0</div></div>
     </div>
     <div class="card">
-      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">公演別サマリー</div>
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">案件を追加（アーティスト／受注・原価）</div>
+      <form id="bpForm" class="bp-form">
+        <input id="bpArtist" placeholder="出演アーティスト" required>
+        <input id="bpAgency" placeholder="所属事務所">
+        <input id="bpIntro" placeholder="紹介者">
+        <input id="bpDate" type="date" aria-label="興行日">
+        <input id="bpOrder" type="number" min="0" inputmode="numeric" placeholder="受注額（A-WORKS）">
+        <input id="bpCostAg" type="number" min="0" inputmode="numeric" placeholder="事務所への支払">
+        <input id="bpCostIn" type="number" min="0" inputmode="numeric" placeholder="紹介者への支払">
+        <div class="bp-form-ctr">
+          <label class="bp-ck"><input type="checkbox" id="bpKihon"> 基本契約 締結</label>
+          <label class="bp-ck"><input type="checkbox" id="bpShutsuen"> 出演契約 締結</label>
+          <button type="submit" id="bpAdd">案件を追加</button>
+        </div>
+      </form>
+    </div>
+    <div class="card">
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">案件ボード（アーティスト別）</div>
       <div id="bpShowList" class="recent-list"></div>
     </div>
   </div>
   <div class="biz-panel" data-tab="close">
     <div class="card">
-      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:10px">月次締めチェックリスト</div>
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:10px">前金・後金の入金／支払（興行前50%・興行後50%／タイミングは随時変動）</div>
       <div id="bpCloseList"></div>
     </div>
   </div>
@@ -1811,51 +1871,149 @@ video.dc-card__image{
 <!-- ===== 事業：稲毛海浜公園 ===== -->
 <section class="screen" id="s-biz-inage">
   <h2 class="stitle">稲毛海浜公園事業</h2>
-  <p class="sdesc">イベント・制作管理、スケジュール、締め支払をまとめて運用します。</p>
+  <p class="sdesc">指定管理会社 <b>株式会社ワールドパーク</b> と契約し、園内でイベント開催・スポンサー誘致。イベント利益（売上−原価）は<b>ワールドパークと折半</b>。紹介者がいる場合は紹介料（売上の20%）＋製作費が原価。</p>
   <div class="biz-tabs">
-    <button type="button" class="on" data-tab="prod">イベント・制作</button>
-    <button type="button" data-tab="sched">スケジュール</button>
-    <button type="button" data-tab="close">締め支払</button>
+    <button type="button" class="on" data-tab="prod">イベント・採算</button>
+    <button type="button" data-tab="close">折半・精算</button>
   </div>
   <div class="biz-panel on" data-tab="prod">
     <div class="biz-grid">
-      <div class="card biz-stat"><div class="label">進行中イベント</div><div class="val" id="biActive">0件</div></div>
-      <div class="card biz-stat"><div class="label">制作予算消化</div><div class="val" id="biBudget">¥0</div></div>
+      <div class="card stat in biz-stat"><div class="label">今月売上</div><div class="val" id="biSales">¥0</div></div>
+      <div class="card stat out biz-stat"><div class="label">今月原価（紹介料＋製作費）</div><div class="val" id="biCost">¥0</div></div>
+      <div class="card stat net biz-stat"><div class="label">自社取り分（折半後）</div><div class="val" id="biShare">¥0</div></div>
     </div>
-    <div class="card"><div id="biProdList" class="recent-list"></div></div>
-  </div>
-  <div class="biz-panel" data-tab="sched">
-    <div class="card"><div id="biSchedList" class="recent-list"></div></div>
+    <div class="card">
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">イベントを追加（売上・製作費／紹介者がいれば紹介料20%を自動計上）</div>
+      <form id="biForm" class="bp-form">
+        <input id="biName" placeholder="イベント名" required>
+        <input id="biSponsor" placeholder="スポンサー（任意）">
+        <input id="biIntro" placeholder="紹介者（いれば売上の20%が紹介料）">
+        <input id="biDate" type="date" aria-label="開催日">
+        <input id="biSalesIn" type="number" min="0" inputmode="numeric" placeholder="売上">
+        <input id="biProd" type="number" min="0" inputmode="numeric" placeholder="製作費">
+        <input id="biSponsorAmt" type="number" min="0" inputmode="numeric" placeholder="スポンサー収益（任意・別計上）">
+        <div class="bp-form-ctr">
+          <button type="submit" id="biAdd">イベントを追加</button>
+        </div>
+      </form>
+    </div>
+    <div class="card">
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">イベントボード</div>
+      <div id="biProdList" class="recent-list"></div>
+    </div>
   </div>
   <div class="biz-panel" data-tab="close">
-    <div class="card"><div id="biCloseList"></div></div>
+    <div class="card">
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:10px">折半計算・精算（利益÷2をワールドパークと折半）</div>
+      <div id="biCloseList"></div>
+    </div>
   </div>
 </section>
 
 <!-- ===== 事業：介護 ===== -->
 <section class="screen" id="s-biz-care">
   <h2 class="stitle">介護事業（半日デイサービス）</h2>
-  <p class="sdesc">固定費・変動費、目標売上と入金、補助金の申請・管理を行います。</p>
+  <p class="sdesc">国保連合会からの介護給付費、県・国の補助金、利用者負担金、固定費・備品購入を一元管理します。</p>
+  <div class="biz-grid">
+    <div class="card stat in biz-stat"><div class="label">今月入金計</div><div class="val" id="bcInTotal">¥0</div></div>
+    <div class="card stat out biz-stat"><div class="label">今月経費計</div><div class="val" id="bcOutTotal">¥0</div></div>
+    <div class="card stat net biz-stat"><div class="label">差引</div><div class="val" id="bcNet">¥0</div></div>
+    <div class="card biz-stat"><div class="label">目標達成率</div><div class="val" id="bcGoal">—</div></div>
+  </div>
   <div class="biz-tabs">
-    <button type="button" class="on" data-tab="cost">固定費・変動費</button>
-    <button type="button" data-tab="revenue">売上・入金</button>
-    <button type="button" data-tab="subsidy">補助金</button>
+    <button type="button" class="on" data-tab="income">入金（国保連・利用者）</button>
+    <button type="button" data-tab="subsidy">補助金（県・国）</button>
+    <button type="button" data-tab="expense">経費（固定費・備品）</button>
   </div>
-  <div class="biz-panel on" data-tab="cost">
+  <div class="biz-panel on" data-tab="income">
     <div class="biz-grid">
-      <div class="card stat out biz-stat"><div class="label">固定費（人件・家賃）</div><div class="val" id="bcFixed">¥0</div></div>
-      <div class="card stat out biz-stat"><div class="label">変動費（消耗・外注）</div><div class="val" id="bcVar">¥0</div></div>
+      <div class="card stat in biz-stat"><div class="label">国保連（今月）</div><div class="val" id="bcKokuhoren">¥0</div></div>
+      <div class="card stat in biz-stat"><div class="label">利用者負担（今月）</div><div class="val" id="bcUserPay">¥0</div></div>
+      <div class="card stat in biz-stat"><div class="label">入金済／未入金</div><div class="val" id="bcIncomePaid">¥0</div><div class="sub" id="bcIncomeUnpaid">未入金 ¥0</div></div>
     </div>
-  </div>
-  <div class="biz-panel" data-tab="revenue">
-    <div class="biz-grid">
-      <div class="card stat in biz-stat"><div class="label">今月売上</div><div class="val" id="bcSales">¥0</div></div>
-      <div class="card stat in biz-stat"><div class="label">入金済</div><div class="val" id="bcPaid">¥0</div></div>
-      <div class="card stat net biz-stat"><div class="label">目標達成率</div><div class="val" id="bcGoal">—</div></div>
+    <div class="card">
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">入金を登録（国保連合会／利用者負担金）</div>
+      <form id="bcInForm" class="bp-form">
+        <select id="bcInKind" class="bp-span2" aria-label="入金区分">
+          <option value="kokuhoren">国保連合会（介護給付費）</option>
+          <option value="user">利用者負担金</option>
+        </select>
+        <input id="bcInLabel" class="bp-span2" placeholder="内容（例：〇月分給付／山田様 自己負担）" required>
+        <input id="bcInDate" type="date" aria-label="対象月・入金予定日">
+        <input id="bcInAmt" type="number" min="0" inputmode="numeric" placeholder="金額" required>
+        <div class="bp-form-ctr">
+          <label class="bp-ck"><input type="checkbox" id="bcInRecv"> 入金済</label>
+          <button type="submit">入金を追加</button>
+        </div>
+      </form>
+    </div>
+    <div class="card">
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">入金ボード</div>
+      <div id="bcInList" class="recent-list"></div>
     </div>
   </div>
   <div class="biz-panel" data-tab="subsidy">
-    <div class="card"><div id="bcSubsidyList" class="recent-list"></div></div>
+    <div class="biz-grid">
+      <div class="card stat in biz-stat"><div class="label">県補助金（今月）</div><div class="val" id="bcPref">¥0</div></div>
+      <div class="card stat in biz-stat"><div class="label">国補助金（今月）</div><div class="val" id="bcNational">¥0</div></div>
+      <div class="card stat in biz-stat"><div class="label">申請中／入金済</div><div class="val" id="bcSubStatus">—</div></div>
+    </div>
+    <div class="card">
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">補助金を登録（県／国）</div>
+      <form id="bcSubForm" class="bp-form">
+        <select id="bcSubKind" class="bp-span2" aria-label="補助金区分">
+          <option value="pref">県補助金</option>
+          <option value="national">国補助金</option>
+        </select>
+        <input id="bcSubLabel" class="bp-span2" placeholder="補助金名（例：介護職員処遇改善・感染症対策）" required>
+        <input id="bcSubDate" type="date" aria-label="申請・入金予定日">
+        <input id="bcSubAmt" type="number" min="0" inputmode="numeric" placeholder="金額" required>
+        <div class="bp-form-ctr">
+          <label class="bp-ck"><input type="checkbox" id="bcSubApplied"> 申請済</label>
+          <label class="bp-ck"><input type="checkbox" id="bcSubRecv"> 入金済</label>
+          <button type="submit">補助金を追加</button>
+        </div>
+      </form>
+    </div>
+    <div class="card">
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">補助金ボード</div>
+      <div id="bcSubList" class="recent-list"></div>
+    </div>
+  </div>
+  <div class="biz-panel" data-tab="expense">
+    <div class="biz-grid">
+      <div class="card stat out biz-stat"><div class="label">固定費（今月）</div><div class="val" id="bcFixed">¥0</div></div>
+      <div class="card stat out biz-stat"><div class="label">備品購入（今月）</div><div class="val" id="bcEquip">¥0</div></div>
+      <div class="card stat out biz-stat"><div class="label">その他変動費</div><div class="val" id="bcVar">¥0</div></div>
+    </div>
+    <div class="card">
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">経費を登録（固定費／備品／変動費）</div>
+      <form id="bcExpForm" class="bp-form">
+        <select id="bcExpKind" class="bp-span2" aria-label="経費区分">
+          <option value="fixed">固定費（人件・家賃・光熱 等）</option>
+          <option value="equip">備品購入</option>
+          <option value="var">その他変動費（消耗・外注 等）</option>
+        </select>
+        <input id="bcExpLabel" class="bp-span2" placeholder="内容（例：家賃・車いす・消耗品）" required>
+        <input id="bcExpDate" type="date" aria-label="支出日">
+        <input id="bcExpAmt" type="number" min="0" inputmode="numeric" placeholder="金額" required>
+        <div class="bp-form-ctr">
+          <label class="bp-ck"><input type="checkbox" id="bcExpPaid"> 支払済</label>
+          <button type="submit">経費を追加</button>
+        </div>
+      </form>
+    </div>
+    <div class="card">
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">経費ボード</div>
+      <div id="bcExpList" class="recent-list"></div>
+    </div>
+    <div class="card">
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">月次売上目標（入金＝国保連＋利用者負担＋補助金）</div>
+      <form id="bcGoalForm" class="bp-form" style="grid-template-columns:1fr auto">
+        <input id="bcGoalAmt" type="number" min="0" inputmode="numeric" placeholder="目標額（円）">
+        <button type="submit" style="margin-left:0">目標を保存</button>
+      </form>
+    </div>
   </div>
 </section>
 
@@ -1933,6 +2091,203 @@ video.dc-card__image{
     </div>
   </div>
 </section>
+
+<!-- ===== 事業：不動産（調達金配分管理DB／案件別） ===== -->
+<style>
+/* 事業ページ共通トーン：背景黒・白枠・白文字・数字はオレンジ/緑 */
+#s-biz-realestate,.re-ov{
+  --panel:#000;--panel2:#0f0f0f;
+  --line:rgba(255,255,255,.32);--line-strong:rgba(255,255,255,.6);
+  --gold:#ff9d3c;--gold-hi:#ffb15c;--gold-dim:#ffbf78;
+  --muted:#d6d6d6;--text:#ffffff;
+  --in:#4ade80;--out:#ff9d3c;--tax:#ff9d3c;--accent:#4ade80;
+}
+#s-biz-realestate .re-projtabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+#s-biz-realestate .re-projtabs button{padding:7px 14px;border-radius:9px;font-size:12px;font-weight:600;font-family:var(--font-body);color:var(--muted);background:var(--panel2);border:1px solid var(--line);cursor:pointer;transition:.15s}
+#s-biz-realestate .re-projtabs button:hover{border-color:var(--gold-dim);color:var(--text)}
+#s-biz-realestate .re-projtabs button.on{background:linear-gradient(180deg,#f0dfa8,var(--gold-hi));color:#1a1510;border-color:var(--gold)}
+#s-biz-realestate .re-projtabs button.re-newproj{background:transparent;border:1px dashed var(--line-strong);color:var(--gold)}
+#s-biz-realestate .re-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:0 0 14px;padding-bottom:10px;border-bottom:1px solid var(--line)}
+#s-biz-realestate .re-head-sub{font-size:11px;letter-spacing:.1em;color:var(--gold-dim);margin-bottom:3px}
+#s-biz-realestate .re-head-title{font-size:18px;font-weight:800;color:var(--text);font-family:var(--font-display)}
+#s-biz-realestate .re-head-acts{display:flex;gap:6px;flex-shrink:0}
+#s-biz-realestate .re-mini{background:var(--panel2);border:1px solid var(--line-strong);color:var(--muted);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
+#s-biz-realestate .re-mini:hover{border-color:var(--gold);color:var(--gold-hi)}
+#s-biz-realestate .re-progress{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+#s-biz-realestate .re-prog-label{display:flex;justify-content:space-between;margin-bottom:8px}
+#s-biz-realestate .re-prog-txt{font-size:12px;color:var(--muted)}
+#s-biz-realestate .re-prog-val{font-size:14px;font-weight:700;color:var(--gold-hi);font-family:var(--font-num)}
+#s-biz-realestate .re-bar{height:8px;background:var(--panel2);border-radius:4px;overflow:hidden}
+#s-biz-realestate .re-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--gold),var(--gold-hi));transition:width .5s}
+#s-biz-realestate .re-prog-sub{display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--muted)}
+#s-biz-realestate .re-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:6px}
+#s-biz-realestate .re-scard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 13px}
+#s-biz-realestate .re-slabel{font-size:10px;color:var(--muted);margin-bottom:5px;letter-spacing:.08em}
+#s-biz-realestate .re-svalue{font-size:14px;font-weight:700;font-family:var(--font-num)}
+#s-biz-realestate .re-sec-title{font-size:11px;letter-spacing:.12em;color:var(--gold-dim);margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+#s-biz-realestate .re-person-cards{display:flex;flex-direction:column;gap:10px;margin-bottom:6px}
+#s-biz-realestate .re-pcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;border-top:3px solid var(--line-strong)}
+#s-biz-realestate .re-pc-head{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)}
+#s-biz-realestate .re-pc-name{font-size:13px;font-weight:700;color:var(--text)}
+#s-biz-realestate .re-pc-ratio{font-size:11px;color:var(--muted);font-family:var(--font-num);background:var(--panel2);padding:2px 9px;border-radius:20px}
+#s-biz-realestate .re-pc-body{display:grid;grid-template-columns:repeat(4,1fr);padding:12px 14px;gap:8px}
+#s-biz-realestate .re-pc-slabel{font-size:9px;color:var(--muted);margin-bottom:3px;letter-spacing:.05em}
+#s-biz-realestate .re-pc-sval{font-size:12px;font-family:var(--font-num);font-weight:600;color:var(--text)}
+#s-biz-realestate .re-pc-barwrap{padding:0 14px 12px}
+#s-biz-realestate .re-pc-bar{height:4px;background:var(--panel2);border-radius:2px;overflow:hidden}
+#s-biz-realestate .re-pc-barfill{height:100%;border-radius:2px}
+#s-biz-realestate .re-pc-sub{margin:0 14px 12px;background:var(--panel2);border-radius:6px;padding:6px 11px;font-size:11px;color:var(--muted)}
+#s-biz-realestate .re-histhead{display:flex;justify-content:space-between;align-items:center;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+#s-biz-realestate .re-histhead-t{font-size:11px;letter-spacing:.12em;color:var(--gold-dim)}
+#s-biz-realestate .re-addbtn{background:linear-gradient(180deg,#f0dfa8,var(--gold-hi));color:#1a1510;border:none;border-radius:7px;padding:6px 13px;font-size:12px;font-weight:700;cursor:pointer}
+#s-biz-realestate .re-item{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:9px;overflow:hidden}
+#s-biz-realestate .re-item-meta{padding:8px 14px;display:flex;justify-content:space-between;align-items:center;background:var(--panel2);border-bottom:1px solid var(--line)}
+#s-biz-realestate .re-item-date{font-size:12px;color:var(--muted);font-family:var(--font-num);display:flex;align-items:center;gap:6px}
+#s-biz-realestate .re-item-amt{font-size:14px;font-weight:700;font-family:var(--font-num);color:var(--gold-hi);display:flex;align-items:center;gap:8px}
+#s-biz-realestate .re-item-entries{padding:9px 14px;display:flex;flex-direction:column;gap:6px}
+#s-biz-realestate .re-entry{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--panel2);border-radius:6px}
+#s-biz-realestate .re-entry-name{font-size:12px;color:var(--muted)}
+#s-biz-realestate .re-entry-val{font-size:12px;font-family:var(--font-num);font-weight:600;color:var(--text)}
+#s-biz-realestate .re-note{padding:5px 14px 9px;font-size:11px;color:var(--muted);font-style:italic}
+#s-biz-realestate .re-badge{font-size:9px;background:rgba(116,185,232,.16);color:var(--accent);border-radius:4px;padding:2px 6px;font-weight:600}
+#s-biz-realestate .re-badge-t{background:rgba(179,157,219,.16);color:var(--tax)}
+#s-biz-realestate .re-del{background:transparent;border:1px solid var(--line-strong);color:var(--out);border-radius:6px;width:22px;height:22px;font-size:12px;cursor:pointer;line-height:1;padding:0}
+#s-biz-realestate .re-del:hover{border-color:var(--out)}
+#s-biz-realestate .re-empty{font-size:12px;color:var(--muted);padding:8px 2px}
+#s-biz-realestate .re-data{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-top:22px}
+#s-biz-realestate .re-data-t{font-size:11px;letter-spacing:.12em;color:var(--gold-dim);margin-bottom:12px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+#s-biz-realestate .re-data-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#s-biz-realestate .re-databtn{background:var(--panel2);color:var(--text);border:1px solid var(--line-strong);border-radius:7px;padding:9px;font-size:12px;font-weight:600;cursor:pointer;text-align:center}
+#s-biz-realestate .re-databtn:hover{border-color:var(--gold)}
+/* modal */
+.re-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:flex-end;justify-content:center}
+.re-ov.open{display:flex}
+.re-modal{background:var(--panel);border:1px solid var(--line-strong);border-radius:16px 16px 0 0;padding:18px 18px 34px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;box-shadow:var(--shadow)}
+.re-modal-t{font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--gold-dim);margin-bottom:14px}
+.re-field{margin-bottom:10px}
+.re-field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
+.re-field input,.re-field select{width:100%;background:var(--panel2);border:1px solid var(--line-strong);border-radius:8px;padding:9px 11px;color:var(--text);font-size:14px;font-family:var(--font-num);outline:none}
+.re-field input:focus,.re-field select:focus{border-color:var(--gold)}
+.re-fgroup{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:11px;margin-bottom:10px}
+.re-fgroup-t{font-size:11px;color:var(--gold-hi);font-weight:700;margin-bottom:8px}
+.re-modal-btns{display:flex;gap:10px;margin-top:14px}
+.re-modal-btns button{flex:1;padding:11px;font-size:13px;border-radius:8px;cursor:pointer;font-weight:700;border:none}
+.re-submit{background:linear-gradient(180deg,#f0dfa8,var(--gold-hi));color:#1a1510}
+.re-cancel{background:var(--panel2);color:var(--muted);border:1px solid var(--line-strong)}
+@media(max-width:640px){#s-biz-realestate .re-summary{grid-template-columns:1fr}#s-biz-realestate .re-pc-body{grid-template-columns:repeat(2,1fr)}}
+</style>
+<section class="screen" id="s-biz-realestate">
+  <h2 class="stitle">🏢 不動産事業</h2>
+  <p class="sdesc">開発案件ごとに、調達金の配分状況・GK通帳履歴・通帳外取引を一元管理します。上のタブで案件を切り替えられます。</p>
+
+  <div class="re-projtabs" id="reProjTabs"></div>
+
+  <div class="re-head">
+    <div>
+      <div class="re-head-sub" id="reHeadSub">—</div>
+      <div class="re-head-title" id="reHeadTitle">—</div>
+    </div>
+    <div class="re-head-acts">
+      <button type="button" class="re-mini" id="reEditProj">⚙ 案件設定</button>
+      <button type="button" class="re-mini" id="reDelProj">案件削除</button>
+    </div>
+  </div>
+
+  <div class="re-progress">
+    <div class="re-prog-label">
+      <span class="re-prog-txt">累積調達金</span>
+      <span class="re-prog-val" id="reTotalPaid">—</span>
+    </div>
+    <div class="re-bar"><div class="re-bar-fill" id="reProgFill" style="width:0%"></div></div>
+    <div class="re-prog-sub">
+      <span id="reTargetLabel">目標：—</span>
+      <span id="reProgPct" style="font-weight:700;color:var(--gold-hi)">0.0%</span>
+    </div>
+  </div>
+
+  <div class="re-summary">
+    <div class="re-scard"><div class="re-slabel">残調達額</div><div class="re-svalue" id="reRemaining" style="color:var(--out)">—</div></div>
+    <div class="re-scard"><div class="re-slabel">GK残高</div><div class="re-svalue" id="reGkBalance" style="color:var(--in)">—</div></div>
+    <div class="re-scard"><div class="re-slabel">手数料計</div><div class="re-svalue" id="reTotalFee" style="color:var(--muted)">—</div></div>
+  </div>
+
+  <div class="re-sec-title">配分ステータス</div>
+  <div class="re-person-cards" id="rePersonCards"></div>
+
+  <div class="re-histhead">
+    <span class="re-histhead-t">GK通帳履歴</span>
+    <button type="button" class="re-addbtn" data-re-add="payment">＋ 追加</button>
+  </div>
+  <div id="reHistPayment"></div>
+
+  <div class="re-histhead">
+    <span class="re-histhead-t">通帳外取引</span>
+    <button type="button" class="re-addbtn" data-re-add="transfer">＋ 追加</button>
+  </div>
+  <div id="reHistTransfer"></div>
+
+  <div class="re-data">
+    <div class="re-data-t">データ管理</div>
+    <div class="re-data-grid">
+      <button type="button" class="re-databtn" id="reExport">↓ JSONエクスポート</button>
+      <label class="re-databtn" style="cursor:pointer">↑ JSONインポート<input type="file" accept=".json" id="reImport" style="display:none"></label>
+    </div>
+  </div>
+</section>
+
+<!-- 不動産：入力モーダル -->
+<div class="re-ov" id="reMPayment">
+  <div class="re-modal">
+    <div class="re-modal-t">GK通帳入力</div>
+    <div class="re-field"><label>日付</label><input id="reP-date" placeholder="2025/07/16"></div>
+    <div class="re-field"><label>GKへの入金額（円）</label><input id="reP-income" type="number" placeholder="0"></div>
+    <div class="re-fgroup">
+      <div class="re-fgroup-t">出金配分</div>
+      <div class="re-field"><label>GE未収金（円）</label><input id="reP-ge" type="number" placeholder="0"></div>
+      <div class="re-field"><label>Gooner（円）</label><input id="reP-gooner" type="number" placeholder="0"></div>
+      <div class="re-field"><label>振込手数料（円）</label><input id="reP-fee" type="number" placeholder="0"></div>
+      <div class="re-field" style="margin-bottom:0"><label>GK残高（円）</label><input id="reP-bank" type="number" placeholder="0"></div>
+    </div>
+    <div class="re-field"><label>備考</label><input id="reP-note"></div>
+    <div class="re-modal-btns">
+      <button class="re-submit" data-re-submit="payment">追加</button>
+      <button class="re-cancel" data-re-close>キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<div class="re-ov" id="reMTransfer">
+  <div class="re-modal">
+    <div class="re-modal-t">通帳外取引入力</div>
+    <div class="re-field"><label>日付</label><input id="reT-date" placeholder="2025/07/16"></div>
+    <div class="re-field"><label>振替元</label><select id="reT-from"></select></div>
+    <div class="re-field"><label>振替先</label><select id="reT-to"></select></div>
+    <div class="re-field"><label>金額（円）</label><input id="reT-amount" type="number" placeholder="0"></div>
+    <div class="re-field"><label>備考</label><input id="reT-note"></div>
+    <div class="re-modal-btns">
+      <button class="re-submit" data-re-submit="transfer">追加</button>
+      <button class="re-cancel" data-re-close>キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<div class="re-ov" id="reMProject">
+  <div class="re-modal">
+    <div class="re-modal-t" id="reProjModalTitle">新規案件</div>
+    <div class="re-field"><label>案件名</label><input id="reJ-name" placeholder="例：〇〇地区開発 Phase II"></div>
+    <div class="re-field"><label>サブタイトル（所在地・区分など）</label><input id="reJ-sub" placeholder="例：一宮市〇〇地区開発"></div>
+    <div class="re-field"><label>目標調達額（円）</label><input id="reJ-target" type="number" placeholder="0"></div>
+    <div class="re-fgroup">
+      <div class="re-fgroup-t">配分先（名称・配分総額）</div>
+      <div id="reJ-parties"></div>
+    </div>
+    <div class="re-field"><label>Gooner うちGE報酬（通帳外・円）</label><input id="reJ-reward" type="number" placeholder="0"></div>
+    <div class="re-modal-btns">
+      <button class="re-submit" id="reProjSave">保存</button>
+      <button class="re-cancel" data-re-close>キャンセル</button>
+    </div>
+  </div>
+</div>
 
 <!-- ===== 商流マップ ===== -->
 <section class="screen" id="s-flow">
@@ -2774,31 +3129,23 @@ function renderTax(){
 
 /* ---------- 事業ユニット ---------- */
 if(!S.biz) S.biz={detective:[]};
+if(!Array.isArray(S.biz.paradise)) S.biz.paradise=[];
+if(!Array.isArray(S.biz.inage)) S.biz.inage=[];
+if(!Array.isArray(S.biz.detective)) S.biz.detective=[];
+if(!S.biz.care || typeof S.biz.care!=="object") S.biz.care={income:[],subsidy:[],expense:[],goal:800000};
+if(!Array.isArray(S.biz.care.income)) S.biz.care.income=[];
+if(!Array.isArray(S.biz.care.subsidy)) S.biz.care.subsidy=[];
+if(!Array.isArray(S.biz.care.expense)) S.biz.care.expense=[];
+if(!(+S.biz.care.goal>0)) S.biz.care.goal=800000;
 function txKw(tx,kws){const s=(tx.memo+tx.who+tx.cat);return kws.some(k=>s.includes(k));}
 function renderBiz(){
   const txm=S.tx.filter(inMonth);
   const inn=txm.filter(t=>t.type==="in"), out=txm.filter(t=>t.type==="out");
   const si=inn.reduce((a,t)=>a+t.amount,0), so=out.reduce((a,t)=>a+t.amount,0);
   if($("#bcfIn")){$("#bcfIn").textContent=yen(si);$("#bcfOut").textContent=yen(so);$("#bcfNet").textContent=(si-so<0?"−":"")+yen(Math.abs(si-so));}
-  const pIn=inn.filter(t=>txKw(t,["パラダイス","ディナー","Paradise"])).reduce((a,t)=>a+t.amount,0);
-  const pOut=out.filter(t=>txKw(t,["パラダイス","ディナー","出演","会場"])).reduce((a,t)=>a+t.amount,0);
-  if($("#bpSales")){$("#bpSales").textContent=yen(pIn);$("#bpCost").textContent=yen(pOut);$("#bpMargin").textContent=(pIn-pOut<0?"−":"")+yen(Math.abs(pIn-pOut));}
-  if($("#bpShowList"))$("#bpShowList").innerHTML=pIn||pOut?inn.filter(t=>txKw(t,["パラダイス","ディナー"])).map(t=>`<div class="tx-row in"><span class="who">${esc(t.who)}</span><span class="amt">+${yen(t.amount)}</span></div>`).join(""):`<div class="memo" style="color:var(--muted);padding:8px">ディナーショー関連の記録を「記録する」から登録するとここに集計されます。</div>`;
-  if($("#bpCloseList"))$("#bpCloseList").innerHTML=["チケット売上の確定","出演料・外注費の計上","会場費・リハーサル費の支払","当月分の締めレポート作成"].map(i=>`<label style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)"><input type="checkbox"> <span>${i}</span></label>`).join("");
-  const iTx=txm.filter(t=>txKw(t,["稲毛","海浜","イベント","公園"]));
-  if($("#biActive"))$("#biActive").textContent=iTx.length+"件";
-  if($("#biBudget"))$("#biBudget").textContent=yen(out.filter(t=>txKw(t,["稲毛","海浜","イベント"])).reduce((a,t)=>a+t.amount,0));
-  if($("#biProdList"))$("#biProdList").innerHTML=iTx.length?iTx.map(t=>`<div class="tx-row ${t.type}"><span class="who">${esc(t.who)}</span><span class="memo">${esc(t.memo)}</span></div>`).join(""):`<div class="memo" style="color:var(--muted);padding:8px">イベント・制作案件を登録すると一覧表示されます。</div>`;
-  if($("#biSchedList"))$("#biSchedList").innerHTML=["海浜公園 夏イベント（準備）","制作物納品（デザイン）","設営・撤収スケジュール確認"].map(s=>`<div class="tx-row"><span class="who">${s}</span><span class="memo">${viewMonthStr(view)}</span></div>`).join("");
-  if($("#biCloseList"))$("#biCloseList").innerHTML=["イベント売上の確定","制作外注費の支払","協力会社への締め処理"].map(i=>`<label style="display:flex;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)"><input type="checkbox"> <span>${i}</span></label>`).join("");
-  const cOut=out.filter(t=>txKw(t,["介護","デイ","補助"]));
-  if($("#bcFixed"))$("#bcFixed").textContent=yen(cOut.filter(t=>txKw(t,["人件","家賃","固定"])).reduce((a,t)=>a+t.amount,0)||Math.floor(so*0.55));
-  if($("#bcVar"))$("#bcVar").textContent=yen(cOut.filter(t=>txKw(t,["消耗","外注","変動"])).reduce((a,t)=>a+t.amount,0)||Math.floor(so*0.2));
-  const cIn=inn.filter(t=>txKw(t,["介護","デイ"])).reduce((a,t)=>a+t.amount,0);
-  if($("#bcSales"))$("#bcSales").textContent=yen(cIn||Math.floor(si*0.15));
-  if($("#bcPaid"))$("#bcPaid").textContent=yen(cIn);
-  if($("#bcGoal"))$("#bcGoal").textContent=cIn?Math.min(999,Math.round(cIn/800000*100))+"%":"—";
-  if($("#bcSubsidyList"))$("#bcSubsidyList").innerHTML=["介護給付費 申請準備","国保連 実績報告","補助金 入金確認"].map(s=>`<div class="tx-row"><span class="who">${s}</span><span class="memo">ステータス: 未着手</span></div>`).join("");
+  renderParadise();
+  renderInage();
+  renderCare();
   const itIn=inn.filter(t=>txKw(t,["IT","AI","アプリ","開発","API","SaaS","RELA","KARASU"])).reduce((a,t)=>a+t.amount,0);
   if($("#bitSales"))$("#bitSales").textContent=yen(itIn);
   if($("#bitCases"))$("#bitCases").textContent=inn.filter(t=>txKw(t,["IT","AI","アプリ","開発","RELA","KARASU"])).length+"件";
@@ -2808,6 +3155,305 @@ function renderBiz(){
   if($("#btScoreList"))$("#btScoreList").innerHTML=staff.map((n,i)=>`<div class="tx-row"><span class="who">${n}</span><span class="memo">納期 ${78+i*3}% ／ 速度 ${72+i*4}% ／ 総合 ${75+i*2}点</span></div>`).join("");
   if($("#btDueList"))$("#btDueList").innerHTML=["案件ボード 予定日確認","印籠レポート 月末提出","デイサービス 実績報告"].map(s=>`<div class="tx-row"><span class="who">${s}</span><span class="memo">期日: ${viewMonthStr(view)}-25</span></div>`).join("");
 }
+/* ---------- パラダイスシティ：案件（橋渡し仲介）ボード ---------- */
+function pCost(d){return (+d.costAgency||0)+(+d.costIntroducer||0);}
+function pMargin(d){return (+d.order||0)-pCost(d);}
+function renderParadise(){
+  const list=S.biz.paradise||[];
+  const view7=viewMonthStr(view);
+  const monthDeals=list.filter(d=>(d.showDate||"").slice(0,7)===view7);
+  const order=monthDeals.reduce((a,d)=>a+(+d.order||0),0);
+  const cost=monthDeals.reduce((a,d)=>a+pCost(d),0);
+  if($("#bpSales")){$("#bpSales").textContent=yen(order);$("#bpCost").textContent=yen(cost);$("#bpMargin").textContent=(order-cost<0?"−":"")+yen(Math.abs(order-cost));}
+  const sorted=[...list].sort((a,b)=>String(b.showDate||"").localeCompare(String(a.showDate||"")));
+  const board=$("#bpShowList");
+  if(board){
+    board.innerHTML=sorted.length?sorted.map(d=>{
+      const c=pCost(d),m=pMargin(d),rate=(+d.order)?Math.round(m/d.order*100):0;
+      const tags=`<span class="bp-tag ${d.kihon?"ok":"ng"}">基本契約${d.kihon?"✓":"未"}</span><span class="bp-tag ${d.shutsuen?"ok":"ng"}">出演契約${d.shutsuen?"✓":"未"}</span>`;
+      return `<div class="bp-deal">
+        <div class="bp-deal-head"><span class="bp-artist">${esc(d.artist||"（未設定）")}</span><span class="bp-date">${esc(d.showDate||"興行日未定")}</span></div>
+        <div class="bp-deal-sub">${esc(d.agency||"事務所未設定")}${d.introducer?" ／ 紹介: "+esc(d.introducer):""}</div>
+        <div class="bp-deal-nums"><span>受注 <b>${yen(+d.order||0)}</b></span><span>原価 <b>${yen(c)}</b></span><span class="bp-margin ${m<0?"neg":""}">粗利 <b>${(m<0?"−":"")+yen(Math.abs(m))}</b>（${rate}%）</span></div>
+        <div class="bp-deal-ctr">${tags}<button type="button" class="btn-reject bp-del" data-bp="${esc(d.id)}">削除</button></div>
+      </div>`;
+    }).join(""):`<div class="memo" style="color:var(--muted);padding:8px">「案件を追加」から、アーティスト・受注額・原価を登録するとここに集計されます。</div>`;
+  }
+  const box=$("#bpCloseList");
+  if(box){
+    if(!sorted.length){box.innerHTML=`<div class="memo" style="color:var(--muted);padding:8px">案件を追加すると、前金・後金の入金／支払をここで管理できます。</div>`;}
+    else{
+      let unrecv=0,unpaid=0;
+      const rows=sorted.map(d=>{
+        const o=+d.order||0,c=pCost(d);
+        const inPre=Math.round(o/2),inPost=o-inPre,outPre=Math.round(c/2),outPost=c-outPre;
+        if(!d.inPre)unrecv+=inPre; if(!d.inPost)unrecv+=inPost;
+        if(!d.outPre)unpaid+=outPre; if(!d.outPost)unpaid+=outPost;
+        const ck=(k,label,amt)=>`<label class="bp-chk"><input type="checkbox" data-bpk="${esc(d.id)}" data-k="${k}"${d[k]?" checked":""}><span>${label}</span><b>${yen(amt)}</b></label>`;
+        return `<div class="bp-close-deal"><div class="bp-close-title">${esc(d.artist||"案件")} <span>${esc(d.showDate||"")}</span></div><div class="bp-close-grid">${ck("inPre","前金入金 (A-WORKS)",inPre)}${ck("inPost","残金入金 (A-WORKS)",inPost)}${ck("outPre","前金支払 (紹介者・事務所)",outPre)}${ck("outPost","後金支払 (紹介者・事務所)",outPost)}</div></div>`;
+      }).join("");
+      box.innerHTML=`<div class="bp-close-sum">未回収 <b>${yen(unrecv)}</b>　／　未払 <b>${yen(unpaid)}</b></div>`+rows;
+    }
+  }
+}
+const bpForm=$("#bpForm");
+if(bpForm)bpForm.addEventListener("submit",e=>{
+  e.preventDefault();
+  const artist=$("#bpArtist").value.trim();
+  if(!artist){toast("アーティスト名は必須です");return;}
+  const num=id=>{const v=parseInt(String($(id).value||"").replace(/[^\d-]/g,""),10);return isNaN(v)?0:v;};
+  S.biz.paradise.unshift({
+    id:(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()),
+    artist, agency:$("#bpAgency").value.trim(), introducer:$("#bpIntro").value.trim(),
+    showDate:$("#bpDate").value, order:num("#bpOrder"), costAgency:num("#bpCostAg"), costIntroducer:num("#bpCostIn"),
+    kihon:$("#bpKihon").checked, shutsuen:$("#bpShutsuen").checked,
+    inPre:false, inPost:false, outPre:false, outPost:false, at:new Date().toISOString().slice(0,10)
+  });
+  bpForm.reset();
+  saveAll();renderParadise();toast("案件を追加しました");
+});
+document.getElementById("bpShowList")?.addEventListener("click",e=>{
+  const b=e.target.closest("[data-bp]");if(!b)return;
+  S.biz.paradise=S.biz.paradise.filter(d=>d.id!==b.dataset.bp);
+  saveAll();renderParadise();toast("案件を削除しました");
+});
+document.getElementById("bpCloseList")?.addEventListener("change",e=>{
+  const c=e.target.closest("[data-bpk]");if(!c)return;
+  const d=S.biz.paradise.find(x=>x.id===c.dataset.bpk);if(!d)return;
+  d[c.dataset.k]=c.checked;saveAll();renderParadise();
+});
+/* ---------- 稲毛海浜公園：イベント・折半ボード ---------- */
+function iIntroFee(d){
+  const sales=+d.sales||0;
+  return (d.introducer&&String(d.introducer).trim())?Math.round(sales*0.2):0;
+}
+function iCost(d){return iIntroFee(d)+(+d.prodCost||0);}
+function iProfit(d){return (+d.sales||0)-iCost(d);}
+function iShare(d){return Math.floor(iProfit(d)/2);}
+function renderInage(){
+  const list=S.biz.inage||[];
+  const view7=viewMonthStr(view);
+  const monthEv=list.filter(d=>(d.eventDate||"").slice(0,7)===view7);
+  const sales=monthEv.reduce((a,d)=>a+(+d.sales||0),0);
+  const cost=monthEv.reduce((a,d)=>a+iCost(d),0);
+  const share=monthEv.reduce((a,d)=>a+iShare(d),0);
+  if($("#biSales")){$("#biSales").textContent=yen(sales);$("#biCost").textContent=yen(cost);$("#biShare").textContent=(share<0?"−":"")+yen(Math.abs(share));}
+  const sorted=[...list].sort((a,b)=>String(b.eventDate||"").localeCompare(String(a.eventDate||"")));
+  const board=$("#biProdList");
+  if(board){
+    board.innerHTML=sorted.length?sorted.map(d=>{
+      const intro=iIntroFee(d),c=iCost(d),p=iProfit(d),sh=iShare(d);
+      const sub=[d.sponsor?("スポンサー: "+d.sponsor):"",d.introducer?("紹介: "+d.introducer+"（紹介料 "+yen(intro)+"）"):"紹介者なし"].filter(Boolean).join(" ／ ");
+      return `<div class="bp-deal">
+        <div class="bp-deal-head"><span class="bp-artist">${esc(d.name||"（未設定）")}</span><span class="bp-date">${esc(d.eventDate||"開催日未定")}</span></div>
+        <div class="bp-deal-sub">${esc(sub||"—")}</div>
+        <div class="bp-deal-nums"><span>売上 <b>${yen(+d.sales||0)}</b></span><span>製作費 <b>${yen(+d.prodCost||0)}</b></span><span>原価計 <b>${yen(c)}</b></span><span class="bp-margin ${p<0?"neg":""}">利益 <b>${(p<0?"−":"")+yen(Math.abs(p))}</b></span><span>自社折半 <b>${(sh<0?"−":"")+yen(Math.abs(sh))}</b></span>${(+d.sponsorAmt)?`<span>スポンサー <b>${yen(+d.sponsorAmt)}</b></span>`:""}</div>
+        <div class="bp-deal-ctr"><button type="button" class="btn-reject bp-del" data-bi="${esc(d.id)}">削除</button></div>
+      </div>`;
+    }).join(""):`<div class="memo" style="color:var(--muted);padding:8px">「イベントを追加」から登録すると、折半計算がここに集計されます。</div>`;
+  }
+  const box=$("#biCloseList");
+  if(box){
+    if(!sorted.length){box.innerHTML=`<div class="memo" style="color:var(--muted);padding:8px">イベントを追加すると、ワールドパークとの折半・精算をここで管理できます。</div>`;}
+    else{
+      let unpaidWp=0,unrecvSp=0;
+      const rows=sorted.map(d=>{
+        const sh=iShare(d),sp=+d.sponsorAmt||0;
+        if(!d.settledWp)unpaidWp+=Math.max(0,sh);
+        if(sp&&!d.recvSponsor)unrecvSp+=sp;
+        const ck=(k,label,amt)=>`<label class="bp-chk"><input type="checkbox" data-bik="${esc(d.id)}" data-k="${k}"${d[k]?" checked":""}><span>${label}</span><b>${yen(amt)}</b></label>`;
+        return `<div class="bp-close-deal"><div class="bp-close-title">${esc(d.name||"イベント")} <span>${esc(d.eventDate||"")}</span></div><div class="bp-close-grid">${ck("settledWp","ワールドパークへ折半支払（自社と同額を相手へ）",Math.max(0,sh))}${ck("settledSelf","自社取り分の入金確認",Math.max(0,sh))}${sp?ck("recvSponsor","スポンサー入金",sp):""}${ck("closed","当月締め完了",0)}</div></div>`;
+      }).join("");
+      box.innerHTML=`<div class="bp-close-sum">未精算（WP折半） <b>${yen(unpaidWp)}</b>　／　スポンサー未入金 <b>${yen(unrecvSp)}</b></div>`+rows;
+    }
+  }
+}
+const biForm=$("#biForm");
+if(biForm)biForm.addEventListener("submit",e=>{
+  e.preventDefault();
+  const name=$("#biName").value.trim();
+  if(!name){toast("イベント名は必須です");return;}
+  const num=id=>{const v=parseInt(String($(id).value||"").replace(/[^\d-]/g,""),10);return isNaN(v)?0:v;};
+  S.biz.inage.unshift({
+    id:(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()),
+    name, sponsor:$("#biSponsor").value.trim(), introducer:$("#biIntro").value.trim(),
+    eventDate:$("#biDate").value, sales:num("#biSalesIn"), prodCost:num("#biProd"), sponsorAmt:num("#biSponsorAmt"),
+    settledWp:false, settledSelf:false, recvSponsor:false, closed:false,
+    at:new Date().toISOString().slice(0,10)
+  });
+  biForm.reset();
+  saveAll();renderInage();toast("イベントを追加しました");
+});
+document.getElementById("biProdList")?.addEventListener("click",e=>{
+  const b=e.target.closest("[data-bi]");if(!b)return;
+  S.biz.inage=S.biz.inage.filter(d=>d.id!==b.dataset.bi);
+  saveAll();renderInage();toast("イベントを削除しました");
+});
+document.getElementById("biCloseList")?.addEventListener("change",e=>{
+  const c=e.target.closest("[data-bik]");if(!c)return;
+  const d=S.biz.inage.find(x=>x.id===c.dataset.bik);if(!d)return;
+  d[c.dataset.k]=c.checked;saveAll();renderInage();
+});
+/* ---------- 介護事業：入金・補助金・経費 ---------- */
+const CARE_IN_LABEL={kokuhoren:"国保連合会",user:"利用者負担金"};
+const CARE_SUB_LABEL={pref:"県補助金",national:"国補助金"};
+const CARE_EXP_LABEL={fixed:"固定費",equip:"備品購入",var:"変動費"};
+function careUid(){return crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random();}
+function careNum(id){const v=parseInt(String($(id).value||"").replace(/[^\d-]/g,""),10);return isNaN(v)?0:v;}
+function careInMonth(d){return (d.date||"").slice(0,7)===viewMonthStr(view);}
+function renderCare(){
+  const C=S.biz.care;
+  const income=(C.income||[]).filter(careInMonth);
+  const subsidy=(C.subsidy||[]).filter(careInMonth);
+  const expense=(C.expense||[]).filter(careInMonth);
+  const sum=(arr,pred)=>arr.filter(pred||(()=>true)).reduce((a,d)=>a+(+d.amount||0),0);
+  const koku=sum(income,d=>d.kind==="kokuhoren");
+  const user=sum(income,d=>d.kind==="user");
+  const pref=sum(subsidy,d=>d.kind==="pref");
+  const nat=sum(subsidy,d=>d.kind==="national");
+  const fixed=sum(expense,d=>d.kind==="fixed");
+  const equip=sum(expense,d=>d.kind==="equip");
+  const vexp=sum(expense,d=>d.kind==="var");
+  const inTotal=koku+user+pref+nat;
+  const outTotal=fixed+equip+vexp;
+  const net=inTotal-outTotal;
+  const inPaid=sum(income,d=>d.received)+sum(subsidy,d=>d.received);
+  const inUnpaid=inTotal-inPaid;
+  const goal=+C.goal||800000;
+  if($("#bcInTotal"))$("#bcInTotal").textContent=yen(inTotal);
+  if($("#bcOutTotal"))$("#bcOutTotal").textContent=yen(outTotal);
+  if($("#bcNet"))$("#bcNet").textContent=(net<0?"−":"")+yen(Math.abs(net));
+  if($("#bcGoal"))$("#bcGoal").textContent=goal?Math.min(999,Math.round(inTotal/goal*100))+"%":"—";
+  if($("#bcKokuhoren"))$("#bcKokuhoren").textContent=yen(koku);
+  if($("#bcUserPay"))$("#bcUserPay").textContent=yen(user);
+  if($("#bcIncomePaid"))$("#bcIncomePaid").textContent=yen(inPaid);
+  if($("#bcIncomeUnpaid"))$("#bcIncomeUnpaid").textContent="未入金 "+yen(Math.max(0,inUnpaid));
+  if($("#bcPref"))$("#bcPref").textContent=yen(pref);
+  if($("#bcNational"))$("#bcNational").textContent=yen(nat);
+  const applied=(C.subsidy||[]).filter(careInMonth).filter(d=>d.applied&&!d.received).length;
+  const receivedSub=(C.subsidy||[]).filter(careInMonth).filter(d=>d.received).length;
+  if($("#bcSubStatus"))$("#bcSubStatus").textContent=applied+"申請中 / "+receivedSub+"入金済";
+  if($("#bcFixed"))$("#bcFixed").textContent=yen(fixed);
+  if($("#bcEquip"))$("#bcEquip").textContent=yen(equip);
+  if($("#bcVar"))$("#bcVar").textContent=yen(vexp);
+  if($("#bcGoalAmt"))$("#bcGoalAmt").value=goal||"";
+
+  const sortByDate=(a,b)=>String(b.date||"").localeCompare(String(a.date||""));
+  const inBoard=$("#bcInList");
+  if(inBoard){
+    const list=[...(C.income||[])].sort(sortByDate);
+    inBoard.innerHTML=list.length?list.map(d=>{
+      const tag=d.received?'<span class="bp-tag ok">入金済</span>':'<span class="bp-tag ng">未入金</span>';
+      return `<div class="bp-deal">
+        <div class="bp-deal-head"><span class="bp-artist">${esc(CARE_IN_LABEL[d.kind]||d.kind)}</span><span class="bp-date">${esc(d.date||"—")}</span></div>
+        <div class="bp-deal-sub">${esc(d.label||"")}</div>
+        <div class="bp-deal-nums"><span>金額 <b>${yen(+d.amount||0)}</b></span></div>
+        <div class="bp-deal-ctr">${tag}<label class="bp-ck"><input type="checkbox" data-bci="${esc(d.id)}" data-k="received"${d.received?" checked":""}> 入金済</label><button type="button" class="btn-reject bp-del" data-bci-del="${esc(d.id)}">削除</button></div>
+      </div>`;
+    }).join(""):`<div class="memo" style="color:var(--muted);padding:8px">国保連の給付費や利用者負担金を登録するとここに集計されます。</div>`;
+  }
+  const subBoard=$("#bcSubList");
+  if(subBoard){
+    const list=[...(C.subsidy||[])].sort(sortByDate);
+    subBoard.innerHTML=list.length?list.map(d=>{
+      const tags=`<span class="bp-tag ${d.applied?"ok":"ng"}">申請${d.applied?"済":"未"}</span><span class="bp-tag ${d.received?"ok":"ng"}">入金${d.received?"済":"未"}</span>`;
+      return `<div class="bp-deal">
+        <div class="bp-deal-head"><span class="bp-artist">${esc(CARE_SUB_LABEL[d.kind]||d.kind)}</span><span class="bp-date">${esc(d.date||"—")}</span></div>
+        <div class="bp-deal-sub">${esc(d.label||"")}</div>
+        <div class="bp-deal-nums"><span>金額 <b>${yen(+d.amount||0)}</b></span></div>
+        <div class="bp-deal-ctr">${tags}
+          <label class="bp-ck"><input type="checkbox" data-bcs="${esc(d.id)}" data-k="applied"${d.applied?" checked":""}> 申請済</label>
+          <label class="bp-ck"><input type="checkbox" data-bcs="${esc(d.id)}" data-k="received"${d.received?" checked":""}> 入金済</label>
+          <button type="button" class="btn-reject bp-del" data-bcs-del="${esc(d.id)}">削除</button>
+        </div>
+      </div>`;
+    }).join(""):`<div class="memo" style="color:var(--muted);padding:8px">県・国の補助金を登録すると、申請〜入金の進捗を管理できます。</div>`;
+  }
+  const expBoard=$("#bcExpList");
+  if(expBoard){
+    const list=[...(C.expense||[])].sort(sortByDate);
+    expBoard.innerHTML=list.length?list.map(d=>{
+      const tag=d.paid?'<span class="bp-tag ok">支払済</span>':'<span class="bp-tag ng">未払</span>';
+      return `<div class="bp-deal">
+        <div class="bp-deal-head"><span class="bp-artist">${esc(CARE_EXP_LABEL[d.kind]||d.kind)}</span><span class="bp-date">${esc(d.date||"—")}</span></div>
+        <div class="bp-deal-sub">${esc(d.label||"")}</div>
+        <div class="bp-deal-nums"><span>金額 <b>${yen(+d.amount||0)}</b></span></div>
+        <div class="bp-deal-ctr">${tag}<label class="bp-ck"><input type="checkbox" data-bce="${esc(d.id)}" data-k="paid"${d.paid?" checked":""}> 支払済</label><button type="button" class="btn-reject bp-del" data-bce-del="${esc(d.id)}">削除</button></div>
+      </div>`;
+    }).join(""):`<div class="memo" style="color:var(--muted);padding:8px">固定費・備品購入・変動費を登録するとここに集計されます。</div>`;
+  }
+}
+const bcInForm=$("#bcInForm");
+if(bcInForm)bcInForm.addEventListener("submit",e=>{
+  e.preventDefault();
+  const label=$("#bcInLabel").value.trim();
+  const amount=careNum("#bcInAmt");
+  if(!label||!amount){toast("内容と金額は必須です");return;}
+  S.biz.care.income.unshift({
+    id:careUid(), kind:$("#bcInKind").value, label, date:$("#bcInDate").value,
+    amount, received:$("#bcInRecv").checked, at:new Date().toISOString().slice(0,10)
+  });
+  bcInForm.reset();saveAll();renderCare();toast("入金を追加しました");
+});
+document.getElementById("bcInList")?.addEventListener("click",e=>{
+  const del=e.target.closest("[data-bci-del]");
+  if(del){S.biz.care.income=S.biz.care.income.filter(d=>d.id!==del.dataset.bciDel);saveAll();renderCare();toast("削除しました");}
+});
+document.getElementById("bcInList")?.addEventListener("change",e=>{
+  const c=e.target.closest("[data-bci]");if(!c)return;
+  const d=S.biz.care.income.find(x=>x.id===c.dataset.bci);if(!d)return;
+  d[c.dataset.k]=c.checked;saveAll();renderCare();
+});
+const bcSubForm=$("#bcSubForm");
+if(bcSubForm)bcSubForm.addEventListener("submit",e=>{
+  e.preventDefault();
+  const label=$("#bcSubLabel").value.trim();
+  const amount=careNum("#bcSubAmt");
+  if(!label||!amount){toast("補助金名と金額は必須です");return;}
+  S.biz.care.subsidy.unshift({
+    id:careUid(), kind:$("#bcSubKind").value, label, date:$("#bcSubDate").value,
+    amount, applied:$("#bcSubApplied").checked, received:$("#bcSubRecv").checked,
+    at:new Date().toISOString().slice(0,10)
+  });
+  bcSubForm.reset();saveAll();renderCare();toast("補助金を追加しました");
+});
+document.getElementById("bcSubList")?.addEventListener("click",e=>{
+  const del=e.target.closest("[data-bcs-del]");
+  if(del){S.biz.care.subsidy=S.biz.care.subsidy.filter(d=>d.id!==del.dataset.bcsDel);saveAll();renderCare();toast("削除しました");}
+});
+document.getElementById("bcSubList")?.addEventListener("change",e=>{
+  const c=e.target.closest("[data-bcs]");if(!c)return;
+  const d=S.biz.care.subsidy.find(x=>x.id===c.dataset.bcs);if(!d)return;
+  d[c.dataset.k]=c.checked;saveAll();renderCare();
+});
+const bcExpForm=$("#bcExpForm");
+if(bcExpForm)bcExpForm.addEventListener("submit",e=>{
+  e.preventDefault();
+  const label=$("#bcExpLabel").value.trim();
+  const amount=careNum("#bcExpAmt");
+  if(!label||!amount){toast("内容と金額は必須です");return;}
+  S.biz.care.expense.unshift({
+    id:careUid(), kind:$("#bcExpKind").value, label, date:$("#bcExpDate").value,
+    amount, paid:$("#bcExpPaid").checked, at:new Date().toISOString().slice(0,10)
+  });
+  bcExpForm.reset();saveAll();renderCare();toast("経費を追加しました");
+});
+document.getElementById("bcExpList")?.addEventListener("click",e=>{
+  const del=e.target.closest("[data-bce-del]");
+  if(del){S.biz.care.expense=S.biz.care.expense.filter(d=>d.id!==del.dataset.bceDel);saveAll();renderCare();toast("削除しました");}
+});
+document.getElementById("bcExpList")?.addEventListener("change",e=>{
+  const c=e.target.closest("[data-bce]");if(!c)return;
+  const d=S.biz.care.expense.find(x=>x.id===c.dataset.bce);if(!d)return;
+  d[c.dataset.k]=c.checked;saveAll();renderCare();
+});
+const bcGoalForm=$("#bcGoalForm");
+if(bcGoalForm)bcGoalForm.addEventListener("submit",e=>{
+  e.preventDefault();
+  const g=careNum("#bcGoalAmt");
+  if(!g){toast("目標額を入力してください");return;}
+  S.biz.care.goal=g;saveAll();renderCare();toast("月次目標を保存しました");
+});
 $$(".biz-tabs").forEach(tabs=>{
   tabs.querySelectorAll("button").forEach(btn=>{
     btn.onclick=()=>{
@@ -2854,6 +3500,250 @@ window.Treasury={
 })();
 </script>
 <script src="cf-inrou.js"></script>
+
+<script>
+/* ===== 不動産事業：調達金配分管理DB（案件別・Treasury連携） ===== */
+(function(){
+  const T=window.Treasury; if(!T) return;
+  const $=s=>document.querySelector(s), esc=T.esc;
+
+  function seedCamel(){
+    return {
+      id:'camel', name:'調達金配分管理DB', sub:'一宮市北高井東地区開発 — CAMEL Phase I',
+      target:247000000, reward:2495181,
+      parties:[
+        {key:'kawabata',   name:'川畑氏（FAフィー）',        alloc:7410000,   color:'#5dd9ad'},
+        {key:'fgc_miyama', name:'深山信次・FGC',            alloc:162688214, color:'#b39ddb'},
+        {key:'ge',         name:'GE（グローバルエナジー）', alloc:12504819,  color:'#e0a34e'},
+        {key:'gooner',     name:'Gooner',                   alloc:61895626,  color:'#74b9e8'}
+      ],
+      payments:[
+        {id:1, date:"2025/05/28", income:10060000, dist:{ge:5000000,gooner:0,fee:880,bank:0}, note:"GCエステー振込。GE500万出金。"},
+        {id:2, date:"2025/05/29", income:0, dist:{ge:0,gooner:5000000,fee:880,bank:0}, note:"Gooner500万出金。"},
+        {id:3, date:"2025/06/11", income:2700000, dist:{ge:0,gooner:0,fee:0,bank:0}, note:"GCエステー振込。出金なし。"},
+        {id:4, date:"2025/06/15", income:0, dist:{ge:0,gooner:2500000,fee:880,bank:0}, note:"Gooner250万出金。"},
+        {id:5, date:"2025/06/18", income:9900000, dist:{ge:1000000,gooner:9000000,fee:1760,bank:0}, note:"GCエステー振込。Gooner900万・GE100万出金。"},
+        {id:6, date:"2025/06/25", income:10200000, dist:{ge:1000000,gooner:9000000,fee:1760,bank:0}, note:"GCエステー振込。Gooner900万・GE100万出金。"},
+        {id:7, date:"2025/07/07", income:5000000, dist:{ge:0,gooner:5000000,fee:880,bank:0}, note:"グローバルクラウド振込。Gooner500万出金。"},
+        {id:8, date:"2025/07/09", income:5500000, dist:{ge:0,gooner:5000000,fee:880,bank:0}, note:"グローバルクラウド振込。Gooner500万出金。"},
+        {id:9, date:"2025/07/16", income:19000000, dist:{ge:2000000,gooner:17000000,fee:1760,bank:850320}, note:"グローバルクラウドエステー振込。Gooner1,700万・GE200万出金。残高850,320円。"}
+      ],
+      transfers:[
+        {id:101, date:"2025/05/28", from:'ge', to:'gooner', amount:2000000, note:"GE→Gooner200万"},
+        {id:102, date:"2025/05/28", from:'gooner', to:'fgc_miyama', amount:2000000, note:"Gooner→深山信次200万"},
+        {id:103, date:"2025/05/29", from:'gooner', to:'fgc_miyama', amount:5000000, note:"Gooner→深山信次500万"},
+        {id:104, date:"2025/06/18", from:'gooner', to:'fgc_miyama', amount:9000000, note:"Gooner→深山信次900万"},
+        {id:105, date:"2025/06/18", from:'fgc_miyama', to:'kawabata', amount:2000000, note:"深山信次→川畑200万"},
+        {id:106, date:"2025/06/25", from:'gooner', to:'fgc_miyama', amount:9000000, note:"Gooner→深山信次900万"},
+        {id:107, date:"2025/06/30", from:'fgc_miyama', to:'kawabata', amount:3000000, note:"深山信次建替・川畑300万"},
+        {id:108, date:"2025/07/07", from:'gooner', to:'fgc_miyama', amount:3000000, note:"Gooner→深山信次300万"}
+      ]
+    };
+  }
+
+  const S=T.S;
+  if(!S.realestate || !Array.isArray(S.realestate.projects) || !S.realestate.projects.length){
+    S.realestate={activeId:'camel', projects:[seedCamel()]}; T.saveAll();
+  }
+  const RE=S.realestate;
+
+  function active(){ let p=RE.projects.find(x=>x.id===RE.activeId); if(!p){p=RE.projects[0]; RE.activeId=p.id;} return p; }
+  function pk(p,k){ return p.parties.find(x=>x.key===k); }
+  const fmt=n=>n?'¥'+Math.abs(Math.round(n)).toLocaleString('ja-JP'):'—';
+  const pct=n=>(n*100).toFixed(1)+'%';
+
+  function calc(p){
+    const sum=f=>p.payments.reduce((s,x)=>s+(+f(x)||0),0);
+    const gk={income:sum(x=>x.income), ge:sum(x=>x.dist&&x.dist.ge), gooner:sum(x=>x.dist&&x.dist.gooner), fee:sum(x=>x.dist&&x.dist.fee), bank:sum(x=>x.dist&&x.dist.bank)};
+    const ext={}; p.parties.forEach(pt=>ext[pt.key]=0);
+    p.transfers.forEach(t=>{ if(ext[t.to]!==undefined)ext[t.to]+=(+t.amount||0); if(ext[t.from]!==undefined)ext[t.from]-=(+t.amount||0); });
+    const paid={}; p.parties.forEach(pt=>{ let base=pt.key==='ge'?gk.ge:pt.key==='gooner'?gk.gooner:0; paid[pt.key]=base+(ext[pt.key]||0); });
+    return {gk,paid};
+  }
+
+  function renderTabs(){
+    const w=$("#reProjTabs"); if(!w) return;
+    w.innerHTML=RE.projects.map(p=>`<button type="button" data-re-proj="${esc(p.id)}" class="${p.id===RE.activeId?'on':''}">${esc(p.name)}</button>`).join('')
+      +`<button type="button" class="re-newproj" data-re-newproj>＋ 新規案件</button>`;
+  }
+
+  function renderRE(){
+    if(!$("#reProjTabs")) return;
+    renderTabs();
+    const p=active(), {gk,paid}=calc(p);
+    $("#reHeadSub").textContent=p.sub||'—';
+    $("#reHeadTitle").textContent=p.name||'—';
+    const prog=p.target?gk.income/p.target:0;
+    $("#reTotalPaid").textContent=fmt(gk.income);
+    $("#reProgFill").style.width=Math.min(prog*100,100)+'%';
+    $("#reProgPct").textContent=pct(prog);
+    $("#reTargetLabel").textContent='目標：'+fmt(p.target);
+    $("#reRemaining").textContent=fmt(p.target-gk.income);
+    $("#reGkBalance").textContent=fmt(gk.bank);
+    $("#reTotalFee").textContent=fmt(gk.fee);
+
+    $("#rePersonCards").innerHTML=p.parties.map(pt=>{
+      const alloc=+pt.alloc||0, paidAmt=paid[pt.key]||0, remaining=alloc-paidAmt;
+      const progress=alloc>0?Math.min(paidAmt/alloc,1):0, ratio=p.target?alloc/p.target:0;
+      return `<div class="re-pcard">
+        <div class="re-pc-head"><span class="re-pc-name">${esc(pt.name)}</span><span class="re-pc-ratio">${pct(ratio)}</span></div>
+        <div class="re-pc-body">
+          <div><div class="re-pc-slabel">配分総額</div><div class="re-pc-sval">${fmt(alloc)}</div></div>
+          <div><div class="re-pc-slabel">支払済</div><div class="re-pc-sval" style="color:var(--in)">${fmt(paidAmt)}</div></div>
+          <div><div class="re-pc-slabel">残額</div><div class="re-pc-sval" style="color:var(--out)">${fmt(remaining)}</div></div>
+          <div><div class="re-pc-slabel">進捗</div><div class="re-pc-sval" style="color:var(--in)">${pct(progress)}</div></div>
+        </div>
+        <div class="re-pc-barwrap"><div class="re-pc-bar"><div class="re-pc-barfill" style="width:${(progress*100).toFixed(1)}%;background:var(--in)"></div></div></div>
+        ${pt.key==='gooner'&&(+p.reward>0)?`<div class="re-pc-sub">うちGE報酬（通帳外）：${fmt(p.reward)}</div>`:''}
+      </div>`;
+    }).join('');
+
+    const ps=p.payments.map((x,i)=>({x,i})).sort((a,b)=>String(a.x.date).localeCompare(String(b.x.date)));
+    $("#reHistPayment").innerHTML=ps.length?ps.map(({x,i})=>{
+      const rows=[{name:'GE未収金',val:x.dist&&x.dist.ge},{name:'Gooner',val:x.dist&&x.dist.gooner},{name:'手数料',val:x.dist&&x.dist.fee},{name:'GK残高',val:x.dist&&x.dist.bank}].filter(r=>r.val&&r.val!==0);
+      return `<div class="re-item">
+        <div class="re-item-meta">
+          <span class="re-item-date">${esc(x.date)}${(+x.income>0)?'<span class="re-badge">入金</span>':''}</span>
+          <span class="re-item-amt">${(+x.income>0)?fmt(x.income):'—'}<button class="re-del" data-re-delp="${i}" title="削除">×</button></span>
+        </div>
+        <div class="re-item-entries">${rows.map(r=>`<div class="re-entry"><span class="re-entry-name">${r.name}</span><span class="re-entry-val">${fmt(r.val)}</span></div>`).join('')}</div>
+        ${x.note?`<div class="re-note">${esc(x.note)}</div>`:''}
+      </div>`;
+    }).join(''):'<div class="re-empty">記録なし。「＋ 追加」から入金・出金配分を登録します。</div>';
+
+    const ts=p.transfers.map((x,i)=>({x,i})).sort((a,b)=>String(a.x.date).localeCompare(String(b.x.date)));
+    $("#reHistTransfer").innerHTML=ts.length?ts.map(({x,i})=>{
+      const fn=(pk(p,x.from)||{}).name||x.from, tn=(pk(p,x.to)||{}).name||x.to;
+      return `<div class="re-item">
+        <div class="re-item-meta">
+          <span class="re-item-date">${esc(x.date)}<span class="re-badge re-badge-t">振替</span></span>
+          <span class="re-item-amt" style="color:var(--tax)">${fmt(x.amount)}<button class="re-del" data-re-delt="${i}" title="削除">×</button></span>
+        </div>
+        <div class="re-item-entries"><div class="re-entry"><span class="re-entry-name">${esc(fn)} → ${esc(tn)}</span><span class="re-entry-val">${fmt(x.amount)}</span></div></div>
+        ${x.note?`<div class="re-note">${esc(x.note)}</div>`:''}
+      </div>`;
+    }).join(''):'<div class="re-empty">記録なし。</div>';
+  }
+
+  function openM(id){ $(id).classList.add('open'); }
+  function closeAll(){ document.querySelectorAll('.re-ov').forEach(o=>o.classList.remove('open')); }
+  function fillTransferSelects(){
+    const p=active(), opts=p.parties.map(pt=>`<option value="${esc(pt.key)}">${esc(pt.name)}</option>`).join('');
+    $("#reT-from").innerHTML=opts; $("#reT-to").innerHTML=opts;
+  }
+
+  let projEditId=null;
+  const KEYS=['kawabata','fgc_miyama','ge','gooner'];
+  const COLORS={kawabata:'#5dd9ad',fgc_miyama:'#b39ddb',ge:'#e0a34e',gooner:'#74b9e8'};
+  function openProjModal(editId){
+    projEditId=editId||null;
+    const p=editId?RE.projects.find(x=>x.id===editId):null;
+    $("#reProjModalTitle").textContent=editId?'案件設定':'新規案件';
+    $("#reJ-name").value=p?p.name:'';
+    $("#reJ-sub").value=p?(p.sub||''):'';
+    $("#reJ-target").value=p?(p.target||''):'';
+    $("#reJ-reward").value=p?(p.reward||''):'';
+    const base=p?p.parties:[{key:'kawabata',name:'川畑氏'},{key:'fgc_miyama',name:'深山信次・FGC'},{key:'ge',name:'GE'},{key:'gooner',name:'Gooner'}];
+    $("#reJ-parties").innerHTML=KEYS.map((k,idx)=>{
+      const pt=base.find(x=>x.key===k)||{name:k,alloc:0};
+      return `<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:6px;margin-bottom:6px">
+        <input data-rej-name="${idx}" value="${esc(pt.name||'')}" placeholder="名称">
+        <input data-rej-alloc="${idx}" type="number" value="${+pt.alloc||''}" placeholder="配分額">
+      </div>`;
+    }).join('');
+    openM('#reMProject');
+  }
+  $("#reProjSave").onclick=()=>{
+    const name=$("#reJ-name").value.trim();
+    if(!name){ T.toast('案件名は必須です'); return; }
+    const parties=KEYS.map((k,idx)=>({
+      key:k, color:COLORS[k],
+      name:(document.querySelector(`[data-rej-name="${idx}"]`).value.trim())||k,
+      alloc:parseInt(document.querySelector(`[data-rej-alloc="${idx}"]`).value)||0
+    }));
+    const target=parseInt($("#reJ-target").value)||0, reward=parseInt($("#reJ-reward").value)||0, sub=$("#reJ-sub").value.trim();
+    if(projEditId){
+      const p=RE.projects.find(x=>x.id===projEditId);
+      p.name=name; p.sub=sub; p.target=target; p.reward=reward; p.parties=parties;
+    }else{
+      const id='p'+Date.now();
+      RE.projects.push({id,name,sub,target,reward,parties,payments:[],transfers:[]});
+      RE.activeId=id;
+    }
+    T.saveAll(); closeAll(); renderRE();
+    T.toast(projEditId?'案件を更新しました':'案件を追加しました');
+  };
+
+  $("#reEditProj").onclick=()=>openProjModal(active().id);
+  $("#reDelProj").onclick=()=>{
+    const p=active();
+    if(RE.projects.length<=1){ T.toast('最後の案件は削除できません'); return; }
+    if(!confirm(`案件「${p.name}」を削除しますか？この操作は元に戻せません。`)) return;
+    RE.projects=RE.projects.filter(x=>x.id!==p.id); RE.activeId=RE.projects[0].id;
+    T.saveAll(); renderRE(); T.toast('案件を削除しました');
+  };
+
+  $("#reExport").onclick=()=>{
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob([JSON.stringify(RE,null,2)],{type:'application/json'}));
+    a.download='gooner_realestate_'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+    T.toast('不動産データを書き出しました');
+  };
+  $("#reImport").onchange=ev=>{
+    const f=ev.target.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=e=>{
+      try{
+        const d=JSON.parse(e.target.result);
+        if(d&&Array.isArray(d.projects)&&d.projects.length){
+          RE.projects=d.projects;
+          RE.activeId=(d.activeId&&d.projects.find(x=>x.id===d.activeId))?d.activeId:d.projects[0].id;
+          T.saveAll(); renderRE(); T.toast('読み込み完了');
+        }else if(d&&(d.payments||d.transfers)){
+          const p=active(); if(d.payments)p.payments=d.payments; if(d.transfers)p.transfers=d.transfers;
+          T.saveAll(); renderRE(); T.toast('現在の案件に取り込みました');
+        }else T.toast('形式が不正です');
+      }catch(err){ T.toast('読み込み失敗'); }
+      ev.target.value='';
+    };
+    r.readAsText(f);
+  };
+
+  $("#s-biz-realestate").addEventListener('click', e=>{
+    const add=e.target.closest('[data-re-add]');
+    if(add){ if(add.dataset.reAdd==='payment')openM('#reMPayment'); else{fillTransferSelects(); openM('#reMTransfer');} return; }
+    const tab=e.target.closest('[data-re-proj]');
+    if(tab){ RE.activeId=tab.dataset.reProj; T.saveAll(); renderRE(); return; }
+    if(e.target.closest('[data-re-newproj]')){ openProjModal(null); return; }
+    const dp=e.target.closest('[data-re-delp]');
+    if(dp){ active().payments.splice(+dp.dataset.reDelp,1); T.saveAll(); renderRE(); return; }
+    const dt=e.target.closest('[data-re-delt]');
+    if(dt){ active().transfers.splice(+dt.dataset.reDelt,1); T.saveAll(); renderRE(); return; }
+  });
+
+  document.addEventListener('click', e=>{
+    if(e.target.classList&&e.target.classList.contains('re-ov')){ closeAll(); return; }
+    if(e.target.closest('[data-re-close]')){ closeAll(); return; }
+    const sub=e.target.closest('[data-re-submit]'); if(!sub) return;
+    const p=active();
+    if(sub.dataset.reSubmit==='payment'){
+      p.payments.push({ id:Date.now(), date:$("#reP-date").value.trim(),
+        income:parseInt($("#reP-income").value)||0,
+        dist:{ge:parseInt($("#reP-ge").value)||0, gooner:parseInt($("#reP-gooner").value)||0, fee:parseInt($("#reP-fee").value)||0, bank:parseInt($("#reP-bank").value)||0},
+        note:$("#reP-note").value.trim() });
+      ['reP-date','reP-income','reP-ge','reP-gooner','reP-fee','reP-bank','reP-note'].forEach(id=>{$('#'+id).value='';});
+    }else{
+      p.transfers.push({ id:Date.now(), date:$("#reT-date").value.trim(), from:$("#reT-from").value, to:$("#reT-to").value,
+        amount:parseInt($("#reT-amount").value)||0, note:$("#reT-note").value.trim() });
+      ['reT-date','reT-amount','reT-note'].forEach(id=>{$('#'+id).value='';});
+    }
+    T.saveAll(); closeAll(); renderRE();
+  });
+
+  T.onRender(renderRE);
+  renderRE();
+})();
+</script>
 
 <script>
 /* 旧タブ切替は廃止（常時 オフィスクエスト｜入出金｜下にダッシュボード） */
