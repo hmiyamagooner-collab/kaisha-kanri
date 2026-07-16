@@ -2462,12 +2462,19 @@ video.dc-card__image{
       <div class="card stat net biz-stat"><div class="label">差引</div><div class="val" id="bcfNet">¥0</div></div>
     </div>
     <div class="card" style="margin-top:12px;padding:12px 14px">
-      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">Googleスプレッドシート連携（第３期GoonerCF）</div>
-      <div class="biz-link-row" style="margin:0;flex-wrap:wrap;gap:8px;align-items:center">
-        <button type="button" id="bcfSheetsSync">スプシから同期</button>
-        <span id="bcfSheetsStatus" style="font-size:11px;color:var(--muted)">未同期</span>
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">PDF取込（月次CF表・請求書）→ 自動計算</div>
+      <div id="bcfPdfDrop" tabindex="0" style="border:1px dashed rgba(210,173,99,.35);border-radius:10px;padding:16px;text-align:center;cursor:pointer;background:rgba(210,173,99,.04)">
+        <div style="font-size:13px;color:var(--text)">PDFをドロップ / クリック選択 / Ctrl+V で貼付</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px">表・金額・引落日・支払期日を読み取り、入出金予定と合計を自動反映</div>
+        <div id="bcfPdfFileName" style="font-size:11px;color:var(--gold);margin-top:8px"></div>
       </div>
-      <p style="margin-top:8px;font-size:11px;color:var(--muted);line-height:1.5">サービスアカウント設定後、閲覧共有したスプシをCF予定・月次に反映します（再同期で前回のスプシ取込分を置換）。</p>
+      <input type="file" id="bcfPdfFile" accept="application/pdf,.pdf" hidden>
+      <div class="biz-link-row" style="margin:10px 0 0;flex-wrap:wrap;gap:8px;align-items:center">
+        <button type="button" id="bcfPdfImport">PDFを読み込んで反映</button>
+        <span id="bcfPdfStatus" style="font-size:11px;color:var(--muted)">未取込</span>
+      </div>
+      <div id="bcfPdfTotals" style="display:none;margin-top:10px;font-size:12px;line-height:1.6;color:var(--muted)"></div>
+      <p style="margin-top:8px;font-size:11px;color:var(--muted);line-height:1.5">テキスト付きPDFが最も正確です。スキャンPDFはページ画像からも読み取ります。再取込で前回のPDF取込分だけ置換します。</p>
     </div>
     <div class="biz-link-row">
       <button type="button" data-jump="dash">金庫室を開く</button>
@@ -4177,60 +4184,180 @@ document.querySelectorAll("[data-jump]").forEach(b=>b.onclick=()=>{
   document.querySelector('.gamenav button[data-s="'+jump+'"]')?.click();
 });
 
-/* Google Sheets → CF 同期 */
-(function wireSheetsCfSync(){
-  const btn=document.getElementById('bcfSheetsSync');
-  const st=document.getElementById('bcfSheetsStatus');
-  if(!btn) return;
+/* PDF → CF 取込・自動計算 */
+(function wirePdfCfImport(){
+  const LS_META='gooner_pdf_cf_meta';
+  const drop=document.getElementById('bcfPdfDrop');
+  const fileInp=document.getElementById('bcfPdfFile');
+  const btn=document.getElementById('bcfPdfImport');
+  const st=document.getElementById('bcfPdfStatus');
+  const nameEl=document.getElementById('bcfPdfFileName');
+  const totEl=document.getElementById('bcfPdfTotals');
+  if(!drop || !btn) return;
+  let pendingFile=null;
+  function yen(n){ return '¥'+Number(n||0).toLocaleString('ja-JP'); }
   function setStatus(t){ if(st) st.textContent=t; }
   try{
-    const prev=JSON.parse(localStorage.getItem('gooner_sheets_cf_meta')||'null');
-    if(prev&&prev.at) setStatus('前回: '+prev.at.slice(0,16).replace('T',' ')+' / '+ (prev.count||0)+'件');
+    const prev=JSON.parse(localStorage.getItem(LS_META)||'null');
+    if(prev&&prev.at) setStatus('前回: '+prev.at.slice(0,16).replace('T',' ')+' / '+(prev.count||0)+'件');
   }catch(e){}
+  function setFile(file){
+    if(!file) return;
+    if(file.type && file.type!=='application/pdf' && !/\.pdf$/i.test(file.name||'')){
+      toast('PDFファイルを選んでください'); return;
+    }
+    if(file.size>12*1024*1024){ toast('PDFは12MBまで'); return; }
+    pendingFile=file;
+    if(nameEl) nameEl.textContent=file.name+'（'+(file.size/1024|0)+' KB）';
+    setStatus('選択済 →「PDFを読み込んで反映」');
+  }
+  drop.addEventListener('click', ()=> fileInp?.click());
+  fileInp?.addEventListener('change', ()=>{
+    const f=fileInp.files&&fileInp.files[0];
+    if(f) setFile(f);
+  });
+  drop.addEventListener('dragover', e=>{ e.preventDefault(); drop.style.borderColor='var(--gold)'; });
+  drop.addEventListener('dragleave', ()=>{ drop.style.borderColor=''; });
+  drop.addEventListener('drop', e=>{
+    e.preventDefault(); drop.style.borderColor='';
+    const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];
+    if(f) setFile(f);
+  });
+  document.addEventListener('paste', e=>{
+    const sec=document.getElementById('s-biz-cf');
+    if(!sec || !sec.classList.contains('on')) return;
+    const items=e.clipboardData&&e.clipboardData.files;
+    if(!items||!items.length) return;
+    const f=Array.from(items).find(x=>x.type==='application/pdf'||/\.pdf$/i.test(x.name||''));
+    if(f){ e.preventDefault(); setFile(f); }
+  });
+
+  let pdfjsReady=null;
+  function loadPdfJs(){
+    if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if(pdfjsReady) return pdfjsReady;
+    pdfjsReady=new Promise(function(resolve,reject){
+      const s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      s.onload=function(){
+        if(!window.pdfjsLib){ reject(new Error('pdf.js未読込')); return; }
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        resolve(window.pdfjsLib);
+      };
+      s.onerror=function(){ reject(new Error('pdf.jsの読み込みに失敗')); };
+      document.head.appendChild(s);
+    });
+    return pdfjsReady;
+  }
+
+  async function extractFromPdf(file){
+    const pdfjs=await loadPdfJs();
+    const buf=await file.arrayBuffer();
+    const pdf=await pdfjs.getDocument({ data: buf }).promise;
+    const maxPages=Math.min(pdf.numPages, 8);
+    const textParts=[];
+    const images=[];
+    for(let i=1;i<=maxPages;i++){
+      const page=await pdf.getPage(i);
+      const content=await page.getTextContent();
+      const pageText=(content.items||[]).map(function(it){ return it.str||''; }).join(' ').replace(/\s+/g,' ').trim();
+      if(pageText) textParts.push('--- p.'+i+' ---\n'+pageText);
+      // テキストが薄いページは画像も送る（最大4枚）
+      if(images.length<4 && pageText.length<80){
+        const viewport=page.getViewport({ scale:1.35 });
+        const canvas=document.createElement('canvas');
+        canvas.width=viewport.width; canvas.height=viewport.height;
+        const ctx=canvas.getContext('2d');
+        await page.render({ canvasContext:ctx, viewport:viewport }).promise;
+        images.push(canvas.toDataURL('image/jpeg', 0.82));
+      }
+    }
+    let text=textParts.join('\n\n').trim();
+    // テキスト全体が薄い場合、先頭ページを画像化
+    if(text.length<120 && images.length===0 && pdf.numPages>=1){
+      const page=await pdf.getPage(1);
+      const viewport=page.getViewport({ scale:1.4 });
+      const canvas=document.createElement('canvas');
+      canvas.width=viewport.width; canvas.height=viewport.height;
+      await page.render({ canvasContext:canvas.getContext('2d'), viewport:viewport }).promise;
+      images.push(canvas.toDataURL('image/jpeg', 0.85));
+    }
+    // 月次CF表は列が崩れやすいので、テキストがあっても先頭ページを1枚補助画像に
+    if(/項目|引落|収入合計|固定費/.test(text) && images.length===0 && pdf.numPages>=1){
+      const page=await pdf.getPage(1);
+      const viewport=page.getViewport({ scale:1.15 });
+      const canvas=document.createElement('canvas');
+      canvas.width=viewport.width; canvas.height=viewport.height;
+      await page.render({ canvasContext:canvas.getContext('2d'), viewport:viewport }).promise;
+      images.push(canvas.toDataURL('image/jpeg', 0.72));
+    }
+    return { text:text.slice(0,28000), images, pages:pdf.numPages };
+  }
+
+  function applyPdfEntries(data, ymFallback){
+    const entries=Array.isArray(data.entries)?data.entries:[];
+    if(!Array.isArray(S.schedules)) S.schedules=[];
+    if(!Array.isArray(S.tx)) S.tx=[];
+    S.schedules=S.schedules.filter(s=>s.source!=='pdf' && s.source!=='gsheet');
+    S.tx=S.tx.filter(t=>t.source!=='pdf' && t.source!=='gsheet');
+    entries.forEach((e,i)=>{
+      const id='pdf-'+e.date+'-'+e.kind+'-'+i+'-'+String(e.memo||'').slice(0,12);
+      S.schedules.push({
+        id, caseId:null, date:e.date, amount:e.amount, kind:e.kind,
+        linkedBankTxId:null, source:'pdf', memo:e.memo||'', dept:e.dept||'', category:e.category||'', due:e.due||''
+      });
+      S.tx.push({
+        id, date:e.date, type:e.kind==='in'?'in':'out',
+        who:e.content||e.item||'PDF',
+        memo:(e.memo||'')+(e.due?' / 期日:'+e.due:'')+(e.dept?'（'+e.dept+'）':''),
+        cat:e.category|| (e.kind==='in'?'雑収入':'その他経費'),
+        taxRate:-1, amount:e.amount, status:'none', by:'pdf', source:'pdf'
+      });
+    });
+    const t=data.totals||{};
+    S.pdfCf={ ym:data.ym, totals:t, title:data.title, notes:data.notes, at:data.at, fileName:data.fileName };
+    saveAll();
+    try{ localStorage.setItem(LS_META, JSON.stringify({ at:data.at, count:entries.length, ym:data.ym, totals:t })); }catch(e){}
+    if(totEl){
+      totEl.style.display='block';
+      totEl.innerHTML='<strong style="color:var(--text)">'+(data.title||'PDF')+'</strong><br>'+
+        '入金合計 '+yen(t.in)+'　／　出金合計 '+yen(t.out)+'　／　差引 '+yen(t.net)+'　／　'+entries.length+'件'+
+        (data.notes?'<br><span style="color:var(--muted)">'+esc(data.notes)+'</span>':'');
+    }
+    renderAll();
+    setStatus((data.ym||ymFallback)+' / '+entries.length+'件取込 ✔');
+    toast('PDFから '+entries.length+' 件を反映（差引 '+yen(t.net)+'）');
+    if(entries.length) window.openBizCfTab?.('forecast');
+    return entries.length;
+  }
+
   btn.addEventListener('click', async ()=>{
+    if(!pendingFile){ toast('先にPDFを選択または貼り付けてください'); return; }
     if(btn.disabled) return;
     btn.disabled=true;
-    setStatus('取得中…');
+    setStatus('PDF解析中…');
     try{
+      const extracted=await extractFromPdf(pendingFile);
+      if(!extracted.text && !extracted.images.length) throw new Error('PDFから文字・画像を取得できませんでした');
+      setStatus('AIで表・期日を読み取り中…');
       const ym=viewMonthStr(view);
       const [yy,mm]=ym.split('-').map(Number);
-      const res=await fetch('/api/sheets-cf',{
+      const res=await fetch('/api/pdf-cf',{
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({year:yy,month:mm})
+        body:JSON.stringify({
+          year:yy, month:mm,
+          fileName:pendingFile.name||'document.pdf',
+          text:extracted.text,
+          images:extracted.images
+        })
       });
       const data=await res.json().catch(()=>({}));
       if(!res.ok || data.ok===false) throw new Error(data.error||data.detail||('HTTP '+res.status));
-      const entries=Array.isArray(data.entries)?data.entries:[];
-      if(!Array.isArray(S.schedules)) S.schedules=[];
-      if(!Array.isArray(S.tx)) S.tx=[];
-      // 前回のスプシ取込だけ置換
-      S.schedules=S.schedules.filter(s=>s.source!=='gsheet');
-      S.tx=S.tx.filter(t=>t.source!=='gsheet');
-      entries.forEach((e,i)=>{
-        const id='gsheet-'+e.date+'-'+e.kind+'-'+i+'-'+String(e.memo||'').slice(0,12);
-        S.schedules.push({
-          id, caseId:null, date:e.date, amount:e.amount, kind:e.kind,
-          linkedBankTxId:null, source:'gsheet', memo:e.memo||'', dept:e.dept||'', category:e.category||''
-        });
-        S.tx.push({
-          id, date:e.date, type:e.kind==='in'?'in':'out',
-          who:e.content||e.item||'スプシ',
-          memo:(e.memo||'')+(e.dept?'（'+e.dept+'）':''),
-          cat:e.category|| (e.kind==='in'?'雑収入':'その他経費'),
-          taxRate:-1, amount:e.amount, status:'none', by:'gsheet', source:'gsheet'
-        });
-      });
-      S.sheetsCf={ ym:data.ym, totals:data.totals, sheetTitle:data.sheetTitle, at:data.at };
-      saveAll();
-      try{ localStorage.setItem('gooner_sheets_cf_meta', JSON.stringify({ at:data.at, count:entries.length, ym:data.ym })); }catch(e){}
-      renderAll();
-      setStatus((data.ym||ym)+' / '+entries.length+'件同期 ✔');
-      toast('スプシから '+entries.length+' 件をCFに反映しました');
-      if(entries.length) window.openBizCfTab?.('forecast');
+      applyPdfEntries(data, ym);
     }catch(e){
       setStatus('失敗: '+(e&&e.message||e));
-      toast('スプシ同期に失敗しました');
+      toast('PDF取込に失敗しました');
       console.error(e);
     }finally{
       btn.disabled=false;
