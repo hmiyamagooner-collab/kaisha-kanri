@@ -2461,6 +2461,14 @@ video.dc-card__image{
       <div class="card stat out biz-stat"><div class="label">今月出金</div><div class="val" id="bcfOut">¥0</div></div>
       <div class="card stat net biz-stat"><div class="label">差引</div><div class="val" id="bcfNet">¥0</div></div>
     </div>
+    <div class="card" style="margin-top:12px;padding:12px 14px">
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">Googleスプレッドシート連携（第３期GoonerCF）</div>
+      <div class="biz-link-row" style="margin:0;flex-wrap:wrap;gap:8px;align-items:center">
+        <button type="button" id="bcfSheetsSync">スプシから同期</button>
+        <span id="bcfSheetsStatus" style="font-size:11px;color:var(--muted)">未同期</span>
+      </div>
+      <p style="margin-top:8px;font-size:11px;color:var(--muted);line-height:1.5">サービスアカウント設定後、閲覧共有したスプシをCF予定・月次に反映します（再同期で前回のスプシ取込分を置換）。</p>
+    </div>
     <div class="biz-link-row">
       <button type="button" data-jump="dash">金庫室を開く</button>
       <button type="button" data-jump="cf-bank">口座・CSV</button>
@@ -4168,6 +4176,67 @@ document.querySelectorAll("[data-jump]").forEach(b=>b.onclick=()=>{
   if(jump==='cf-forecast'){ window.openBizCfTab('forecast'); return; }
   document.querySelector('.gamenav button[data-s="'+jump+'"]')?.click();
 });
+
+/* Google Sheets → CF 同期 */
+(function wireSheetsCfSync(){
+  const btn=document.getElementById('bcfSheetsSync');
+  const st=document.getElementById('bcfSheetsStatus');
+  if(!btn) return;
+  function setStatus(t){ if(st) st.textContent=t; }
+  try{
+    const prev=JSON.parse(localStorage.getItem('gooner_sheets_cf_meta')||'null');
+    if(prev&&prev.at) setStatus('前回: '+prev.at.slice(0,16).replace('T',' ')+' / '+ (prev.count||0)+'件');
+  }catch(e){}
+  btn.addEventListener('click', async ()=>{
+    if(btn.disabled) return;
+    btn.disabled=true;
+    setStatus('取得中…');
+    try{
+      const ym=viewMonthStr(view);
+      const [yy,mm]=ym.split('-').map(Number);
+      const res=await fetch('/api/sheets-cf',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({year:yy,month:mm})
+      });
+      const data=await res.json().catch(()=>({}));
+      if(!res.ok || data.ok===false) throw new Error(data.error||data.detail||('HTTP '+res.status));
+      const entries=Array.isArray(data.entries)?data.entries:[];
+      if(!Array.isArray(S.schedules)) S.schedules=[];
+      if(!Array.isArray(S.tx)) S.tx=[];
+      // 前回のスプシ取込だけ置換
+      S.schedules=S.schedules.filter(s=>s.source!=='gsheet');
+      S.tx=S.tx.filter(t=>t.source!=='gsheet');
+      entries.forEach((e,i)=>{
+        const id='gsheet-'+e.date+'-'+e.kind+'-'+i+'-'+String(e.memo||'').slice(0,12);
+        S.schedules.push({
+          id, caseId:null, date:e.date, amount:e.amount, kind:e.kind,
+          linkedBankTxId:null, source:'gsheet', memo:e.memo||'', dept:e.dept||'', category:e.category||''
+        });
+        S.tx.push({
+          id, date:e.date, type:e.kind==='in'?'in':'out',
+          who:e.content||e.item||'スプシ',
+          memo:(e.memo||'')+(e.dept?'（'+e.dept+'）':''),
+          cat:e.category|| (e.kind==='in'?'雑収入':'その他経費'),
+          taxRate:-1, amount:e.amount, status:'none', by:'gsheet', source:'gsheet'
+        });
+      });
+      S.sheetsCf={ ym:data.ym, totals:data.totals, sheetTitle:data.sheetTitle, at:data.at };
+      saveAll();
+      try{ localStorage.setItem('gooner_sheets_cf_meta', JSON.stringify({ at:data.at, count:entries.length, ym:data.ym })); }catch(e){}
+      renderAll();
+      setStatus((data.ym||ym)+' / '+entries.length+'件同期 ✔');
+      toast('スプシから '+entries.length+' 件をCFに反映しました');
+      if(entries.length) window.openBizCfTab?.('forecast');
+    }catch(e){
+      setStatus('失敗: '+(e&&e.message||e));
+      toast('スプシ同期に失敗しました');
+      console.error(e);
+    }finally{
+      btn.disabled=false;
+    }
+  });
+})();
 const bdAdd=$("#bdAdd");
 if(bdAdd)bdAdd.onclick=()=>{
   const client=$("#bdClient").value.trim(),topic=$("#bdTopic").value.trim(),agent=$("#bdAgent").value.trim(),status=$("#bdStatus").value;
