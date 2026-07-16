@@ -960,6 +960,17 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .entaku-inline.collapsed .entaku-inline-body,
 .entaku-inline.collapsed .entaku-input,
 .entaku-inline.collapsed .entaku-status-panel{display:none}
+.entaku-inline.collapsed{
+  cursor:pointer;
+}
+.entaku-inline.collapsed:hover .entaku-bg-art img{opacity:.42}
+.entaku-inline.collapsed .entaku-empty{
+  font-size:13px;color:rgba(245,214,122,.85);
+}
+.entaku-inline.collapsed .entaku-empty::after{
+  content:" — クリックで会議開始";
+  display:block;margin-top:4px;font-size:11px;color:var(--muted);
+}
 .entaku-inline-head{
   flex-shrink:0;display:flex;align-items:center;gap:8px;position:relative;z-index:4;
   min-height:40px;
@@ -5713,6 +5724,24 @@ window.EntakuAI=(function(){
     }
     setTimeout(focusEntakuInput, 50);
   };
+  (function wireEntakuSpaceClick(){
+    const box=el('entaku-inline');
+    if(!box) return;
+    box.setAttribute('role','button');
+    box.setAttribute('tabindex','0');
+    box.setAttribute('aria-label','円卓会議を開始');
+    function tryOpen(e){
+      if(S.open) return;
+      if(e.target.closest('.entaku-audio-btn')) return;
+      e.preventDefault();
+      openEntaku();
+    }
+    box.addEventListener('click', tryOpen);
+    box.addEventListener('keydown', function(e){
+      if(S.open) return;
+      if(e.key==='Enter' || e.key===' '){ e.preventDefault(); openEntaku(); }
+    });
+  })();
   window.closeEntaku = function(){
     S.open = false;
     syncToggle();
