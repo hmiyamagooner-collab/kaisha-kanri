@@ -1012,7 +1012,12 @@
             .join("") || `<div class="cf-empty ok">重大な指摘はありません</div>`
         }
       </div>
-      <p class="note">AI解析: gpt-4o ／ ${res && res.at ? res.at.slice(0, 16).replace("T", " ") : ""}（社内牽制用・正式な法的助言ではありません）</p>`;
+      ${
+        a.paymentTerms
+          ? `<div class="lg-sec"><div class="lg-sec-t">支払サイト（経理へ）</div><div class="lg-summary">${T().esc(a.paymentTerms)}</div></div>`
+          : ""
+      }
+      <p class="note">法務・陽翔 ／ ${T().esc((res && res.model) || "gpt-4o")} ／ ${res && res.at ? res.at.slice(0, 16).replace("T", " ") : ""}（社内牽制用・正式な法的助言ではありません）</p>`;
   }
 
   function renderLegal() {
@@ -1032,6 +1037,28 @@
     if (out && c && c.legal) out.innerHTML = legalResultHtml(c.legal, c);
   }
 
+  function pushLegalToEntaku(res, opts) {
+    const o = opts || {};
+    const a = (res && res.analysis) || {};
+    let msg = String(a.entakuMessage || "").trim();
+    if (!msg) {
+      const risks = Array.isArray(a.risks) ? a.risks.slice(0, 3).map((r) => r.text).filter(Boolean) : [];
+      msg =
+        (a.summary ? a.summary + "\n\n" : "") +
+        (a.paymentTerms ? "支払サイト: " + a.paymentTerms + "\n" : "") +
+        (risks.length ? "注意点: " + risks.join("／") : "契約書を確認しました。気になる点があれば続けてください。");
+    }
+    if (typeof window.bridgeLegalToEntaku === "function") {
+      window.bridgeLegalToEntaku({
+        message: msg,
+        open: !!o.open,
+        speak: o.speak !== false,
+        followUp: !!o.followUp,
+        contractText: o.contractText || "",
+      });
+    }
+  }
+
   async function runLegal() {
     const S = T().S;
     const text = (document.getElementById("cfLegalText").value || "").trim();
@@ -1040,9 +1067,20 @@
     if (!text) return T().toast("契約書テキストを貼り付けてください");
     const cid = (document.getElementById("cfLegalCase") || {}).value;
     const c = cid ? S.cases.find((x) => x.id === cid) : null;
-    const caseInfo = c ? { title: c.title, type: CASE_TYPES[c.type], counterparty: c.counterparty || partyName(c.partyId), contractDate: c.contractDate, amount: c.amount } : null;
-    if (btn) { btn.disabled = true; btn.textContent = "AI解析中（20-40秒）…"; }
-    if (out) out.innerHTML = `<div class="cf-empty">AIが契約書を読んでいます…</div>`;
+    const caseInfo = c
+      ? {
+          title: c.title,
+          type: CASE_TYPES[c.type],
+          counterparty: c.counterparty || partyName(c.partyId),
+          contractDate: c.contractDate,
+          amount: c.amount,
+        }
+      : null;
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "陽翔が確認中…";
+    }
+    if (out) out.innerHTML = `<div class="cf-empty">法務・陽翔が契約書を読んでいます…</div>`;
     try {
       const r = await fetch("/api/legal-analyze", {
         method: "POST",
@@ -1057,17 +1095,43 @@
       if (out) out.innerHTML = legalResultHtml(res, c);
       if (c) {
         c.legal = res;
-        audit("legal_analyze", `契約リーガル解析: ${c.title}`, { caseId: c.id });
+        audit("legal_analyze", `契約リーガル（陽翔）: ${c.title}`, { caseId: c.id });
         T().saveAll();
         renderCases();
       }
-      T().toast("契約書を解析しました");
+      // 円卓の法務AI（陽翔）へ自動連携
+      pushLegalToEntaku(res, { open: false, speak: true, contractText: text });
+      T().toast("陽翔が契約書をチェックし、円卓にも反映しました");
     } catch (e) {
       if (out)
-        out.innerHTML = `<div class="cf-alert-box"><b>AI解析に失敗しました</b><div class="cf-meta">${T().esc(String(e.message || e))}</div><div class="cf-meta" style="margin-top:6px">GitHub Pages版ではAIは動きません。Vercel版のURLでお試しください。サーバーには OPENAI_API_KEY の設定が必要です。</div></div>`;
+        out.innerHTML = `<div class="cf-alert-box"><b>AI解析に失敗しました</b><div class="cf-meta">${T().esc(String(e.message || e))}</div><div class="cf-meta" style="margin-top:6px">Vercel版＋OPENAI_API_KEY が必要です。</div></div>`;
     } finally {
-      if (btn) { btn.disabled = false; btn.textContent = "AIでチェックする"; }
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "陽翔にチェックさせる";
+      }
     }
+  }
+
+  function consultLegalOnEntaku() {
+    const text = (document.getElementById("cfLegalText").value || "").trim();
+    if (!text) return T().toast("先に契約書テキストを貼り付けてください");
+    const S = T().S;
+    const cid = (document.getElementById("cfLegalCase") || {}).value;
+    const c = cid ? S.cases.find((x) => x.id === cid) : null;
+    const res = c && c.legal ? c.legal : null;
+    if (res) {
+      pushLegalToEntaku(res, { open: true, speak: true, followUp: true, contractText: text });
+    } else if (typeof window.bridgeLegalToEntaku === "function") {
+      window.bridgeLegalToEntaku({
+        message: "契約書の確認をお願いします。気になる条項・支払サイト・リスクを教えてください。",
+        open: true,
+        speak: true,
+        followUp: true,
+        contractText: text,
+      });
+    }
+    T().toast("円卓で陽翔に相談を送りました");
   }
 
   function renderCFAll() {
@@ -1142,6 +1206,7 @@
     document.getElementById("cfLinkBtn")?.addEventListener("click", linkSelected);
     document.getElementById("cfForecastDays")?.addEventListener("change", renderForecast);
     document.getElementById("cfLegalRun")?.addEventListener("click", runLegal);
+    document.getElementById("cfLegalToEntaku")?.addEventListener("click", consultLegalOnEntaku);
     document.getElementById("cfLegalCase")?.addEventListener("change", renderLegal);
     document.getElementById("cfInrouCase")?.addEventListener("change", renderInrou);
     document.getElementById("cfInrouPrint")?.addEventListener("click", () => {

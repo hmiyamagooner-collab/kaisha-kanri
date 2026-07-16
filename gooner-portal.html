@@ -1667,6 +1667,10 @@ video.dc-card__image{
     <span class="nav-photo" style="background-image:url(nav-contract.png)"></span>
     <span class="nav-label">契約書</span>
   </button>
+  <button type="button" class="nav-biz" data-s="cf-legal" style="--nav-photo:url(dash-legal.png)">
+    <span class="nav-photo" style="background-image:url(dash-legal.png)"></span>
+    <span class="nav-label">契約リーガル</span>
+  </button>
   <div class="nav-group nav-group-major">事業</div>
   <button type="button" class="nav-biz" data-s="biz-paradise" style="--nav-photo:url(nav-paradise.png)">
     <span class="nav-photo" style="background-image:url(nav-paradise.png)"></span>
@@ -1702,7 +1706,6 @@ video.dc-card__image{
   <button data-s="cf-cases"><span class="nico">案</span>案件ボード</button>
   <button data-s="cf-link"><span class="nico">⇔</span>明細突合</button>
   <button data-s="cf-flow"><span class="nico">印</span>案件フロー</button>
-  <button data-s="cf-legal"><span class="nico">法</span>契約リーガル</button>
   <button data-s="cf-party"><span class="nico">貸</span>関連者貸借</button>
   <button data-s="cf-inrou"><span class="nico">籠</span>印籠レポート</button>
   <div class="nav-group">記録・精算</div>
@@ -2050,20 +2053,23 @@ video.dc-card__image{
   <div id="cfInrouReport" style="margin-top:12px"></div>
 </section>
 
-<!-- ===== CF: 契約リーガル（AI） ===== -->
+<!-- ===== CF: 契約リーガル（法務・陽翔） ===== -->
 <section class="screen" id="s-cf-legal">
-  <h2 class="stitle">契約リーガル（AI）</h2>
-  <p class="sdesc">契約書を貼り付けてAIでチェック。要点・リスク・金額/相手/契約日を抽出し、登録案件と突合します（社内牽制用・法的助言ではありません）。</p>
+  <h2 class="stitle">契約リーガル（法務・陽翔）</h2>
+  <p class="sdesc">法務部長・陽翔が契約書をチェックします。要点・リスク・支払サイト・金額/相手/契約日を抽出し、登録案件と突合。結果は円卓の陽翔にも引き継がれます（社内牽制用・法的助言ではありません）。</p>
   <div class="cf-grid-2">
     <div class="card">
       <div class="fgroup"><label>突合する案件（任意）</label><select id="cfLegalCase"><option value="">案件と突合しない</option></select></div>
       <div class="fgroup" style="margin-top:10px"><label>契約書テキスト</label>
         <textarea id="cfLegalText" rows="12" placeholder="契約書の本文をここに貼り付け…（PDFは開いてテキストをコピー）"></textarea>
       </div>
-      <button class="save-btn" id="cfLegalRun" style="margin-top:12px">AIでチェックする</button>
-      <p class="note" id="cfLegalNote">※AI解析はVercel版でのみ動作します（GitHub Pages版では動きません）。結果は選んだ案件に保存され、印籠レポートにも反映されます。</p>
+      <div class="biz-link-row" style="margin-top:12px;flex-wrap:wrap;gap:8px">
+        <button class="save-btn" id="cfLegalRun" type="button">陽翔にチェックさせる</button>
+        <button type="button" id="cfLegalToEntaku">円卓で陽翔に相談</button>
+      </div>
+      <p class="note" id="cfLegalNote">※Vercel版＋OPENAI_API_KEYが必要。解析結果は案件に保存され、印籠レポートと円卓（法務AI）に反映されます。</p>
     </div>
-    <div class="card" id="cfLegalResult"><div class="cf-empty">左に契約書を貼って「AIでチェックする」を押してください。</div></div>
+    <div class="card" id="cfLegalResult"><div class="cf-empty">左に契約書を貼って「陽翔にチェックさせる」を押してください。</div></div>
   </div>
 </section>
 
@@ -6330,6 +6336,44 @@ window.EntakuAI=(function(){
     render();
     window.DashTalk?.speak(dept, a.name+'です。どうぞ。', 4000);
     setTimeout(focusEntakuInput, 60);
+  };
+  /** 契約リーガル → 円卓・法務（陽翔）連携 */
+  window.bridgeLegalToEntaku = function(opts){
+    opts = opts || {};
+    const msg = String(opts.message || '').trim();
+    const contractText = String(opts.contractText || '').trim();
+    if(opts.open){ S.open = true; syncToggle(); }
+    S.focus = 'legal';
+    if(msg){
+      S.history.push({ role:'assistant', agent:'legal', content:msg });
+      persistEntaku();
+      render();
+      if(opts.speak !== false) window.DashTalk?.speak('legal', msg.slice(0, 80), 5000);
+    }
+    if(opts.followUp && contractText && window.EntakuAI && window.EntakuAI.isConnected()){
+      const userMsg = '【契約リーガルからの相談】\n契約書本文:\n"""\n'+contractText.slice(0,8000)+'\n"""\n\n上記について、法務の観点から追加の指摘・次の一手を教えてください。';
+      S.history.push({ role:'user', content:userMsg });
+      S.busy = true;
+      persistEntaku();
+      render();
+      var ctx = typeof cfContext==='function' ? cfContext() : '';
+      window.EntakuAI.chat(S.history, ctx, 'legal').then(function(data){
+        S.busy = false;
+        var replies = (data && data.replies) || [];
+        // 陽翔の返答を優先、なければ先頭
+        var legalFirst = replies.filter(function(r){return r.agent==='legal';}).concat(replies.filter(function(r){return r.agent!=='legal';}));
+        if(typeof playReplies==='function') playReplies(legalFirst, data.actions||[], window.scrollY);
+        else {
+          legalFirst.forEach(function(r){ S.history.push({role:'assistant', agent:r.agent, content:r.text}); });
+          persistEntaku(); render();
+        }
+        S.focus = null;
+      }).catch(function(e){
+        S.busy = false;
+        S.history.push({role:'assistant', agent:'legal', content:'円卓への追加相談に失敗しました（'+(e&&e.message||e)+'）。'});
+        persistEntaku(); render();
+      });
+    }
   };
   window.summonOfficeToEntaku=function(payload){
     if(!payload)return;
