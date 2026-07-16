@@ -1190,6 +1190,10 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   margin-left:8px;font-size:11px;font-weight:600;padding:7px 10px;border-radius:8px;cursor:pointer;
   border:1px solid rgba(255,255,255,.3);background:transparent;color:var(--muted);
 }
+.ent-doc-clarify{margin-top:10px;padding:10px 12px;border-radius:10px;border:1px solid rgba(224,179,106,.35);background:rgba(224,179,106,.08)}
+.ent-doc-clarify .ent-pick-cap{font-size:11px;font-weight:700;color:var(--gold-hi);margin:0 0 8px}
+.ent-doc-clarify .ent-pick-types{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.ent-doc-clarify .ent-pick-hint{font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.45}
 .mtg-meta{font-size:12px;color:var(--muted);margin:0 0 12px}
 .mtg-card{
   border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;
@@ -1205,6 +1209,21 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   padding:8px;border-radius:8px;background:rgba(0,0,0,.2);border:1px solid var(--line);
 }
 .mtg-card .mtg-del{margin-top:8px}
+.ent-load-status{
+  margin-top:8px;padding:8px 10px;border-radius:8px;font-size:12px;font-weight:700;
+  border:1px solid rgba(255,255,255,.2);
+}
+.ent-load-status.is-start{color:#9ec9e8;background:rgba(116,185,232,.08);border-color:rgba(116,185,232,.3)}
+.ent-load-status.is-busy{color:var(--gold-hi);background:rgba(210,173,99,.1);border-color:rgba(210,173,99,.35)}
+.ent-load-status.is-ok{color:#8fd6a6;background:rgba(120,190,140,.1);border-color:rgba(120,190,140,.35)}
+.ent-load-status.is-ng{color:#e79a9a;background:rgba(200,100,100,.1);border-color:rgba(200,100,100,.35)}
+.doc-inbox-list{margin-top:12px}
+.doc-inbox-item{
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px;background:var(--panel);
+  font-size:12px;
+}
+.doc-inbox-item b{color:var(--text)}
+.doc-inbox-item .doc-meta{color:var(--muted);font-size:11px;margin-top:4px}
 .entaku-inline #entakuText{flex:1;min-width:0;rows:1;min-height:36px;max-height:72px;font-size:12px;padding:8px}
 .entaku-inline #entakuSend{padding:0 14px;font-size:12px;height:36px}
 .ent-atts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
@@ -1918,9 +1937,9 @@ video.dc-card__image{
             <span>録音中 <span class="entaku-rec-timer" id="entakuRecTimer">0:00</span></span>
             <button type="button" id="entakuRecStop">停止して議事録化</button>
           </div>
-          <button type="button" class="entaku-attach-btn" id="entakuAttachBtn" title="PDF・写真を添付 / PrtScn貼付可" aria-label="添付">＋</button>
+          <button type="button" class="entaku-attach-btn" id="entakuAttachBtn" title="PDF・CSV・写真を添付 / PrtScn貼付可" aria-label="添付">＋</button>
           <button type="button" class="entaku-mic-btn" id="entakuMicBtn" title="マイク録音→Whisper議事録" aria-label="マイク録音">🎙</button>
-          <input type="file" id="entakuFile" accept="image/*,application/pdf,.pdf" multiple hidden>
+          <input type="file" id="entakuFile" accept="image/*,application/pdf,.pdf,.csv,text/csv" multiple hidden>
           <textarea id="entakuText" rows="1" placeholder="相談・領収書・契約書… 画像/PDF・マイク議事録可　Enter送信"></textarea>
           <button type="submit" id="entakuSend">送信</button>
         </form>
@@ -2027,9 +2046,13 @@ video.dc-card__image{
 </section>
 
 <!-- ===== CF: 口座・CSV ===== -->
-<section class="screen" id="s-cf-bank">
+  <section class="screen" id="s-cf-bank">
   <h2 class="stitle">口座・CSV取込</h2>
-  <p class="sdesc">銀行の入出金明細をCSVで取り込みます。取り込まれた行は削除できません（訂正は相殺行で）。</p>
+  <p class="sdesc">銀行・freee・マネーフォワードの入出金明細をCSVで取り込みます。円卓に添付しても自動取込されます。取り込まれた行は削除できません（訂正は相殺行で）。</p>
+  <div class="card" style="margin-bottom:12px">
+    <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">円卓から取込んだ資料</div>
+    <div class="doc-inbox-list" id="docInbox-cf-bank"></div>
+  </div>
   <div class="cf-note-banner">推奨手順: ネットバンクからCSVダウンロード → 口座を選ぶ → 列マッピング確認 → 取込。重複行はハッシュで自動スキップ。</div>
   <div class="cf-grid-2">
     <div class="card">
@@ -2183,12 +2206,20 @@ video.dc-card__image{
     </div>
     <div class="card" id="cfLegalResult"><div class="cf-empty">左に契約書を貼って「陽翔にチェックさせる」を押してください。</div></div>
   </div>
+  <div class="card" style="margin-top:12px">
+    <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">円卓から取込んだ資料</div>
+    <div class="doc-inbox-list" id="docInbox-cf-legal"></div>
+  </div>
 </section>
 
 <!-- ===== 記録する ===== -->
 <section class="screen" id="s-entry">
   <h2 class="stitle">＋ 記録する</h2>
-  <p class="sdesc">30秒で1件。記録するたびXPが貯まります。</p>
+  <p class="sdesc">30秒で1件。記録するたびXPが貯まります。円卓に添付した領収・請求もここに振り分けられます。</p>
+  <div class="card" style="margin-bottom:12px">
+    <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">円卓から取込んだ資料</div>
+    <div class="doc-inbox-list" id="docInbox-entry"></div>
+  </div>
   <div class="card">
     <div class="type-toggle">
       <button data-t="in" class="on" id="tIn">▼ 入金</button>
@@ -2582,23 +2613,29 @@ video.dc-card__image{
 <!-- ===== 会議：経理会議 ===== -->
 <section class="screen" id="s-mtg-finance">
   <h2 class="stitle">経理会議</h2>
-  <p class="sdesc">円卓の録音から作成した経理会議の議事録を保管します。</p>
+  <p class="sdesc">円卓の録音・添付から取り込んだ経理会議の議事録・資料を保管します。</p>
   <p class="mtg-meta" id="mtgFinanceMeta"></p>
   <div id="mtgFinanceList"></div>
+  <h3 class="stitle" style="font-size:15px;margin-top:18px">取込資料</h3>
+  <div class="doc-inbox-list" id="docInbox-mtg-finance"></div>
 </section>
 <!-- ===== 会議：営業会議 ===== -->
 <section class="screen" id="s-mtg-sales">
   <h2 class="stitle">営業会議</h2>
-  <p class="sdesc">円卓の録音から作成した営業会議の議事録を保管します。</p>
+  <p class="sdesc">円卓の録音・添付から取り込んだ営業会議の議事録・資料を保管します。</p>
   <p class="mtg-meta" id="mtgSalesMeta"></p>
   <div id="mtgSalesList"></div>
+  <h3 class="stitle" style="font-size:15px;margin-top:18px">取込資料</h3>
+  <div class="doc-inbox-list" id="docInbox-mtg-sales"></div>
 </section>
 <!-- ===== 会議：その他MT ===== -->
 <section class="screen" id="s-mtg-other">
   <h2 class="stitle">その他MT</h2>
-  <p class="sdesc">円卓の録音から作成したその他ミーティングの議事録を保管します。</p>
+  <p class="sdesc">円卓の録音・添付から取り込んだその他ミーティングの議事録・資料を保管します。</p>
   <p class="mtg-meta" id="mtgOtherMeta"></p>
   <div id="mtgOtherList"></div>
+  <h3 class="stitle" style="font-size:15px;margin-top:18px">取込資料</h3>
+  <div class="doc-inbox-list" id="docInbox-mtg-other"></div>
 </section>
 
 <!-- ===== 事業：探偵 ===== -->
@@ -3082,6 +3119,8 @@ video.dc-card__image{
   </div>
 
   <div class="ct-list" id="ctList"></div>
+  <h3 class="stitle" style="font-size:15px;margin-top:18px">円卓から取込んだ資料</h3>
+  <div class="doc-inbox-list" id="docInbox-contracts"></div>
 </section>
 
 <div class="re-ov" id="ctModal">
@@ -4719,6 +4758,11 @@ document.querySelectorAll("[data-jump]").forEach(b=>b.onclick=()=>{
       btn.disabled=false;
     }
   });
+  window.GoonerPdfCf={
+    extractFromPdf:extractFromPdf,
+    postPdfCf:postPdfCf,
+    applyPdfEntries:applyPdfEntries
+  };
 })();
 
 /** スプシ風 CF表（項目×日） */
@@ -4896,6 +4940,7 @@ function renderAll(){
   $("#mLabel").textContent=viewMonthStr(view);
   fillCats();renderXP();renderDash();renderQuest();renderFlow();renderLedger();renderTax();renderBiz();
   try{ window.MeetingArchive?.render?.(); }catch(e){}
+  try{ window.DocInbox?.render?.(); }catch(e){}
   _cfRenderHooks.forEach(fn=>{try{fn();}catch(e){console.error(e);}});
 }
 renderAll();
@@ -6157,6 +6202,345 @@ window.MeetingArchive=(function(){
 })();
 </script>
 
+<!-- 円卓添付 → 自動振り分け・保管 -->
+<script>
+window.DocInbox=(function(){
+  const KEY='gooner_doc_inbox_v1';
+  const SLOT_IDS=['biz-cf','cf-bank','cf-legal','contracts','cf-cases','mtg-finance','mtg-sales','mtg-other','entry','dash'];
+  function empty(){
+    const o={}; SLOT_IDS.forEach(function(k){ o[k]=[]; }); return o;
+  }
+  function load(){
+    try{
+      const d=JSON.parse(localStorage.getItem(KEY)||'null');
+      if(!d||typeof d!=='object') return empty();
+      const out=empty();
+      SLOT_IDS.forEach(function(k){ out[k]=Array.isArray(d[k])?d[k]:[]; });
+      return out;
+    }catch(e){ return empty(); }
+  }
+  function save(data){ try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){} }
+  function esc(s){
+    return String(s||'').replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);});
+  }
+  function add(module, entry){
+    const mod=SLOT_IDS.includes(module)?module:'dash';
+    const data=load();
+    const row={
+      id:Date.now()+'-'+Math.random().toString(36).slice(2,6),
+      at:new Date().toISOString(),
+      name:String(entry.name||'資料').slice(0,160),
+      title:String(entry.title||entry.name||'資料').slice(0,120),
+      summary:String(entry.summary||'').slice(0,1200),
+      route:String(entry.route||''),
+      label:String(entry.label||''),
+      text:String(entry.text||'').slice(0,8000),
+      kind:String(entry.kind||'pdf')
+    };
+    data[mod].unshift(row);
+    if(data[mod].length>60) data[mod]=data[mod].slice(0,60);
+    save(data);
+    render();
+    return row;
+  }
+  function renderSlot(mod){
+    const el=document.getElementById('docInbox-'+mod);
+    if(!el) return;
+    const rows=load()[mod]||[];
+    el.innerHTML=rows.length?rows.map(function(r){
+      return '<div class="doc-inbox-item"><b>'+esc(r.title||r.name)+'</b>'
+        +'<div class="doc-meta">'+(r.at||'').replace('T',' ').slice(0,16)+' ／ '+esc(r.name)
+        +(r.label?' ／ '+esc(r.label):'')+'</div>'
+        +(r.summary?'<div style="margin-top:6px;line-height:1.5">'+esc(r.summary)+'</div>':'')
+        +'</div>';
+    }).join(''):'<div class="memo" style="color:var(--muted);padding:6px">まだ取込資料はありません。</div>';
+  }
+  function render(){
+    SLOT_IDS.forEach(renderSlot);
+    ['mtg-finance','mtg-sales','mtg-other','cf-legal','contracts','cf-bank','entry'].forEach(renderSlot);
+  }
+  document.addEventListener('DOMContentLoaded', render);
+  return { add, load, render };
+})();
+
+window.EntakuDocIngest=(function(){
+  let busy=false;
+  const queue=[];
+  let pendingClarify=null;
+  const ROUTE_META={
+    cf:{ module:'biz-cf', label:'CF' },
+    bank_csv:{ module:'cf-bank', label:'口座・CSV' },
+    legal:{ module:'cf-legal', label:'契約リーガル' },
+    contracts:{ module:'contracts', label:'契約書' },
+    cases:{ module:'cf-cases', label:'案件ボード' },
+    meeting_finance:{ module:'mtg-finance', label:'経理会議' },
+    meeting_sales:{ module:'mtg-sales', label:'営業会議' },
+    meeting_other:{ module:'mtg-other', label:'その他MT' },
+    entry:{ module:'entry', label:'記録する' },
+    other:{ module:'dash', label:'資料保管' }
+  };
+  function pushStatus(stage, text){
+    const cls=stage==='start'?'is-start':stage==='busy'?'is-busy':stage==='ok'?'is-ok':'is-ng';
+    const api=window.__entakuPushLoadStatus;
+    if(typeof api==='function') api(stage, text, cls);
+    else {
+      try{ window.Treasury?.toast?.(text); }catch(e){}
+    }
+    if(stage==='start') window.PortalTTS?.speak?.('読込開始');
+    else if(stage==='busy') window.PortalTTS?.speak?.('読込中');
+    else if(stage==='ok') window.PortalTTS?.speak?.('読込成功');
+    else if(stage==='ng') window.PortalTTS?.speak?.('読込失敗');
+  }
+  function needsAsk(routeInfo, text){
+    if(!routeInfo) return true;
+    if(routeInfo.needsClarification===true) return true;
+    if(routeInfo.route==='other') return true;
+    if((+routeInfo.confidence||0)<0.45) return true;
+    if(!String(text||'').trim() && routeInfo.route!=='cf') return true;
+    return false;
+  }
+  async function classify(fileName, text, kind, userNote){
+    const payload={ fileName:fileName, text:text||'', kind:kind||'pdf' };
+    if(userNote) payload.text=(payload.text?payload.text+'\n\n':'')+'【利用者の説明】\n'+userNote;
+    try{
+      const res=await fetch('/api/doc-route',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload)
+      });
+      const data=await res.json().catch(function(){ return {}; });
+      if(data&&data.route) return data;
+    }catch(e){}
+    // ローカルフォールバック
+    const b=(fileName||'')+'\n'+(text||'')+'\n'+(userNote||'');
+    if(/\.csv\b|freee|フリー|マネーフォワード|moneyforward|借方金額|貸方金額|収支区分/i.test(b)){
+      return { route:'bank_csv', module:'cf-bank', label:'口座・CSV', summary:'会計CSV', title:fileName, confidence:0.8, needsClarification:false };
+    }
+    if(/CF|キャッシュ|入出金|資金繰|収支/i.test(b)) return { route:'cf', module:'biz-cf', label:'CF', summary:'CF資料', title:fileName, confidence:0.7, needsClarification:false };
+    if(/契約|覚書|合意/i.test(b)) return { route:'legal', module:'cf-legal', label:'契約リーガル', summary:'契約資料', title:fileName, confidence:0.7, needsClarification:false };
+    if(/経理.*会議|会議.*経理/i.test(b)) return { route:'meeting_finance', module:'mtg-finance', label:'経理会議', summary:'会議資料', title:fileName, confidence:0.65, needsClarification:false };
+    if(/営業.*会議|会議.*営業/i.test(b)) return { route:'meeting_sales', module:'mtg-sales', label:'営業会議', summary:'会議資料', title:fileName, confidence:0.65, needsClarification:false };
+    if(/議事|MTG|会議/i.test(b)) return { route:'meeting_other', module:'mtg-other', label:'その他MT', summary:'会議資料', title:fileName, confidence:0.6, needsClarification:false };
+    if(/領収|請求|レシート/i.test(b)) return { route:'entry', module:'entry', label:'記録する', summary:'経費資料', title:fileName, confidence:0.65, needsClarification:false };
+    return { route:'other', module:'dash', label:'資料保管', summary:'一般資料', title:fileName, confidence:0.2, needsClarification:true };
+  }
+  function buildRoute(route, base, note){
+    const meta=ROUTE_META[route]||ROUTE_META.other;
+    return Object.assign({}, base||{}, {
+      route:route,
+      module:meta.module,
+      label:meta.label,
+      summary: note ? ('利用者説明: '+note) : (base&&base.summary)||'',
+      needsClarification:false,
+      confidence:0.9
+    });
+  }
+  async function applyRoute(routeInfo, file, att){
+    const text=String(att.text||routeInfo.extractedText||'');
+    const name=att.name||(file&&file.name)||'document.pdf';
+    const mod=routeInfo.module||'dash';
+    window.DocInbox?.add?.(mod, {
+      name:name, title:routeInfo.title||name, summary:routeInfo.summary||'',
+      route:routeInfo.route, label:routeInfo.label, text:text, kind:att.kind||'pdf'
+    });
+
+    if(routeInfo.route==='bank_csv'){
+      if(!window.GoonerBankCsv?.importCsvText) throw new Error('CSV取込モジュール未読込');
+      const csvText=String(att.csvText||text||'');
+      if(!csvText.trim()) throw new Error('CSV本文が空です');
+      const result=window.GoonerBankCsv.importCsvText(csvText, name, { via:'entaku' });
+      window.Treasury?.renderAll?.();
+      try{ document.querySelector('.gamenav button[data-s="cf-bank"]')?.click(); }catch(e){}
+      const vendor=result.vendor==='freee'?'freee':result.vendor==='moneyforward'?'マネーフォワード':result.vendor;
+      return '口座・CSVへ +'+result.added+'件（skip '+result.skipped+'／'+vendor+'）';
+    }
+
+    if(routeInfo.route==='cf' && file && window.GoonerPdfCf){
+      const extracted=await window.GoonerPdfCf.extractFromPdf(file);
+      const hintYm=(window.Treasury&&window.Treasury.S&&typeof viewMonthStr==='function')
+        ? null : null;
+      let year, month;
+      try{
+        const label=document.getElementById('mLabel');
+        const ym=(label&&label.textContent)||new Date().toISOString().slice(0,7);
+        const p=ym.split('-').map(Number);
+        year=p[0]; month=p[1];
+      }catch(e){
+        const n=new Date(); year=n.getFullYear(); month=n.getMonth()+1;
+      }
+      const base={
+        year:year, month:month,
+        fileName:name,
+        text:extracted.text||text,
+        images:extracted.images||[]
+      };
+      let data;
+      try{ data=await window.GoonerPdfCf.postPdfCf(base); }
+      catch(ex){
+        if(base.images.length&&base.text) data=await window.GoonerPdfCf.postPdfCf(Object.assign({},base,{images:[]}));
+        else throw ex;
+      }
+      const applied=window.GoonerPdfCf.applyPdfEntries(data);
+      window.Treasury?.saveAll?.();
+      window.Treasury?.renderAll?.();
+      window.openBizCfTab?.('sheet');
+      return 'CFへ '+(applied&&applied.count||0)+'件反映（'+(applied&&applied.ym||'')+'）';
+    }
+
+    if(routeInfo.route==='legal' || routeInfo.route==='contracts'){
+      const ta=document.getElementById('cfLegalText');
+      if(ta && text) ta.value=text.slice(0,16000);
+      if(text){
+        try{
+          const res=await fetch('/api/legal-analyze',{
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({ contractText:text.slice(0,16000) })
+          });
+          const data=await res.json().catch(function(){ return {}; });
+          if(res.ok && data){
+            const box=document.getElementById('cfLegalResult');
+            if(box){
+              box.innerHTML='<div class="label" style="margin-bottom:8px">円卓自動取込結果</div>'
+                +'<div style="white-space:pre-wrap;font-size:13px;line-height:1.55">'+(window.Treasury?window.Treasury.esc(data.summary||data.entakuMessage||'解析完了'):String(data.summary||''))+'</div>';
+            }
+            if(routeInfo.route==='contracts' && window.Treasury&&window.Treasury.S){
+              const S=window.Treasury.S;
+              if(!Array.isArray(S.contracts)) S.contracts=[];
+              S.contracts.unshift({
+                id:'ct'+Date.now(),
+                party:data.counterparty||'（相手先）',
+                title:routeInfo.title||data.type||name,
+                biz:'その他',
+                amount:data.amount||0,
+                date:(data.contractDate||'').replace(/-/g,'/')||'',
+                status:'unsigned',
+                body:String(data.summary||routeInfo.summary||'').slice(0,500)
+              });
+              window.Treasury.saveAll();
+            }
+            if(data.entakuMessage){
+              window.bridgeLegalToEntaku?.({ message:data.entakuMessage, open:true, speak:true });
+            }
+          }
+        }catch(e){}
+      }
+      return (routeInfo.label||'契約')+'へ読込';
+    }
+
+    if(/^meeting_/.test(routeInfo.route||'')){
+      const type=routeInfo.route==='meeting_finance'?'finance':routeInfo.route==='meeting_sales'?'sales':'other';
+      window.MeetingArchive?.add?.(type, {
+        summary:routeInfo.summary||'',
+        transcript:text.slice(0,8000),
+        decisions:[],
+        report:routeInfo.title||name,
+        participants:[],
+        by:'円卓添付'
+      });
+      return (routeInfo.label||'会議')+'へ保管';
+    }
+
+    return (routeInfo.label||'資料保管')+'へ保管';
+  }
+  async function runOne(job){
+    const { file, att }=job;
+    const name=att.name||(file&&file.name)||'document';
+    pushStatus('start', '読込開始: '+name);
+    pushStatus('busy', '読込中: '+name+' を解析・振り分けしています…');
+    try{
+      let text=att.text||'';
+      if(file && att.kind==='pdf' && window.GoonerPdfCf?.extractFromPdf){
+        try{
+          const extracted=await window.GoonerPdfCf.extractFromPdf(file);
+          if(extracted&&extracted.text&&extracted.text.length>text.length){
+            text=extracted.text;
+            att.text=text.slice(0,8000);
+          }
+          att._pdfImages=extracted&&extracted.images||[];
+        }catch(e){}
+      }
+      let routeInfo;
+      if(att.kind==='csv'){
+        routeInfo={ route:'bank_csv', module:'cf-bank', label:'口座・CSV', summary:'CSV自動取込', title:name, confidence:0.9, needsClarification:false };
+      }else{
+        routeInfo=await classify(name, text, att.kind||'pdf');
+      }
+      routeInfo.extractedText=text;
+      if(needsAsk(routeInfo, text)){
+        pushStatus('busy', '読込中: 資料の種類が判別できません。説明を確認します…');
+        const clarified=await new Promise(function(resolve){
+          pendingClarify={ file:file, att:att, text:text, routeInfo:routeInfo, resolve:resolve };
+          try{ window.__entakuAskDocClarify?.(att, routeInfo, text); }catch(e){ resolve(null); }
+        });
+        pendingClarify=null;
+        if(!clarified){
+          att.routed=false;
+          pushStatus('ng', '読込失敗: '+name+'（種類が確認できませんでした）');
+          return;
+        }
+        if(clarified.route){
+          routeInfo=buildRoute(clarified.route, routeInfo, clarified.note||'');
+          routeInfo.extractedText=text;
+        }else if(clarified.note){
+          routeInfo=await classify(name, text, att.kind||'pdf', clarified.note);
+          routeInfo.extractedText=text;
+          if(needsAsk(routeInfo, text) && routeInfo.route==='other'){
+            // 説明があっても不明なら資料保管へ
+            routeInfo=buildRoute('other', routeInfo, clarified.note);
+            routeInfo.extractedText=text;
+          }else{
+            routeInfo.needsClarification=false;
+            if(clarified.note) routeInfo.summary=(routeInfo.summary?routeInfo.summary+'／':'')+'利用者説明: '+clarified.note;
+          }
+        }
+      }
+      const detail=await applyRoute(routeInfo, file, att);
+      att.routed=true;
+      att.route=routeInfo.route;
+      att.routeLabel=routeInfo.label;
+      pushStatus('ok', '読込成功: '+name+' → '+(routeInfo.label||'')+(detail?'（'+detail+'）':''));
+      try{
+        window.__entakuAfterDocRoute?.(routeInfo, att, detail);
+      }catch(e){}
+    }catch(e){
+      att.routed=false;
+      pendingClarify=null;
+      pushStatus('ng', '読込失敗: '+name+'（'+(e&&e.message||e)+'）');
+    }
+  }
+  async function pump(){
+    if(busy) return;
+    busy=true;
+    while(queue.length){
+      const job=queue.shift();
+      await runOne(job);
+    }
+    busy=false;
+  }
+  function ingest(file, att){
+    if(!att) return;
+    queue.push({ file:file||null, att:att });
+    pump();
+  }
+  function hasPendingClarify(){ return !!pendingClarify; }
+  function resolveClarify(opts){
+    opts=opts||{};
+    if(!pendingClarify||typeof pendingClarify.resolve!=='function') return false;
+    const route=opts.route?String(opts.route):'';
+    const note=String(opts.note||'').trim();
+    if(!route && !note) return false;
+    pendingClarify.resolve({ route:route||'', note:note });
+    return true;
+  }
+  function cancelClarify(){
+    if(!pendingClarify||typeof pendingClarify.resolve!=='function') return false;
+    pendingClarify.resolve(null);
+    return true;
+  }
+  return { ingest, hasPendingClarify, resolveClarify, cancelClarify, ROUTE_META };
+})();
+</script>
+
 <!-- 円卓会議：Dashboard内インライン（下の #entaku-inline を使用） -->
 <script>
 (function(){
@@ -6170,7 +6554,7 @@ window.MeetingArchive=(function(){
     { id:'sales', label:'営業会議' },
     { id:'other', label:'その他MT' }
   ];
-  const S = { history: [], busy: false, playing: false, open: false, tour: null, lastScreen: 'dash', focus: null, actions: [], minutes: [], pendingAtt: [], recMeta: null, pickDraft: null, awaitingPick: false };
+  const S = { history: [], busy: false, playing: false, open: false, tour: null, lastScreen: 'dash', focus: null, actions: [], minutes: [], pendingAtt: [], recMeta: null, pickDraft: null, awaitingPick: false, awaitingDocClarify: false };
   let lastSpokenIdx = -1;
   let lastDashIdx = -1;
   const LS_ENTAKU = 'gooner_entaku_v2';
@@ -6182,6 +6566,8 @@ window.MeetingArchive=(function(){
       const slimHist = S.history.slice(-60).map(function(m){
         const o = { role:m.role, content:m.content, agent:m.agent };
         if(m.kind) o.kind = m.kind;
+        if(m.loadStage) o.loadStage = m.loadStage;
+        if(m.loadClass) o.loadClass = m.loadClass;
         if(m.summary) o.summary = String(m.summary).slice(0, 4000);
         if(m.transcript) o.transcript = String(m.transcript).slice(0, 8000);
         if(Array.isArray(m.decisions)) o.decisions = m.decisions.slice(0, 8);
@@ -6396,7 +6782,8 @@ window.MeetingArchive=(function(){
       if(a.kind==='image'){
         return '<div class="entaku-chip" data-att="'+esc(a.id)+'"><img src="'+a.dataUrl+'" alt=""><span class="entaku-chip-name">'+esc(a.name)+'</span><button type="button" class="entaku-chip-x" data-rm="'+esc(a.id)+'" aria-label="remove">x</button></div>';
       }
-      return '<div class="entaku-chip" data-att="'+esc(a.id)+'"><span aria-hidden="true">PDF</span><span class="entaku-chip-name">'+esc(a.name)+'</span><button type="button" class="entaku-chip-x" data-rm="'+esc(a.id)+'" aria-label="remove">x</button></div>';
+      const tag=a.kind==='csv'?'CSV':'PDF';
+      return '<div class="entaku-chip" data-att="'+esc(a.id)+'"><span aria-hidden="true">'+tag+'</span><span class="entaku-chip-name">'+esc(a.name)+'</span><button type="button" class="entaku-chip-x" data-rm="'+esc(a.id)+'" aria-label="remove">x</button></div>';
     }).join('');
     bar.querySelectorAll('[data-rm]').forEach(function(b){
       b.onclick=function(){ removePendingAtt(b.getAttribute('data-rm')); };
@@ -6404,22 +6791,91 @@ window.MeetingArchive=(function(){
   }
   function ingestFiles(fileList){
     const files=Array.from(fileList||[]);
+    if(!S.open && files.length){ S.open=true; syncToggle(); }
     files.forEach(function(file){
       if(!file) return;
       if(file.size>ATT_MAX_BYTES){ window.Treasury?.toast?.('ファイルが大きすぎます（6MBまで）'); return; }
       if(/^image\//.test(file.type) || /\.(png|jpe?g|gif|webp|bmp)$/i.test(file.name||'')){
-        compressImageFile(file).then(addPendingAtt).catch(function(){ window.Treasury?.toast?.('画像の取り込みに失敗しました'); });
+        compressImageFile(file).then(function(att){
+          addPendingAtt(att);
+          window.EntakuDocIngest?.ingest?.(file, att);
+        }).catch(function(){ window.Treasury?.toast?.('画像の取り込みに失敗しました'); });
         return;
       }
       if(file.type==='application/pdf' || /\.pdf$/i.test(file.name||'')){
         Promise.all([readAsDataURL(file), extractPdfText(file)]).then(function(pair){
-          addPendingAtt({ id:attUid(), kind:'pdf', name:file.name||'document.pdf', mime:'application/pdf', dataUrl:pair[0], text:pair[1]||'' });
+          const att={ id:attUid(), kind:'pdf', name:file.name||'document.pdf', mime:'application/pdf', dataUrl:pair[0], text:pair[1]||'', routed:false };
+          addPendingAtt(att);
+          window.EntakuDocIngest?.ingest?.(file, att);
         }).catch(function(){ window.Treasury?.toast?.('PDFの取り込みに失敗しました'); });
         return;
       }
-      window.Treasury?.toast?.('画像またはPDFのみ添付できます');
+      if(file.type==='text/csv' || /\.csv$/i.test(file.name||'') || file.type==='application/vnd.ms-excel'){
+        file.arrayBuffer().then(function(buf){
+          let csvText='';
+          try{
+            csvText=new TextDecoder('utf-8',{fatal:false}).decode(buf);
+            // 文字化けっぽいときは Shift_JIS を試す（freee/MFのWindows出力向け）
+            if(/�/.test(csvText) || (csvText && !/[,年月日取引摘要金額入出金借貸]/.test(csvText.slice(0,400)))){
+              try{ csvText=new TextDecoder('shift_jis').decode(buf); }catch(e1){
+                try{ csvText=new TextDecoder('windows-31j').decode(buf); }catch(e2){}
+              }
+            }
+          }catch(e){
+            csvText=new TextDecoder('utf-8').decode(buf);
+          }
+          if(csvText.charCodeAt(0)===0xFEFF) csvText=csvText.slice(1);
+          const att={
+            id:attUid(), kind:'csv', name:file.name||'import.csv', mime:'text/csv',
+            text:csvText.slice(0,20000), csvText:csvText, routed:false
+          };
+          addPendingAtt(att);
+          window.EntakuDocIngest?.ingest?.(file, att);
+        }).catch(function(){ window.Treasury?.toast?.('CSVの取り込みに失敗しました'); });
+        return;
+      }
+      window.Treasury?.toast?.('画像・PDF・CSVのみ添付できます');
     });
   }
+  window.__entakuPushLoadStatus=function(stage, text, cls){
+    if(!S.open){ S.open=true; syncToggle(); }
+    S.history.push({
+      role:'assistant', agent:'secretary', kind:'load-status',
+      content:text,
+      loadStage:stage,
+      loadClass:cls||''
+    });
+    persistEntaku();
+    render();
+  };
+  window.__entakuAfterDocRoute=function(routeInfo, att, detail){
+    const label=routeInfo&&routeInfo.label||'保管先';
+    const mod=routeInfo&&routeInfo.module||'';
+    S.history.push({
+      role:'assistant', agent: routeInfo&&routeInfo.route==='legal'?'legal':(routeInfo&&routeInfo.route==='cf'?'finance':'secretary'),
+      content:'『'+(att&&att.name||'資料')+'』を【'+label+'】へ振り分けて読込みました。'+(detail?(' '+detail):'')
+        +(mod?'\n左サイドバーの該当ボタンから確認できます。':'')
+    });
+    persistEntaku();
+    render();
+  };
+  window.__entakuAskDocClarify=function(att, routeInfo, text){
+    if(!S.open){ S.open=true; syncToggle(); }
+    S.awaitingDocClarify=true;
+    const name=att&&att.name||'添付資料';
+    const ask=(routeInfo&&routeInfo.askUser)||'この添付資料が何のデータか教えてください。';
+    S.history.push({
+      role:'assistant', agent:'secretary', kind:'doc-clarify', live:true,
+      content:'『'+name+'』の種類が判別できませんでした。\n'+ask+'\n下のボタンで保管先を選ぶか、チャットで説明を送ってください。',
+      fileName:name,
+      preview:String(text||'').slice(0,180)
+    });
+    persistEntaku();
+    render();
+    window.DashTalk?.speak?.('secretary', '添付資料の内容を教えてください。', 4500);
+    try{ window.PortalTTS?.speak?.('添付資料の内容を教えてください。'); }catch(e){}
+    focusEntakuInput();
+  };
   function attachmentsHtml(atts){
     if(!atts||!atts.length) return '';
     return '<div class="ent-atts">'+atts.map(function(a){
@@ -6429,6 +6885,9 @@ window.MeetingArchive=(function(){
       if(a.kind==='pdf'){
         const href=a.dataUrl||'#';
         return '<a class="ent-att-pdf" href="'+href+'" target="_blank" rel="noopener" download="'+esc(a.name||'file.pdf')+'">PDF　'+esc(a.name||'document.pdf')+(a.text?'　（テキスト抽出済）':'')+'</a>';
+      }
+      if(a.kind==='csv'){
+        return '<span class="ent-att-pdf">CSV　'+esc(a.name||'import.csv')+(a.routeLabel?'　→ '+esc(a.routeLabel):'')+'</span>';
       }
       return '';
     }).join('')+'</div>';
@@ -6505,6 +6964,9 @@ window.MeetingArchive=(function(){
     return '<div class="entaku-jumps">'+hits.slice(0,4).map(r=>'<button type="button" class="entaku-jump" data-s="'+r.s+'">'+r.label+'</button>').join('')+'</div>';
   }
   function minutesHtml(m){
+    if(m.kind==='load-status'){
+      return '<div class="ent-load-status '+(m.loadClass||'')+'">'+esc(m.content||'')+'</div>';
+    }
     if(m.kind!=='minutes') return '';
     const dec=(Array.isArray(m.decisions)?m.decisions:[]).map(function(d){
       return '<li>'+esc(d.title)+(d.owner?' <span class="ent-act-meta">('+esc(d.owner)+(d.due?'・'+esc(d.due):'')+')</span>':'')+'</li>';
@@ -6565,13 +7027,49 @@ window.MeetingArchive=(function(){
       +'<button type="button" class="ent-pick-cancel" data-mtg-pick-cancel="1">キャンセル</button>'
       +'</div>';
   }
+  function docClarifyHtml(m){
+    if(m.kind!=='doc-clarify') return '';
+    const live=!!m.live && S.awaitingDocClarify;
+    if(!live){
+      return '<div class="ent-doc-clarify"><div class="ent-pick-cap">資料確認</div><div style="font-size:11px;color:var(--muted)">'
+        +(m.resolvedLabel?('振り分け: '+esc(m.resolvedLabel)+(m.resolvedNote?' ／ '+esc(m.resolvedNote):'')):'（キャンセル／未回答）')
+        +'</div></div>';
+    }
+    const opts=[
+      {r:'bank_csv',l:'口座・CSV'},{r:'cf',l:'CF'},{r:'legal',l:'契約リーガル'},{r:'contracts',l:'契約書'},
+      {r:'cases',l:'案件ボード'},{r:'meeting_finance',l:'経理会議'},{r:'meeting_sales',l:'営業会議'},
+      {r:'meeting_other',l:'その他MT'},{r:'entry',l:'記録する'}
+    ];
+    const btns=opts.map(function(o){
+      return '<button type="button" class="ent-pick-type" data-doc-clarify-route="'+o.r+'">'+esc(o.l)+'</button>';
+    }).join('');
+    return '<div class="ent-doc-clarify">'
+      +'<div class="ent-pick-cap">保管先を選ぶ</div>'
+      +'<div class="ent-pick-types">'+btns+'</div>'
+      +'<div class="ent-pick-hint">または下の入力欄で「これは○月のCFです」「契約書です」など説明を送ってください。'
+      +(m.preview?'<br>抽出テキスト抜粋: '+esc(m.preview)+'…':'')+'</div>'
+      +'<button type="button" class="ent-pick-cancel" data-doc-clarify-cancel="1">取込をやめる</button>'
+      +'</div>';
+  }
+  function finishDocClarifyMsg(label, note){
+    S.awaitingDocClarify=false;
+    const last=S.history.filter(function(m){return m.kind==='doc-clarify'&&m.live;}).pop();
+    if(last){
+      last.live=false;
+      last.resolvedLabel=label||'';
+      last.resolvedNote=note||'';
+      if(label) last.content='ありがとうございます。『'+label+'』として読込みを続けます。'+(note?('\n説明: '+note):'');
+      else last.content='資料確認をキャンセルしました。';
+    }
+  }
   function render(){
     const body = el('entakuBody'); if(!body) return;
     body.innerHTML = S.history.map((m,idx)=>{
       const who = agentLabel(m);
       const cls = m.role==='user' ? 'ent-me' : ('ent-ai ent-agent-'+(m.agent||'secretary'));
-      const jumps = m.role==='assistant' ? jumpButtons(m.content) : '';
-      return '<div class="ent-msg '+cls+'"><span class="ent-who">'+who+'</span><div class="ent-txt">'+esc(m.content).replace(/\n/g,'<br>')+minutesHtml(m)+meetingPickHtml(m,idx)+attachmentsHtml(m.attachments)+jumps+'</div></div>';
+      const jumps = m.role==='assistant' && m.kind!=='load-status' && m.kind!=='doc-clarify' ? jumpButtons(m.content) : '';
+      const bodyTxt = m.kind==='load-status' ? '' : esc(m.content).replace(/\n/g,'<br>');
+      return '<div class="ent-msg '+cls+'"><span class="ent-who">'+who+'</span><div class="ent-txt">'+bodyTxt+minutesHtml(m)+meetingPickHtml(m,idx)+docClarifyHtml(m)+attachmentsHtml(m.attachments)+jumps+'</div></div>';
     }).join('')
       + (S.busy?'<div class="ent-msg ent-ai ent-agent-secretary"><span class="ent-who">秘書　凛</span><div class="ent-txt ent-typing">凛・紬・陽翔が協議中…</div></div>':'')
       + actionsHtml();
@@ -6626,10 +7124,29 @@ window.MeetingArchive=(function(){
         window.__entakuBeginRecAfterPick?.();
       };
     });
+    body.querySelectorAll('[data-doc-clarify-route]').forEach(function(b){
+      b.onclick=function(){
+        const route=b.dataset.docClarifyRoute;
+        const meta=(window.EntakuDocIngest&&EntakuDocIngest.ROUTE_META&&EntakuDocIngest.ROUTE_META[route])||{label:route};
+        finishDocClarifyMsg(meta.label,'');
+        persistEntaku(); render();
+        window.EntakuDocIngest?.resolveClarify?.({ route:route, note:'' });
+      };
+    });
+    body.querySelectorAll('[data-doc-clarify-cancel]').forEach(function(b){
+      b.onclick=function(){
+        finishDocClarifyMsg('','');
+        persistEntaku(); render();
+        window.EntakuDocIngest?.cancelClarify?.();
+        window.Treasury?.toast?.('資料の取込をキャンセルしました');
+      };
+    });
     const ta = el('entakuText');
-    if(ta) ta.placeholder = S.focus
-      ? (agentOf(S.focus).name + 'さんへ指名中… 画像/PDF・マイク可　Enter送信')
-      : '相談・領収書・契約書… 画像/PDF・マイク議事録可　Enter送信';
+    if(ta) ta.placeholder = S.awaitingDocClarify
+      ? 'この資料は何ですか？（例：7月CF表／業務委託契約／営業会議資料）'
+      : (S.focus
+        ? (agentOf(S.focus).name + 'さんへ指名中… 画像/PDF・マイク可　Enter送信')
+        : '相談・領収書・契約書… 画像/PDF・マイク議事録可　Enter送信');
     renderPendingAtt();
     setAiWorking(S.busy,{tour:false});
     el('entaku-inline')?.classList.toggle('is-busy',S.busy);
@@ -6749,6 +7266,20 @@ window.MeetingArchive=(function(){
     if(!q && !atts.length) return false;
     if(!S.open){ S.open=true; syncToggle(); }
     const scrollY=window.scrollY;
+    // 不明資料の確認待ち：説明文を振り分けに使う（通常チャットは走らせない）
+    if(S.awaitingDocClarify && window.EntakuDocIngest?.hasPendingClarify?.() && q){
+      keepPageScroll(function(){
+        S.history.push({role:'user', content:q});
+        ta.value='';
+        finishDocClarifyMsg('説明に基づき判定', q);
+        render();
+      });
+      persistEntaku();
+      window.EntakuDocIngest.resolveClarify({ route:'', note:q });
+      window.DashTalk?.speak('secretary', '説明を反映して読込みを続けます。', 2800);
+      requestAnimationFrame(function(){window.scrollTo(0,scrollY);});
+      return false;
+    }
     const content = q || (atts.some(function(a){return a.kind==='pdf';}) ? '添付のPDFを確認してください。' : '添付の画像を確認してください。');
     keepPageScroll(function(){
       S.history.push({role:'user', content:content, attachments:atts});
@@ -7086,9 +7617,13 @@ window.MeetingArchive=(function(){
     });
   });
   restoreEntaku();      // 前回の会議・議事録を復元
-  // 復元時は未完了の会議選択を無効化
-  S.history.forEach(function(m){ if(m&&m.kind==='meeting-pick') m.live=false; });
-  S.awaitingPick=false; S.pickDraft=null;
+  // 復元時は未完了の会議選択・資料確認を無効化
+  S.history.forEach(function(m){
+    if(!m) return;
+    if(m.kind==='meeting-pick' || m.kind==='doc-clarify') m.live=false;
+  });
+  S.awaitingPick=false; S.pickDraft=null; S.awaitingDocClarify=false;
+  try{ window.EntakuDocIngest?.cancelClarify?.(); }catch(e){}
   if(S.history.length) render();
   syncToggle();
   try{ window.MeetingArchive?.render?.(); }catch(e){}

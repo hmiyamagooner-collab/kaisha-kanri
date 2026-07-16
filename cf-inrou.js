@@ -121,22 +121,167 @@
   }
 
   function guessMap(headers) {
-    const h = headers.map((x) => x.toLowerCase());
+    const raw = headers.map((x) => String(x || ""));
+    const h = raw.map((x) => x.toLowerCase());
     const find = (...keys) => {
       for (const k of keys) {
-        const i = h.findIndex((x) => x.includes(k));
+        const i = h.findIndex((x) => x.includes(k.toLowerCase()));
         if (i >= 0) return i;
       }
       return -1;
     };
-    return {
-      date: find("日付", "取引日", "年月日", "date"),
-      amount: find("金額", "お預り", "お引", "出金", "入金", "amount"),
-      deposit: find("入金", "お預り金額", "預り"),
-      withdraw: find("出金", "お支払い金額", "支払"),
-      memo: find("摘要", "内容", "適用", "memo", "備考", "取引先"),
-      balance: find("残高", "balance"),
+    const findExact = (...keys) => {
+      for (const k of keys) {
+        const i = raw.findIndex((x) => x === k || x.toLowerCase() === k.toLowerCase());
+        if (i >= 0) return i;
+      }
+      return -1;
     };
+    // freee / マネーフォワード向けの優先キー
+    const date =
+      findExact("取引日", "発生日", "決済日", "日付") >= 0
+        ? findExact("取引日", "発生日", "決済日", "日付")
+        : find("取引日", "発生日", "決済日", "年月日", "日付", "date");
+    const deposit =
+      findExact("収入", "借方金額", "入金金額", "お預り金額") >= 0
+        ? findExact("収入", "借方金額", "入金金額", "お預り金額")
+        : find("収入", "借方金額", "入金", "お預り");
+    const withdraw =
+      findExact("支出", "貸方金額", "出金金額", "お支払い金額") >= 0
+        ? findExact("支出", "貸方金額", "出金金額", "お支払い金額")
+        : find("支出", "貸方金額", "出金", "お支払");
+    const amount =
+      findExact("金額（円）", "金額(円)", "金額") >= 0
+        ? findExact("金額（円）", "金額(円)", "金額")
+        : find("amount", "金額");
+    const memo =
+      findExact("摘要", "内容", "備考", "取引先", "勘定科目") >= 0
+        ? findExact("摘要", "内容", "備考", "取引先", "勘定科目")
+        : find("摘要", "内容", "適用", "memo", "備考", "取引先", "勘定科目", "品目");
+    const balance = findExact("残高", "残高（円）", "残高(円)") >= 0 ? findExact("残高", "残高（円）", "残高(円)") : find("残高", "balance");
+    const kind = findExact("収支区分", "取引区分", "入出金区分") >= 0 ? findExact("収支区分", "取引区分", "入出金区分") : find("収支区分", "取引区分");
+    return { date, amount, deposit, withdraw, memo, balance, kind };
+  }
+
+  function detectCsvVendor(headers, fileName) {
+    const blob = `${fileName || ""}\n${(headers || []).join(",")}`;
+    if (/freee|フリー|収支区分|管理番号|決算整理仕訳/i.test(blob)) return "freee";
+    if (/マネーフォワード|money\s*forward|moneyforward|借方勘定科目|貸方勘定科目|mf_/i.test(blob)) return "moneyforward";
+    if (/摘要|入金|出金|残高|取引日|お預り|お支払/i.test(blob)) return "bank";
+    return "unknown";
+  }
+
+  function ensureImportAccount(vendor, preferredId) {
+    const S = T().S;
+    if (preferredId && S.accounts.some((a) => a.id === preferredId)) return preferredId;
+    const name =
+      vendor === "freee" ? "freee取込" : vendor === "moneyforward" ? "マネーフォワード取込" : "CSV取込";
+    let acc = S.accounts.find((a) => a.name === name);
+    if (!acc) {
+      acc = {
+        id: uid(),
+        name,
+        bank: vendor === "freee" ? "freee" : vendor === "moneyforward" ? "マネーフォワード" : "",
+        owner: "company",
+        note: "円卓／CSV自動取込用",
+      };
+      S.accounts.push(acc);
+    }
+    return acc.id;
+  }
+
+  /** 円卓などからの自動CSV取込（UI不要） */
+  function importCsvText(text, fileName, opts) {
+    opts = opts || {};
+    const S = T().S;
+    const parsed = parseCSV(String(text || ""));
+    if (!parsed.headers.length || !parsed.rows.length) {
+      throw new Error("CSVに有効な行がありません");
+    }
+    const vendor = detectCsvVendor(parsed.headers, fileName);
+    const map = guessMap(parsed.headers);
+    if (map.date < 0) throw new Error("日付列を認識できません（freee／MF／銀行CSVを確認）");
+    const accountId = ensureImportAccount(vendor, opts.accountId || null);
+    const flagLarge = opts.flagLarge !== false;
+    const batchId = uid();
+    let added = 0,
+      skipped = 0;
+    const existing = new Set(S.bankTx.map((t) => t.hash));
+
+    parsed.rows.forEach((r) => {
+      const date = normDate(map.date >= 0 ? r[map.date] : "");
+      if (!date) {
+        skipped++;
+        return;
+      }
+      let amount = null;
+      if (map.deposit >= 0 || map.withdraw >= 0) {
+        const dep = map.deposit >= 0 ? numJP(r[map.deposit]) : 0;
+        const wd = map.withdraw >= 0 ? numJP(r[map.withdraw]) : 0;
+        amount = (dep || 0) - (wd || 0);
+      } else if (map.amount >= 0) {
+        amount = numJP(r[map.amount]);
+        if (map.kind >= 0 && amount != null) {
+          const k = String(r[map.kind] || "");
+          if (/支出|出金|支払|費用|minus|\-/i.test(k) && amount > 0) amount = -amount;
+          if (/収入|入金|売上/i.test(k) && amount < 0) amount = Math.abs(amount);
+        }
+      }
+      if (amount == null || amount === 0) {
+        skipped++;
+        return;
+      }
+      const memoParts = [];
+      if (map.memo >= 0 && r[map.memo]) memoParts.push(r[map.memo]);
+      // freee/MFで取引先・科目が別列なら摘要に足す
+      const h = parsed.headers.map((x) => String(x || ""));
+      const iPartner = h.findIndex((x) => /取引先|相手/.test(x));
+      const iAccount = h.findIndex((x) => /勘定科目/.test(x) && !/借方|貸方/.test(x));
+      if (iPartner >= 0 && r[iPartner] && !memoParts.includes(r[iPartner])) memoParts.push(r[iPartner]);
+      if (iAccount >= 0 && r[iAccount] && !memoParts.includes(r[iAccount])) memoParts.push(r[iAccount]);
+      const memo = memoParts.join(" / ");
+      const balance = map.balance >= 0 ? numJP(r[map.balance]) : null;
+      const rec = {
+        id: uid(),
+        accountId,
+        date,
+        amount,
+        memo,
+        balance,
+        batchId,
+        importedAt: new Date().toISOString(),
+        source: "csv",
+        vendor,
+        immutable: true,
+        needsExplain: !!(flagLarge && Math.abs(amount) >= 500000),
+      };
+      rec.hash = rowHash(rec);
+      if (existing.has(rec.hash)) {
+        skipped++;
+        return;
+      }
+      existing.add(rec.hash);
+      S.bankTx.push(rec);
+      added++;
+    });
+
+    S.importBatches = S.importBatches || [];
+    S.importBatches.push({
+      id: batchId,
+      accountId,
+      fileName: fileName || "import.csv",
+      at: new Date().toISOString(),
+      added,
+      skipped,
+      vendor,
+      via: opts.via || "auto",
+    });
+    audit("csv_import", `CSV取込 ${fileName || ""} (${vendor}): +${added} / skip ${skipped}`, { batchId, accountId });
+    T().saveAll();
+    try {
+      renderCFAll();
+    } catch (e) {}
+    return { added, skipped, accountId, vendor, batchId, rows: parsed.rows.length };
   }
 
   function numJP(s) {
@@ -1470,6 +1615,13 @@
     T().onRender(renderCFAll);
     renderCFAll();
   }
+
+  window.GoonerBankCsv = {
+    parseCSV,
+    guessMap,
+    detectCsvVendor,
+    importCsvText,
+  };
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();
