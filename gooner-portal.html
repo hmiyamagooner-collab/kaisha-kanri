@@ -95,6 +95,17 @@ input,select,textarea{font-family:inherit}
   padding:14px 10px 5px;font-family:var(--font-display);font-weight:600;
   text-transform:uppercase;
 }
+.gamenav .nav-group.nav-group-major{
+  margin:8px 4px 6px;
+  padding:9px 10px;
+  font-family:'Zen Kaku Gothic New',var(--font-body),sans-serif;
+  font-size:14px;font-weight:700;letter-spacing:.12em;
+  color:#fff;text-align:center;text-transform:none;
+  border:1px solid rgba(255,255,255,.55);
+  border-radius:8px;
+  background:rgba(255,255,255,.04);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+}
 .gamenav button{
   display:flex;align-items:center;gap:10px;width:100%;text-align:left;
   color:var(--text);
@@ -1436,7 +1447,7 @@ video.dc-card__image{
 
 <div id="portal-shell" hidden>
 <nav class="gamenav" aria-label="メインメニュー">
-  <div class="nav-group">会計</div>
+  <div class="nav-group nav-group-major">会計</div>
   <button type="button" class="nav-biz" data-s="biz-cf" style="--nav-photo:url(nav-cf.png)">
     <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
     <span class="nav-label">CF</span>
@@ -1445,7 +1456,7 @@ video.dc-card__image{
     <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
     <span class="nav-label">商流</span>
   </button>
-  <div class="nav-group">事業ユニット</div>
+  <div class="nav-group nav-group-major">事業</div>
   <button type="button" class="nav-biz" data-s="biz-paradise" style="--nav-photo:url(nav-paradise.png)">
     <span class="nav-photo" style="background-image:url(nav-paradise.png)"></span>
     <span class="nav-label">パラダイスシティ事業</span>
@@ -2327,7 +2338,81 @@ video.dc-card__image{
 .re-modal-btns button{flex:1;padding:11px;font-size:13px;border-radius:8px;cursor:pointer;font-weight:700;border:none}
 .re-submit{background:linear-gradient(180deg,#f0dfa8,var(--gold-hi));color:#1a1510}
 .re-cancel{background:var(--panel2);color:var(--muted);border:1px solid var(--line-strong)}
-@media(max-width:640px){#s-biz-realestate .re-summary{grid-template-columns:1fr}#s-biz-realestate .re-pc-body{grid-template-columns:repeat(2,1fr)}}
+.re-field textarea{width:100%;background:var(--panel2);border:1px solid var(--line-strong);border-radius:8px;padding:9px 11px;color:var(--text);font-size:13px;font-family:var(--font-body);outline:none;resize:vertical}
+.re-field textarea:focus{border-color:var(--gold)}
+/* 承認バナー */
+#s-biz-realestate .re-approval{border-radius:12px;padding:13px 15px;margin-bottom:14px;border:1px solid var(--line)}
+#s-biz-realestate .re-approval.blocked{background:rgba(255,90,90,.06);border-color:rgba(255,120,120,.45)}
+#s-biz-realestate .re-approval.ready{background:rgba(255,157,60,.08);border-color:rgba(255,157,60,.5)}
+#s-biz-realestate .re-approval.approved{background:rgba(74,222,128,.08);border-color:rgba(74,222,128,.55)}
+#s-biz-realestate .re-ap-main{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#s-biz-realestate .re-ap-status{font-size:15px;font-weight:800;color:var(--text)}
+#s-biz-realestate .re-approval.blocked .re-ap-status{color:#ff8a8a}
+#s-biz-realestate .re-approval.ready .re-ap-status{color:var(--out)}
+#s-biz-realestate .re-ap-stamp{font-size:15px;font-weight:900;color:#4ade80;border:2px solid #4ade80;border-radius:8px;padding:2px 10px;letter-spacing:.08em}
+#s-biz-realestate .re-ap-meta{font-size:11px;color:var(--muted)}
+#s-biz-realestate .re-ap-btn{margin-top:11px;background:linear-gradient(180deg,#ffd08a,var(--out));color:#241200;border:none;border-radius:9px;padding:11px 16px;font-size:14px;font-weight:800;cursor:pointer}
+#s-biz-realestate .re-ap-btn.approve{background:linear-gradient(180deg,#8ef0b3,var(--in));color:#062012}
+#s-biz-realestate .re-ap-btn.revoke{background:var(--panel2);color:var(--muted);border:1px solid var(--line-strong);font-weight:700;padding:8px 14px;font-size:12px}
+#s-biz-realestate .re-ap-btn[disabled]{opacity:.4;cursor:not-allowed;filter:grayscale(.6)}
+#s-biz-realestate .re-ap-reasons{margin:10px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
+#s-biz-realestate .re-ap-reasons li{font-size:11.5px;color:#ff9d9d}
+#s-biz-realestate .re-cond{margin-top:12px;padding-top:11px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+#s-biz-realestate .re-cond-t{font-size:10px;letter-spacing:.1em;color:var(--muted);width:100%}
+#s-biz-realestate .re-cond-item{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer}
+#s-biz-realestate .re-cond-item.on{color:var(--in)}
+#s-biz-realestate .re-cond-item input{accent-color:#4ade80;width:15px;height:15px}
+/* スキーム */
+#s-biz-realestate .re-scheme{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:6px}
+#s-biz-realestate .re-scheme-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+#s-biz-realestate .re-scheme-narr{font-size:12.5px;color:var(--text);line-height:1.7;flex:1}
+#s-biz-realestate .re-asset{margin-top:10px;font-size:11px;color:var(--muted);background:var(--panel2);border-radius:6px;padding:6px 10px;display:inline-block}
+#s-biz-realestate .re-flow{display:flex;align-items:stretch;gap:6px;margin-top:12px;overflow-x:auto;padding-bottom:4px}
+#s-biz-realestate .re-stage{min-width:150px;flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px}
+#s-biz-realestate .re-stage-h{font-size:10px;letter-spacing:.06em;color:var(--muted);margin-bottom:8px;text-align:center}
+#s-biz-realestate .re-stage-b{display:flex;flex-direction:column;gap:6px}
+#s-biz-realestate .re-chip{background:var(--panel);border:1px solid var(--line-strong);border-left-width:3px;border-radius:7px;padding:6px 8px;font-size:11.5px;color:var(--text);display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+#s-biz-realestate .re-chip.empty{color:var(--muted);border-style:dashed;justify-content:center}
+#s-biz-realestate .re-chip-name{font-weight:600}
+#s-biz-realestate .re-cc{font-size:9px;font-weight:700;border-radius:4px;padding:1px 5px}
+#s-biz-realestate .re-cc.ok{background:rgba(74,222,128,.18);color:var(--in)}
+#s-biz-realestate .re-cc.ng{background:rgba(255,157,60,.18);color:var(--out)}
+#s-biz-realestate .re-clink{font-size:9px;color:var(--muted);width:100%}
+#s-biz-realestate .re-arrow{display:flex;align-items:center;color:var(--muted);font-size:20px;flex-shrink:0}
+#s-biz-realestate .re-exit-line{display:flex;justify-content:space-between;gap:10px;margin-top:12px;padding:8px 11px;background:rgba(255,157,60,.08);border:1px solid rgba(255,157,60,.35);border-radius:8px;font-size:12px}
+#s-biz-realestate .re-exit-line span{color:var(--muted)}
+#s-biz-realestate .re-exit-line b{color:var(--out)}
+#s-biz-realestate .re-contract-summary{margin-top:10px;font-size:11.5px;padding:6px 10px;border-radius:6px}
+#s-biz-realestate .re-contract-summary.ok{background:rgba(74,222,128,.1);color:var(--in)}
+#s-biz-realestate .re-contract-summary.ng{background:rgba(255,157,60,.1);color:var(--out)}
+/* 税 */
+#s-biz-realestate .re-tax{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:6px}
+#s-biz-realestate .re-tx-mode{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+#s-biz-realestate .re-tx-mode button{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:7px 12px;font-size:11.5px;font-weight:600;cursor:pointer}
+#s-biz-realestate .re-tx-mode button.on{background:#fff;color:#111;border-color:#fff}
+#s-biz-realestate .re-tx-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+#s-biz-realestate .re-tx-grid label{font-size:10.5px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+#s-biz-realestate .re-tx-grid input{background:var(--panel2);border:1px solid var(--line-strong);border-radius:7px;padding:8px 10px;color:var(--text);font-size:13px;font-family:var(--font-num);outline:none}
+#s-biz-realestate .re-tx-grid input:focus{border-color:var(--gold)}
+#s-biz-realestate .re-tx-out{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+#s-biz-realestate .re-tx-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:12.5px;color:var(--muted)}
+#s-biz-realestate .re-tx-row b{font-family:var(--font-num);font-weight:700}
+#s-biz-realestate .re-tx-row b.pos{color:var(--in)}
+#s-biz-realestate .re-tx-row b.neg{color:#ff8a8a}
+#s-biz-realestate .re-tx-row b.tax{color:var(--out)}
+#s-biz-realestate .re-tx-row.total{border-top:1px dashed var(--line-strong);margin-top:4px;padding-top:9px;font-size:13.5px;color:var(--text);font-weight:700}
+#s-biz-realestate .re-tx-note{margin-top:10px;font-size:10.5px;color:var(--muted);line-height:1.6}
+/* スキーム編集モーダルの企業行 */
+.re-crow{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px;margin-bottom:8px}
+.re-crow-top{display:grid;grid-template-columns:1fr 110px 30px;gap:6px}
+.re-crow-top input,.re-crow-top select,.re-crow-note,.re-crow-case{background:var(--panel2);border:1px solid var(--line-strong);border-radius:7px;padding:7px 9px;color:var(--text);font-size:12.5px;outline:none}
+.re-crow-note{width:100%;margin-top:6px}
+.re-crow-del{background:transparent;border:1px solid var(--line-strong);color:var(--out);border-radius:7px;cursor:pointer;font-size:13px}
+.re-crow-c{display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap}
+.re-crow-chk{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted);cursor:pointer;white-space:nowrap}
+.re-crow-chk input{accent-color:#4ade80;width:15px;height:15px}
+.re-crow-case{flex:1;min-width:150px}
+@media(max-width:640px){#s-biz-realestate .re-summary{grid-template-columns:1fr}#s-biz-realestate .re-pc-body{grid-template-columns:repeat(2,1fr)}#s-biz-realestate .re-tx-grid{grid-template-columns:1fr}}
 </style>
 <section class="screen" id="s-biz-realestate">
   <header class="biz-hero" style="--biz-photo:url(nav-realestate.png)">
@@ -2351,6 +2436,8 @@ video.dc-card__image{
     </div>
   </div>
 
+  <div class="re-approval blocked" id="reApproval"></div>
+
   <div class="re-progress">
     <div class="re-prog-label">
       <span class="re-prog-txt">累積調達金</span>
@@ -2368,6 +2455,12 @@ video.dc-card__image{
     <div class="re-scard"><div class="re-slabel">GK残高</div><div class="re-svalue" id="reGkBalance" style="color:var(--in)">—</div></div>
     <div class="re-scard"><div class="re-slabel">手数料計</div><div class="re-svalue" id="reTotalFee" style="color:var(--muted)">—</div></div>
   </div>
+
+  <div class="re-sec-title">事業スキーム・商流</div>
+  <div class="re-scheme" id="reScheme"></div>
+
+  <div class="re-sec-title">税金計算（自動）</div>
+  <div class="re-tax" id="reTaxPanel"></div>
 
   <div class="re-sec-title">配分ステータス</div>
   <div class="re-person-cards" id="rePersonCards"></div>
@@ -2442,6 +2535,22 @@ video.dc-card__image{
     <div class="re-field"><label>Gooner うちGE報酬（通帳外・円）</label><input id="reJ-reward" type="number" placeholder="0"></div>
     <div class="re-modal-btns">
       <button class="re-submit" id="reProjSave">保存</button>
+      <button class="re-cancel" data-re-close>キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<div class="re-ov" id="reMScheme">
+  <div class="re-modal">
+    <div class="re-modal-t">事業スキーム・関係企業（商流）</div>
+    <div class="re-field"><label>スキーム説明（仕組み・計画・出口）</label><textarea id="reSch-text" rows="4" placeholder="誰の資金が、どの口座を経由し、どこへ配分され、最終的にどう出口（バイアウト等）を迎えるか"></textarea></div>
+    <div class="re-field"><label>出口方針</label><input id="reSch-exit" placeholder="例：会社バイアウト（株式譲渡による第三者売却）"></div>
+    <div class="re-fgroup">
+      <div class="re-fgroup-t" style="display:flex;justify-content:space-between;align-items:center">関係企業（名称・役割・契約・契約書）<button type="button" class="re-mini" id="reSch-add">＋ 企業を追加</button></div>
+      <div id="reSch-companies"></div>
+    </div>
+    <div class="re-modal-btns">
+      <button class="re-submit" id="reSchSave">保存</button>
       <button class="re-cancel" data-re-close>キャンセル</button>
     </div>
   </div>
@@ -3729,10 +3838,34 @@ window.Treasury={
   const T=window.Treasury; if(!T) return;
   const $=s=>document.querySelector(s), esc=T.esc;
 
+  const ROLES=['開発対象','入金元','資金ハブ','配分先','FA','出口'];
+  const CAMEL_SCHEME='GCエステー／グローバルクラウド（エステー）が調達金をGK口座へ入金。GK口座（Gooner・深山信次FGC管理）で集約し、川畑氏（FA）・深山信次FGC・GE・Goonerへ配分。累積調達2.47億円を経て、最終的に対象会社のバイアウト（株式譲渡による第三者売却）で出口を迎える。';
+  const CAMEL_EXIT='会社バイアウト（対象会社の株式譲渡による第三者売却）';
+  const CAMEL_COMPANIES=[
+    {name:'一宮市北高井東地区開発', role:'開発対象', note:'CAMEL Phase I の対象地区', contracted:true, caseId:''},
+    {name:'GCエステー', role:'入金元', note:'調達金の振込元', contracted:false, caseId:''},
+    {name:'グローバルクラウド', role:'入金元', note:'調達金の振込元', contracted:false, caseId:''},
+    {name:'グローバルクラウドエステー', role:'入金元', note:'調達金の振込元', contracted:false, caseId:''},
+    {name:'GK口座（Gooner・深山信次FGC管理）', role:'資金ハブ', note:'入金を集約し各所へ配分', contracted:false, caseId:''},
+    {name:'川畑氏', role:'FA', note:'ファイナンシャルアドバイザー（FAフィー）', contracted:false, caseId:''},
+    {name:'深山信次・FGC', role:'配分先', note:'主要配分先', contracted:false, caseId:''},
+    {name:'GE（グローバルエナジー）', role:'配分先', note:'報酬・未収金', contracted:false, caseId:''},
+    {name:'Gooner', role:'配分先', note:'資金主体', contracted:false, caseId:''},
+    {name:'（バイアウト先 未定）', role:'出口', note:'最終取得者（買主）', contracted:false, caseId:''}
+  ];
+  const defaultTax=()=>({mode:'corp', buyout:0, cost:0, expense:0, building:0, stamp:0, rates:{corp:0.34, cgt:0.20315, consumption:0.10}});
+  const defaultConditions=()=>([
+    {id:'legal',    label:'契約書・リーガル確認済（AIリーガル）', checked:false},
+    {id:'aml',      label:'資金原資の説明・反社／マネロンチェック済', checked:false},
+    {id:'chairman', label:'会長承認（印籠）取得', checked:false}
+  ]);
+  const CONTRACT_ROLES=['入金元','資金ハブ','配分先','FA','出口'];
   function seedCamel(){
     return {
       id:'camel', name:'調達金配分管理DB', sub:'一宮市北高井東地区開発 — CAMEL Phase I',
       target:247000000, reward:2495181,
+      scheme:CAMEL_SCHEME, exit:CAMEL_EXIT, companies:CAMEL_COMPANIES.map(c=>({...c})),
+      tax:defaultTax(), conditions:defaultConditions(), approval:{approved:false,by:'',at:''},
       parties:[
         {key:'kawabata',   name:'川畑氏（FAフィー）',        alloc:7410000,   color:'#5dd9ad'},
         {key:'fgc_miyama', name:'深山信次・FGC',            alloc:162688214, color:'#b39ddb'},
@@ -3769,7 +3902,26 @@ window.Treasury={
   }
   const RE=S.realestate;
 
+  /* 旧データへスキーム・税・条件・承認フィールドを補完 */
+  (function migrate(){
+    let changed=false;
+    RE.projects.forEach(p=>{
+      if(p.scheme===undefined){ p.scheme=(p.id==='camel'?CAMEL_SCHEME:''); changed=true; }
+      if(p.exit===undefined){ p.exit=(p.id==='camel'?CAMEL_EXIT:''); changed=true; }
+      if(!Array.isArray(p.companies)){ p.companies=(p.id==='camel'?CAMEL_COMPANIES.map(c=>({...c})):[]); changed=true; }
+      p.companies.forEach(c=>{ if(c.contracted===undefined)c.contracted=false; if(c.caseId===undefined)c.caseId=''; });
+      if(!p.tax){ p.tax=defaultTax(); changed=true; }
+      if(!p.tax.rates)p.tax.rates={corp:0.34,cgt:0.20315,consumption:0.10};
+      if(!Array.isArray(p.conditions)){ p.conditions=defaultConditions(); changed=true; }
+      if(!p.approval){ p.approval={approved:false,by:'',at:''}; changed=true; }
+    });
+    if(changed)T.saveAll();
+  })();
+
   function active(){ let p=RE.projects.find(x=>x.id===RE.activeId); if(!p){p=RE.projects[0]; RE.activeId=p.id;} return p; }
+  function cases(){ return Array.isArray(S.cases)?S.cases:[]; }
+  function caseTitle(id){ const c=cases().find(x=>x.id===id); return c?c.title:''; }
+  function caseHasContract(id){ const c=cases().find(x=>x.id===id); return !!(c&&c.legal&&c.legal.analysis); }
   function pk(p,k){ return p.parties.find(x=>x.key===k); }
   const fmt=n=>n?'¥'+Math.abs(Math.round(n)).toLocaleString('ja-JP'):'—';
   const pct=n=>(n*100).toFixed(1)+'%';
@@ -3781,6 +3933,54 @@ window.Treasury={
     p.transfers.forEach(t=>{ if(ext[t.to]!==undefined)ext[t.to]+=(+t.amount||0); if(ext[t.from]!==undefined)ext[t.from]-=(+t.amount||0); });
     const paid={}; p.parties.forEach(pt=>{ let base=pt.key==='ge'?gk.ge:pt.key==='gooner'?gk.gooner:0; paid[pt.key]=base+(ext[pt.key]||0); });
     return {gk,paid};
+  }
+
+  /* ---- スキーム完全性・税・契約・承認 ---- */
+  function schemeState(p){
+    const comps=p.companies||[];
+    const roles=comps.map(c=>c.role);
+    const s={
+      hasScheme:!!(p.scheme&&p.scheme.trim()),
+      hasIn:roles.includes('入金元'),
+      hasHub:roles.includes('資金ハブ'),
+      hasDist:roles.includes('配分先')||roles.includes('FA'),
+      hasExit:roles.includes('出口')&&!!(p.exit&&p.exit.trim()),
+      allNamed:comps.length>0&&comps.every(c=>c.name&&c.name.trim()&&c.role)
+    };
+    s.ok=s.hasScheme&&s.hasIn&&s.hasHub&&s.hasDist&&s.hasExit&&s.allNamed;
+    return s;
+  }
+  function contractParties(p){ return (p.companies||[]).filter(c=>CONTRACT_ROLES.includes(c.role)); }
+  function contractState(p){
+    const list=contractParties(p);
+    const pending=list.filter(c=>!c.contracted);
+    return {total:list.length, done:list.length-pending.length, pending, ok:list.length>0&&pending.length===0};
+  }
+  function calcTax(p){
+    const t=p.tax||{}, r=t.rates||{};
+    const buyout=+t.buyout||0, cost=+t.cost||0, expense=+t.expense||0, building=+t.building||0, stamp=+t.stamp||0;
+    const gain=buyout-cost-expense;
+    const rate=t.mode==='individual'?(r.cgt||0.20315):(r.corp||0.34);
+    const gainTax=Math.max(0,gain)*rate;
+    const consumption=building*(r.consumption||0.10);
+    const total=gainTax+consumption+stamp;
+    const net=gain-total;
+    return {buyout,cost,expense,building,stamp,gain,rate,gainTax,consumption,total,net,mode:t.mode||'corp'};
+  }
+  function taxDone(p){ const t=p.tax||{}; return (+t.buyout>0)&&(+t.cost>0); }
+  function canApprove(p){ return schemeState(p).ok && taxDone(p) && contractState(p).ok && (p.conditions||[]).every(c=>c.checked); }
+  function blockReasons(p){
+    const s=schemeState(p), cs=contractState(p), reasons=[];
+    if(!s.hasScheme)reasons.push('事業スキームの説明が未入力');
+    if(!s.hasIn)reasons.push('入金元の企業が未登録');
+    if(!s.hasHub)reasons.push('資金ハブ（口座）が未登録');
+    if(!s.hasDist)reasons.push('配分先／FAが未登録');
+    if(!s.hasExit)reasons.push('出口（バイアウト先・出口方針）が未設定');
+    if(!s.allNamed)reasons.push('企業名・役割が未入力の関係企業あり');
+    if(!taxDone(p))reasons.push('税金計算（バイアウト額・取得原価）が未入力');
+    cs.pending.forEach(c=>reasons.push('未契約：'+(c.name||'（無名企業）')));
+    (p.conditions||[]).forEach(c=>{ if(!c.checked)reasons.push('条件未達：'+c.label); });
+    return reasons;
   }
 
   function renderTabs(){
@@ -3845,6 +4045,84 @@ window.Treasury={
         ${x.note?`<div class="re-note">${esc(x.note)}</div>`:''}
       </div>`;
     }).join(''):'<div class="re-empty">記録なし。</div>';
+
+    renderApproval(p);
+    renderScheme(p);
+    renderTaxPanel(p);
+  }
+
+  const STAGES=[{role:'入金元',label:'調達金 入金元'},{role:'資金ハブ',label:'資金ハブ（GK口座）'},{role:'配分先',label:'配分先・FA',also:'FA'},{role:'出口',label:'出口'}];
+  const ROLE_COLOR={'開発対象':'#d6d6d6','入金元':'#4ade80','資金ハブ':'#ffb15c','配分先':'#74b9e8','FA':'#b39ddb','出口':'#ff9d3c'};
+
+  function renderApproval(p){
+    const box=$("#reApproval"); if(!box) return;
+    const ap=p.approval||{}, ok=canApprove(p), reasons=blockReasons(p);
+    if(ap.approved){
+      box.className='re-approval approved';
+      box.innerHTML=`<div class="re-ap-main"><span class="re-ap-stamp">印籠 承認済</span><span class="re-ap-meta">${esc(ap.by||'—')} ／ ${esc(ap.at||'')}</span></div>
+        <button type="button" class="re-ap-btn revoke" id="reRevoke">差戻し</button>`;
+    }else if(ok){
+      box.className='re-approval ready';
+      box.innerHTML=`<div class="re-ap-main"><span class="re-ap-status">✔ 承認可能</span><span class="re-ap-meta">商流・契約・税・条件すべて充足</span></div>
+        <button type="button" class="re-ap-btn approve" id="reApprove">承認する（印籠を押す）</button>`;
+    }else{
+      box.className='re-approval blocked';
+      box.innerHTML=`<div class="re-ap-main"><span class="re-ap-status">🔒 承認不可</span><span class="re-ap-meta">${reasons.length}件の未充足</span></div>
+        <button type="button" class="re-ap-btn" disabled>承認する（印籠を押す）</button>
+        <ul class="re-ap-reasons">${reasons.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`;
+    }
+  }
+
+  function renderScheme(p){
+    const box=$("#reScheme"); if(!box) return;
+    const cs=contractState(p), asset=(p.companies||[]).filter(c=>c.role==='開発対象');
+    const stageHtml=STAGES.map((st,si)=>{
+      const list=(p.companies||[]).filter(c=>c.role===st.role||(st.also&&c.role===st.also));
+      const chips=list.length?list.map(c=>{
+        const badge=CONTRACT_ROLES.includes(c.role)?(c.contracted?'<span class="re-cc ok">契約済</span>':'<span class="re-cc ng">未契約</span>'):'';
+        const link=c.caseId&&caseTitle(c.caseId)?`<span class="re-clink">📄${esc(caseTitle(c.caseId))}</span>`:'';
+        return `<div class="re-chip" style="border-color:${ROLE_COLOR[c.role]||'#fff'}"><span class="re-chip-name">${esc(c.name||'（無名）')}</span>${badge}${link}</div>`;
+      }).join(''):'<div class="re-chip empty">未登録</div>';
+      return `<div class="re-stage"><div class="re-stage-h">${esc(st.label)}</div><div class="re-stage-b">${chips}</div></div>${si<STAGES.length-1?'<div class="re-arrow">›</div>':''}`;
+    }).join('');
+    box.innerHTML=`
+      <div class="re-scheme-top">
+        <div class="re-scheme-narr">${p.scheme?esc(p.scheme):'<span class="re-empty">事業スキームの説明が未入力です。「編集」から入力してください。</span>'}</div>
+        <button type="button" class="re-mini" id="reEditScheme">✎ 編集</button>
+      </div>
+      ${asset.length?`<div class="re-asset">対象アセット：${asset.map(a=>esc(a.name)).join('／')}</div>`:''}
+      <div class="re-flow">${stageHtml}</div>
+      <div class="re-exit-line"><span>出口方針</span><b>${p.exit?esc(p.exit):'未設定'}</b></div>
+      <div class="re-contract-summary ${cs.ok?'ok':'ng'}">関係企業の契約締結：${cs.done}／${cs.total}社${cs.ok?'（全社締結済）':'（未締結あり）'}</div>`;
+  }
+
+  function renderTaxPanel(p){
+    const box=$("#reTaxPanel"); if(!box) return;
+    const t=p.tax||{}, c=calcTax(p);
+    const row=(l,v,cls)=>`<div class="re-tx-row"><span>${l}</span><b class="${cls||''}">${fmt(v)}</b></div>`;
+    box.innerHTML=`
+      <div class="re-tx-inputs">
+        <div class="re-tx-mode">
+          <button type="button" class="${t.mode!=='individual'?'on':''}" data-re-taxmode="corp">法人（実効34%）</button>
+          <button type="button" class="${t.mode==='individual'?'on':''}" data-re-taxmode="individual">個人・株式譲渡（20.315%）</button>
+        </div>
+        <div class="re-tx-grid">
+          <label>バイアウト額（譲渡価額）<input type="number" data-re-tax="buyout" value="${+t.buyout||''}" placeholder="0"></label>
+          <label>取得原価<input type="number" data-re-tax="cost" value="${+t.cost||''}" placeholder="0"></label>
+          <label>諸経費（仲介手数料等）<input type="number" data-re-tax="expense" value="${+t.expense||''}" placeholder="0"></label>
+          <label>建物価格（消費税対象）<input type="number" data-re-tax="building" value="${+t.building||''}" placeholder="0"></label>
+          <label>印紙税（実額）<input type="number" data-re-tax="stamp" value="${+t.stamp||''}" placeholder="0"></label>
+        </div>
+      </div>
+      <div class="re-tx-out">
+        ${row('譲渡益（バイアウト − 原価 − 諸経費）', c.gain, c.gain<0?'neg':'pos')}
+        ${row((c.mode==='individual'?'株式譲渡益課税':'法人税等')+'（'+(c.rate*100).toFixed(3).replace(/\.?0+$/,'')+'%）', c.gainTax, 'tax')}
+        ${row('消費税（建物分 10%）', c.consumption, 'tax')}
+        ${row('印紙税', c.stamp, 'tax')}
+        <div class="re-tx-row total"><span>税額合計</span><b class="tax">${fmt(c.total)}</b></div>
+        <div class="re-tx-row total"><span>税引後 手取り</span><b class="${c.net<0?'neg':'pos'}">${fmt(c.net)}</b></div>
+      </div>
+      <div class="re-tx-note">※ 概算です。実効税率・課税対象は「税率」設定で調整できます。バイアウト額・取得原価が未入力だと承認できません。</div>`;
   }
 
   function openM(id){ $(id).classList.add('open'); }
@@ -3889,7 +4167,8 @@ window.Treasury={
       p.name=name; p.sub=sub; p.target=target; p.reward=reward; p.parties=parties;
     }else{
       const id='p'+Date.now();
-      RE.projects.push({id,name,sub,target,reward,parties,payments:[],transfers:[]});
+      RE.projects.push({id,name,sub,target,reward,parties,payments:[],transfers:[],
+        scheme:'',exit:'',companies:[],tax:defaultTax(),conditions:defaultConditions(),approval:{approved:false,by:'',at:''}});
       RE.activeId=id;
     }
     T.saveAll(); closeAll(); renderRE();
@@ -3931,6 +4210,60 @@ window.Treasury={
     r.readAsText(f);
   };
 
+  /* ---- 事業スキーム／関係企業 編集 ---- */
+  function caseOptions(sel){
+    return '<option value="">— 契約書（案件）を選択 —</option>'+cases().map(c=>`<option value="${esc(c.id)}"${c.id===sel?' selected':''}>${esc(c.title)}${c.legal&&c.legal.analysis?'（契約書あり）':''}</option>`).join('');
+  }
+  function companyRow(c,idx){
+    c=c||{name:'',role:'配分先',note:'',contracted:false,caseId:''};
+    return `<div class="re-crow" data-crow="${idx}">
+      <div class="re-crow-top">
+        <input data-cn="${idx}" value="${esc(c.name||'')}" placeholder="企業・関係者名">
+        <select data-cr="${idx}">${ROLES.map(r=>`<option value="${r}"${c.role===r?' selected':''}>${r}</option>`).join('')}</select>
+        <button type="button" class="re-crow-del" data-cdel="${idx}" title="削除">×</button>
+      </div>
+      <input data-cnote="${idx}" value="${esc(c.note||'')}" placeholder="関与内容・メモ" class="re-crow-note">
+      <div class="re-crow-c">
+        <label class="re-crow-chk"><input type="checkbox" data-cc="${idx}"${c.contracted?' checked':''}> 契約済</label>
+        <select data-ccase="${idx}" class="re-crow-case">${caseOptions(c.caseId)}</select>
+      </div>
+    </div>`;
+  }
+  function renderCompanyRows(list){
+    $("#reSch-companies").innerHTML=list.map((c,i)=>companyRow(c,i)).join('')||'<div class="re-empty">関係企業がありません。「＋ 企業を追加」で登録してください。</div>';
+  }
+  function collectCompanies(){
+    return [...document.querySelectorAll('#reSch-companies .re-crow')].map(row=>{
+      const i=row.dataset.crow;
+      return {
+        name:(row.querySelector(`[data-cn="${i}"]`).value||'').trim(),
+        role:row.querySelector(`[data-cr="${i}"]`).value,
+        note:(row.querySelector(`[data-cnote="${i}"]`).value||'').trim(),
+        contracted:row.querySelector(`[data-cc="${i}"]`).checked,
+        caseId:row.querySelector(`[data-ccase="${i}"]`).value
+      };
+    });
+  }
+  function openSchemeModal(){
+    const p=active();
+    $("#reSch-text").value=p.scheme||'';
+    $("#reSch-exit").value=p.exit||'';
+    renderCompanyRows((p.companies||[]).map(c=>({...c})));
+    openM('#reMScheme');
+  }
+  $("#reSch-add").onclick=()=>{ const list=collectCompanies(); list.push({name:'',role:'配分先',note:'',contracted:false,caseId:''}); renderCompanyRows(list); };
+  $("#reMScheme").addEventListener('click', e=>{
+    const del=e.target.closest('[data-cdel]'); if(!del)return;
+    const list=collectCompanies(); list.splice(+del.dataset.cdel,1); renderCompanyRows(list);
+  });
+  $("#reSchSave").onclick=()=>{
+    const p=active();
+    p.scheme=$("#reSch-text").value.trim();
+    p.exit=$("#reSch-exit").value.trim();
+    p.companies=collectCompanies();
+    T.saveAll(); closeAll(); renderRE(); T.toast('事業スキームを更新しました');
+  };
+
   $("#s-biz-realestate").addEventListener('click', e=>{
     const add=e.target.closest('[data-re-add]');
     if(add){ if(add.dataset.reAdd==='payment')openM('#reMPayment'); else{fillTransferSelects(); openM('#reMTransfer');} return; }
@@ -3941,6 +4274,40 @@ window.Treasury={
     if(dp){ active().payments.splice(+dp.dataset.reDelp,1); T.saveAll(); renderRE(); return; }
     const dt=e.target.closest('[data-re-delt]');
     if(dt){ active().transfers.splice(+dt.dataset.reDelt,1); T.saveAll(); renderRE(); return; }
+    if(e.target.closest('#reApprove')){
+      const p=active(); if(!canApprove(p)){ T.toast('未充足の項目があります'); return; }
+      const who=(window.PortalAuth&&PortalAuth.getUser&&(PortalAuth.getUser()||{}).name)||(T.role==='boss'?'社長 ヒロ':'担当者');
+      p.approval={approved:true, by:who, at:new Date().toISOString().slice(0,10)};
+      T.saveAll(); renderRE(); T.toast('印籠を押しました：この案件を承認しました'); return;
+    }
+    if(e.target.closest('#reRevoke')){
+      if(!confirm('承認を差し戻しますか？')) return;
+      active().approval={approved:false,by:'',at:''}; T.saveAll(); renderRE(); T.toast('承認を差し戻しました'); return;
+    }
+    const tm=e.target.closest('[data-re-taxmode]');
+    if(tm){ active().tax.mode=tm.dataset.reTaxmode; T.saveAll(); renderRE(); return; }
+    if(e.target.closest('#reEditScheme')){ openSchemeModal(); return; }
+  });
+
+  /* 税入力・条件チェック・契約チェックの反映 */
+  $("#s-biz-realestate").addEventListener('input', e=>{
+    const tx=e.target.closest('[data-re-tax]'); if(!tx)return;
+    const p=active(); p.tax[tx.dataset.reTax]=parseInt(tx.value)||0; T.saveAll();
+    // 承認バナー・税出力のみ更新（フォーカスを保つため入力欄は再描画しない）
+    renderApproval(p);
+    const c=calcTax(p), out=$("#reTaxPanel .re-tx-out");
+    if(out){ const f=n=>n?'¥'+Math.abs(Math.round(n)).toLocaleString('ja-JP'):'—';
+      out.innerHTML=`<div class="re-tx-row"><span>譲渡益（バイアウト − 原価 − 諸経費）</span><b class="${c.gain<0?'neg':'pos'}">${f(c.gain)}</b></div>`+
+        `<div class="re-tx-row"><span>${(c.mode==='individual'?'株式譲渡益課税':'法人税等')}</span><b class="tax">${f(c.gainTax)}</b></div>`+
+        `<div class="re-tx-row"><span>消費税（建物分 10%）</span><b class="tax">${f(c.consumption)}</b></div>`+
+        `<div class="re-tx-row"><span>印紙税</span><b class="tax">${f(c.stamp)}</b></div>`+
+        `<div class="re-tx-row total"><span>税額合計</span><b class="tax">${f(c.total)}</b></div>`+
+        `<div class="re-tx-row total"><span>税引後 手取り</span><b class="${c.net<0?'neg':'pos'}">${f(c.net)}</b></div>`;
+    }
+  });
+  $("#s-biz-realestate").addEventListener('change', e=>{
+    const cond=e.target.closest('[data-re-cond]');
+    if(cond){ const p=active(), i=+cond.dataset.reCond; if(p.conditions[i]){ p.conditions[i].checked=cond.checked; T.saveAll(); renderRE(); } return; }
   });
 
   document.addEventListener('click', e=>{
