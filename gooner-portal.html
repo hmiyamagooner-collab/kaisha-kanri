@@ -698,7 +698,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   height:calc(100dvh - 44px);
   min-height:420px;
   display:grid;
-  grid-template-rows:minmax(0,54fr) minmax(0,46fr);
+  grid-template-rows:minmax(0,40fr) minmax(0,60fr);
   grid-template-columns:1fr;
   gap:6px;
   padding:4px 6px 4px;
@@ -708,7 +708,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .dash-split-row{
   min-height:0;height:100%;overflow:hidden;
   display:grid;
-  grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);
+  grid-template-columns:minmax(0,76fr) minmax(0,24fr);
   gap:8px;
 }
 #office-pane .office-frame{
@@ -748,8 +748,57 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 #treasury-pane .pane-cap::before{background:linear-gradient(180deg,var(--gold-hi),var(--gold))}
 #treasury-pane .pane-cap::after{background:var(--gold)}
 #office-pane{background:var(--panel);overflow:hidden;display:flex;flex-direction:column;min-height:0;}
+.office-task-dock{
+  flex:1 1 auto;min-height:0;overflow:hidden;
+  display:flex;flex-direction:column;
+  border-bottom:1px solid rgba(210,173,99,.18);
+  background:linear-gradient(180deg,rgba(12,16,22,.98),rgba(8,10,14,.96));
+  position:relative;z-index:4;
+}
+.office-task-head{
+  flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:8px 10px 6px;
+}
+.office-task-head strong{
+  font-family:var(--font-display);font-size:12px;font-weight:700;color:#fff;letter-spacing:.06em;
+}
+.office-task-head .office-tk-open{
+  font-size:10px;font-weight:600;padding:4px 9px;border-radius:7px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.06);color:#fff;
+}
+.office-task-head .office-tk-open:hover{border-color:#fff;background:rgba(255,255,255,.12)}
+.office-tk-form{
+  flex-shrink:0;display:grid;grid-template-columns:1fr;gap:5px;padding:0 10px 8px;
+}
+.office-tk-form select,.office-tk-form input{
+  width:100%;padding:6px 8px;border-radius:7px;font-size:11px;color:var(--text);
+  border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.28);
+}
+.office-tk-form select:focus,.office-tk-form input:focus{outline:none;border-color:rgba(232,212,168,.5)}
+.office-tk-form-row{display:grid;grid-template-columns:1fr auto;gap:5px}
+.office-tk-form button[type=submit]{
+  padding:6px 10px;border:none;border-radius:7px;cursor:pointer;font-size:11px;font-weight:700;
+  background:var(--gold);color:#1a1510;white-space:nowrap;
+}
+.office-tk-list{
+  flex:1;min-height:0;overflow:auto;padding:0 8px 8px;display:flex;flex-direction:column;gap:5px;
+}
+.office-tk-item{
+  display:flex;align-items:flex-start;gap:6px;padding:6px 7px;border-radius:8px;
+  border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.03);font-size:11px;
+}
+.office-tk-item.is-done{opacity:.55}
+.office-tk-item.is-done .office-tk-title{text-decoration:line-through}
+.office-tk-who{flex-shrink:0;font-size:10px;color:var(--gold-hi);font-weight:700;min-width:2.2em}
+.office-tk-title{flex:1;min-width:0;color:var(--text);line-height:1.35;word-break:break-word}
+.office-tk-item button{
+  flex-shrink:0;border:1px solid rgba(255,255,255,.25);background:transparent;color:var(--muted);
+  border-radius:6px;font-size:10px;padding:2px 6px;cursor:pointer;
+}
+.office-tk-item button:hover{color:#fff;border-color:#fff}
+.office-tk-empty{font-size:11px;color:var(--muted);padding:4px 2px}
 .office-frame{
-  flex:1;min-height:0;overflow:hidden;display:flex;position:relative;
+  flex:0 0 0;height:0;min-height:0;overflow:hidden;display:none;
   background:
     radial-gradient(ellipse 70% 50% at 50% 30%,rgba(196,166,106,.04),transparent),
     linear-gradient(180deg,#0c0d11,#050608);
@@ -951,13 +1000,42 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   background:transparent;
 }
 .entaku-inline .entaku-input{
-  flex-shrink:0;display:flex;gap:8px;padding:10px 12px;position:relative;z-index:3;
+  flex-shrink:0;display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;position:relative;z-index:3;
   border-top:1px solid rgba(210,173,99,.18);
   background:linear-gradient(180deg,rgba(10,12,16,.45),rgba(6,8,10,.62));
   backdrop-filter:blur(8px);
+  align-items:flex-end;
 }
-.entaku-inline #entakuText{rows:1;min-height:36px;max-height:72px;font-size:12px;padding:8px}
-.entaku-inline #entakuSend{padding:0 14px;font-size:12px}
+.entaku-attach-bar{width:100%;display:flex;flex-wrap:wrap;gap:6px;min-height:0}
+.entaku-attach-bar:empty{display:none}
+.entaku-chip{
+  display:inline-flex;align-items:center;gap:6px;max-width:100%;
+  padding:4px 8px;border-radius:8px;font-size:11px;color:var(--text);
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.2);
+}
+.entaku-chip img{width:36px;height:36px;object-fit:cover;border-radius:5px;border:1px solid rgba(255,255,255,.25)}
+.entaku-chip .entaku-chip-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px}
+.entaku-chip-x{
+  flex-shrink:0;width:18px;height:18px;border:none;border-radius:50%;cursor:pointer;
+  background:rgba(255,255,255,.12);color:#fff;font-size:11px;line-height:1;
+}
+.entaku-chip-x:hover{background:rgba(231,154,154,.35)}
+.entaku-attach-btn{
+  flex-shrink:0;width:36px;height:36px;border-radius:8px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.06);color:#fff;
+  font-size:16px;line-height:1;display:inline-flex;align-items:center;justify-content:center;
+}
+.entaku-attach-btn:hover{background:rgba(255,255,255,.12);border-color:#fff}
+.entaku-inline #entakuText{flex:1;min-width:0;rows:1;min-height:36px;max-height:72px;font-size:12px;padding:8px}
+.entaku-inline #entakuSend{padding:0 14px;font-size:12px;height:36px}
+.ent-atts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.ent-att-img{max-width:min(220px,100%);max-height:160px;border-radius:8px;border:1px solid rgba(255,255,255,.25);display:block;cursor:zoom-in}
+.ent-att-pdf{
+  display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;
+  border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.04);
+  color:var(--gold-hi);font-size:11px;text-decoration:none;
+}
+.ent-att-pdf:hover{border-color:#fff;color:#fff}
 /* 旧モーダルは使わない */
 .entaku-modal{display:none!important}
 /* AI作業中：入出金ペイン */
@@ -988,7 +1066,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .ai-work-log[hidden]{display:none!important}
 .dc-card{
   min-width:0;min-height:0;width:100%;height:100%;max-height:100%;
-  display:grid;grid-template-rows:minmax(0,1fr) 54px;
+  display:grid;grid-template-rows:28px minmax(0,1fr) 34px;
   overflow:hidden;position:relative;z-index:1;
   background:linear-gradient(180deg,#121823 0%,#0a0e14 100%);
   border:1px solid rgba(210,173,99,.16);border-radius:0;
@@ -1004,6 +1082,16 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
     box-shadow 240ms ease,
     border-color 240ms ease;
   animation:dcCardIn .52s cubic-bezier(.22,1,.36,1) var(--dc-in-delay,0s) forwards;
+}
+.dc-dept{
+  position:relative;z-index:5;
+  display:flex;align-items:center;justify-content:center;
+  height:28px;min-height:28px;
+  font-family:'Zen Kaku Gothic New',var(--font-body),sans-serif;
+  font-size:12px;font-weight:700;letter-spacing:.14em;color:#fff;
+  background:linear-gradient(180deg,rgba(10,12,16,.96),rgba(6,8,12,.92));
+  border-bottom:1px solid rgba(255,255,255,.22);
+  text-shadow:0 1px 2px rgba(0,0,0,.85);
 }
 .dc-cards .dc-card:nth-child(1){--dc-in-delay:0s}
 .dc-cards .dc-card:nth-child(2){--dc-in-delay:.08s}
@@ -1160,9 +1248,9 @@ video.dc-card__image{
 }
 .dc-card-foot{
   flex-shrink:0;min-width:0;width:100%;
-  height:54px;min-height:54px;max-height:54px;
-  display:flex;flex-direction:column;justify-content:center;gap:1px;
-  padding:4px 6px 5px;position:relative;z-index:3;
+  height:34px;min-height:34px;max-height:34px;
+  display:flex;flex-direction:column;justify-content:center;gap:0;
+  padding:2px 6px 3px;position:relative;z-index:3;
   border-top:1px solid rgba(210,173,99,.12);
   background:linear-gradient(180deg,rgba(8,10,14,.98),rgba(6,8,12,1));
 }
@@ -1175,13 +1263,7 @@ video.dc-card__image{
 }
 .dc-name::before{display:none}
 .dc-name-en{font-size:8px;color:#fff;letter-spacing:.12em;font-family:var(--font-num);font-weight:500;opacity:.92}
-.dc-role{
-  flex:0 0 auto;min-height:0;max-height:none;
-  font-size:10px;color:#fff;text-align:center;position:relative;z-index:2;
-  padding:0 4px;line-height:1.2;font-weight:500;
-  display:flex;align-items:center;justify-content:center;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
+.dc-role{display:none!important}
 @media(prefers-reduced-motion:reduce){
   .dc-card,
   .dc-card__image,
@@ -1518,6 +1600,7 @@ video.dc-card__image{
     <div class="dash-cards-wrap" id="dashCompact">
       <div class="dc-cards">
         <div class="dc-card" data-dept="secretary">
+          <div class="dc-dept">秘書</div>
           <div class="dc-photo dc-card__media" data-initial="凛">
             <div class="dc-card__shine" aria-hidden="true"></div>
             <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
@@ -1527,11 +1610,12 @@ video.dc-card__image{
             </div>
           </div>
           <div class="dc-card-foot">
-            <div class="dc-name">秘書　凛<span class="dc-name-en">RIN</span></div>
+            <div class="dc-name">凛<span class="dc-name-en">RIN</span></div>
             <div class="dc-role">ヒロ社長秘書</div>
           </div>
         </div>
         <div class="dc-card" data-dept="finance">
+          <div class="dc-dept">経理</div>
           <div class="dc-photo dc-card__media" data-initial="紬">
             <div class="dc-card__shine" aria-hidden="true"></div>
             <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
@@ -1541,11 +1625,12 @@ video.dc-card__image{
             </div>
           </div>
           <div class="dc-card-foot">
-            <div class="dc-name">経理　紬<span class="dc-name-en">TUMUGI</span></div>
+            <div class="dc-name">紬<span class="dc-name-en">TUMUGI</span></div>
             <div class="dc-role">経理部長</div>
           </div>
         </div>
         <div class="dc-card" data-dept="legal">
+          <div class="dc-dept">法務</div>
           <div class="dc-photo dc-card__media" data-initial="陽">
             <div class="dc-card__shine" aria-hidden="true"></div>
             <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
@@ -1555,7 +1640,7 @@ video.dc-card__image{
             </div>
           </div>
           <div class="dc-card-foot">
-            <div class="dc-name">法務　陽翔<span class="dc-name-en">HARUTO</span></div>
+            <div class="dc-name">陽翔<span class="dc-name-en">HARUTO</span></div>
             <div class="dc-role">法務部長</div>
           </div>
         </div>
@@ -1590,12 +1675,33 @@ video.dc-card__image{
         </div>
         <div class="entaku-inline-body" id="entakuBody"></div>
         <form class="entaku-input" id="entakuForm" onsubmit="return sendEntaku(event)">
-          <textarea id="entakuText" rows="1" placeholder="相談・領収書・契約書… Enter送信"></textarea>
+          <div class="entaku-attach-bar" id="entakuAttachBar" aria-live="polite"></div>
+          <button type="button" class="entaku-attach-btn" id="entakuAttachBtn" title="PDF・写真を添付 / PrtScn貼付可" aria-label="添付">＋</button>
+          <input type="file" id="entakuFile" accept="image/*,application/pdf,.pdf" multiple hidden>
+          <textarea id="entakuText" rows="1" placeholder="相談・領収書・契約書… 画像/PDF添付・貼付可　Enter送信"></textarea>
           <button type="submit" id="entakuSend">送信</button>
         </form>
       </div>
     </section>
     <section class="quest-pane" id="office-pane">
+      <div class="office-task-dock">
+        <div class="office-task-head">
+          <strong>タスク管理</strong>
+          <button type="button" class="office-tk-open" data-jump="tasks">一覧を開く</button>
+        </div>
+        <form class="office-tk-form" id="officeTkForm">
+          <select id="officeTkAssignee" aria-label="担当">
+            <option value="secretary">秘書　凛</option>
+            <option value="finance">経理　紬</option>
+            <option value="legal">法務　陽翔</option>
+          </select>
+          <div class="office-tk-form-row">
+            <input id="officeTkTitle" placeholder="タスクを入力（Enterで追加）" required maxlength="120">
+            <button type="submit">追加</button>
+          </div>
+        </form>
+        <div class="office-tk-list" id="officeTkList"></div>
+      </div>
       <div class="office-frame">
         <iframe src="office.html?embedded=1" title="オフィスクエスト マップ"></iframe>
       </div>
@@ -4460,8 +4566,24 @@ window.Treasury={
     });
   }
 
+  function renderOfficeDock(){
+    const list=$("#officeTkList"); if(!list) return;
+    const todos=S.tasks.filter(t=>t.status==='todo')
+      .sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')))
+      .slice(0,12);
+    list.innerHTML=todos.length?todos.map(t=>{
+      const a=ASG[t.assignee]||{name:'?'};
+      return `<div class="office-tk-item" data-id="${t.id}">
+        <span class="office-tk-who">${esc(a.name)}</span>
+        <span class="office-tk-title">${esc(t.title)}</span>
+        <button type="button" data-office-tk-done="${t.id}">完了</button>
+      </div>`;
+    }).join(''):`<div class="office-tk-empty">未完了タスクはありません。上の欄から追加できます。</div>`;
+  }
+
   function renderTasks(){
     updateBubbles();
+    renderOfficeDock();
     const cols=$("#tkCols"); if(!cols) return;
     const hint=$("#tkHint");
     if(hint) hint.textContent = T.role==='boss' ? '社長モード：社員へ指示タスクを割り当てます（「社長指示」として記録）。' : '社員モード：自分のタスクを登録します（「自己申告」として記録）。';
@@ -4493,14 +4615,40 @@ window.Treasury={
     }).join('');
   }
 
+  function addTask(assignee, title, detail){
+    if(!title){ T.toast('タスク内容を入力してください'); return false; }
+    S.tasks.push({ id:Date.now(), assignee, title, detail:detail||'', by:T.role==='boss'?'boss':'self', status:'todo', at:new Date().toISOString().slice(0,10) });
+    T.saveAll(); renderTasks(); T.toast((ASG[assignee]||{}).name+'にタスクを追加しました');
+    return true;
+  }
+
   $("#tkAdd").onclick=()=>{
     const assignee=$("#tkAssignee").value, title=$("#tkTitle").value.trim(), detail=$("#tkDetail").value.trim();
-    if(!title){ T.toast('タスク内容を入力してください'); return; }
-    S.tasks.push({ id:Date.now(), assignee, title, detail, by:T.role==='boss'?'boss':'self', status:'todo', at:new Date().toISOString().slice(0,10) });
-    $("#tkTitle").value=''; $("#tkDetail").value='';
-    T.saveAll(); renderTasks(); T.toast(ASG[assignee].name+'にタスクを追加しました');
+    if(addTask(assignee, title, detail)){ $("#tkTitle").value=''; $("#tkDetail").value=''; }
   };
   $("#tkTitle").addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();$("#tkAdd").click();} });
+
+  const officeForm=$("#officeTkForm");
+  if(officeForm){
+    officeForm.addEventListener('submit',e=>{
+      e.preventDefault();
+      const assignee=$("#officeTkAssignee").value;
+      const title=$("#officeTkTitle").value.trim();
+      if(addTask(assignee, title, '')){ $("#officeTkTitle").value=''; }
+    });
+  }
+  document.getElementById('office-pane')?.addEventListener('click', e=>{
+    const done=e.target.closest('[data-office-tk-done]');
+    if(done){
+      const t=S.tasks.find(x=>String(x.id)===done.dataset.officeTkDone);
+      if(t){ t.status='done'; T.saveAll(); renderTasks(); T.toast('タスク完了 ✔'); }
+      return;
+    }
+    const jump=e.target.closest('[data-jump]');
+    if(jump){
+      document.querySelector('.gamenav button[data-s="'+jump.dataset.jump+'"]')?.click();
+    }
+  });
 
   $("#s-tasks").addEventListener('click', e=>{
     const f=e.target.closest('[data-tk-filter]');
@@ -4903,15 +5051,29 @@ window.EntakuAI=(function(){
     finance:{id:'finance',name:'紬',role:'経理',dept:'finance'},
     legal:{id:'legal',name:'陽翔',role:'法務',dept:'legal'}
   };
-  const S = { history: [], busy: false, playing: false, open: false, tour: null, lastScreen: 'dash', focus: null, actions: [], minutes: [] };
+  const S = { history: [], busy: false, playing: false, open: false, tour: null, lastScreen: 'dash', focus: null, actions: [], minutes: [], pendingAtt: [] };
   let lastSpokenIdx = -1;
   let lastDashIdx = -1;
   const LS_ENTAKU = 'gooner_entaku_v2';
+  const ATT_MAX = 4;
+  const ATT_MAX_BYTES = 6 * 1024 * 1024;
   function el(id){ return document.getElementById(id); }
   function persistEntaku(){
     try{
+      const slimHist = S.history.slice(-60).map(function(m){
+        const o = { role:m.role, content:m.content, agent:m.agent };
+        if(Array.isArray(m.attachments) && m.attachments.length){
+          o.attachments = m.attachments.map(function(a){
+            const x = { id:a.id, name:a.name, kind:a.kind, mime:a.mime };
+            if(a.kind==='image' && a.dataUrl && a.dataUrl.length < 400000) x.dataUrl = a.dataUrl;
+            if(a.kind==='pdf' && a.text) x.text = String(a.text).slice(0, 5000);
+            return x;
+          });
+        }
+        return o;
+      });
       localStorage.setItem(LS_ENTAKU, JSON.stringify({
-        history: S.history.slice(-60),
+        history: slimHist,
         actions: S.actions || [],
         minutes: (S.minutes || []).slice(-200)
       }));
@@ -5038,6 +5200,111 @@ window.EntakuAI=(function(){
     window.PortalTTS.speak(text);
   }
   function esc(s){ return String(s==null?'':s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+  function attUid(){ return 'a'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+  function compressImageFile(file){
+    return new Promise(function(resolve,reject){
+      const url=URL.createObjectURL(file);
+      const img=new Image();
+      img.onload=function(){
+        try{
+          const max=1280;
+          let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+          const scale=Math.min(1, max/Math.max(w,h));
+          w=Math.max(1,Math.round(w*scale)); h=Math.max(1,Math.round(h*scale));
+          const c=document.createElement('canvas'); c.width=w; c.height=h;
+          const ctx=c.getContext('2d'); ctx.drawImage(img,0,0,w,h);
+          const dataUrl=c.toDataURL('image/jpeg',0.72);
+          URL.revokeObjectURL(url);
+          resolve({ id:attUid(), kind:'image', name:file.name||'screenshot.jpg', mime:'image/jpeg', dataUrl:dataUrl });
+        }catch(err){ URL.revokeObjectURL(url); reject(err); }
+      };
+      img.onerror=function(){ URL.revokeObjectURL(url); reject(new Error('画像を読めません')); };
+      img.src=url;
+    });
+  }
+  function readAsDataURL(file){
+    return new Promise(function(resolve,reject){
+      const r=new FileReader();
+      r.onload=function(){ resolve(String(r.result||'')); };
+      r.onerror=function(){ reject(new Error('読み込み失敗')); };
+      r.readAsDataURL(file);
+    });
+  }
+  function extractPdfText(file){
+    return file.arrayBuffer().then(function(buf){
+      const u8=new Uint8Array(buf);
+      let raw='';
+      try{ raw=new TextDecoder('latin1').decode(u8); }catch(e){ raw=''; }
+      const chunks=[];
+      const re=/stream[\r\n]+([\s\S]*?)endstream/g;
+      let m;
+      while((m=re.exec(raw)) && chunks.join('').length<12000){
+        const body=m[1];
+        if(/BT[\s\S]{0,40}Tj|TJ/.test(body) || /\((?:\\.|[^\\)]){3,}\)/.test(body)){
+          const texts=[];
+          body.replace(/\((?:\\.|[^\\)])+\)/g, function(s){
+            const t=s.slice(1,-1).replace(/\\n/g,'\n').replace(/\\r/g,'').replace(/\\([()\\])/g,'$1');
+            if(/[^\x00-\x08\x0b\x0c\x0e-\x1f]{2,}/.test(t)) texts.push(t);
+          });
+          if(texts.length) chunks.push(texts.join(' '));
+        }
+      }
+      const out=chunks.join('\n').replace(/\s+/g,' ').trim();
+      return out.slice(0,8000);
+    }).catch(function(){ return ''; });
+  }
+  function addPendingAtt(att){
+    if(S.pendingAtt.length>=ATT_MAX){ window.Treasury?.toast?.('添付は最大'+ATT_MAX+'件まで'); return; }
+    S.pendingAtt.push(att);
+    renderPendingAtt();
+  }
+  function removePendingAtt(id){
+    S.pendingAtt=S.pendingAtt.filter(function(a){return a.id!==id;});
+    renderPendingAtt();
+  }
+  function renderPendingAtt(){
+    const bar=el('entakuAttachBar'); if(!bar) return;
+    bar.innerHTML=S.pendingAtt.map(function(a){
+      if(a.kind==='image'){
+        return '<div class="entaku-chip" data-att="'+esc(a.id)+'"><img src="'+a.dataUrl+'" alt=""><span class="entaku-chip-name">'+esc(a.name)+'</span><button type="button" class="entaku-chip-x" data-rm="'+esc(a.id)+'" aria-label="remove">x</button></div>';
+      }
+      return '<div class="entaku-chip" data-att="'+esc(a.id)+'"><span aria-hidden="true">PDF</span><span class="entaku-chip-name">'+esc(a.name)+'</span><button type="button" class="entaku-chip-x" data-rm="'+esc(a.id)+'" aria-label="remove">x</button></div>';
+    }).join('');
+    bar.querySelectorAll('[data-rm]').forEach(function(b){
+      b.onclick=function(){ removePendingAtt(b.getAttribute('data-rm')); };
+    });
+  }
+  function ingestFiles(fileList){
+    const files=Array.from(fileList||[]);
+    files.forEach(function(file){
+      if(!file) return;
+      if(file.size>ATT_MAX_BYTES){ window.Treasury?.toast?.('ファイルが大きすぎます（6MBまで）'); return; }
+      if(/^image\//.test(file.type) || /\.(png|jpe?g|gif|webp|bmp)$/i.test(file.name||'')){
+        compressImageFile(file).then(addPendingAtt).catch(function(){ window.Treasury?.toast?.('画像の取り込みに失敗しました'); });
+        return;
+      }
+      if(file.type==='application/pdf' || /\.pdf$/i.test(file.name||'')){
+        Promise.all([readAsDataURL(file), extractPdfText(file)]).then(function(pair){
+          addPendingAtt({ id:attUid(), kind:'pdf', name:file.name||'document.pdf', mime:'application/pdf', dataUrl:pair[0], text:pair[1]||'' });
+        }).catch(function(){ window.Treasury?.toast?.('PDFの取り込みに失敗しました'); });
+        return;
+      }
+      window.Treasury?.toast?.('画像またはPDFのみ添付できます');
+    });
+  }
+  function attachmentsHtml(atts){
+    if(!atts||!atts.length) return '';
+    return '<div class="ent-atts">'+atts.map(function(a){
+      if(a.kind==='image' && a.dataUrl){
+        return '<a href="'+a.dataUrl+'" target="_blank" rel="noopener"><img class="ent-att-img" src="'+a.dataUrl+'" alt="'+esc(a.name||'添付画像')+'"></a>';
+      }
+      if(a.kind==='pdf'){
+        const href=a.dataUrl||'#';
+        return '<a class="ent-att-pdf" href="'+href+'" target="_blank" rel="noopener" download="'+esc(a.name||'file.pdf')+'">PDF　'+esc(a.name||'document.pdf')+(a.text?'　（テキスト抽出済）':'')+'</a>';
+      }
+      return '';
+    }).join('')+'</div>';
+  }
   const ROUTES = [
     { key:'口座', s:'cf-bank', label:'口座・CSVへ' },
     { key:'明細突合', s:'cf-link', label:'明細突合へ' },
@@ -5102,7 +5369,7 @@ window.EntakuAI=(function(){
       const who = agentLabel(m);
       const cls = m.role==='user' ? 'ent-me' : ('ent-ai ent-agent-'+(m.agent||'secretary'));
       const jumps = m.role==='assistant' ? jumpButtons(m.content) : '';
-      return '<div class="ent-msg '+cls+'"><span class="ent-who">'+who+'</span><div class="ent-txt">'+esc(m.content).replace(/\n/g,'<br>')+jumps+'</div></div>';
+      return '<div class="ent-msg '+cls+'"><span class="ent-who">'+who+'</span><div class="ent-txt">'+esc(m.content).replace(/\n/g,'<br>')+attachmentsHtml(m.attachments)+jumps+'</div></div>';
     }).join('')
       + (S.busy?'<div class="ent-msg ent-ai ent-agent-secretary"><span class="ent-who">秘書　凛</span><div class="ent-txt ent-typing">凛・紬・陽翔が協議中…</div></div>':'')
       + actionsHtml();
@@ -5113,8 +5380,9 @@ window.EntakuAI=(function(){
     });
     const ta = el('entakuText');
     if(ta) ta.placeholder = S.focus
-      ? (agentOf(S.focus).name + 'さんへ指名中… 質問を入力（Enter送信）')
-      : '相談・領収書・契約書… Enter送信';
+      ? (agentOf(S.focus).name + 'さんへ指名中… 画像/PDF添付可　Enter送信')
+      : '相談・領収書・契約書… 画像/PDF添付・貼付可　Enter送信';
+    renderPendingAtt();
     setAiWorking(S.busy,{tour:false});
     el('entaku-inline')?.classList.toggle('is-busy',S.busy);
     updateEntakuStatus();
@@ -5211,19 +5479,25 @@ window.EntakuAI=(function(){
     if(ev) ev.preventDefault();
     if(S.busy || S.playing) return false;
     const ta = el('entakuText'); const q = (ta.value||'').trim();
-    if(!q) return false;
+    const atts = S.pendingAtt.slice();
+    if(!q && !atts.length) return false;
     if(!S.open){ S.open=true; syncToggle(); }
     const scrollY=window.scrollY;
+    const content = q || (atts.some(function(a){return a.kind==='pdf';}) ? '添付のPDFを確認してください。' : '添付の画像を確認してください。');
     keepPageScroll(function(){
-      S.history.push({role:'user', content:q}); ta.value=''; S.busy=true; render();
+      S.history.push({role:'user', content:content, attachments:atts});
+      ta.value='';
+      S.pendingAtt=[];
+      renderPendingAtt();
+      S.busy=true; render();
     });
     persistEntaku();
-    window.PortalAuth?.serverLog?.('entaku-send',q.slice(0,120));
+    window.PortalAuth?.serverLog?.('entaku-send',content.slice(0,120)+(atts.length?' +att'+atts.length:''));
     // 指名中はその専門家、なければ質問語からの当たりをつけて即時リアクション
     const routeDept = S.focus
-      || (/経理|入出金|経費|税|CF|精算|口座|明細/.test(q)?'finance'
-        :/契約|法務|リーガル|印籠|コンプラ/.test(q)?'legal':'secretary');
-    window.DashTalk?.speak(routeDept, '承知しました。', 2800);
+      || (/経理|入出金|経費|税|CF|精算|口座|明細|領収|請求/.test(content)?'finance'
+        :/契約|法務|リーガル|印籠|コンプラ|覚書/.test(content)?'legal':'secretary');
+    window.DashTalk?.speak(routeDept, atts.length?'添付を確認します。':'承知しました。', 2800);
     el('entakuSend').disabled = true;
     var ctx=cfContext();
     var chatReq = window.EntakuAI && window.EntakuAI.isConnected()
@@ -5287,6 +5561,43 @@ window.EntakuAI=(function(){
       if(ta && document.activeElement===ta){ e.preventDefault(); sendEntaku(); }
     }
   });
+  (function wireEntakuAttach(){
+    const btn=el('entakuAttachBtn'), file=el('entakuFile'), ta=el('entakuText'), form=el('entakuForm');
+    if(btn&&file){
+      btn.addEventListener('click', function(){ if(!S.open){ S.open=true; syncToggle(); } file.click(); });
+      file.addEventListener('change', function(){ ingestFiles(file.files); file.value=''; });
+    }
+    if(ta){
+      ta.addEventListener('paste', function(e){
+        const items=e.clipboardData && e.clipboardData.items;
+        if(!items) return;
+        const files=[];
+        for(let i=0;i<items.length;i++){
+          const it=items[i];
+          if(it.kind==='file'){
+            const f=it.getAsFile();
+            if(f) files.push(f);
+          }
+        }
+        if(files.length){
+          e.preventDefault();
+          if(!S.open){ S.open=true; syncToggle(); }
+          ingestFiles(files);
+        }
+      });
+    }
+    if(form){
+      form.addEventListener('dragover', function(e){ e.preventDefault(); form.classList.add('is-drop'); });
+      form.addEventListener('dragleave', function(){ form.classList.remove('is-drop'); });
+      form.addEventListener('drop', function(e){
+        e.preventDefault(); form.classList.remove('is-drop');
+        if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length){
+          if(!S.open){ S.open=true; syncToggle(); }
+          ingestFiles(e.dataTransfer.files);
+        }
+      });
+    }
+  })();
   // キャラカードをクリック → その専門家を指名して質問できる
   document.querySelectorAll('.dc-card[data-dept]').forEach(function(card){
     card.classList.add('dc-clickable');
