@@ -101,10 +101,9 @@ input,select,textarea{font-family:inherit}
   font-family:'Zen Kaku Gothic New',var(--font-body),sans-serif;
   font-size:14px;font-weight:700;letter-spacing:.12em;
   color:#fff;text-align:center;text-transform:none;
-  border:1px solid rgba(255,255,255,.55);
-  border-radius:8px;
-  background:rgba(255,255,255,.04);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+  border:none;border-radius:0;
+  background:transparent;
+  box-shadow:none;
 }
 .gamenav button{
   display:flex;align-items:center;gap:10px;width:100%;text-align:left;
@@ -114,7 +113,7 @@ input,select,textarea{font-family:inherit}
   font-family:var(--font-body);letter-spacing:.02em;
   position:relative;
   background:linear-gradient(180deg,#121823 0%,#0d1219 100%);
-  border:1px solid rgba(116,185,232,.14);
+  border:1px solid rgba(255,255,255,.72);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 2px 8px rgba(0,0,0,.28);
   transition:
     transform .24s cubic-bezier(.22,1,.36,1),
@@ -139,7 +138,7 @@ input,select,textarea{font-family:inherit}
 }
 @media(hover:hover){
   .gamenav button:hover{
-    color:#fff;border-color:rgba(210,173,99,.32);
+    color:#fff;border-color:rgba(255,255,255,.92);
     transform:translate3d(4px,0,0);
     background:linear-gradient(180deg,#161d28 0%,#10151d 100%);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 4px 14px rgba(0,0,0,.32);
@@ -152,12 +151,11 @@ input,select,textarea{font-family:inherit}
 }
 .gamenav button.on{
   color:var(--text);
-  border-color:rgba(210,173,99,.38);
+  border-color:#fff;
   background:linear-gradient(180deg,#1a2230 0%,#141b26 100%);
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,.08),
-    0 4px 14px rgba(0,0,0,.35),
-    0 0 0 1px rgba(210,173,99,.08);
+    0 4px 14px rgba(0,0,0,.35);
 }
 .gamenav button.on::before{width:3px;opacity:1}
 .gamenav button.on .nico{
@@ -196,7 +194,7 @@ input,select,textarea{font-family:inherit}
 @media(hover:hover){
   .gamenav button.nav-biz:hover .nav-photo::after{background:linear-gradient(90deg,rgba(6,9,14,.12) 0%,rgba(6,9,14,.48) 100%)}
 }
-.gamenav button.nav-biz.on{border-left:3px solid var(--gold-hi)}
+.gamenav button.nav-biz.on{border-color:#fff}
 .gamenav button.nav-biz.on .nav-photo::after{
   background:linear-gradient(90deg,rgba(210,173,99,.10) 0%,rgba(6,9,14,.60) 100%);
 }
@@ -1456,6 +1454,10 @@ video.dc-card__image{
     <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
     <span class="nav-label">商流</span>
   </button>
+  <button type="button" class="nav-biz" data-s="contracts" style="--nav-photo:url(nav-contract.png)">
+    <span class="nav-photo" style="background-image:url(nav-contract.png)"></span>
+    <span class="nav-label">契約書</span>
+  </button>
   <div class="nav-group nav-group-major">事業</div>
   <button type="button" class="nav-biz" data-s="biz-paradise" style="--nav-photo:url(nav-paradise.png)">
     <span class="nav-photo" style="background-image:url(nav-paradise.png)"></span>
@@ -2551,6 +2553,94 @@ video.dc-card__image{
     </div>
     <div class="re-modal-btns">
       <button class="re-submit" id="reSchSave">保存</button>
+      <button class="re-cancel" data-re-close>キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 契約書台帳 ===== -->
+<style>
+#s-contracts{
+  --panel:#000;--panel2:#0f0f0f;
+  --line:rgba(255,255,255,.32);--line-strong:rgba(255,255,255,.6);
+  --gold:#ff9d3c;--gold-hi:#ffb15c;--muted:#d6d6d6;--text:#ffffff;--in:#4ade80;--out:#ff9d3c;
+}
+#s-contracts .ct-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+#s-contracts .ct-sum{display:flex;gap:10px;flex-wrap:wrap}
+#s-contracts .ct-scard{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 14px}
+#s-contracts .ct-slabel{font-size:10px;color:var(--muted);letter-spacing:.06em}
+#s-contracts .ct-sval{font-size:16px;font-weight:800;font-family:var(--font-num)}
+#s-contracts .ct-add{background:linear-gradient(180deg,#8ef0b3,var(--in));color:#062012;border:none;border-radius:9px;padding:10px 16px;font-size:13px;font-weight:800;cursor:pointer}
+#s-contracts .ct-filter{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+#s-contracts .ct-filter button{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer}
+#s-contracts .ct-filter button.on{background:#fff;color:#111;border-color:#fff}
+#s-contracts .ct-list{display:flex;flex-direction:column;gap:10px}
+#s-contracts .ct-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;border-left:3px solid var(--out);overflow:hidden}
+#s-contracts .ct-card.signed{border-left-color:var(--in)}
+#s-contracts .ct-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:11px 14px}
+#s-contracts .ct-party{font-size:14px;font-weight:700;color:var(--text)}
+#s-contracts .ct-title{font-size:12px;color:var(--muted);margin-top:2px}
+#s-contracts .ct-badges{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+#s-contracts .ct-biz{font-size:10px;font-weight:700;background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:5px;padding:2px 7px}
+#s-contracts .ct-status{font-size:10px;font-weight:800;border-radius:5px;padding:2px 8px}
+#s-contracts .ct-status.signed{background:rgba(74,222,128,.18);color:var(--in)}
+#s-contracts .ct-status.unsigned{background:rgba(255,157,60,.18);color:var(--out)}
+#s-contracts .ct-meta{display:flex;gap:16px;padding:0 14px 10px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+#s-contracts .ct-meta b{color:var(--text);font-family:var(--font-num)}
+#s-contracts .ct-note{padding:0 14px 10px;font-size:11px;color:var(--muted);font-style:italic}
+#s-contracts .ct-acts{display:flex;gap:6px;padding:0 14px 12px}
+#s-contracts .ct-acts button{border:none;border-radius:7px;padding:7px 12px;font-size:11.5px;font-weight:700;cursor:pointer}
+#s-contracts .ct-toggle{background:var(--panel2);color:var(--text);border:1px solid var(--line-strong)!important}
+#s-contracts .ct-edit{background:var(--panel2);color:var(--gold-hi);border:1px solid var(--line-strong)!important}
+#s-contracts .ct-del{background:transparent;color:var(--out);border:1px solid var(--line-strong)!important;margin-left:auto}
+#s-contracts .ct-empty{font-size:12px;color:var(--muted);padding:16px 2px}
+</style>
+<section class="screen" id="s-contracts">
+  <h2 class="stitle">📄 契約書台帳</h2>
+  <p class="sdesc">各事業・関係企業との契約書を一元管理します。ここに登録した契約書は、不動産の各案件の関係企業に紐づけて承認要件（全社契約締結）に反映されます。</p>
+
+  <div class="ct-top">
+    <div class="ct-sum">
+      <div class="ct-scard"><div class="ct-slabel">契約総数</div><div class="ct-sval" id="ctTotal">0</div></div>
+      <div class="ct-scard"><div class="ct-slabel">締結済</div><div class="ct-sval" id="ctSigned" style="color:var(--in)">0</div></div>
+      <div class="ct-scard"><div class="ct-slabel">未締結（要対応）</div><div class="ct-sval" id="ctUnsigned" style="color:var(--out)">0</div></div>
+    </div>
+    <button type="button" class="ct-add" id="ctAdd">＋ 契約書を登録</button>
+  </div>
+
+  <div class="ct-filter" id="ctFilter">
+    <button type="button" class="on" data-ct-filter="all">すべて</button>
+    <button type="button" data-ct-filter="unsigned">未締結</button>
+    <button type="button" data-ct-filter="signed">締結済</button>
+  </div>
+
+  <div class="ct-list" id="ctList"></div>
+</section>
+
+<div class="re-ov" id="ctModal">
+  <div class="re-modal">
+    <div class="re-modal-t" id="ctModalTitle">契約書を登録</div>
+    <div class="re-field"><label>相手先（企業・関係者）</label><input id="ctF-party" placeholder="例：GCエステー"></div>
+    <div class="re-field"><label>契約タイトル・種別</label><input id="ctF-title" placeholder="例：調達金 拠出契約 / FA契約"></div>
+    <div class="re-field"><label>関連事業</label>
+      <select id="ctF-biz">
+        <option value="不動産">不動産</option>
+        <option value="パラダイス">パラダイスシティ</option>
+        <option value="稲毛">稲毛海浜公園</option>
+        <option value="介護">介護</option>
+        <option value="IT">IT</option>
+        <option value="探偵">探偵</option>
+        <option value="その他">その他</option>
+      </select>
+    </div>
+    <div class="re-field"><label>契約金額（円・任意）</label><input id="ctF-amount" type="number" placeholder="0"></div>
+    <div class="re-field"><label>契約日</label><input id="ctF-date" placeholder="2025/05/28"></div>
+    <div class="re-field"><label>ステータス</label>
+      <select id="ctF-status"><option value="unsigned">未締結</option><option value="signed">締結済</option></select>
+    </div>
+    <div class="re-field"><label>契約書本文・メモ（任意）</label><textarea id="ctF-body" rows="4" placeholder="契約書の要旨・条項メモ・保管場所URLなど"></textarea></div>
+    <div class="re-modal-btns">
+      <button class="re-submit" id="ctSave">保存</button>
       <button class="re-cancel" data-re-close>キャンセル</button>
     </div>
   </div>
@@ -3919,9 +4009,9 @@ window.Treasury={
   })();
 
   function active(){ let p=RE.projects.find(x=>x.id===RE.activeId); if(!p){p=RE.projects[0]; RE.activeId=p.id;} return p; }
-  function cases(){ return Array.isArray(S.cases)?S.cases:[]; }
-  function caseTitle(id){ const c=cases().find(x=>x.id===id); return c?c.title:''; }
-  function caseHasContract(id){ const c=cases().find(x=>x.id===id); return !!(c&&c.legal&&c.legal.analysis); }
+  function contractsAll(){ return Array.isArray(S.contracts)?S.contracts:[]; }
+  function caseTitle(id){ const c=contractsAll().find(x=>x.id===id); return c?(c.party+'／'+c.title):''; }
+  function caseSigned(id){ const c=contractsAll().find(x=>x.id===id); return !!(c&&c.status==='signed'); }
   function pk(p,k){ return p.parties.find(x=>x.key===k); }
   const fmt=n=>n?'¥'+Math.abs(Math.round(n)).toLocaleString('ja-JP'):'—';
   const pct=n=>(n*100).toFixed(1)+'%';
@@ -4212,7 +4302,7 @@ window.Treasury={
 
   /* ---- 事業スキーム／関係企業 編集 ---- */
   function caseOptions(sel){
-    return '<option value="">— 契約書（案件）を選択 —</option>'+cases().map(c=>`<option value="${esc(c.id)}"${c.id===sel?' selected':''}>${esc(c.title)}${c.legal&&c.legal.analysis?'（契約書あり）':''}</option>`).join('');
+    return '<option value="">— 契約書を選択 —</option>'+contractsAll().map(c=>`<option value="${esc(c.id)}"${c.id===sel?' selected':''}>${esc(c.party)}／${esc(c.title)}（${c.status==='signed'?'締結済':'未締結'}）</option>`).join('');
   }
   function companyRow(c,idx){
     c=c||{name:'',role:'配分先',note:'',contracted:false,caseId:''};
@@ -4424,6 +4514,91 @@ window.Treasury={
   window.TaskBubbles={restore:updateBubbles};
   T.onRender(renderTasks);
   renderTasks();
+})();
+</script>
+
+<script>
+/* ===== 契約書台帳（S.contracts・不動産と連携） ===== */
+(function(){
+  const T=window.Treasury; if(!T) return;
+  const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)], esc=T.esc;
+  const S=T.S;
+  if(!Array.isArray(S.contracts)){
+    S.contracts=[
+      {id:'ct1', party:'GCエステー', title:'調達金 拠出契約', biz:'不動産', amount:0, date:'2025/05/20', status:'signed', body:'CAMEL Phase I の調達金 入金元'},
+      {id:'ct2', party:'グローバルクラウド', title:'調達金 拠出契約', biz:'不動産', amount:0, date:'2025/07/01', status:'signed', body:''},
+      {id:'ct3', party:'川畑氏', title:'FA（ファイナンシャルアドバイザリー）契約', biz:'不動産', amount:7410000, date:'2025/05/25', status:'unsigned', body:'FAフィー 741万円'},
+      {id:'ct4', party:'深山信次・FGC', title:'配分・立替精算 契約', biz:'不動産', amount:0, date:'', status:'unsigned', body:''},
+      {id:'ct5', party:'GE（グローバルエナジー）', title:'報酬・未収金 契約', biz:'不動産', amount:0, date:'', status:'unsigned', body:''}
+    ];
+    T.saveAll();
+  }
+  let filter='all', editId=null;
+  const fmt=n=>n?'¥'+Math.abs(Math.round(n)).toLocaleString('ja-JP'):'—';
+
+  function render(){
+    if(!$("#ctList")) return;
+    const all=S.contracts;
+    $("#ctTotal").textContent=all.length;
+    $("#ctSigned").textContent=all.filter(c=>c.status==='signed').length;
+    $("#ctUnsigned").textContent=all.filter(c=>c.status!=='signed').length;
+    const list=all.filter(c=>filter==='all'?true:filter==='signed'?c.status==='signed':c.status!=='signed');
+    $("#ctList").innerHTML=list.length?list.map(c=>{
+      const signed=c.status==='signed';
+      return `<div class="ct-card ${signed?'signed':''}">
+        <div class="ct-card-head">
+          <div><div class="ct-party">${esc(c.party||'（相手先未設定）')}</div><div class="ct-title">${esc(c.title||'')}</div></div>
+          <div class="ct-badges"><span class="ct-biz">${esc(c.biz||'—')}</span><span class="ct-status ${signed?'signed':'unsigned'}">${signed?'締結済':'未締結'}</span></div>
+        </div>
+        <div class="ct-meta">${c.amount?`<span>金額 <b>${fmt(c.amount)}</b></span>`:''}${c.date?`<span>契約日 <b>${esc(c.date)}</b></span>`:''}</div>
+        ${c.body?`<div class="ct-note">${esc(c.body)}</div>`:''}
+        <div class="ct-acts">
+          <button class="ct-toggle" data-ct-toggle="${esc(c.id)}">${signed?'未締結に戻す':'締結済にする'}</button>
+          <button class="ct-edit" data-ct-edit="${esc(c.id)}">編集</button>
+          <button class="ct-del" data-ct-del="${esc(c.id)}">削除</button>
+        </div>
+      </div>`;
+    }).join(''):'<div class="ct-empty">該当する契約書がありません。「＋ 契約書を登録」から追加してください。</div>';
+  }
+
+  function openModal(id){
+    editId=id||null;
+    const c=id?S.contracts.find(x=>x.id===id):null;
+    $("#ctModalTitle").textContent=id?'契約書を編集':'契約書を登録';
+    $("#ctF-party").value=c?(c.party||''):'';
+    $("#ctF-title").value=c?(c.title||''):'';
+    $("#ctF-biz").value=c?(c.biz||'不動産'):'不動産';
+    $("#ctF-amount").value=c?(c.amount||''):'';
+    $("#ctF-date").value=c?(c.date||''):'';
+    $("#ctF-status").value=c?(c.status||'unsigned'):'unsigned';
+    $("#ctF-body").value=c?(c.body||''):'';
+    $("#ctModal").classList.add('open');
+  }
+  $("#ctSave").onclick=()=>{
+    const party=$("#ctF-party").value.trim();
+    if(!party){ T.toast('相手先を入力してください'); return; }
+    const data={party, title:$("#ctF-title").value.trim(), biz:$("#ctF-biz").value,
+      amount:parseInt($("#ctF-amount").value)||0, date:$("#ctF-date").value.trim(),
+      status:$("#ctF-status").value, body:$("#ctF-body").value.trim()};
+    if(editId){ Object.assign(S.contracts.find(x=>x.id===editId), data); }
+    else{ S.contracts.push({id:'ct'+Date.now(), ...data}); }
+    T.saveAll(); $("#ctModal").classList.remove('open'); render(); if(T.renderAll)T.renderAll();
+    T.toast(editId?'契約書を更新しました':'契約書を登録しました');
+  };
+
+  $("#s-contracts").addEventListener('click', e=>{
+    const f=e.target.closest('[data-ct-filter]');
+    if(f){ filter=f.dataset.ctFilter; $$('#ctFilter button').forEach(b=>b.classList.toggle('on',b===f)); render(); return; }
+    if(e.target.closest('#ctAdd')){ openModal(null); return; }
+    const ed=e.target.closest('[data-ct-edit]'); if(ed){ openModal(ed.dataset.ctEdit); return; }
+    const tg=e.target.closest('[data-ct-toggle]');
+    if(tg){ const c=S.contracts.find(x=>x.id===tg.dataset.ctToggle); if(c){ c.status=c.status==='signed'?'unsigned':'signed'; T.saveAll(); render(); if(T.renderAll)T.renderAll(); } return; }
+    const dl=e.target.closest('[data-ct-del]');
+    if(dl){ if(!confirm('この契約書を削除しますか？')) return; S.contracts=S.contracts.filter(x=>x.id!==dl.dataset.ctDel); T.saveAll(); render(); if(T.renderAll)T.renderAll(); return; }
+  });
+
+  T.onRender(render);
+  render();
 })();
 </script>
 
