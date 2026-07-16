@@ -10,7 +10,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 
-  html, body { background: #05070b; margin: 0; min-height: 100%; }
+  html, body { background: #000; margin: 0; min-height: 100%; }
   html { font-size: 15px; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
   body { font-family: 'Zen Kaku Gothic New', sans-serif; line-height: 1.6; color: #eceff4; overflow-x: hidden; }
   @keyframes cardIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
@@ -20,9 +20,9 @@
 <style>
 
 :root{
-  --bg:#05070b;
-  --panel:#0a0e14;
-  --panel2:#121823;
+  --bg:#000;
+  --panel:#000;
+  --panel2:#0a0a0a;
   --line:rgba(210,173,99,.1);
   --line-strong:rgba(210,173,99,.2);
   --gold:#d2ad63;
@@ -40,17 +40,14 @@
   --radius:16px;
   --radius-sm:12px;
   --shadow:0 12px 40px rgba(0,0,0,.5);
-  --glass:rgba(8,10,14,.94);
+  --glass:#000;
   --lux-ring:linear-gradient(155deg,rgba(225,194,125,.38),rgba(210,173,99,.08) 35%,rgba(80,68,44,.12) 65%,rgba(225,194,125,.22));
   --nav-h:48px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 
 #app-treasury{min-height:0;
-  background:var(--bg);color:var(--text);font-family:var(--font-body);
-  background-image:
-    radial-gradient(ellipse 70% 45% at 50% -5%, rgba(196,166,106,.04), transparent),
-    radial-gradient(ellipse 50% 35% at 100% 60%, rgba(122,171,222,.03), transparent);
+  background:#000;color:var(--text);font-family:var(--font-body);
 }
 button{font-family:inherit;cursor:pointer}
 input,select,textarea{font-family:inherit}
@@ -86,9 +83,9 @@ input,select,textarea{font-family:inherit}
 .gamenav{
   width:180px;flex-shrink:0;padding:14px 8px 24px;
   display:flex;flex-direction:column;gap:5px;
-  background:linear-gradient(180deg,#0d1219 0%,#080b10 55%,#05070b 100%);
-  border-right:1px solid rgba(116,185,232,.14);
-  box-shadow:inset -1px 0 0 rgba(255,255,255,.02),8px 0 28px rgba(0,0,0,.35);
+  background:#000;
+  border-right:1px solid rgba(255,255,255,.08);
+  box-shadow:none;
 }
 .gamenav .nav-group{
   font-size:10px;color:var(--gold-dim);letter-spacing:.14em;
@@ -707,10 +704,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   grid-template-columns:180px minmax(0,1fr);
   align-items:start;
   min-height:100dvh;
-  background:var(--bg);
-  background-image:
-    radial-gradient(ellipse 90% 45% at 50% -8%,rgba(196,166,106,.035),transparent),
-    radial-gradient(ellipse 60% 30% at 85% 5%,rgba(122,171,222,.025),transparent);
+  background:#000;
 }
 /* サイドバー：ボタン領域だけのスクロールはしない。ページ全体スクロールで下まで見る */
 #portal-shell > .gamenav{
@@ -730,9 +724,9 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 #portal-bar{
   flex-shrink:0;z-index:300;display:flex;gap:14px;align-items:center;
   padding:8px 22px;
-  background:rgba(5,6,8,.96);backdrop-filter:blur(16px);
-  border-bottom:1px solid rgba(196,166,106,.14);
-  box-shadow:0 4px 24px rgba(0,0,0,.4);
+  background:#000;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  box-shadow:none;
   position:sticky;top:0;
 }
 #portal-bar .pt-logo{
@@ -758,7 +752,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   gap:6px;
   padding:4px 6px 4px;
   overflow:hidden;
-  background:#05070b;
+  background:#000;
 }
 .dash-split-row{
   min-height:0;height:100%;overflow:hidden;
@@ -773,9 +767,9 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 #dashboard-pane{display:flex;flex-direction:column;height:100%;min-height:0}
 .quest-pane{
   min-width:0;min-height:0;display:flex;flex-direction:column;
-  position:relative;background:var(--panel);overflow:hidden;
-  border:1px solid rgba(210,173,99,.14);border-radius:0;
-  box-shadow:0 10px 36px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.03);
+  position:relative;background:#000;overflow:hidden;
+  border:1px solid rgba(255,255,255,.08);border-radius:0;
+  box-shadow:none;
 }
 .pane-cap{
   flex-shrink:0;z-index:5;display:flex;align-items:center;gap:10px;
@@ -802,12 +796,12 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 #office-pane .pane-cap::after{background:rgba(116,185,232,.45);box-shadow:0 0 8px rgba(116,185,232,.2)}
 #treasury-pane .pane-cap::before{background:linear-gradient(180deg,var(--gold-hi),var(--gold))}
 #treasury-pane .pane-cap::after{background:var(--gold)}
-#office-pane{background:var(--panel);overflow:hidden;display:flex;flex-direction:column;min-height:0;}
+#office-pane{background:#000;overflow:hidden;display:flex;flex-direction:column;min-height:0;}
 .office-task-dock{
   flex:1 1 auto;min-height:0;overflow:hidden;
   display:flex;flex-direction:column;
-  border-top:1px solid rgba(210,173,99,.18);
-  background:linear-gradient(180deg,rgba(12,16,22,.98),rgba(8,10,14,.96));
+  border-top:1px solid rgba(255,255,255,.08);
+  background:#000;
   position:relative;z-index:4;
 }
 .office-task-head{
@@ -886,9 +880,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .office-tk-empty{font-size:11px;color:var(--muted);padding:4px 2px}
 .office-frame{
   flex:0 0 32%;max-height:32%;min-height:96px;overflow:hidden;display:flex;position:relative;
-  background:
-    radial-gradient(ellipse 70% 50% at 50% 30%,rgba(196,166,106,.04),transparent),
-    linear-gradient(180deg,#0c0d11,#050608);
+  background:#000;
 }
 .office-expand-hit{
   position:absolute;inset:0;z-index:3;border:0;cursor:zoom-in;
@@ -907,7 +899,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   width:min(1100px,96vw);height:min(860px,92vh);
   display:flex;flex-direction:column;overflow:hidden;
   border:1px solid rgba(255,255,255,.35);border-radius:12px;
-  background:#050608;box-shadow:0 24px 80px rgba(0,0,0,.65);
+  background:#000;box-shadow:0 24px 80px rgba(0,0,0,.65);
 }
 .oqm-head{
   flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:10px;
@@ -921,7 +913,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 .oqm-close:hover{border-color:#fff;background:rgba(255,255,255,.12)}
 .oqm-body{flex:1;min-height:0;position:relative}
-.oqm-body iframe{width:100%;height:100%;border:0;display:block;background:#050608}
+.oqm-body iframe{width:100%;height:100%;border:0;display:block;background:#000}
 .office-tk-staffs{
   display:flex;flex-wrap:wrap;gap:5px;padding:0 10px 8px;
 }
@@ -939,10 +931,10 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 #dashboard-pane,#office-pane{min-height:0;overflow:hidden;}
 #treasury-pane{
-  margin:8px;background:var(--bg);border-radius:0;
+  margin:8px;background:#000;border-radius:0;
   overflow:visible;min-height:0;display:flex;flex-direction:column;
-  border:1px solid rgba(196,166,106,.14);
-  box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.08);
+  box-shadow:none;
   height:auto;
   flex-shrink:0;
   position:relative;
@@ -969,9 +961,9 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 #app-treasury .hud{
   position:sticky;top:48px;flex-shrink:0;z-index:40;
   padding:10px 18px;gap:10px;
-  background:rgba(5,6,8,.96);backdrop-filter:blur(12px);
-  border-bottom:1px solid var(--line-strong);
-  box-shadow:0 4px 16px rgba(0,0,0,.25);
+  background:#000;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  box-shadow:none;
 }
 #app-treasury .hud-logo{font-size:16px}
 #app-treasury .main{padding:18px 20px 48px;max-width:none;overflow:visible;min-height:0;}
@@ -986,9 +978,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   display:flex;flex-direction:column;
   width:100%;
   padding:2px 4px 4px;
-  background:
-    radial-gradient(ellipse 80% 55% at 50% 0%,rgba(210,173,99,.03),transparent),
-    #05070b;
+  background:#000;
 }
 .dc-cards{
   flex:1;min-height:0;min-width:0;width:100%;overflow:hidden;
@@ -1001,7 +991,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   border:none;border-radius:0;
   overflow:hidden;
   box-shadow:none;
-  background:#090909;
+  background:#000;
 }
 .entaku-cap{
   position:absolute;top:7px;left:10px;right:10px;z-index:6;pointer-events:none;
@@ -1692,10 +1682,7 @@ video.dc-card__image{
 /* ===== ログイン ===== */
 #portal-login{
   min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px 16px;
-  background:var(--bg);
-  background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%,rgba(196,166,106,.08),transparent),
-    radial-gradient(ellipse 50% 40% at 100% 80%,rgba(122,171,222,.04),transparent);
+  background:#000;
 }
 #portal-login[hidden]{display:none!important}
 .portal-login-card{
