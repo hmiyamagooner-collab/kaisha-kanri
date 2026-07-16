@@ -321,10 +321,14 @@ body.embedded .hud-dock{padding:0 0 4px;}
 <script>
 /* ポータル内（iframe）で開かれたときは、ポータル側に住人カードがあるので二重表示を防ぐ */
 let EMBEDDED=false;
+let EMBED_EXPAND=false;
 try{EMBEDDED=(window.self!==window.top);}catch(e){EMBEDDED=true;}
-if(new URLSearchParams(location.search).get('embedded')==='1')EMBEDDED=true;
+const _qs=new URLSearchParams(location.search);
+if(_qs.get('embedded')==='1')EMBEDDED=true;
+if(_qs.get('expand')==='1')EMBED_EXPAND=true;
 if(EMBEDDED)document.body.classList.add('embedded');
-else{const f=document.getElementById('cardframe');f.src=f.dataset.src;}
+if(EMBED_EXPAND)document.body.classList.add('embedded-expand');
+else if(!EMBEDDED){const f=document.getElementById('cardframe');if(f&&f.dataset.src)f.src=f.dataset.src;}
 
 /* ゲーム画面内ステータス: ―=最小化 / ✖=格納（ドックから復帰） */
 (function(){
@@ -1715,6 +1719,25 @@ function fitCanvas(){
   const availH=Math.max(8,r.height);
   if(availW<8||availH<8)return;
   if(EMBEDDED){
+    // 拡大モーダル：マップ全体（ビーチ含む）を収める。通常埋め込みは従来どおり切り抜き
+    if(EMBED_EXPAND){
+      const scale=Math.min(availW/MAP_W,availH/MAP_H);
+      const dispW=MAP_W*scale,dispFullH=MAP_H*scale;
+      const offX=Math.max(0,(availW-dispW)/2);
+      const offY=Math.max(0,(availH-dispFullH)/2);
+      cv.style.width=Math.max(1,Math.floor(dispW))+'px';
+      cv.style.height=Math.max(1,Math.floor(dispFullH))+'px';
+      cv.style.position='absolute';
+      cv.style.left=Math.round(offX)+'px';
+      cv.style.top=Math.round(offY)+'px';
+      cv.style.transform='none';
+      cv.style.maxWidth='none';
+      cv.style.maxHeight='none';
+      wrap.style.alignItems='stretch';
+      wrap.style.justifyContent='stretch';
+      _embedFit={scale,offX,offY,vy0:0,vh:MAP_H};
+      return;
+    }
     const vy0=EMBED_VIEW_Y0,vh=EMBED_VIEW_H;
     const scale=Math.max(availW/MAP_W,availH/vh);
     const dispW=MAP_W*scale,dispFullH=MAP_H*scale,viewDispH=vh*scale;
