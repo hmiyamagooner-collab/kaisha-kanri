@@ -810,6 +810,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .office-task-head strong{
   font-family:var(--font-display);font-size:12px;font-weight:700;color:#fff;letter-spacing:.06em;
 }
+.office-task-head .office-tk-links{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end}
 .office-task-head .office-tk-open{
   font-size:10px;font-weight:600;padding:4px 9px;border-radius:7px;cursor:pointer;
   border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.06);color:#fff;
@@ -1159,6 +1160,51 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12);
   color:var(--muted);font-size:11px;max-height:120px;overflow:auto;white-space:pre-wrap;
 }
+.ent-meeting-pick{
+  margin-top:10px;padding:10px 12px;border-radius:10px;
+  border:1px solid rgba(116,185,232,.28);background:rgba(116,185,232,.06);
+}
+.ent-meeting-pick .ent-pick-cap{font-size:11px;font-weight:700;color:#9ec9e8;margin:0 0 8px;letter-spacing:.06em}
+.ent-meeting-pick .ent-pick-types{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.ent-meeting-pick .ent-pick-type{
+  font-size:11px;font-weight:700;padding:6px 10px;border-radius:8px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.22);color:#fff;
+}
+.ent-meeting-pick .ent-pick-type.on{
+  border-color:var(--gold);background:rgba(210,173,99,.18);color:var(--gold-hi);
+}
+.ent-meeting-pick .ent-pick-people{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.ent-meeting-pick .ent-pick-person{
+  font-size:10.5px;font-weight:600;padding:5px 9px;border-radius:999px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.04);color:var(--muted);
+}
+.ent-meeting-pick .ent-pick-person.on{
+  border-color:rgba(116,185,232,.55);background:rgba(116,185,232,.14);color:#fff;
+}
+.ent-meeting-pick .ent-pick-start{
+  font-size:12px;font-weight:700;padding:8px 14px;border:none;border-radius:8px;cursor:pointer;
+  background:var(--gold);color:#1a1510;
+}
+.ent-meeting-pick .ent-pick-start:disabled{opacity:.45;cursor:not-allowed}
+.ent-meeting-pick .ent-pick-cancel{
+  margin-left:8px;font-size:11px;font-weight:600;padding:7px 10px;border-radius:8px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.3);background:transparent;color:var(--muted);
+}
+.mtg-meta{font-size:12px;color:var(--muted);margin:0 0 12px}
+.mtg-card{
+  border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;
+  background:var(--panel);
+}
+.mtg-card-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-bottom:6px}
+.mtg-card-head strong{font-size:13px;color:var(--text)}
+.mtg-card-head .mtg-at{font-size:11px;color:var(--muted);margin-left:auto}
+.mtg-card .mtg-people{font-size:11px;color:var(--gold-hi);margin-bottom:8px}
+.mtg-card .mtg-sum{font-size:12.5px;line-height:1.55;white-space:pre-wrap;margin-bottom:8px}
+.mtg-card .mtg-tr{
+  font-size:11px;color:var(--muted);max-height:120px;overflow:auto;white-space:pre-wrap;
+  padding:8px;border-radius:8px;background:rgba(0,0,0,.2);border:1px solid var(--line);
+}
+.mtg-card .mtg-del{margin-top:8px}
 .entaku-inline #entakuText{flex:1;min-width:0;rows:1;min-height:36px;max-height:72px;font-size:12px;padding:8px}
 .entaku-inline #entakuSend{padding:0 14px;font-size:12px;height:36px}
 .ent-atts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
@@ -1522,12 +1568,8 @@ video.dc-card__image{
     /* 横並び時のみ横スクロール可（縦のボタン内スクロールは使わない） */
   }
   #portal-shell > .gamenav .nav-group{display:none}
-  #portal-shell > .gamenav button:not(.nav-biz){
-    width:auto;min-width:88px;flex-shrink:0;flex-direction:column;gap:4px;
-    padding:8px 10px;font-size:11px;align-items:center;
-  }
   #portal-shell > .gamenav button.nav-biz{
-    min-width:96px;flex-direction:column;padding:6px 8px;gap:4px;
+    width:auto;min-width:96px;flex-shrink:0;flex-direction:column;padding:6px 8px;gap:4px;
   }
   #portal-shell > .gamenav button.nav-biz .nav-photo{
     position:relative;inset:auto;width:52px;height:40px;min-height:40px;border-radius:8px;z-index:0;
@@ -1665,74 +1707,123 @@ video.dc-card__image{
 
 <div id="portal-shell" hidden>
 <nav class="gamenav" aria-label="メインメニュー">
-  <div class="nav-group nav-group-major">会計</div>
-  <button data-s="dash" data-acct="1" class="on"><span class="nico">◆</span>金庫室</button>
-  <button type="button" class="nav-biz" data-s="biz-cf" data-acct="1" style="--nav-photo:url(nav-cf.png)">
-    <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
-    <span class="nav-label">CF</span>
-  </button>
-  <button data-s="ledger" data-acct="1"><span class="nico">▤</span>台帳</button>
-  <button type="button" class="nav-biz" data-s="flow" data-acct="1" style="--nav-photo:url(nav-flow.png)">
-    <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
-    <span class="nav-label">商流</span>
-  </button>
-  <button data-s="cf-bank" data-acct="1"><span class="nico">口座</span>口座・CSV</button>
-  <button data-s="cf-link" data-acct="1"><span class="nico">⇔</span>明細突合</button>
-  <button data-s="cf-inrou" data-acct="1"><span class="nico">籠</span>印籠レポート</button>
-  <button data-s="cf-party" data-acct="1"><span class="nico">貸</span>役員貸付</button>
-  <button data-s="entry" data-acct="1"><span class="nico">＋</span>記録する</button>
-  <button data-s="tax" data-acct="1"><span class="nico">Ⓣ</span>納税タンク</button>
-  <div class="nav-group nav-group-major">法務</div>
-  <button type="button" class="nav-biz" data-s="contracts" style="--nav-photo:url(nav-contract.png)">
-    <span class="nav-photo" style="background-image:url(nav-contract.png)"></span>
-    <span class="nav-label">契約書</span>
-  </button>
-  <button type="button" class="nav-biz" data-s="cf-legal" style="--nav-photo:url(dash-legal.png)">
-    <span class="nav-photo" style="background-image:url(dash-legal.png)"></span>
-    <span class="nav-label">契約リーガル</span>
-  </button>
   <div class="nav-group nav-group-major">事業</div>
-  <button data-s="cf-cases"><span class="nico">案</span>案件ボード</button>
-  <button data-s="cf-flow"><span class="nico">印</span>案件フロー</button>
-  <button type="button" class="nav-biz" data-s="biz-paradise" style="--nav-photo:url(nav-paradise.png)">
+  <button type="button" class="nav-biz" data-s="biz-paradise">
     <span class="nav-photo" style="background-image:url(nav-paradise.png)"></span>
     <span class="nav-label">パラダイスシティ事業</span>
   </button>
-  <button type="button" class="nav-biz" data-s="biz-inage" style="--nav-photo:url(nav-inage.png)">
+  <button type="button" class="nav-biz" data-s="biz-inage">
     <span class="nav-photo" style="background-image:url(nav-inage.png)"></span>
     <span class="nav-label">稲毛海浜公園事業</span>
   </button>
-  <button type="button" class="nav-biz" data-s="biz-realestate" style="--nav-photo:url(nav-realestate.png)">
+  <button type="button" class="nav-biz" data-s="biz-realestate">
     <span class="nav-photo" style="background-image:url(nav-realestate.png)"></span>
     <span class="nav-label">不動産事業</span>
   </button>
-  <button type="button" class="nav-biz" data-s="biz-care" style="--nav-photo:url(nav-care.png)">
+  <button type="button" class="nav-biz" data-s="biz-care">
     <span class="nav-photo" style="background-image:url(nav-care.png)"></span>
     <span class="nav-label">介護事業</span>
   </button>
-  <button type="button" class="nav-biz" data-s="biz-it" style="--nav-photo:url(nav-it.png)">
+  <button type="button" class="nav-biz" data-s="biz-it">
     <span class="nav-photo" style="background-image:url(nav-it.png)"></span>
     <span class="nav-label">IT事業</span>
   </button>
-  <button type="button" class="nav-biz" data-s="biz-kanstwifi" style="--nav-photo:url(nav-it.png)">
+  <button type="button" class="nav-biz" data-s="biz-kanstwifi">
     <span class="nav-photo" style="background-image:url(nav-it.png)"></span>
     <span class="nav-label">カンストWiFi</span>
   </button>
-  <button type="button" class="nav-biz" data-s="biz-staffing" style="--nav-photo:url(nav-task.png)">
+  <button type="button" class="nav-biz" data-s="biz-staffing">
     <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
     <span class="nav-label">人材派遣</span>
   </button>
-  <button type="button" class="nav-biz" data-s="biz-detective" style="--nav-photo:url(nav-detective.png)">
+  <button type="button" class="nav-biz" data-s="biz-detective">
     <span class="nav-photo" style="background-image:url(nav-detective.png)"></span>
     <span class="nav-label">探偵事業</span>
   </button>
-  <button type="button" class="nav-biz" data-s="biz-task" style="--nav-photo:url(nav-task.png)">
+  <button type="button" class="nav-biz" data-s="cf-cases">
+    <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
+    <span class="nav-label">案件ボード</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="cf-flow">
+    <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
+    <span class="nav-label">案件フロー</span>
+  </button>
+  <div class="nav-group nav-group-major">会計</div>
+  <button type="button" class="nav-biz on" data-s="dash" data-acct="1">
+    <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
+    <span class="nav-label">金庫室</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="biz-cf" data-acct="1">
+    <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
+    <span class="nav-label">CF</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="ledger" data-acct="1">
+    <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
+    <span class="nav-label">台帳</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="flow" data-acct="1">
+    <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
+    <span class="nav-label">商流</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="cf-bank" data-acct="1">
+    <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
+    <span class="nav-label">口座・CSV</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="cf-link" data-acct="1">
+    <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
+    <span class="nav-label">明細突合</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="cf-inrou" data-acct="1">
+    <span class="nav-photo" style="background-image:url(nav-detective.png)"></span>
+    <span class="nav-label">印籠レポート</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="cf-party" data-acct="1">
+    <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
+    <span class="nav-label">役員貸付</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="entry" data-acct="1">
+    <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
+    <span class="nav-label">記録する</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="tax" data-acct="1">
+    <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
+    <span class="nav-label">納税タンク</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="quest" data-acct="1">
+    <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
+    <span class="nav-label">精算クエスト</span>
+  </button>
+  <div class="nav-group nav-group-major">法務</div>
+  <button type="button" class="nav-biz" data-s="contracts">
+    <span class="nav-photo" style="background-image:url(dash-legal.png)"></span>
+    <span class="nav-label">契約書</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="cf-legal">
+    <span class="nav-photo" style="background-image:url(dash-legal.png)"></span>
+    <span class="nav-label">契約リーガル</span>
+  </button>
+  <div class="nav-group nav-group-major">会議</div>
+  <button type="button" class="nav-biz" data-s="mtg-finance">
+    <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
+    <span class="nav-label">経理会議</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="mtg-sales">
+    <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
+    <span class="nav-label">営業会議</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="mtg-other">
+    <span class="nav-photo" style="background-image:url(dash-secretary.png)"></span>
+    <span class="nav-label">その他MT</span>
+  </button>
+  <!-- タスク管理・タスク評価はサイドバー非表示（オフィスクエスト下ドックへ） -->
+  <button type="button" class="nav-biz" data-s="tasks" hidden aria-hidden="true">
+    <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
+    <span class="nav-label">タスク管理</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="biz-task" hidden aria-hidden="true">
     <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
     <span class="nav-label">タスク評価</span>
   </button>
-  <div class="nav-group">記録・精算</div>
-  <button data-s="tasks"><span class="nico">✔</span>タスク管理</button>
-  <button data-s="quest"><span class="nico">⚔</span>精算クエスト</button>
 </nav>
 <div id="portal-main">
 <div id="portal-bar">
@@ -1843,7 +1934,10 @@ video.dc-card__image{
       <div class="office-task-dock">
         <div class="office-task-head">
           <strong>タスク管理</strong>
-          <button type="button" class="office-tk-open" data-jump="tasks">一覧を開く</button>
+          <div class="office-tk-links">
+            <button type="button" class="office-tk-open" data-jump="tasks">タスク管理</button>
+            <button type="button" class="office-tk-open" data-jump="biz-task">タスク評価</button>
+          </div>
         </div>
         <div class="office-tk-staffs" id="officeTkStaffs"></div>
         <form class="office-tk-form" id="officeTkForm">
@@ -2483,6 +2577,28 @@ video.dc-card__image{
     <button class="save-btn" id="bstAdd" style="margin-top:12px">案件を登録</button>
     <div id="bstList" class="recent-list" style="margin-top:16px"></div>
   </div>
+</section>
+
+<!-- ===== 会議：経理会議 ===== -->
+<section class="screen" id="s-mtg-finance">
+  <h2 class="stitle">経理会議</h2>
+  <p class="sdesc">円卓の録音から作成した経理会議の議事録を保管します。</p>
+  <p class="mtg-meta" id="mtgFinanceMeta"></p>
+  <div id="mtgFinanceList"></div>
+</section>
+<!-- ===== 会議：営業会議 ===== -->
+<section class="screen" id="s-mtg-sales">
+  <h2 class="stitle">営業会議</h2>
+  <p class="sdesc">円卓の録音から作成した営業会議の議事録を保管します。</p>
+  <p class="mtg-meta" id="mtgSalesMeta"></p>
+  <div id="mtgSalesList"></div>
+</section>
+<!-- ===== 会議：その他MT ===== -->
+<section class="screen" id="s-mtg-other">
+  <h2 class="stitle">その他MT</h2>
+  <p class="sdesc">円卓の録音から作成したその他ミーティングの議事録を保管します。</p>
+  <p class="mtg-meta" id="mtgOtherMeta"></p>
+  <div id="mtgOtherList"></div>
 </section>
 
 <!-- ===== 事業：探偵 ===== -->
@@ -4779,6 +4895,7 @@ const _cfRenderHooks=[];
 function renderAll(){
   $("#mLabel").textContent=viewMonthStr(view);
   fillCats();renderXP();renderDash();renderQuest();renderFlow();renderLedger();renderTax();renderBiz();
+  try{ window.MeetingArchive?.render?.(); }catch(e){}
   _cfRenderHooks.forEach(fn=>{try{fn();}catch(e){console.error(e);}});
 }
 renderAll();
@@ -5947,6 +6064,99 @@ window.EntakuAI=(function(){
 })();
 </script>
 
+<!-- 会議議事録アーカイブ -->
+<script>
+window.MeetingArchive=(function(){
+  const KEY='gooner_meetings_v1';
+  const TYPES={
+    finance:{ id:'finance', label:'経理会議', screen:'mtg-finance', list:'mtgFinanceList', meta:'mtgFinanceMeta' },
+    sales:{ id:'sales', label:'営業会議', screen:'mtg-sales', list:'mtgSalesList', meta:'mtgSalesMeta' },
+    other:{ id:'other', label:'その他MT', screen:'mtg-other', list:'mtgOtherList', meta:'mtgOtherMeta' }
+  };
+  function empty(){ return { finance:[], sales:[], other:[] }; }
+  function load(){
+    try{
+      const d=JSON.parse(localStorage.getItem(KEY)||'null');
+      if(!d||typeof d!=='object') return empty();
+      return {
+        finance:Array.isArray(d.finance)?d.finance:[],
+        sales:Array.isArray(d.sales)?d.sales:[],
+        other:Array.isArray(d.other)?d.other:[]
+      };
+    }catch(e){ return empty(); }
+  }
+  function save(data){
+    try{ localStorage.setItem(KEY, JSON.stringify(data)); }catch(e){}
+  }
+  function esc(s){
+    return String(s||'').replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);});
+  }
+  function add(type, entry){
+    const t=TYPES[type]?type:'other';
+    const data=load();
+    const row={
+      id: Date.now()+'-'+Math.random().toString(36).slice(2,7),
+      at: new Date().toISOString(),
+      label: TYPES[t].label,
+      participants: Array.isArray(entry.participants)?entry.participants.slice(0,24):[],
+      summary: String(entry.summary||'').slice(0,4000),
+      transcript: String(entry.transcript||'').slice(0,8000),
+      decisions: Array.isArray(entry.decisions)?entry.decisions.slice(0,12):[],
+      report: String(entry.report||'').slice(0,4000),
+      by: String(entry.by||'')
+    };
+    data[t].unshift(row);
+    if(data[t].length>80) data[t]=data[t].slice(0,80);
+    save(data);
+    render();
+    return row;
+  }
+  function remove(type, id){
+    const t=TYPES[type]?type:'other';
+    const data=load();
+    data[t]=(data[t]||[]).filter(function(x){ return x.id!==id; });
+    save(data);
+    render();
+  }
+  function renderType(type){
+    const conf=TYPES[type]; if(!conf) return;
+    const list=document.getElementById(conf.list);
+    const meta=document.getElementById(conf.meta);
+    if(!list) return;
+    const rows=load()[type]||[];
+    if(meta) meta.textContent=rows.length?('保管 '+rows.length+' 件（新しい順）'):'まだ議事録はありません。円卓で録音するとここに保管できます。';
+    list.innerHTML=rows.map(function(r){
+      const when=(r.at||'').replace('T',' ').slice(0,16);
+      const people=(r.participants||[]).join('・')||'（参加者未指定）';
+      const dec=(r.decisions||[]).filter(function(d){return d&&d.title;}).map(function(d){
+        return '<li>'+esc(d.title)+(d.owner?' <span style="color:var(--muted)">('+esc(d.owner)+(d.due?'・'+esc(d.due):'')+')</span>':'')+'</li>';
+      }).join('');
+      return '<article class="mtg-card" data-mtg-type="'+esc(type)+'" data-mtg-id="'+esc(r.id)+'">'
+        +'<div class="mtg-card-head"><strong>'+esc(r.label||conf.label)+'</strong><span class="mtg-at">'+esc(when)+'</span></div>'
+        +'<div class="mtg-people">参加者: '+esc(people)+'</div>'
+        +(r.summary?'<div class="mtg-sum">'+esc(r.summary)+'</div>':'')
+        +(dec?'<ul style="margin:0 0 8px;padding-left:1.2em;font-size:12px">'+dec+'</ul>':'')
+        +(r.transcript?'<div class="mtg-tr"><b>文字起こし</b><br>'+esc(r.transcript)+'</div>':'')
+        +'<button type="button" class="btn-reject mtg-del" data-mtg-del="1">削除</button>'
+        +'</article>';
+    }).join('')||'<div class="memo" style="color:var(--muted);padding:8px">議事録はまだありません。</div>';
+  }
+  function render(){
+    Object.keys(TYPES).forEach(renderType);
+  }
+  document.addEventListener('click', function(e){
+    const btn=e.target.closest('[data-mtg-del]');
+    if(!btn) return;
+    const card=btn.closest('[data-mtg-type][data-mtg-id]');
+    if(!card) return;
+    remove(card.dataset.mtgType, card.dataset.mtgId);
+    try{ window.Treasury?.toast?.('議事録を削除しました'); }catch(err){}
+  });
+  document.addEventListener('DOMContentLoaded', render);
+  return { TYPES, load, add, remove, render, labelOf:function(t){ return (TYPES[t]||TYPES.other).label; }, screenOf:function(t){ return (TYPES[t]||TYPES.other).screen; } };
+})();
+</script>
+
 <!-- 円卓会議：Dashboard内インライン（下の #entaku-inline を使用） -->
 <script>
 (function(){
@@ -5955,7 +6165,12 @@ window.EntakuAI=(function(){
     finance:{id:'finance',name:'紬',role:'経理',dept:'finance'},
     legal:{id:'legal',name:'陽翔',role:'法務',dept:'legal'}
   };
-  const S = { history: [], busy: false, playing: false, open: false, tour: null, lastScreen: 'dash', focus: null, actions: [], minutes: [], pendingAtt: [] };
+  const MTG_TYPES=[
+    { id:'finance', label:'経理会議' },
+    { id:'sales', label:'営業会議' },
+    { id:'other', label:'その他MT' }
+  ];
+  const S = { history: [], busy: false, playing: false, open: false, tour: null, lastScreen: 'dash', focus: null, actions: [], minutes: [], pendingAtt: [], recMeta: null, pickDraft: null, awaitingPick: false };
   let lastSpokenIdx = -1;
   let lastDashIdx = -1;
   const LS_ENTAKU = 'gooner_entaku_v2';
@@ -5970,6 +6185,11 @@ window.EntakuAI=(function(){
         if(m.summary) o.summary = String(m.summary).slice(0, 4000);
         if(m.transcript) o.transcript = String(m.transcript).slice(0, 8000);
         if(Array.isArray(m.decisions)) o.decisions = m.decisions.slice(0, 8);
+        if(m.meetingType) o.meetingType = m.meetingType;
+        if(m.meetingLabel) o.meetingLabel = String(m.meetingLabel).slice(0, 40);
+        if(Array.isArray(m.participants)) o.participants = m.participants.slice(0, 24);
+        if(m.chosenLabel) o.chosenLabel = String(m.chosenLabel).slice(0, 40);
+        if(Array.isArray(m.chosenPeople)) o.chosenPeople = m.chosenPeople.slice(0, 24);
         if(Array.isArray(m.attachments) && m.attachments.length){
           o.attachments = m.attachments.map(function(a){
             const x = { id:a.id, name:a.name, kind:a.kind, mime:a.mime };
@@ -6227,6 +6447,9 @@ window.EntakuAI=(function(){
     { key:'WiFi', s:'biz-kanstwifi', label:'カンストWiFiへ' },
     { key:'人材派遣', s:'biz-staffing', label:'人材派遣へ' },
     { key:'派遣', s:'biz-staffing', label:'人材派遣へ' },
+    { key:'経理会議', s:'mtg-finance', label:'経理会議へ' },
+    { key:'営業会議', s:'mtg-sales', label:'営業会議へ' },
+    { key:'その他MT', s:'mtg-other', label:'その他MTへ' },
   ];
   const AI_TOUR = ['cf-bank','cf-cases','cf-link','cf-flow','biz-cf','cf-inrou'];
   function setAiWorking(on,opts){
@@ -6286,20 +6509,69 @@ window.EntakuAI=(function(){
     const dec=(Array.isArray(m.decisions)?m.decisions:[]).map(function(d){
       return '<li>'+esc(d.title)+(d.owner?' <span class="ent-act-meta">('+esc(d.owner)+(d.due?'・'+esc(d.due):'')+')</span>':'')+'</li>';
     }).join('');
+    const archive = m.meetingLabel
+      ? '<div class="ent-min-cap" style="margin-top:8px">保管先: '+esc(m.meetingLabel)+(m.participants&&m.participants.length?' ／ 参加者: '+esc(m.participants.join('・')):'')+'</div>'
+      : '';
     return '<div class="ent-minutes-block">'
       +'<div class="ent-min-cap">議事録</div>'
       +(m.summary?'<div class="ent-min-sum">'+esc(m.summary).replace(/\n/g,'<br>')+'</div>':'')
       +(dec?'<ul style="margin:0;padding-left:1.2em">'+dec+'</ul>':'')
+      +archive
       +(m.transcript?'<div class="ent-min-tr"><b>文字起こし</b><br>'+esc(m.transcript).replace(/\n/g,'<br>')+'</div>':'')
+      +'</div>';
+  }
+  function participantChoices(){
+    const names=[];
+    const seen=new Set();
+    function push(n){
+      const s=String(n||'').trim();
+      if(!s||seen.has(s)) return;
+      seen.add(s); names.push(s);
+    }
+    const u=window.PortalAuth?.getUser?.();
+    if(u) push((u.role?u.role+'　':'')+u.name);
+    push('社長'); push('経理'); push('法務'); push('営業');
+    push('凛'); push('紬'); push('陽翔');
+    try{
+      (window.PortalAuth?.listStaff?.()||[]).forEach(function(s){
+        push((s.role?s.role+'　':'')+s.name);
+      });
+    }catch(e){}
+    return names.slice(0,18);
+  }
+  function meetingPickHtml(m, idx){
+    if(m.kind!=='meeting-pick') return '';
+    const live=!!m.live && S.awaitingPick;
+    if(!live){
+      return '<div class="ent-meeting-pick"><div class="ent-pick-cap">会議選択</div><div style="font-size:11px;color:var(--muted)">'
+        +(m.chosenLabel?('選択済: '+esc(m.chosenLabel)+(m.chosenPeople&&m.chosenPeople.length?' ／ '+esc(m.chosenPeople.join('・')):'')):'（キャンセルされました）')
+        +'</div></div>';
+    }
+    const draft=S.pickDraft||{ type:null, people:[] };
+    const people=participantChoices();
+    const types=MTG_TYPES.map(function(t){
+      return '<button type="button" class="ent-pick-type'+(draft.type===t.id?' on':'')+'" data-mtg-pick-type="'+t.id+'">'+esc(t.label)+'</button>';
+    }).join('');
+    const peeps=people.map(function(p,i){
+      const on=draft.people.indexOf(p)>=0;
+      return '<button type="button" class="ent-pick-person'+(on?' on':'')+'" data-mtg-pick-pi="'+i+'">'+esc(p)+'</button>';
+    }).join('');
+    return '<div class="ent-meeting-pick" data-pick-idx="'+idx+'">'
+      +'<div class="ent-pick-cap">① 会議の種類</div>'
+      +'<div class="ent-pick-types">'+types+'</div>'
+      +'<div class="ent-pick-cap">② 参加者（複数可）</div>'
+      +'<div class="ent-pick-people">'+peeps+'</div>'
+      +'<button type="button" class="ent-pick-start" data-mtg-pick-start="1"'+(draft.type?'':' disabled')+'>この内容で録音開始</button>'
+      +'<button type="button" class="ent-pick-cancel" data-mtg-pick-cancel="1">キャンセル</button>'
       +'</div>';
   }
   function render(){
     const body = el('entakuBody'); if(!body) return;
-    body.innerHTML = S.history.map(m=>{
+    body.innerHTML = S.history.map((m,idx)=>{
       const who = agentLabel(m);
       const cls = m.role==='user' ? 'ent-me' : ('ent-ai ent-agent-'+(m.agent||'secretary'));
       const jumps = m.role==='assistant' ? jumpButtons(m.content) : '';
-      return '<div class="ent-msg '+cls+'"><span class="ent-who">'+who+'</span><div class="ent-txt">'+esc(m.content).replace(/\n/g,'<br>')+minutesHtml(m)+attachmentsHtml(m.attachments)+jumps+'</div></div>';
+      return '<div class="ent-msg '+cls+'"><span class="ent-who">'+who+'</span><div class="ent-txt">'+esc(m.content).replace(/\n/g,'<br>')+minutesHtml(m)+meetingPickHtml(m,idx)+attachmentsHtml(m.attachments)+jumps+'</div></div>';
     }).join('')
       + (S.busy?'<div class="ent-msg ent-ai ent-agent-secretary"><span class="ent-who">秘書　凛</span><div class="ent-txt ent-typing">凛・紬・陽翔が協議中…</div></div>':'')
       + actionsHtml();
@@ -6307,6 +6579,52 @@ window.EntakuAI=(function(){
     body.querySelectorAll('.entaku-jump,.ent-act-jump').forEach(b=>b.onclick=()=>gotoScreen(b.dataset.s,{noScroll:true}));
     body.querySelectorAll('.ent-act-chk').forEach(function(c){
       c.onchange=function(){ const i=+c.dataset.idx; if(S.actions[i]){ S.actions[i].done=c.checked; persistEntaku(); render(); } };
+    });
+    body.querySelectorAll('[data-mtg-pick-type]').forEach(function(b){
+      b.onclick=function(){
+        if(!S.pickDraft) S.pickDraft={ type:null, people:[] };
+        S.pickDraft.type=b.dataset.mtgPickType;
+        render();
+      };
+    });
+    body.querySelectorAll('[data-mtg-pick-pi]').forEach(function(b){
+      b.onclick=function(){
+        if(!S.pickDraft) S.pickDraft={ type:null, people:[] };
+        const name=participantChoices()[+b.dataset.mtgPickPi];
+        if(!name) return;
+        const i=S.pickDraft.people.indexOf(name);
+        if(i>=0) S.pickDraft.people.splice(i,1);
+        else S.pickDraft.people.push(name);
+        render();
+      };
+    });
+    body.querySelectorAll('[data-mtg-pick-cancel]').forEach(function(b){
+      b.onclick=function(){
+        S.awaitingPick=false; S.pickDraft=null;
+        const last=S.history.filter(function(m){return m.kind==='meeting-pick'&&m.live;}).pop();
+        if(last){ last.live=false; last.chosenLabel=''; }
+        persistEntaku(); render();
+        window.Treasury?.toast?.('録音をキャンセルしました');
+      };
+    });
+    body.querySelectorAll('[data-mtg-pick-start]').forEach(function(b){
+      b.onclick=function(){
+        if(!S.pickDraft||!S.pickDraft.type) return;
+        const conf=MTG_TYPES.find(function(t){return t.id===S.pickDraft.type;})||MTG_TYPES[2];
+        S.recMeta={ type:conf.id, label:conf.label, participants:S.pickDraft.people.slice() };
+        S.awaitingPick=false;
+        const last=S.history.filter(function(m){return m.kind==='meeting-pick'&&m.live;}).pop();
+        if(last){
+          last.live=false;
+          last.chosenLabel=conf.label;
+          last.chosenPeople=S.pickDraft.people.slice();
+          last.content='了解です。『'+conf.label+'』として録音を開始します'
+            +(S.recMeta.participants.length?'（参加者: '+S.recMeta.participants.join('・')+'）':'')+'。';
+        }
+        S.pickDraft=null;
+        persistEntaku(); render();
+        window.__entakuBeginRecAfterPick?.();
+      };
     });
     const ta = el('entakuText');
     if(ta) ta.placeholder = S.focus
@@ -6637,9 +6955,11 @@ window.EntakuAI=(function(){
         const actions=Array.isArray(data.actions)?data.actions:[];
         const replies=Array.isArray(data.replies)?data.replies:[];
         if(!S.open){ S.open=true; syncToggle(); }
+        const meta=S.recMeta||{ type:'other', label:'その他MT', participants:[] };
+        const mtgTag='【'+meta.label+'】';
         S.history.push({
           role:'user',
-          content: transcript ? ('【会議録音】\n'+transcript.slice(0,4000)) : '【会議録音】（文字起こしなし）'
+          content: transcript ? (mtgTag+'\n'+transcript.slice(0,4000)) : (mtgTag+'（文字起こしなし）')
         });
         const report = replies[0] && replies[0].text
           ? replies[0].text
@@ -6649,17 +6969,36 @@ window.EntakuAI=(function(){
           content: report,
           summary: summary,
           transcript: transcript,
-          decisions: decisions
+          decisions: decisions,
+          meetingType: meta.type,
+          meetingLabel: meta.label,
+          participants: meta.participants||[]
         });
         replies.slice(1).forEach(function(r){
           if(r&&r.text) S.history.push({ role:'assistant', agent:r.agent||'secretary', content:r.text });
         });
+        try{
+          const u=window.PortalAuth?.getUser?.();
+          window.MeetingArchive?.add?.(meta.type, {
+            summary: summary,
+            transcript: transcript,
+            decisions: decisions,
+            report: report,
+            participants: meta.participants||[],
+            by: u ? ((u.role?u.role+'　':'')+u.name) : ''
+          });
+          S.history.push({
+            role:'assistant', agent:'secretary',
+            content:'議事録を『'+meta.label+'』へ保管しました。左サイドバーの会議から確認できます。'
+          });
+        }catch(err){}
         const merged = actions.concat(decisions.map(function(d){
-          return { title:d.title, owner:d.owner, due:d.due, module:'' };
+          return { title:d.title, owner:d.owner, due:d.due, module: window.MeetingArchive?.screenOf?.(meta.type)||'' };
         }));
         commitActions(merged);
-        window.PortalAuth?.serverLog?.('entaku-minutes', (transcript||'').slice(0,80));
-        window.Treasury?.toast?.('議事録を作成しました');
+        window.PortalAuth?.serverLog?.('entaku-minutes', (meta.label||'')+' '+(transcript||'').slice(0,60));
+        window.Treasury?.toast?.('議事録を'+meta.label+'へ保管しました');
+        S.recMeta=null;
       }catch(e){
         S.history.push({
           role:'assistant', agent:'secretary',
@@ -6670,6 +7009,20 @@ window.EntakuAI=(function(){
         processing=false; S.busy=false; setUi('idle'); persistEntaku(); render();
         requestAnimationFrame(function(){ window.scrollTo(0,scrollY); });
       }
+    }
+    function offerMeetingPick(){
+      if(S.awaitingPick) return;
+      if(!S.open){ S.open=true; syncToggle(); }
+      S.awaitingPick=true;
+      S.pickDraft={ type:null, people:[] };
+      S.history.push({
+        role:'assistant', agent:'secretary', kind:'meeting-pick', live:true,
+        content:'録音を開始します。保管先の会議と参加者を選んでください。\n・経理会議　・営業会議　・その他MT'
+      });
+      persistEntaku();
+      render();
+      window.DashTalk?.speak?.('secretary', '会議の種類と参加者を選んでください。', 4000);
+      try{ window.PortalTTS?.speak?.('会議の種類と参加者を選んでください。'); }catch(e){}
     }
     async function startRec(){
       if(processing || S.busy || S.playing) return;
@@ -6710,10 +7063,15 @@ window.EntakuAI=(function(){
       if(!mediaRec || mediaRec.state==='inactive') return;
       try{ mediaRec.stop(); }catch(e){ cleanupStream(); setUi('idle'); }
     }
+    window.__entakuBeginRecAfterPick=function(){ startRec(); };
     mic.addEventListener('click', function(){
       if(processing) return;
-      if(mediaRec && mediaRec.state!=='inactive') stopRec();
-      else startRec();
+      if(mediaRec && mediaRec.state!=='inactive'){ stopRec(); return; }
+      if(S.awaitingPick){
+        window.Treasury?.toast?.('会議と参加者を選んでから録音開始を押してください');
+        return;
+      }
+      offerMeetingPick();
     });
     stopBtn?.addEventListener('click', function(e){ e.preventDefault(); stopRec(); });
   })();
@@ -6728,8 +7086,12 @@ window.EntakuAI=(function(){
     });
   });
   restoreEntaku();      // 前回の会議・議事録を復元
+  // 復元時は未完了の会議選択を無効化
+  S.history.forEach(function(m){ if(m&&m.kind==='meeting-pick') m.live=false; });
+  S.awaitingPick=false; S.pickDraft=null;
   if(S.history.length) render();
   syncToggle();
+  try{ window.MeetingArchive?.render?.(); }catch(e){}
 })();
 </script>
 
