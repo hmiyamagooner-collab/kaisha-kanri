@@ -186,24 +186,10 @@ input,select,textarea{font-family:inherit}
 }
 .gamenav button.nav-locked.on{border-color:rgba(255,255,255,.35)}
 .gamenav .nav-acct-wrap{display:flex;flex-direction:column;gap:5px}
-.gamenav .nav-acct-toggle{
-  display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
-  min-height:40px;padding:0 12px;border-radius:var(--radius-sm);cursor:pointer;
-  font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--gold-hi);
-  background:linear-gradient(180deg,#1a2230 0%,#121823 100%);
-  border:1px dashed rgba(210,173,99,.45);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
-}
-.gamenav .nav-acct-toggle:hover{border-color:var(--gold);color:#fff;background:linear-gradient(180deg,#222c3c,#161d28)}
-.gamenav .nav-acct-toggle[hidden],
 .gamenav .nav-acct-panel[hidden],
 .gamenav .nav-acct-label[hidden],
-.gamenav .nav-acct-hint[hidden],
 .gamenav .nav-acct-wrap[hidden]{display:none!important}
 .gamenav .nav-acct-panel{display:flex;flex-direction:column;gap:5px}
-.gamenav .nav-acct-hint{
-  font-size:10px;color:var(--muted);text-align:center;padding:2px 8px 6px;line-height:1.35;
-}
 /* 事業ボタン：実写アイコンをボタン全面に浸透＋文字を上に載せる */
 .gamenav button.nav-biz{
   padding:0;gap:0;min-height:var(--nav-h);overflow:hidden;align-items:center;
@@ -1831,11 +1817,9 @@ video.dc-card__image{
     <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
     <span class="nav-label">案件フロー</span>
   </button>
-  <div class="nav-acct-wrap" id="navAcctWrap">
-    <div class="nav-group nav-group-major nav-acct-label" id="navAcctLabel" hidden>会計</div>
-    <button type="button" class="nav-acct-toggle" id="navAcctToggle" hidden aria-expanded="false">会計を表示</button>
-    <p class="nav-acct-hint" id="navAcctHint" hidden>金庫・CFなどお金の項目は非表示です</p>
-    <div class="nav-acct-panel" id="navAcctPanel" hidden>
+  <div class="nav-acct-wrap" id="navAcctWrap" hidden>
+    <div class="nav-group nav-group-major nav-acct-label" id="navAcctLabel">会計</div>
+    <div class="nav-acct-panel" id="navAcctPanel">
       <button type="button" class="nav-biz" data-s="dash" data-acct="1">
         <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
         <span class="nav-label">金庫室</span>
@@ -3737,14 +3721,9 @@ function setRole(r){role=r;
 
 /* ---------- ナビ ---------- */
 $$(".gamenav button").forEach(b=>b.onclick=()=>{
-  if(b.classList.contains("nav-acct-toggle")) return;
   if(b.dataset.acct==="1"){
     if(!window.PortalAuth||!PortalAuth.canAccessAccounting()){
       try{toast("会計メニューは社長・経理・法務のみ利用できます");}catch(e){}
-      return;
-    }
-    if(!PortalAuth.isAccountingRevealed()){
-      try{toast("先に「会計を表示」を押してください");}catch(e){}
       return;
     }
   }
@@ -6038,102 +6017,57 @@ window.PortalAuth=(function(){
     }).catch(function(){});
   }
   const ACCT_ROLES=['社長','経理','法務'];
-  const ACCT_REVEAL_KEY='gooner_acct_revealed';
   function canAccessAccounting(){
     const u=getUser();
     return !!(u&&ACCT_ROLES.includes(String(u.role||'').trim()));
   }
-  function isAccountingRevealed(){
-    try{ return sessionStorage.getItem(ACCT_REVEAL_KEY)==='1'; }catch(e){ return false; }
-  }
-  function setAccountingRevealed(on){
-    try{ sessionStorage.setItem(ACCT_REVEAL_KEY, on?'1':'0'); }catch(e){}
-  }
+  function isAccountingRevealed(){ return true; }
   function isAccountingScreen(sid){
     if(sid==='cf-forecast')return true;
     const b=document.querySelector('.gamenav button[data-s="'+sid+'"]');
     return !!(b&&b.dataset.acct==='1');
   }
-  function updateBrandCover(){
+  function updateBrandCover(opts){
+    opts=opts||{};
     const cover=document.getElementById('mainBrandCover');
     const pane=document.getElementById('treasury-pane');
     if(!cover||!pane) return;
-    const ok=canAccessAccounting();
-    const revealed=ok && isAccountingRevealed();
+    // ナビ未選択＝ホーム：円卓直下のページ領域に Gooner ロゴ
     const on=document.querySelector('.gamenav button.on');
-    const onAcct=!!(on&&on.dataset.acct==='1');
-    // 会計権限あり＆未表示：ページ領域をロゴで覆う
-    // 事業・法務・会議など非会計ナビを開いているときだけ通常ページを見せる
-    const show=ok && !revealed && (!on || onAcct);
+    const show=!on;
+    const wasHidden=cover.hidden;
     cover.hidden=!show;
     pane.classList.toggle('is-brand-cover', show);
-  }
-  function leaveAccountingScreen(){
-    if(canAccessAccounting() && !isAccountingRevealed()){
-      const on=document.querySelector('.gamenav button.on');
-      // 会計画面、または未選択時はページ領域をロゴへ（事業等はナビ選択時のみ表示）
-      if(!on || on.dataset.acct==='1'){
-        document.querySelectorAll('.gamenav button.on').forEach(function(b){ b.classList.remove('on'); });
-        document.querySelectorAll('.screen.on').forEach(function(x){ x.classList.remove('on'); });
-      }
+    if(show && (opts.scroll || wasHidden)){
+      try{
+        requestAnimationFrame(function(){
+          const top=pane.getBoundingClientRect().top+window.scrollY-56;
+          window.scrollTo({top:Math.max(0,top),behavior:opts.instant?'auto':'smooth'});
+        });
+      }catch(e){}
     }
-    updateBrandCover();
   }
   function applyNavAcl(){
     const ok=canAccessAccounting();
-    const revealed=ok && isAccountingRevealed();
     const wrap=document.getElementById('navAcctWrap');
     const label=document.getElementById('navAcctLabel');
-    const toggle=document.getElementById('navAcctToggle');
     const panel=document.getElementById('navAcctPanel');
-    const hint=document.getElementById('navAcctHint');
     if(wrap) wrap.hidden=!ok;
     if(label) label.hidden=!ok;
-    if(toggle){
-      toggle.hidden=!ok;
-      toggle.setAttribute('aria-expanded', revealed?'true':'false');
-      toggle.textContent=revealed?'会計を隠す':'会計を表示';
-    }
-    if(panel) panel.hidden=!revealed;
-    if(hint) hint.hidden=!ok || revealed;
+    if(panel) panel.hidden=!ok;
     document.querySelectorAll('.gamenav button[data-acct="1"]').forEach(function(b){
-      b.classList.toggle('nav-locked', !ok || !revealed);
-      b.setAttribute('aria-disabled', (ok&&revealed)?'false':'true');
-      if(ok&&revealed) b.removeAttribute('title');
-      else if(!ok) b.title='会計メニューは社長・経理・法務のみ利用できます';
-      else b.title='「会計を表示」を押すと金庫などの項目が開きます';
+      b.classList.toggle('nav-locked', !ok);
+      b.setAttribute('aria-disabled', ok?'false':'true');
+      if(ok) b.removeAttribute('title');
+      else b.title='会計メニューは社長・経理・法務のみ利用できます';
     });
-    if(!ok){
-      // 会計権限なし：ロゴは出さず、未選択なら事業トップを開く
-      updateBrandCover();
-      if(!document.querySelector('.gamenav button.on')){
-        const biz=document.querySelector('.gamenav button[data-s="biz-paradise"]');
-        if(biz){ try{biz.click();}catch(e){} }
-      }
-    }else if(!revealed){
-      leaveAccountingScreen();
+    // ログイン直後はロゴホーム（会計画面へ自動遷移しない）
+    if(!document.querySelector('.gamenav button.on')){
+      document.querySelectorAll('.screen.on').forEach(function(x){ x.classList.remove('on'); });
+      updateBrandCover({scroll:true});
     }else{
-      if(!document.querySelector('.gamenav button.on')){
-        const dash=document.querySelector('.gamenav button[data-s="dash"]');
-        if(dash){ try{dash.click();}catch(e){} }
-      }
       updateBrandCover();
     }
-  }
-  function wireAcctToggle(){
-    const toggle=document.getElementById('navAcctToggle');
-    if(!toggle || toggle._wired) return;
-    toggle._wired=true;
-    toggle.addEventListener('click', function(){
-      if(!canAccessAccounting()){
-        try{toast('会計メニューは社長・経理・法務のみ表示できます');}catch(e){}
-        return;
-      }
-      const next=!isAccountingRevealed();
-      setAccountingRevealed(next);
-      applyNavAcl();
-      try{toast(next?'会計メニューを表示しました':'会計メニューを非表示にしました');}catch(e){}
-    });
   }
   function syncUi(){
     const u=getUser();
@@ -6148,6 +6082,9 @@ window.PortalAuth=(function(){
       if(chip){chip.hidden=false;chip.textContent=u.role+'　'+u.name;}
       if(logout)logout.hidden=false;
       if(badge)badge.textContent=u.name;
+      // セッション復元時もホームはロゴ
+      document.querySelectorAll('.gamenav button.on').forEach(function(b){ b.classList.remove('on'); });
+      document.querySelectorAll('.screen.on').forEach(function(x){ x.classList.remove('on'); });
     }else{
       if(login)login.hidden=false;
       if(shell)shell.hidden=true;
@@ -6155,7 +6092,7 @@ window.PortalAuth=(function(){
       if(logout)logout.hidden=true;
       if(badge)badge.textContent='利用者';
     }
-    try{wireAcctToggle(); applyNavAcl();}catch(e){}
+    try{applyNavAcl();}catch(e){}
   }
   function login(user){
     const u={
@@ -6177,7 +6114,7 @@ window.PortalAuth=(function(){
     const u=getUser();
     if(u){saveLog({...u,action:'logout',ts:Date.now()});serverLog('logout','');}
     localStorage.removeItem(USER_KEY);
-    setAccountingRevealed(false);
+    try{ sessionStorage.removeItem('gooner_acct_revealed'); }catch(e){}
     syncUi();
   }
   function userContext(){
@@ -7089,10 +7026,6 @@ window.EntakuDocIngest=(function(){
     if(window.PortalAuth&&PortalAuth.isAccountingScreen(sid)){
       if(!PortalAuth.canAccessAccounting()){
         try{toast("会計メニューは社長・経理・法務のみ利用できます");}catch(e){}
-        return;
-      }
-      if(!PortalAuth.isAccountingRevealed()){
-        try{toast("先にサイドバーの「会計を表示」を押してください");}catch(e){}
         return;
       }
     }
