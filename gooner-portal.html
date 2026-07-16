@@ -1066,12 +1066,40 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   background:rgba(255,255,255,.12);color:#fff;font-size:11px;line-height:1;
 }
 .entaku-chip-x:hover{background:rgba(231,154,154,.35)}
-.entaku-attach-btn{
+.entaku-attach-btn,.entaku-mic-btn{
   flex-shrink:0;width:36px;height:36px;border-radius:8px;cursor:pointer;
   border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.06);color:#fff;
   font-size:16px;line-height:1;display:inline-flex;align-items:center;justify-content:center;
 }
-.entaku-attach-btn:hover{background:rgba(255,255,255,.12);border-color:#fff}
+.entaku-attach-btn:hover,.entaku-mic-btn:hover{background:rgba(255,255,255,.12);border-color:#fff}
+.entaku-mic-btn.is-rec{
+  border-color:#ff6b6b;background:rgba(255,80,80,.22);color:#ffd0d0;
+  animation:entakuMicPulse 1.1s ease-in-out infinite;
+}
+.entaku-mic-btn.is-busy{opacity:.55;cursor:wait}
+@keyframes entakuMicPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,80,80,.35)}50%{box-shadow:0 0 0 6px rgba(255,80,80,0)}}
+.entaku-rec-bar{
+  width:100%;display:none;align-items:center;justify-content:space-between;gap:8px;
+  padding:6px 8px;border-radius:8px;font-size:11px;color:#fff;
+  background:rgba(120,24,24,.45);border:1px solid rgba(255,120,120,.4);
+}
+.entaku-rec-bar.is-on{display:flex}
+.entaku-rec-bar .entaku-rec-timer{font-family:var(--font-num);font-weight:700;letter-spacing:.04em}
+.entaku-rec-bar button{
+  border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.08);color:#fff;
+  border-radius:7px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;
+}
+.ent-minutes-block{
+  margin:8px 0;padding:10px 12px;border-radius:10px;
+  border:1px solid rgba(210,173,99,.28);background:rgba(210,173,99,.07);
+  font-size:12px;line-height:1.55;color:var(--text);
+}
+.ent-minutes-block .ent-min-cap{font-size:11px;font-weight:700;color:var(--gold-hi);margin-bottom:6px;letter-spacing:.06em}
+.ent-minutes-block .ent-min-sum{margin-bottom:8px;white-space:pre-wrap}
+.ent-minutes-block .ent-min-tr{
+  margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12);
+  color:var(--muted);font-size:11px;max-height:120px;overflow:auto;white-space:pre-wrap;
+}
 .entaku-inline #entakuText{flex:1;min-width:0;rows:1;min-height:36px;max-height:72px;font-size:12px;padding:8px}
 .entaku-inline #entakuSend{padding:0 14px;font-size:12px;height:36px}
 .ent-atts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
@@ -1726,9 +1754,14 @@ video.dc-card__image{
         <div class="entaku-inline-body" id="entakuBody"></div>
         <form class="entaku-input" id="entakuForm" onsubmit="return sendEntaku(event)">
           <div class="entaku-attach-bar" id="entakuAttachBar" aria-live="polite"></div>
+          <div class="entaku-rec-bar" id="entakuRecBar" aria-live="polite">
+            <span>録音中 <span class="entaku-rec-timer" id="entakuRecTimer">0:00</span></span>
+            <button type="button" id="entakuRecStop">停止して議事録化</button>
+          </div>
           <button type="button" class="entaku-attach-btn" id="entakuAttachBtn" title="PDF・写真を添付 / PrtScn貼付可" aria-label="添付">＋</button>
+          <button type="button" class="entaku-mic-btn" id="entakuMicBtn" title="マイク録音→Whisper議事録" aria-label="マイク録音">🎙</button>
           <input type="file" id="entakuFile" accept="image/*,application/pdf,.pdf" multiple hidden>
-          <textarea id="entakuText" rows="1" placeholder="相談・領収書・契約書… 画像/PDF添付・貼付可　Enter送信"></textarea>
+          <textarea id="entakuText" rows="1" placeholder="相談・領収書・契約書… 画像/PDF・マイク議事録可　Enter送信"></textarea>
           <button type="submit" id="entakuSend">送信</button>
         </form>
       </div>
@@ -5261,6 +5294,10 @@ window.EntakuAI=(function(){
     try{
       const slimHist = S.history.slice(-60).map(function(m){
         const o = { role:m.role, content:m.content, agent:m.agent };
+        if(m.kind) o.kind = m.kind;
+        if(m.summary) o.summary = String(m.summary).slice(0, 4000);
+        if(m.transcript) o.transcript = String(m.transcript).slice(0, 8000);
+        if(Array.isArray(m.decisions)) o.decisions = m.decisions.slice(0, 8);
         if(Array.isArray(m.attachments) && m.attachments.length){
           o.attachments = m.attachments.map(function(a){
             const x = { id:a.id, name:a.name, kind:a.kind, mime:a.mime };
@@ -5562,13 +5599,25 @@ window.EntakuAI=(function(){
     if(!hits.length) return '';
     return '<div class="entaku-jumps">'+hits.slice(0,4).map(r=>'<button type="button" class="entaku-jump" data-s="'+r.s+'">'+r.label+'</button>').join('')+'</div>';
   }
+  function minutesHtml(m){
+    if(m.kind!=='minutes') return '';
+    const dec=(Array.isArray(m.decisions)?m.decisions:[]).map(function(d){
+      return '<li>'+esc(d.title)+(d.owner?' <span class="ent-act-meta">('+esc(d.owner)+(d.due?'・'+esc(d.due):'')+')</span>':'')+'</li>';
+    }).join('');
+    return '<div class="ent-minutes-block">'
+      +'<div class="ent-min-cap">議事録</div>'
+      +(m.summary?'<div class="ent-min-sum">'+esc(m.summary).replace(/\n/g,'<br>')+'</div>':'')
+      +(dec?'<ul style="margin:0;padding-left:1.2em">'+dec+'</ul>':'')
+      +(m.transcript?'<div class="ent-min-tr"><b>文字起こし</b><br>'+esc(m.transcript).replace(/\n/g,'<br>')+'</div>':'')
+      +'</div>';
+  }
   function render(){
     const body = el('entakuBody'); if(!body) return;
     body.innerHTML = S.history.map(m=>{
       const who = agentLabel(m);
       const cls = m.role==='user' ? 'ent-me' : ('ent-ai ent-agent-'+(m.agent||'secretary'));
       const jumps = m.role==='assistant' ? jumpButtons(m.content) : '';
-      return '<div class="ent-msg '+cls+'"><span class="ent-who">'+who+'</span><div class="ent-txt">'+esc(m.content).replace(/\n/g,'<br>')+attachmentsHtml(m.attachments)+jumps+'</div></div>';
+      return '<div class="ent-msg '+cls+'"><span class="ent-who">'+who+'</span><div class="ent-txt">'+esc(m.content).replace(/\n/g,'<br>')+minutesHtml(m)+attachmentsHtml(m.attachments)+jumps+'</div></div>';
     }).join('')
       + (S.busy?'<div class="ent-msg ent-ai ent-agent-secretary"><span class="ent-who">秘書　凛</span><div class="ent-txt ent-typing">凛・紬・陽翔が協議中…</div></div>':'')
       + actionsHtml();
@@ -5579,8 +5628,8 @@ window.EntakuAI=(function(){
     });
     const ta = el('entakuText');
     if(ta) ta.placeholder = S.focus
-      ? (agentOf(S.focus).name + 'さんへ指名中… 画像/PDF添付可　Enter送信')
-      : '相談・領収書・契約書… 画像/PDF添付・貼付可　Enter送信';
+      ? (agentOf(S.focus).name + 'さんへ指名中… 画像/PDF・マイク可　Enter送信')
+      : '相談・領収書・契約書… 画像/PDF・マイク議事録可　Enter送信';
     renderPendingAtt();
     setAiWorking(S.busy,{tour:false});
     el('entaku-inline')?.classList.toggle('is-busy',S.busy);
@@ -5796,6 +5845,139 @@ window.EntakuAI=(function(){
         }
       });
     }
+  })();
+  (function wireEntakuMic(){
+    const mic=el('entakuMicBtn'), stopBtn=el('entakuRecStop'), bar=el('entakuRecBar'), timerEl=el('entakuRecTimer');
+    if(!mic) return;
+    let mediaRec=null, chunks=[], stream=null, tick=null, startedAt=0, processing=false;
+    const MAX_MS=5*60*1000;
+    function fmt(ms){
+      const s=Math.floor(ms/1000), m=Math.floor(s/60), r=s%60;
+      return m+':'+String(r).padStart(2,'0');
+    }
+    function setUi(state){
+      mic.classList.toggle('is-rec', state==='rec');
+      mic.classList.toggle('is-busy', state==='busy');
+      if(bar) bar.classList.toggle('is-on', state==='rec');
+      mic.title = state==='rec' ? '録音中（クリックで停止→議事録化）'
+        : state==='busy' ? '議事録を作成中…' : 'マイク録音→Whisper議事録';
+    }
+    function cleanupStream(){
+      if(tick){ clearInterval(tick); tick=null; }
+      if(stream){ stream.getTracks().forEach(function(t){ try{t.stop();}catch(e){} }); stream=null; }
+      mediaRec=null; chunks=[];
+    }
+    function blobToBase64(blob){
+      return new Promise(function(resolve,reject){
+        const r=new FileReader();
+        r.onload=function(){
+          const s=String(r.result||'');
+          const i=s.indexOf(',');
+          resolve(i>=0?s.slice(i+1):s);
+        };
+        r.onerror=function(){ reject(new Error('音声読み込み失敗')); };
+        r.readAsDataURL(blob);
+      });
+    }
+    async function processBlob(blob, mime){
+      if(processing) return;
+      processing=true; setUi('busy'); S.busy=true; render();
+      const scrollY=window.scrollY;
+      try{
+        const b64=await blobToBase64(blob);
+        if(b64.length>9*1024*1024) throw new Error('録音が長すぎます（5分以内を目安）');
+        const res=await fetch('/api/whisper-minutes',{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ audioBase64:b64, mime:mime||blob.type||'audio/webm', context:cfContext() })
+        });
+        const data=await res.json().catch(function(){ return {}; });
+        if(!res.ok || data.ok===false) throw new Error(data.error||data.detail||('HTTP '+res.status));
+        const transcript=String(data.transcript||'').trim();
+        const summary=String(data.summary||'').trim();
+        const decisions=Array.isArray(data.decisions)?data.decisions:[];
+        const actions=Array.isArray(data.actions)?data.actions:[];
+        const replies=Array.isArray(data.replies)?data.replies:[];
+        if(!S.open){ S.open=true; syncToggle(); }
+        S.history.push({
+          role:'user',
+          content: transcript ? ('【会議録音】\n'+transcript.slice(0,4000)) : '【会議録音】（文字起こしなし）'
+        });
+        const report = replies[0] && replies[0].text
+          ? replies[0].text
+          : (summary || '議事録を作成しました。');
+        S.history.push({
+          role:'assistant', agent:'secretary', kind:'minutes',
+          content: report,
+          summary: summary,
+          transcript: transcript,
+          decisions: decisions
+        });
+        replies.slice(1).forEach(function(r){
+          if(r&&r.text) S.history.push({ role:'assistant', agent:r.agent||'secretary', content:r.text });
+        });
+        const merged = actions.concat(decisions.map(function(d){
+          return { title:d.title, owner:d.owner, due:d.due, module:'' };
+        }));
+        commitActions(merged);
+        window.PortalAuth?.serverLog?.('entaku-minutes', (transcript||'').slice(0,80));
+        window.Treasury?.toast?.('議事録を作成しました');
+      }catch(e){
+        S.history.push({
+          role:'assistant', agent:'secretary',
+          content:'⚠ 議事録化に失敗しました（'+(e&&e.message||e)+'）。Vercel版＋OPENAI_API_KEY とマイク許可が必要です。'
+        });
+        window.Treasury?.toast?.('議事録化に失敗しました');
+      }finally{
+        processing=false; S.busy=false; setUi('idle'); persistEntaku(); render();
+        requestAnimationFrame(function(){ window.scrollTo(0,scrollY); });
+      }
+    }
+    async function startRec(){
+      if(processing || S.busy || S.playing) return;
+      if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+        window.Treasury?.toast?.('このブラウザではマイク録音に対応していません');
+        return;
+      }
+      try{
+        stream=await navigator.mediaDevices.getUserMedia({ audio:true });
+        const prefer='audio/webm;codecs=opus';
+        const mime=MediaRecorder.isTypeSupported(prefer)?prefer:(MediaRecorder.isTypeSupported('audio/webm')?'audio/webm':'');
+        chunks=[];
+        mediaRec=mime?new MediaRecorder(stream,{mimeType:mime}):new MediaRecorder(stream);
+        mediaRec.ondataavailable=function(ev){ if(ev.data&&ev.data.size) chunks.push(ev.data); };
+        mediaRec.onstop=function(){
+          const type=(mediaRec&&mediaRec.mimeType)||mime||'audio/webm';
+          const blob=new Blob(chunks,{type:type});
+          cleanupStream();
+          if(blob.size<800){ setUi('idle'); window.Treasury?.toast?.('録音が短すぎます'); return; }
+          processBlob(blob, type);
+        };
+        mediaRec.start(1000);
+        startedAt=Date.now();
+        if(timerEl) timerEl.textContent='0:00';
+        setUi('rec');
+        if(!S.open){ S.open=true; syncToggle(); }
+        tick=setInterval(function(){
+          const elapsed=Date.now()-startedAt;
+          if(timerEl) timerEl.textContent=fmt(elapsed);
+          if(elapsed>=MAX_MS) stopRec();
+        },400);
+      }catch(e){
+        cleanupStream(); setUi('idle');
+        window.Treasury?.toast?.('マイクを許可してください');
+      }
+    }
+    function stopRec(){
+      if(!mediaRec || mediaRec.state==='inactive') return;
+      try{ mediaRec.stop(); }catch(e){ cleanupStream(); setUi('idle'); }
+    }
+    mic.addEventListener('click', function(){
+      if(processing) return;
+      if(mediaRec && mediaRec.state!=='inactive') stopRec();
+      else startRec();
+    });
+    stopBtn?.addEventListener('click', function(e){ e.preventDefault(); stopRec(); });
   })();
   // キャラカードをクリック → その専門家を指名して質問できる
   document.querySelectorAll('.dc-card[data-dept]').forEach(function(card){
