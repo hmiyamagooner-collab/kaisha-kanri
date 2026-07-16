@@ -172,6 +172,17 @@ input,select,textarea{font-family:inherit}
     transform:translate3d(4px,0,0);
   }
 }
+.gamenav button.nav-locked,
+.gamenav button.nav-locked.nav-biz{
+  opacity:.38;filter:grayscale(.55);cursor:not-allowed;
+  pointer-events:auto;
+  box-shadow:none;
+}
+.gamenav button.nav-locked:hover,
+.gamenav button.nav-locked.on:hover{
+  transform:none!important;filter:grayscale(.55);opacity:.38;
+}
+.gamenav button.nav-locked.on{border-color:rgba(255,255,255,.35)}
 /* 事業ボタン：実写アイコンをボタン全面に浸透＋文字を上に載せる */
 .gamenav button.nav-biz{
   padding:0;gap:0;min-height:var(--nav-h);overflow:hidden;align-items:center;
@@ -1655,17 +1666,22 @@ video.dc-card__image{
 <div id="portal-shell" hidden>
 <nav class="gamenav" aria-label="メインメニュー">
   <div class="nav-group nav-group-major">会計</div>
-  <button type="button" class="nav-biz" data-s="biz-cf" style="--nav-photo:url(nav-cf.png)">
+  <button data-s="dash" data-acct="1" class="on"><span class="nico">◆</span>金庫室</button>
+  <button type="button" class="nav-biz" data-s="biz-cf" data-acct="1" style="--nav-photo:url(nav-cf.png)">
     <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
     <span class="nav-label">CF</span>
   </button>
-  <button type="button" class="nav-biz" data-s="flow" style="--nav-photo:url(nav-flow.png)">
+  <button data-s="ledger" data-acct="1"><span class="nico">▤</span>台帳</button>
+  <button type="button" class="nav-biz" data-s="flow" data-acct="1" style="--nav-photo:url(nav-flow.png)">
     <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
     <span class="nav-label">商流</span>
   </button>
-  <button data-s="dash" class="on"><span class="nico">◆</span>金庫室</button>
-  <button data-s="cf-bank"><span class="nico">口座</span>口座・CSV</button>
-  <button data-s="cf-link"><span class="nico">⇔</span>明細突合</button>
+  <button data-s="cf-bank" data-acct="1"><span class="nico">口座</span>口座・CSV</button>
+  <button data-s="cf-link" data-acct="1"><span class="nico">⇔</span>明細突合</button>
+  <button data-s="cf-inrou" data-acct="1"><span class="nico">籠</span>印籠レポート</button>
+  <button data-s="cf-party" data-acct="1"><span class="nico">貸</span>役員貸付</button>
+  <button data-s="entry" data-acct="1"><span class="nico">＋</span>記録する</button>
+  <button data-s="tax" data-acct="1"><span class="nico">Ⓣ</span>納税タンク</button>
   <div class="nav-group nav-group-major">法務</div>
   <button type="button" class="nav-biz" data-s="contracts" style="--nav-photo:url(nav-contract.png)">
     <span class="nav-photo" style="background-image:url(nav-contract.png)"></span>
@@ -1676,6 +1692,8 @@ video.dc-card__image{
     <span class="nav-label">契約リーガル</span>
   </button>
   <div class="nav-group nav-group-major">事業</div>
+  <button data-s="cf-cases"><span class="nico">案</span>案件ボード</button>
+  <button data-s="cf-flow"><span class="nico">印</span>案件フロー</button>
   <button type="button" class="nav-biz" data-s="biz-paradise" style="--nav-photo:url(nav-paradise.png)">
     <span class="nav-photo" style="background-image:url(nav-paradise.png)"></span>
     <span class="nav-label">パラダイスシティ事業</span>
@@ -1696,6 +1714,14 @@ video.dc-card__image{
     <span class="nav-photo" style="background-image:url(nav-it.png)"></span>
     <span class="nav-label">IT事業</span>
   </button>
+  <button type="button" class="nav-biz" data-s="biz-kanstwifi" style="--nav-photo:url(nav-it.png)">
+    <span class="nav-photo" style="background-image:url(nav-it.png)"></span>
+    <span class="nav-label">カンストWiFi</span>
+  </button>
+  <button type="button" class="nav-biz" data-s="biz-staffing" style="--nav-photo:url(nav-task.png)">
+    <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
+    <span class="nav-label">人材派遣</span>
+  </button>
   <button type="button" class="nav-biz" data-s="biz-detective" style="--nav-photo:url(nav-detective.png)">
     <span class="nav-photo" style="background-image:url(nav-detective.png)"></span>
     <span class="nav-label">探偵事業</span>
@@ -1704,18 +1730,9 @@ video.dc-card__image{
     <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
     <span class="nav-label">タスク評価</span>
   </button>
-  <div class="nav-group">本丸・印籠</div>
-  <button data-s="cf-cases"><span class="nico">案</span>案件ボード</button>
-  <button data-s="cf-flow"><span class="nico">印</span>案件フロー</button>
-  <button data-s="cf-party"><span class="nico">貸</span>関連者貸借</button>
-  <button data-s="cf-inrou"><span class="nico">籠</span>印籠レポート</button>
   <div class="nav-group">記録・精算</div>
-  <button data-s="entry"><span class="nico">＋</span>記録する</button>
   <button data-s="tasks"><span class="nico">✔</span>タスク管理</button>
   <button data-s="quest"><span class="nico">⚔</span>精算クエスト</button>
-  <div class="nav-group">分析・台帳</div>
-  <button data-s="ledger"><span class="nico">▤</span>台帳</button>
-  <button data-s="tax"><span class="nico">Ⓣ</span>納税タンク</button>
 </nav>
 <div id="portal-main">
 <div id="portal-bar">
@@ -2021,10 +2038,10 @@ video.dc-card__image{
   <div class="card" id="cfFlowPanel"><div class="cf-empty">案件ボードで案件カードをクリックしてください。</div></div>
 </section>
 
-<!-- ===== CF: 関連者貸借 ===== -->
+<!-- ===== CF: 役員貸付 ===== -->
 <section class="screen" id="s-cf-party">
-  <h2 class="stitle">関連者・個人会社貸借</h2>
-  <p class="sdesc">個人会社との貸し借りを相手別に明示します。</p>
+  <h2 class="stitle">役員貸付</h2>
+  <p class="sdesc">役員・個人会社との貸し借りを相手別に明示します。</p>
   <div class="cf-grid-2">
     <div id="cfPartyList"></div>
     <div class="card">
@@ -2412,6 +2429,60 @@ video.dc-card__image{
     <div class="card biz-stat"><div class="label">進行案件</div><div class="val" id="bitCases">0件</div></div>
   </div>
   <div class="card"><div id="bitList" class="recent-list"></div></div>
+</section>
+
+<!-- ===== 事業：カンストWiFi ===== -->
+<section class="screen" id="s-biz-kanstwifi">
+  <header class="biz-hero" style="--biz-photo:url(nav-it.png)">
+    <div class="biz-hero-photo" style="background-image:url(nav-it.png)" aria-hidden="true"></div>
+    <div class="biz-hero-body">
+      <h2 class="stitle">カンストWiFi</h2>
+      <p class="sdesc">回線・契約・月額利用の受付と進捗を管理します。</p>
+    </div>
+  </header>
+  <div class="biz-grid">
+    <div class="card stat in biz-stat"><div class="label">今月売上見込</div><div class="val" id="bkwSales">¥0</div></div>
+    <div class="card biz-stat"><div class="label">稼働回線</div><div class="val" id="bkwActive">0</div></div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="entry-grid">
+      <div class="fgroup"><label>顧客名</label><input id="bkwClient" placeholder="氏名・店舗名"></div>
+      <div class="fgroup"><label>プラン</label><input id="bkwPlan" placeholder="例：月額3,980円 / 無制限"></div>
+      <div class="fgroup"><label>月額（円）</label><input id="bkwFee" type="number" min="0" placeholder="3980"></div>
+      <div class="fgroup"><label>ステータス</label>
+        <select id="bkwStatus"><option>受付</option><option>開通準備</option><option>稼働中</option><option>解約</option></select>
+      </div>
+    </div>
+    <button class="save-btn" id="bkwAdd" style="margin-top:12px">回線を登録</button>
+    <div id="bkwList" class="recent-list" style="margin-top:16px"></div>
+  </div>
+</section>
+
+<!-- ===== 事業：人材派遣 ===== -->
+<section class="screen" id="s-biz-staffing">
+  <header class="biz-hero" style="--biz-photo:url(nav-task.png)">
+    <div class="biz-hero-photo" style="background-image:url(nav-task.png)" aria-hidden="true"></div>
+    <div class="biz-hero-body">
+      <h2 class="stitle">人材派遣</h2>
+      <p class="sdesc">派遣先・候補者・稼働状況の受付と進捗を管理します。</p>
+    </div>
+  </header>
+  <div class="biz-grid">
+    <div class="card stat in biz-stat"><div class="label">今月請求見込</div><div class="val" id="bstSales">¥0</div></div>
+    <div class="card biz-stat"><div class="label">稼働中</div><div class="val" id="bstActive">0</div></div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="entry-grid">
+      <div class="fgroup"><label>派遣先</label><input id="bstClient" placeholder="企業・施設名"></div>
+      <div class="fgroup"><label>候補者・職種</label><input id="bstWorker" placeholder="氏名 / 介護・事務など"></div>
+      <div class="fgroup"><label>月額・単価（円）</label><input id="bstFee" type="number" min="0" placeholder="250000"></div>
+      <div class="fgroup"><label>ステータス</label>
+        <select id="bstStatus"><option>受付</option><option>候補提示</option><option>稼働中</option><option>終了</option></select>
+      </div>
+    </div>
+    <button class="save-btn" id="bstAdd" style="margin-top:12px">案件を登録</button>
+    <div id="bstList" class="recent-list" style="margin-top:16px"></div>
+  </div>
 </section>
 
 <!-- ===== 事業：探偵 ===== -->
@@ -3432,6 +3503,10 @@ function setRole(r){role=r;
 
 /* ---------- ナビ ---------- */
 $$(".gamenav button").forEach(b=>b.onclick=()=>{
+  if(b.classList.contains("nav-locked")||(b.dataset.acct==="1"&&window.PortalAuth&&!PortalAuth.canAccessAccounting())){
+    try{toast("会計メニューは社長・経理・法務のみ利用できます");}catch(e){}
+    return;
+  }
   $$(".gamenav button").forEach(x=>x.classList.remove("on")); b.classList.add("on");
   $$(".screen").forEach(x=>x.classList.remove("on")); $("#s-"+b.dataset.s).classList.add("on");
   renderAll();
@@ -3826,6 +3901,8 @@ if(!S.biz) S.biz={detective:[]};
 if(!Array.isArray(S.biz.paradise)) S.biz.paradise=[];
 if(!Array.isArray(S.biz.inage)) S.biz.inage=[];
 if(!Array.isArray(S.biz.detective)) S.biz.detective=[];
+if(!Array.isArray(S.biz.kanstwifi)) S.biz.kanstwifi=[];
+if(!Array.isArray(S.biz.staffing)) S.biz.staffing=[];
 if(!S.biz.care || typeof S.biz.care!=="object") S.biz.care={income:[],subsidy:[],expense:[],goal:800000};
 if(!Array.isArray(S.biz.care.income)) S.biz.care.income=[];
 if(!Array.isArray(S.biz.care.subsidy)) S.biz.care.subsidy=[];
@@ -3847,6 +3924,18 @@ function renderBiz(){
   if($("#bitCases"))$("#bitCases").textContent=inn.filter(t=>txKw(t,["IT","AI","アプリ","開発","RELA","KARASU"])).length+"件";
   if($("#bitList"))$("#bitList").innerHTML=inn.filter(t=>txKw(t,["IT","AI","アプリ","RELA","KARASU"])).map(t=>`<div class="tx-row in"><span class="who">${esc(t.who)}</span><span class="amt">+${yen(t.amount)}</span></div>`).join("")||`<div class="memo" style="color:var(--muted);padding:8px">IT関連の入金記録がここに表示されます。</div>`;
   if($("#bdList"))$("#bdList").innerHTML=(S.biz.detective||[]).map((d,i)=>`<div class="tx-row"><span class="who">${esc(d.client)}</span><span class="memo">${esc(d.topic)} → ${esc(d.agent)} [${esc(d.status)}]</span><button class="btn-reject" data-bd="${i}" style="margin-left:auto">削除</button></div>`).join("")||`<div class="memo" style="color:var(--muted);padding:8px">紹介依頼はまだありません。</div>`;
+  const kw=(S.biz.kanstwifi||[]);
+  const kwActive=kw.filter(d=>d.status==="稼働中");
+  const kwSales=kwActive.reduce((a,d)=>a+(+d.fee||0),0);
+  if($("#bkwSales"))$("#bkwSales").textContent=yen(kwSales);
+  if($("#bkwActive"))$("#bkwActive").textContent=kwActive.length+"回線";
+  if($("#bkwList"))$("#bkwList").innerHTML=kw.map((d,i)=>`<div class="tx-row"><span class="who">${esc(d.client)}</span><span class="memo">${esc(d.plan||"")} ／ ${yen(+d.fee||0)} ／ ${esc(d.status)}</span><button class="btn-reject" data-bkw="${i}" style="margin-left:auto">削除</button></div>`).join("")||`<div class="memo" style="color:var(--muted);padding:8px">回線登録はまだありません。</div>`;
+  const st=(S.biz.staffing||[]);
+  const stActive=st.filter(d=>d.status==="稼働中");
+  const stSales=stActive.reduce((a,d)=>a+(+d.fee||0),0);
+  if($("#bstSales"))$("#bstSales").textContent=yen(stSales);
+  if($("#bstActive"))$("#bstActive").textContent=stActive.length+"件";
+  if($("#bstList"))$("#bstList").innerHTML=st.map((d,i)=>`<div class="tx-row"><span class="who">${esc(d.client)}</span><span class="memo">${esc(d.worker||"")} ／ ${yen(+d.fee||0)} ／ ${esc(d.status)}</span><button class="btn-reject" data-bst="${i}" style="margin-left:auto">削除</button></div>`).join("")||`<div class="memo" style="color:var(--muted);padding:8px">派遣案件はまだありません。</div>`;
   const staff=["凛","紬","岡部","越石","さやか","丹治"];
   if($("#btScoreList"))$("#btScoreList").innerHTML=staff.map((n,i)=>`<div class="tx-row"><span class="who">${n}</span><span class="memo">納期 ${78+i*3}% ／ 速度 ${72+i*4}% ／ 総合 ${75+i*2}点</span></div>`).join("");
   if($("#btDueList"))$("#btDueList").innerHTML=["案件ボード 予定日確認","印籠レポート 月末提出","デイサービス 実績報告"].map(s=>`<div class="tx-row"><span class="who">${s}</span><span class="memo">期日: ${viewMonthStr(view)}-25</span></div>`).join("");
@@ -4656,6 +4745,32 @@ if(bdAdd)bdAdd.onclick=()=>{
 document.getElementById("bdList")?.addEventListener("click",e=>{
   const b=e.target.closest("[data-bd]");if(!b)return;
   S.biz.detective.splice(+b.dataset.bd,1);saveAll();renderBiz();
+});
+const bkwAdd=$("#bkwAdd");
+if(bkwAdd)bkwAdd.onclick=()=>{
+  const client=$("#bkwClient").value.trim(), plan=$("#bkwPlan").value.trim(), fee=+$("#bkwFee").value||0, status=$("#bkwStatus").value;
+  if(!client){toast("顧客名は必須です");return;}
+  if(!Array.isArray(S.biz.kanstwifi)) S.biz.kanstwifi=[];
+  S.biz.kanstwifi.unshift({client,plan,fee,status,at:new Date().toISOString().slice(0,10)});
+  $("#bkwClient").value="";$("#bkwPlan").value="";$("#bkwFee").value="";
+  saveAll();renderBiz();toast("カンストWiFi回線を登録しました");
+};
+document.getElementById("bkwList")?.addEventListener("click",e=>{
+  const b=e.target.closest("[data-bkw]");if(!b)return;
+  S.biz.kanstwifi.splice(+b.dataset.bkw,1);saveAll();renderBiz();
+});
+const bstAdd=$("#bstAdd");
+if(bstAdd)bstAdd.onclick=()=>{
+  const client=$("#bstClient").value.trim(), worker=$("#bstWorker").value.trim(), fee=+$("#bstFee").value||0, status=$("#bstStatus").value;
+  if(!client){toast("派遣先は必須です");return;}
+  if(!Array.isArray(S.biz.staffing)) S.biz.staffing=[];
+  S.biz.staffing.unshift({client,worker,fee,status,at:new Date().toISOString().slice(0,10)});
+  $("#bstClient").value="";$("#bstWorker").value="";$("#bstFee").value="";
+  saveAll();renderBiz();toast("人材派遣案件を登録しました");
+};
+document.getElementById("bstList")?.addEventListener("click",e=>{
+  const b=e.target.closest("[data-bst]");if(!b)return;
+  S.biz.staffing.splice(+b.dataset.bst,1);saveAll();renderBiz();
 });
 
 /* ---------- 共通 ---------- */
@@ -5673,6 +5788,34 @@ window.PortalAuth=(function(){
       body:JSON.stringify({action:action,name:u.name,role:u.role,email:u.email,detail:detail||''})
     }).catch(function(){});
   }
+  const ACCT_ROLES=['社長','経理','法務'];
+  function canAccessAccounting(){
+    const u=getUser();
+    return !!(u&&ACCT_ROLES.includes(String(u.role||'').trim()));
+  }
+  function isAccountingScreen(sid){
+    if(sid==='cf-forecast')return true;
+    const b=document.querySelector('.gamenav button[data-s="'+sid+'"]');
+    return !!(b&&b.dataset.acct==='1');
+  }
+  function applyNavAcl(){
+    const ok=canAccessAccounting();
+    document.querySelectorAll('.gamenav button[data-acct="1"]').forEach(function(b){
+      b.classList.toggle('nav-locked',!ok);
+      b.setAttribute('aria-disabled',ok?'false':'true');
+      if(ok)b.removeAttribute('title');
+      else b.title='会計メニューは社長・経理・法務のみ利用できます';
+    });
+    if(ok)return;
+    const on=document.querySelector('.gamenav button.on');
+    if(on&&on.dataset.acct==='1'){
+      const fallback=document.querySelector('.gamenav button[data-s="tasks"]')
+        ||document.querySelector('.gamenav button:not([data-acct="1"])');
+      if(fallback){
+        try{fallback.click();}catch(e){}
+      }
+    }
+  }
   function syncUi(){
     const u=getUser();
     const login=document.getElementById('portal-login');
@@ -5693,6 +5836,7 @@ window.PortalAuth=(function(){
       if(logout)logout.hidden=true;
       if(badge)badge.textContent='利用者';
     }
+    try{applyNavAcl();}catch(e){}
   }
   function login(user){
     const u={
@@ -5746,7 +5890,7 @@ window.PortalAuth=(function(){
       listStaff();
     }
   });
-  return{getUser,login,logout,userContext,syncUi,serverLog,listStaff,upsertStaff};
+  return{getUser,login,logout,userContext,syncUi,serverLog,listStaff,upsertStaff,canAccessAccounting,isAccountingScreen,applyNavAcl};
 })();
 </script>
 
@@ -6074,10 +6218,15 @@ window.EntakuAI=(function(){
     { key:'明細突合', s:'cf-link', label:'明細突合へ' },
     { key:'案件', s:'cf-cases', label:'案件ボードへ' },
     { key:'リーガル', s:'cf-legal', label:'契約リーガルへ' },
-    { key:'関連者', s:'cf-party', label:'関連者貸借へ' },
+    { key:'役員貸付', s:'cf-party', label:'役員貸付へ' },
+    { key:'関連者', s:'cf-party', label:'役員貸付へ' },
     { key:'CF予測', s:'cf-forecast', label:'CF予測へ' },
     { key:'印籠', s:'cf-inrou', label:'印籠レポートへ' },
     { key:'精算', s:'quest', label:'精算クエストへ' },
+    { key:'カンスト', s:'biz-kanstwifi', label:'カンストWiFiへ' },
+    { key:'WiFi', s:'biz-kanstwifi', label:'カンストWiFiへ' },
+    { key:'人材派遣', s:'biz-staffing', label:'人材派遣へ' },
+    { key:'派遣', s:'biz-staffing', label:'人材派遣へ' },
   ];
   const AI_TOUR = ['cf-bank','cf-cases','cf-link','cf-flow','biz-cf','cf-inrou'];
   function setAiWorking(on,opts){
@@ -6097,6 +6246,10 @@ window.EntakuAI=(function(){
   function gotoScreen(sid,opts){
     if(!sid) return;
     opts=opts||{};
+    if(window.PortalAuth&&PortalAuth.isAccountingScreen(sid)&&!PortalAuth.canAccessAccounting()){
+      try{toast("会計メニューは社長・経理・法務のみ利用できます");}catch(e){}
+      return;
+    }
     const prev=window._entakuSuppressScroll;
     if(opts.noScroll)window._entakuSuppressScroll=true;
     try{
