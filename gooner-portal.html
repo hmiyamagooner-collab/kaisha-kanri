@@ -686,7 +686,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 /* ===== 統合ポータル：上段クエスト2列＋下段ダッシュボード ===== */
 #portal-shell{
   display:grid;
-  grid-template-columns:168px minmax(0,1fr);
+  grid-template-columns:180px minmax(0,1fr);
   align-items:start;
   min-height:100dvh;
   background:var(--bg);
@@ -694,42 +694,17 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
     radial-gradient(ellipse 90% 45% at 50% -8%,rgba(196,166,106,.035),transparent),
     radial-gradient(ellipse 60% 30% at 85% 5%,rgba(122,171,222,.025),transparent);
 }
+/* サイドバー：ボタン領域だけのスクロールはしない。ページ全体スクロールで下まで見る */
 #portal-shell > .gamenav{
-  --nav-h:34px;
-  position:sticky;top:0;left:0;
-  height:100dvh;max-height:100dvh;
-  overflow-y:auto;overflow-x:hidden;
-  overscroll-behavior:contain;
-  -webkit-overflow-scrolling:touch;
+  position:relative;
+  top:auto;
+  height:auto;
+  max-height:none;
+  overflow:visible;
   z-index:400;
-  width:168px;
-  padding:8px 6px 20px;
-  gap:3px;
-  scrollbar-gutter:stable;
-  scrollbar-width:auto;
-  scrollbar-color:rgba(225,194,125,.55) rgba(255,255,255,.06);
-}
-#portal-shell > .gamenav::-webkit-scrollbar{width:10px}
-#portal-shell > .gamenav::-webkit-scrollbar-track{background:rgba(255,255,255,.05)}
-#portal-shell > .gamenav::-webkit-scrollbar-thumb{
-  background:rgba(225,194,125,.45);border-radius:8px;border:2px solid transparent;background-clip:padding-box;
-}
-#portal-shell > .gamenav::-webkit-scrollbar-thumb:hover{background:rgba(225,194,125,.7);background-clip:padding-box}
-#portal-shell > .gamenav .nav-group{
-  padding:8px 8px 2px;font-size:9px;letter-spacing:.12em;
-}
-#portal-shell > .gamenav .nav-group.nav-group-major{
-  margin:4px 2px 3px;padding:6px 8px;font-size:12px;letter-spacing:.1em;
-}
-#portal-shell > .gamenav button{
-  min-height:var(--nav-h);font-size:12px;padding:0 8px 0 10px;border-radius:8px;
-}
-#portal-shell > .gamenav button .nico{
-  width:22px;height:22px;font-size:10px;border-radius:6px;
-}
-#portal-shell > .gamenav button.nav-biz{min-height:var(--nav-h)}
-#portal-shell > .gamenav button.nav-biz .nav-label{
-  font-size:11px;padding:0 8px;letter-spacing:.02em;
+  width:180px;
+  padding:14px 8px 24px;
+  gap:5px;
 }
 #portal-main{
   min-width:0;display:block;
@@ -1533,6 +1508,7 @@ video.dc-card__image{
     overflow-x:auto;overflow-y:hidden;gap:8px;padding:10px 12px;
     border-right:none;border-bottom:1px solid rgba(196,166,106,.22);
     z-index:450;
+    /* 横並び時のみ横スクロール可（縦のボタン内スクロールは使わない） */
   }
   #portal-shell > .gamenav .nav-group{display:none}
   #portal-shell > .gamenav button:not(.nav-biz){
