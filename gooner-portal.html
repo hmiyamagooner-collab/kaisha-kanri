@@ -789,7 +789,11 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 .office-tk-item.is-done{opacity:.55}
 .office-tk-item.is-done .office-tk-title{text-decoration:line-through}
-.office-tk-who{flex-shrink:0;font-size:10px;color:var(--gold-hi);font-weight:700;min-width:2.2em}
+.office-tk-who{
+  flex-shrink:0;font-size:10px;color:var(--gold-hi);font-weight:700;min-width:2.2em;
+  border:none;background:transparent;padding:0;cursor:pointer;text-align:left;
+}
+.office-tk-who:hover{color:#fff;text-decoration:underline}
 .office-tk-title{flex:1;min-width:0;color:var(--text);line-height:1.35;word-break:break-word}
 .office-tk-item button{
   flex-shrink:0;border:1px solid rgba(255,255,255,.25);background:transparent;color:var(--muted);
@@ -802,6 +806,48 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   background:
     radial-gradient(ellipse 70% 50% at 50% 30%,rgba(196,166,106,.04),transparent),
     linear-gradient(180deg,#0c0d11,#050608);
+}
+.office-expand-hit{
+  position:absolute;inset:0;z-index:3;border:0;cursor:zoom-in;
+  background:linear-gradient(180deg,transparent 40%,rgba(0,0,0,.45));
+  color:#fff;font-size:11px;font-weight:700;letter-spacing:.06em;
+  display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px;
+  font-family:var(--font-body);
+}
+.office-expand-hit:hover{background:linear-gradient(180deg,rgba(0,0,0,.12) 20%,rgba(0,0,0,.55))}
+#officeQuestModal{
+  position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;
+  padding:18px;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);
+}
+#officeQuestModal[hidden]{display:none!important}
+.oqm-panel{
+  width:min(1100px,96vw);height:min(860px,92vh);
+  display:flex;flex-direction:column;overflow:hidden;
+  border:1px solid rgba(255,255,255,.35);border-radius:12px;
+  background:#050608;box-shadow:0 24px 80px rgba(0,0,0,.65);
+}
+.oqm-head{
+  flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.18);
+  background:linear-gradient(180deg,rgba(18,22,30,.98),rgba(8,10,14,.96));
+}
+.oqm-head strong{font-size:13px;color:#fff;letter-spacing:.06em}
+.oqm-close{
+  border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.06);color:#fff;
+  border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;
+}
+.oqm-close:hover{border-color:#fff;background:rgba(255,255,255,.12)}
+.oqm-body{flex:1;min-height:0;position:relative}
+.oqm-body iframe{width:100%;height:100%;border:0;display:block;background:#050608}
+.office-tk-staffs{
+  display:flex;flex-wrap:wrap;gap:5px;padding:0 10px 8px;
+}
+.office-tk-staffs button{
+  font-size:10px;font-weight:700;padding:4px 8px;border-radius:99px;cursor:pointer;
+  border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.04);color:var(--muted);
+}
+.office-tk-staffs button:hover,.office-tk-staffs button.on{
+  border-color:#fff;color:#fff;background:rgba(255,255,255,.12);
 }
 #office-pane iframe{
   width:100%;height:100%;border:0;display:block;
@@ -1084,15 +1130,16 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   animation:dcCardIn .52s cubic-bezier(.22,1,.36,1) var(--dc-in-delay,0s) forwards;
 }
 .dc-dept{
-  position:absolute;top:0;left:0;right:0;z-index:6;
-  display:flex;align-items:center;justify-content:center;
-  height:auto;min-height:0;padding:7px 8px 18px;
+  position:static;z-index:2;
+  display:inline-flex;align-items:center;justify-content:center;
+  height:auto;min-height:0;padding:0;
   font-family:'Zen Kaku Gothic New',var(--font-body),sans-serif;
-  font-size:12px;font-weight:700;letter-spacing:.14em;color:#fff;
-  background:linear-gradient(180deg,rgba(0,0,0,.72),rgba(0,0,0,.28) 55%,transparent);
+  font-size:11px;font-weight:700;letter-spacing:.1em;color:#fff;
+  background:transparent;
   border-bottom:none;
   text-shadow:0 1px 3px rgba(0,0,0,.95),0 0 8px rgba(0,0,0,.55);
-  pointer-events:none;
+  pointer-events:none;flex-shrink:0;
+  opacity:.95;
 }
 .dc-cards .dc-card:nth-child(1){--dc-in-delay:0s}
 .dc-cards .dc-card:nth-child(2){--dc-in-delay:.08s}
@@ -1161,7 +1208,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   width:100%;height:100%;overflow:hidden;
 }
 .dc-bubble{
-  position:absolute;top:34px;left:6px;right:6px;z-index:5;
+  position:absolute;top:6px;left:6px;right:6px;z-index:5;
   background:rgba(6,7,10,.92);backdrop-filter:blur(10px);
   border:1px solid rgba(196,166,106,.28);border-radius:var(--radius-sm);
   padding:6px 10px;
@@ -1247,22 +1294,26 @@ video.dc-card__image{
   position:absolute;left:0;right:0;bottom:0;z-index:6;
   flex-shrink:0;min-width:0;width:100%;
   height:auto;min-height:0;max-height:none;
-  display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:1px;
-  padding:22px 8px 8px;pointer-events:none;
+  display:flex;flex-direction:row;justify-content:center;align-items:baseline;gap:8px;flex-wrap:wrap;
+  padding:20px 8px 8px;pointer-events:none;
   border-top:none;
   background:linear-gradient(180deg,transparent,rgba(0,0,0,.35) 40%,rgba(0,0,0,.78));
 }
 .dc-name{
-  flex:0 0 auto;min-height:0;max-height:none;
+  flex:0 1 auto;min-height:0;max-height:none;
   font-family:var(--font-display);font-size:13px;font-weight:700;color:#fff;
-  text-align:center;padding:0 4px;letter-spacing:.04em;position:relative;z-index:2;
-  display:flex;align-items:center;justify-content:center;gap:4px;
+  text-align:center;padding:0;letter-spacing:.04em;position:relative;z-index:2;
+  display:inline-flex;align-items:center;justify-content:center;gap:4px;
   line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   text-shadow:0 1px 3px rgba(0,0,0,.95),0 0 8px rgba(0,0,0,.55);
 }
 .dc-name::before{display:none}
 .dc-name-en{font-size:8px;color:#fff;letter-spacing:.12em;font-family:var(--font-num);font-weight:500;opacity:.92}
 .dc-role{display:none!important}
+.dc-card-foot .dc-dept::after{
+  content:"";display:inline-block;width:1px;height:11px;margin-left:8px;
+  background:rgba(255,255,255,.45);vertical-align:middle;
+}
 @media(prefers-reduced-motion:reduce){
   .dc-card,
   .dc-card__image,
@@ -1606,8 +1657,8 @@ video.dc-card__image{
             <div class="dc-avatar-wrap">
               <video class="dc-card__image" src="rin.mp4" poster="dash-secretary.png" data-has-audio="1" muted loop playsinline autoplay preload="metadata" aria-label="凛"></video>
             </div>
-            <div class="dc-dept">秘書</div>
             <div class="dc-card-foot">
+              <div class="dc-dept">秘書</div>
               <div class="dc-name">凛<span class="dc-name-en">RIN</span></div>
               <div class="dc-role">ヒロ社長秘書</div>
             </div>
@@ -1621,8 +1672,8 @@ video.dc-card__image{
             <div class="dc-avatar-wrap">
               <video class="dc-card__image" src="tumugi.mp4" poster="dash-finance.png" data-has-audio="1" muted loop playsinline autoplay preload="metadata" aria-label="紬"></video>
             </div>
-            <div class="dc-dept">経理</div>
             <div class="dc-card-foot">
+              <div class="dc-dept">経理</div>
               <div class="dc-name">紬<span class="dc-name-en">TUMUGI</span></div>
               <div class="dc-role">経理部長</div>
             </div>
@@ -1636,8 +1687,8 @@ video.dc-card__image{
             <div class="dc-avatar-wrap">
               <video class="dc-card__image" src="haruto.mp4" poster="dash-legal.png" data-has-audio="1" muted loop playsinline autoplay preload="metadata" aria-label="陽翔"></video>
             </div>
-            <div class="dc-dept">法務</div>
             <div class="dc-card-foot">
+              <div class="dc-dept">法務</div>
               <div class="dc-name">陽翔<span class="dc-name-en">HARUTO</span></div>
               <div class="dc-role">法務部長</div>
             </div>
@@ -1684,19 +1735,17 @@ video.dc-card__image{
     </section>
     <section class="quest-pane" id="office-pane">
       <div class="office-frame">
-        <iframe src="office.html?embedded=1" title="オフィスクエスト マップ"></iframe>
+        <iframe src="office.html?embedded=1" title="オフィスクエスト マップ" tabindex="-1"></iframe>
+        <button type="button" class="office-expand-hit" id="officeExpandBtn" title="クリックで拡大">クリックで拡大</button>
       </div>
       <div class="office-task-dock">
         <div class="office-task-head">
           <strong>タスク管理</strong>
           <button type="button" class="office-tk-open" data-jump="tasks">一覧を開く</button>
         </div>
+        <div class="office-tk-staffs" id="officeTkStaffs"></div>
         <form class="office-tk-form" id="officeTkForm">
-          <select id="officeTkAssignee" aria-label="担当">
-            <option value="secretary">秘書　凛</option>
-            <option value="finance">経理　紬</option>
-            <option value="legal">法務　陽翔</option>
-          </select>
+          <select id="officeTkAssignee" aria-label="担当"></select>
           <div class="office-tk-form-row">
             <input id="officeTkTitle" placeholder="タスクを入力（Enterで追加）" required maxlength="120">
             <button type="submit">追加</button>
@@ -1707,6 +1756,18 @@ video.dc-card__image{
     </section>
   </div>
 </div><!-- /#quests-row -->
+
+<div id="officeQuestModal" hidden>
+  <div class="oqm-panel" role="dialog" aria-modal="true" aria-label="オフィスクエスト拡大">
+    <div class="oqm-head">
+      <strong>オフィスクエスト</strong>
+      <button type="button" class="oqm-close" id="officeQuestClose">閉じる</button>
+    </div>
+    <div class="oqm-body">
+      <iframe id="officeQuestModalFrame" src="about:blank" title="オフィスクエスト 拡大"></iframe>
+    </div>
+  </div>
+</div>
 
   <section class="quest-pane" id="treasury-pane">
     <div class="pane-cap">入出金クエスト（本丸）</div>
@@ -2004,7 +2065,10 @@ video.dc-card__image{
 #s-tasks .tk-filter{display:flex;gap:8px;margin-bottom:14px}
 #s-tasks .tk-filter button{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:6px 15px;font-size:12px;font-weight:600;cursor:pointer}
 #s-tasks .tk-filter button.on{background:#fff;color:#111;border-color:#fff}
-#s-tasks .tk-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+#s-tasks .tk-cols{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+#s-tasks .tk-col.is-focus{border-color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.35)}
+#s-tasks .tk-staff-jump button{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:6px 15px;font-size:12px;font-weight:600;cursor:pointer}
+#s-tasks .tk-staff-jump button.on{background:#fff;color:#111;border-color:#fff}
 #s-tasks .tk-col{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;min-height:120px}
 #s-tasks .tk-col-head{display:flex;justify-content:space-between;align-items:center;padding:11px 13px;border-bottom:1px solid var(--line)}
 #s-tasks .tk-col-name{font-size:13px;font-weight:700;color:var(--text)}
@@ -2033,15 +2097,11 @@ video.dc-card__image{
 </style>
 <section class="screen" id="s-tasks">
   <h2 class="stitle">✔ タスク管理</h2>
-  <p class="sdesc">社長から社員へ指示を出し、社員は自分のタスクを登録します。完了/未完了で進捗を管理。担当社員に未完了タスクがあると、円卓（ダッシュボード）のキャラ吹き出しが<b>白く点灯</b>してタスク名を知らせます。</p>
+  <p class="sdesc">ログイン登録した実スタッフへタスクを割り当てます。社長モードは指示、社員モードは自己申告として記録。各スタッフ列をクリック／チップから、その人のタスク管理にジャンプできます。</p>
 
   <div class="tk-add">
     <div class="tk-add-row">
-      <select id="tkAssignee">
-        <option value="secretary">秘書　凛</option>
-        <option value="finance">経理　紬</option>
-        <option value="legal">法務　陽翔</option>
-      </select>
+      <select id="tkAssignee"></select>
       <input id="tkTitle" placeholder="タスク内容（例：契約書ドラフト作成）">
       <input id="tkDetail" placeholder="補足・期日など（任意）">
       <button type="button" id="tkAdd">＋ 追加</button>
@@ -2054,6 +2114,7 @@ video.dc-card__image{
     <button type="button" data-tk-filter="done">完了</button>
     <button type="button" data-tk-filter="all">すべて</button>
   </div>
+  <div class="tk-filter tk-staff-jump" id="tkStaffJump" style="flex-wrap:wrap"></div>
 
   <div class="tk-cols" id="tkCols"></div>
 </section>
@@ -3317,14 +3378,17 @@ window.PortalTTS=(function(){
     const p=video.play();if(p&&p.catch)p.catch(function(){});
   }
   function unlockPortalAudio(){
+    // 既に再生中の動画は触らない（クエストクリックで3本が一斉に再生し直されるのを防ぐ）
     document.querySelectorAll('.dc-card video').forEach(v=>{
       v.muted=true;v.volume=1;
+      if(!v.paused)return;
       const p=v.play();if(p&&p.catch)p.catch(function(){});
     });
   }
   window.OfficeBridge={
     unlockAudio:unlockPortalAudio,
     hover(d){
+      if(document.getElementById('officeQuestModal')&&!document.getElementById('officeQuestModal').hidden)return;
       if(!d||!d.charId||officeHoverId===d.charId)return;
       officeHoverId=d.charId;
       if(d.dash){
@@ -3349,6 +3413,33 @@ window.PortalTTS=(function(){
     }
   };
   document.addEventListener('pointerdown',unlockPortalAudio,{once:true,capture:true});
+
+  (function wireOfficeExpand(){
+    const modal=document.getElementById('officeQuestModal');
+    const frame=document.getElementById('officeQuestModalFrame');
+    const openBtn=document.getElementById('officeExpandBtn');
+    const closeBtn=document.getElementById('officeQuestClose');
+    function open(){
+      if(!modal||!frame)return;
+      window.OfficeBridge?.hoverEnd?.();
+      if(!frame.dataset.loaded){
+        frame.src='office.html?embedded=1&expand=1';
+        frame.dataset.loaded='1';
+      }
+      modal.hidden=false;
+      document.body.style.overflow='hidden';
+    }
+    function close(){
+      if(!modal)return;
+      modal.hidden=true;
+      document.body.style.overflow='';
+      window.OfficeBridge?.hoverEnd?.();
+    }
+    openBtn?.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();open();});
+    closeBtn?.addEventListener('click',close);
+    modal?.addEventListener('click',function(e){ if(e.target===modal)close(); });
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&modal&&!modal.hidden)close(); });
+  })();
 })();
 window.addEventListener("message",e=>{
   const d=e.data;
@@ -4530,65 +4621,118 @@ window.Treasury={
 </script>
 
 <script>
-/* ===== タスク管理（社員タスク・吹き出し連動・Treasury連携） ===== */
+/* ===== タスク管理（実スタッフ割当・Treasury連携） ===== */
 (function(){
   const T=window.Treasury; if(!T) return;
   const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)], esc=T.esc;
-  const ASG={secretary:{name:'凛',role:'秘書'},finance:{name:'紬',role:'経理'},legal:{name:'陽翔',role:'法務'}};
-  const ORDER=['secretary','finance','legal'];
+  const AGENT_IDS=new Set(['secretary','finance','legal']);
 
   const S=T.S;
-  if(!Array.isArray(S.tasks)){
-    S.tasks=[
-      {id:1,assignee:'secretary',title:'本日の来客対応と円卓議事録の作成',detail:'',by:'boss',status:'todo',at:'2026-07-16'},
-      {id:2,assignee:'finance',title:'7月分の入出金チェックと精算クエストの確認',detail:'未精算の申請を承認待ちに整理',by:'boss',status:'todo',at:'2026-07-16'},
-      {id:3,assignee:'legal',title:'パラダイス出演契約のリーガル確認',detail:'基本契約・出演契約の2本立てを確認',by:'boss',status:'todo',at:'2026-07-16'}
-    ];
+  if(!Array.isArray(S.tasks)){ S.tasks=[]; T.saveAll(); }
+  // AIエージェント向けサンプル／旧タスクは実スタッフ用に移行しない（除去）
+  if(S.tasks.some(t=>AGENT_IDS.has(t.assignee))){
+    S.tasks=S.tasks.filter(t=>!AGENT_IDS.has(t.assignee));
     T.saveAll();
   }
 
   let filter='todo';
+  let focusStaff='';
 
-  function updateBubbles(){
-    const cnt={secretary:0,finance:0,legal:0}, first={secretary:'',finance:'',legal:''};
-    S.tasks.forEach(t=>{ if(t.status==='todo'&&cnt[t.assignee]!==undefined){ cnt[t.assignee]++; if(!first[t.assignee])first[t.assignee]=t.title; } });
-    ORDER.forEach(dept=>{
-      const card=document.querySelector('.dc-card[data-dept="'+dept+'"]'); if(!card)return;
-      const bubble=card.querySelector('.dc-bubble'); if(!bubble)return;
-      const txt=bubble.querySelector('.dc-bubble-txt');
-      if(cnt[dept]>0){
-        bubble.hidden=false; bubble.classList.add('task-alert'); bubble.dataset.task='1';
-        if(txt) txt.innerHTML=(cnt[dept]>1?'<span class="dc-task-count">'+cnt[dept]+'</span>':'')+esc(first[dept]);
-      }else if(bubble.dataset.task==='1'){
-        bubble.classList.remove('task-alert'); bubble.dataset.task=''; bubble.hidden=true; if(txt)txt.textContent='';
+  function staffList(){
+    const list=(window.PortalAuth&&PortalAuth.listStaff)?PortalAuth.listStaff():[];
+    return Array.isArray(list)?list:[];
+  }
+  function staffById(id){
+    return staffList().find(s=>s.id===id)||null;
+  }
+  function staffLabel(s){
+    if(!s)return '?';
+    return (s.role?s.role+'　':'')+s.name;
+  }
+
+  function fillAssigneeSelects(){
+    const staff=staffList();
+    const opts=staff.length
+      ?staff.map(s=>`<option value="${esc(s.id)}">${esc(staffLabel(s))}</option>`).join('')
+      :`<option value="">（ログイン登録したスタッフがいません）</option>`;
+    ['#tkAssignee','#officeTkAssignee'].forEach(sel=>{
+      const el=$(sel); if(!el)return;
+      const prev=el.value;
+      el.innerHTML=opts;
+      if(prev&&[...el.options].some(o=>o.value===prev))el.value=prev;
+      else if(staff.length){
+        const me=window.PortalAuth?.getUser?.();
+        const mid=me&&me.email?String(me.email).toLowerCase():'';
+        if(mid&&[...el.options].some(o=>o.value===mid))el.value=mid;
       }
     });
   }
 
+  function jumpToStaffTasks(staffId){
+    focusStaff=staffId||'';
+    document.querySelector('.gamenav button[data-s="tasks"]')?.click();
+    renderTasks();
+    requestAnimationFrame(()=>{
+      const col=document.querySelector('.tk-col[data-staff="'+String(staffId).replace(/\\/g,'\\\\').replace(/"/g,'\\"')+'"]');
+      if(col)col.scrollIntoView({behavior:'smooth',block:'nearest'});
+    });
+  }
+
+  function updateBubbles(){
+    // 実スタッフタスクはエージェント吹き出しと連動しない
+    document.querySelectorAll('.dc-card .dc-bubble[data-task="1"]').forEach(bubble=>{
+      bubble.classList.remove('task-alert'); bubble.dataset.task=''; bubble.hidden=true;
+      const txt=bubble.querySelector('.dc-bubble-txt'); if(txt)txt.textContent='';
+    });
+  }
+
   function renderOfficeDock(){
+    fillAssigneeSelects();
+    const chips=$("#officeTkStaffs");
+    const staff=staffList();
+    if(chips){
+      chips.innerHTML=staff.length
+        ?staff.map(s=>`<button type="button" data-staff-jump="${esc(s.id)}" title="${esc(s.email)}">${esc(s.name)}</button>`).join('')
+        :`<span class="office-tk-empty">ログインしたスタッフがここに表示されます</span>`;
+    }
     const list=$("#officeTkList"); if(!list) return;
     const todos=S.tasks.filter(t=>t.status==='todo')
       .sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')))
       .slice(0,12);
     list.innerHTML=todos.length?todos.map(t=>{
-      const a=ASG[t.assignee]||{name:'?'};
+      const a=staffById(t.assignee)||{name:t.assignee||'?'};
       return `<div class="office-tk-item" data-id="${t.id}">
-        <span class="office-tk-who">${esc(a.name)}</span>
+        <button type="button" class="office-tk-who" data-staff-jump="${esc(t.assignee)}">${esc(a.name)}</button>
         <span class="office-tk-title">${esc(t.title)}</span>
         <button type="button" data-office-tk-done="${t.id}">完了</button>
       </div>`;
     }).join(''):`<div class="office-tk-empty">未完了タスクはありません。下の欄から追加できます。</div>`;
   }
 
+  function renderStaffJump(){
+    const box=$("#tkStaffJump"); if(!box)return;
+    const staff=staffList();
+    box.innerHTML=`<button type="button" data-staff-focus="" class="${!focusStaff?'on':''}">全員</button>`+
+      staff.map(s=>`<button type="button" data-staff-focus="${esc(s.id)}" class="${focusStaff===s.id?'on':''}">${esc(s.name)}</button>`).join('');
+  }
+
   function renderTasks(){
     updateBubbles();
     renderOfficeDock();
+    renderStaffJump();
     const cols=$("#tkCols"); if(!cols) return;
     const hint=$("#tkHint");
-    if(hint) hint.textContent = T.role==='boss' ? '社長モード：社員へ指示タスクを割り当てます（「社長指示」として記録）。' : '社員モード：自分のタスクを登録します（「自己申告」として記録）。';
-    cols.innerHTML=ORDER.map(dept=>{
-      const a=ASG[dept];
-      const all=S.tasks.filter(t=>t.assignee===dept);
+    if(hint) hint.textContent = T.role==='boss'
+      ? '社長モード：登録スタッフへ指示タスクを割り当てます（「社長指示」）。'
+      : '社員モード：自分のタスクを登録します（「自己申告」）。スタッフはログイン登録で追加されます。';
+    const staff=staffList();
+    if(!staff.length){
+      cols.innerHTML=`<div class="tk-empty" style="padding:16px">まだスタッフがいません。ポータルにログイン登録した人が担当プルダウンと列に表示されます。</div>`;
+      return;
+    }
+    const show=focusStaff?staff.filter(s=>s.id===focusStaff):staff;
+    cols.innerHTML=show.map(a=>{
+      const all=S.tasks.filter(t=>t.assignee===a.id);
       const todo=all.filter(t=>t.status==='todo').length;
       const list=all.filter(t=>filter==='all'?true:t.status===filter)
         .sort((x,y)=>(x.status===y.status?0:x.status==='todo'?-1:1));
@@ -4604,9 +4748,9 @@ window.Treasury={
           </div>
         </div>`;
       }).join(''):`<div class="tk-empty">${filter==='done'?'完了タスクはありません。':filter==='todo'?'未完了タスクはありません。':'タスクはありません。'}</div>`;
-      return `<div class="tk-col">
+      return `<div class="tk-col ${focusStaff===a.id?'is-focus':''}" data-staff="${esc(a.id)}">
         <div class="tk-col-head">
-          <div><span class="tk-col-name">${a.name}</span><span class="tk-col-role">${a.role}</span></div>
+          <div><span class="tk-col-name">${esc(a.name)}</span><span class="tk-col-role">${esc(a.role||'')}</span></div>
           <span class="tk-col-cnt ${todo>0?'hot':''}">${todo}</span>
         </div>
         <div class="tk-col-body">${cards}</div>
@@ -4615,9 +4759,11 @@ window.Treasury={
   }
 
   function addTask(assignee, title, detail){
+    if(!assignee){ T.toast('担当スタッフを選んでください（ログイン登録が必要）'); return false; }
     if(!title){ T.toast('タスク内容を入力してください'); return false; }
+    const who=staffById(assignee);
     S.tasks.push({ id:Date.now(), assignee, title, detail:detail||'', by:T.role==='boss'?'boss':'self', status:'todo', at:new Date().toISOString().slice(0,10) });
-    T.saveAll(); renderTasks(); T.toast((ASG[assignee]||{}).name+'にタスクを追加しました');
+    T.saveAll(); renderTasks(); T.toast((who?who.name:assignee)+'にタスクを追加しました');
     return true;
   }
 
@@ -4637,21 +4783,25 @@ window.Treasury={
     });
   }
   document.getElementById('office-pane')?.addEventListener('click', e=>{
+    const jump=e.target.closest('[data-staff-jump]');
+    if(jump){ jumpToStaffTasks(jump.dataset.staffJump); return; }
     const done=e.target.closest('[data-office-tk-done]');
     if(done){
       const t=S.tasks.find(x=>String(x.id)===done.dataset.officeTkDone);
       if(t){ t.status='done'; T.saveAll(); renderTasks(); T.toast('タスク完了 ✔'); }
       return;
     }
-    const jump=e.target.closest('[data-jump]');
-    if(jump){
-      document.querySelector('.gamenav button[data-s="'+jump.dataset.jump+'"]')?.click();
+    const nav=e.target.closest('[data-jump]');
+    if(nav){
+      document.querySelector('.gamenav button[data-s="'+nav.dataset.jump+'"]')?.click();
     }
   });
 
   $("#s-tasks").addEventListener('click', e=>{
+    const sf=e.target.closest('[data-staff-focus]');
+    if(sf){ focusStaff=sf.dataset.staffFocus||''; renderTasks(); return; }
     const f=e.target.closest('[data-tk-filter]');
-    if(f){ filter=f.dataset.tkFilter; $$('#s-tasks .tk-filter button').forEach(b=>b.classList.toggle('on',b===f)); renderTasks(); return; }
+    if(f){ filter=f.dataset.tkFilter; $$('#s-tasks .tk-filter:not(.tk-staff-jump) button').forEach(b=>b.classList.toggle('on',b===f)); renderTasks(); return; }
     const tg=e.target.closest('[data-tk-toggle]');
     if(tg){ const t=S.tasks.find(x=>String(x.id)===tg.dataset.tkToggle); if(t){ t.status=t.status==='todo'?'done':'todo'; T.saveAll(); renderTasks(); if(t.status==='done')T.toast('タスク完了 ✔'); } return; }
     const dl=e.target.closest('[data-tk-del]');
@@ -4659,6 +4809,7 @@ window.Treasury={
   });
 
   window.TaskBubbles={restore:updateBubbles};
+  window.addEventListener('portal-staff-change',renderTasks);
   T.onRender(renderTasks);
   renderTasks();
 })();
@@ -4894,12 +5045,57 @@ window.Treasury={
 window.PortalAuth=(function(){
   const USER_KEY='gooner_portal_user';
   const LOG_KEY='gooner_portal_access_log';
+  const STAFF_KEY='gooner_portal_staff';
   function getUser(){
     try{
       const u=JSON.parse(localStorage.getItem(USER_KEY)||'null');
       if(u&&u.name&&u.email&&u.role)return u;
     }catch(e){}
     return null;
+  }
+  function staffIdFrom(u){
+    return String(u.email||'').trim().toLowerCase();
+  }
+  function listStaff(){
+    try{
+      const raw=JSON.parse(localStorage.getItem(STAFF_KEY)||'[]');
+      if(Array.isArray(raw)&&raw.length){
+        return raw.filter(s=>s&&s.id&&s.name).map(s=>({
+          id:String(s.id),
+          name:String(s.name||''),
+          role:String(s.role||'社員'),
+          email:String(s.email||s.id||'')
+        }));
+      }
+    }catch(e){}
+    // 初回：アクセスログから復元
+    const map=new Map();
+    try{
+      const logs=JSON.parse(localStorage.getItem(LOG_KEY)||'[]');
+      (logs||[]).forEach(function(e){
+        if(!e||!e.email||!e.name)return;
+        const id=String(e.email).toLowerCase();
+        map.set(id,{id:id,name:String(e.name),role:String(e.role||'社員'),email:id});
+      });
+    }catch(e){}
+    const cur=getUser();
+    if(cur)map.set(staffIdFrom(cur),{id:staffIdFrom(cur),name:cur.name,role:cur.role,email:staffIdFrom(cur)});
+    const list=[...map.values()].sort((a,b)=>a.name.localeCompare(b.name,'ja'));
+    try{localStorage.setItem(STAFF_KEY,JSON.stringify(list));}catch(e){}
+    return list;
+  }
+  function upsertStaff(user){
+    const id=staffIdFrom(user);
+    if(!id||!user.name)return listStaff();
+    const list=listStaff();
+    const row={id:id,name:String(user.name).trim(),role:String(user.role||'社員').trim(),email:id};
+    const i=list.findIndex(s=>s.id===id);
+    if(i>=0)list[i]=Object.assign({},list[i],row);
+    else list.push(row);
+    list.sort((a,b)=>a.name.localeCompare(b.name,'ja'));
+    try{localStorage.setItem(STAFF_KEY,JSON.stringify(list));}catch(e){}
+    window.dispatchEvent(new CustomEvent('portal-staff-change'));
+    return list;
   }
   function saveLog(entry){
     try{
@@ -4946,6 +5142,7 @@ window.PortalAuth=(function(){
     };
     if(!u.role||!u.name||!u.email)return false;
     localStorage.setItem(USER_KEY,JSON.stringify(u));
+    upsertStaff(u);
     const entry={...u,action:'login',ts:Date.now()};
     saveLog(entry);
     serverLog('login','portal-open');
@@ -4983,9 +5180,12 @@ window.PortalAuth=(function(){
       document.getElementById('loginRole').value=prev.role;
       document.getElementById('loginName').value=prev.name;
       document.getElementById('loginEmail').value=prev.email;
+      upsertStaff(prev);
+    }else{
+      listStaff();
     }
   });
-  return{getUser,login,logout,userContext,syncUi,serverLog};
+  return{getUser,login,logout,userContext,syncUi,serverLog,listStaff,upsertStaff};
 })();
 </script>
 
