@@ -939,17 +939,21 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   flex-shrink:0;
   position:relative;
 }
-/* 会計非表示時：円卓直下のページ領域を Gooner ロゴで覆う */
+/* ホーム：円卓直下のページ領域を Gooner ロゴで覆う（枠なしで背景に溶かす） */
 .main-brand-cover{
   display:flex;align-items:center;justify-content:center;
   min-height:min(72vh,760px);padding:32px 20px;
   background:#000;
-  border:none;
+  border:none;outline:none;box-shadow:none;
   z-index:60;
 }
 .main-brand-cover[hidden]{display:none!important}
 .main-brand-cover img{
   width:min(440px,78vw);max-width:100%;height:auto;display:block;object-fit:contain;
+  border:none;outline:none;box-shadow:none;background:#000;
+}
+#treasury-pane.is-brand-cover{
+  margin:0;border:none;outline:none;box-shadow:none;background:#000;
 }
 #treasury-pane.is-brand-cover #app-treasury,
 #treasury-pane.is-brand-cover > .pane-cap,
