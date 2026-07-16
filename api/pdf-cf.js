@@ -1,12 +1,13 @@
 // Vercel Serverless Function: /api/pdf-cf
-// CF表・請求書などのPDFテキスト（＋必要ならページ画像）→ 入出金予定JSON
+// CF表PDFのテキスト（必要時のみ小さなページ画像）→ 入出金予定JSON
 
 import { getOpenAIKey } from "./getOpenAIKey.js";
 
 export const config = { maxDuration: 60 };
 
-const OPENAI_TIMEOUT_MS = 50000;
-const MODEL = process.env.OPENAI_MODEL || "gpt-4o";
+const OPENAI_TIMEOUT_MS = 55000;
+// 表抽出は mini の方が速く、タイムアウトしにくい
+const MODEL = process.env.OPENAI_PDF_MODEL || process.env.OPENAI_MODEL || "gpt-4o-mini";
 
 function clampYm(year, month) {
   const now = new Date();
@@ -16,7 +17,6 @@ function clampYm(year, month) {
   return { year: y, month: mm, ym: `${y}-${String(mm).padStart(2, "0")}` };
 }
 
-/** ファイル名・本文・AI応答から対象年月を推定 */
 function detectYm(fileName, text, aiYm, fallbackYear, fallbackMonth) {
   const blob = `${fileName || ""}\n${String(text || "").slice(0, 2000)}\n${aiYm || ""}`;
   const full = blob.match(/(20\d{2})\s*[年\/\-._]?\s*(\d{1,2})\s*月/);
@@ -44,7 +44,6 @@ function sanitizeEntries(raw, ym, lastDay) {
       const day = Math.min(lastDay, Math.max(1, Number(e.day) || lastDay));
       date = `${ym}-${String(day).padStart(2, "0")}`;
     } else {
-      // 対象月に寄せる（PDFが月次CFのとき）
       const d = Number(date.slice(8, 10));
       if (!Number.isFinite(d) || d < 1) continue;
       date = `${ym}-${String(Math.min(d, lastDay)).padStart(2, "0")}`;
@@ -70,6 +69,24 @@ function sanitizeEntries(raw, ym, lastDay) {
   return out;
 }
 
+/** dataURL画像をサイズ制限（大きすぎると Vercel/OpenAI で失敗） */
+function shrinkImages(images) {
+  const list = Array.isArray(images) ? images : [];
+  const out = [];
+  let total = 0;
+  const MAX_EACH = 450000; // ~450KB
+  const MAX_TOTAL = 1200000; // ~1.2MB
+  for (const u of list) {
+    if (typeof u !== "string" || !u.startsWith("data:image/")) continue;
+    if (u.length > MAX_EACH) continue;
+    if (total + u.length > MAX_TOTAL) break;
+    out.push(u);
+    total += u.length;
+    if (out.length >= 2) break;
+  }
+  return out;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -78,17 +95,18 @@ export default async function handler(req, res) {
   const apiKey = await getOpenAIKey();
   if (!apiKey) {
     return res.status(500).json({
-      error: "OPENAI_API_KEY is not configured",
-      hint: "Vercelの OPENAI_API_KEY、または api/secrets.local.js を設定してください。",
+      error: "OPENAI_API_KEY が未設定です",
+      hint: "Vercelの Environment Variables に OPENAI_API_KEY を設定してください。",
     });
   }
 
   try {
     const body = req.body || {};
-    const text = String(body.text || "").trim();
-    const images = Array.isArray(body.images)
-      ? body.images.filter((u) => typeof u === "string" && u.startsWith("data:image/")).slice(0, 4)
-      : [];
+    let text = String(body.text || "").trim().slice(0, 20000);
+    let images = shrinkImages(body.images);
+    // テキストが十分なら画像は送らない（タイムアウト・413対策）
+    if (text.length >= 400) images = [];
+
     const fileName = String(body.fileName || "document.pdf").slice(0, 120);
     const fb = clampYm(body.year, body.month);
     const guessed = detectYm(fileName, text, "", fb.year, fb.month);
@@ -96,60 +114,39 @@ export default async function handler(req, res) {
     const hintLastDay = new Date(guessed.year, guessed.month, 0).getDate();
 
     if (!text && !images.length) {
-      return res.status(400).json({ error: "PDFテキストまたはページ画像が必要です" });
+      return res.status(400).json({
+        error: "PDFテキストまたはページ画像が必要です",
+        hint: "テキスト付きPDF（スプシの「PDFにダウンロード」）を使うか、画像が大きすぎる場合は再試行してください。",
+      });
     }
 
     const systemText = [
       "あなたは日本企業のキャッシュフロー(CF)担当アシスタントです。",
-      "提示されたPDFの内容（月次CF表・入出金予定・請求書・支払一覧など）から、入出金予定を抽出しJSONだけを返します。",
-      "正式な会計処理ではなく、社内の資金繰り可視化が目的です。",
+      "提示されたPDFの内容（月次CF表・入出金予定・請求書など）から入出金予定を抽出し、JSONだけを返します。",
       "",
       "【抽出ルール】",
-      `- 対象年月のヒントは ${hintYm}。PDF見出し（例: 06月CF）やファイル名が正しければそちらを ym に採用する。`,
-      `- 日はその月の1〜末日（ヒント月なら1〜${hintLastDay}）。`,
-      "- kind: 入金は in、出金・引落・振込支払は out。",
-      "- 月次CF表で「1〜31日」列に金額がある行は、その日を date にする（複数日に金額があれば複数エントリ）。",
-      "- 「引落日」「支払期日」「支払日」「〇日」「月末」があれば date に反映（月末は最終日）。",
-      "- 「その他」列のみ金額があり日別が空なら、引落日があればその日、なければ月末。",
-      "- 「合計」「収入合計」「収出合計」「差引合計」の集計行は必ず除外。",
-      "- 項目列が空の行は直前の項目名を継承（例: 車両費配下の車種）。",
-      "- セクション見出し（収入/固定費/変動費/税金/保留）は category に使う。",
-      "- 金額は円の正の整数。¥やカンマは除去。",
-      "- 同じ行を二重計上しない（日別があるのに合計列も入れない）。",
-      "- 請求書なら支払期日・金額・相手・内容を1件以上。",
+      `- 対象年月ヒント: ${hintYm}。PDF見出しやファイル名が正しければ ym に採用。`,
+      `- 日はその月の1〜${hintLastDay}日。`,
+      "- kind: 入金=in / 出金・引落・振込=out",
+      "- 日別列（1〜31）に金額があればその日で複数エントリ可",
+      "- 引落日・支払期日・月末を date に反映",
+      "- 「その他」のみ金額なら引落日、なければ月末",
+      "- 合計/収入合計/収出合計/差引合計は除外",
+      "- 項目空欄は直前の項目を継承",
+      "- セクション（収入/固定費/変動費/税金/保留）は category",
+      "- 金額は円の正の整数。二重計上しない",
       "",
-      "【出力JSONのみ。前後に説明やコードフェンス禁止】",
-      "{",
-      '  "title": "文書の短いタイトル",',
-      '  "ym": "YYYY-MM（PDFの月次。必須）",',
-      '  "entries": [',
-      '    {',
-      '      "date": "YYYY-MM-DD",',
-      '      "kind": "in|out",',
-      '      "amount": 12345,',
-      '      "category": "収入|固定費|変動費|税金|保留|その他 など",',
-      '      "item": "項目名",',
-      '      "content": "内容・相手名",',
-      '      "dept": "部署",',
-      '      "method": "支払方法",',
-      '      "due": "引落日・支払期日の原文",',
-      '      "memo": "短いメモ"',
-      "    }",
-      "  ],",
-      '  "notes": "読み取り上の注意（任意・短く）"',
-      "}",
+      "出力は次のJSONのみ:",
+      '{"title":"...","ym":"YYYY-MM","entries":[{"date":"YYYY-MM-DD","kind":"in|out","amount":123,"category":"...","item":"...","content":"...","dept":"...","method":"...","due":"...","memo":"..."}],"notes":"..."}',
     ].join("\n");
 
     const userParts = [];
     let userText = `ファイル名: ${fileName}\n対象月ヒント: ${hintYm}\n`;
-    if (text) {
-      userText += `\n【抽出テキスト】\n"""\n${text.slice(0, 28000)}\n"""\n`;
-    } else {
-      userText += "\n（テキスト抽出が弱いため、ページ画像から表・金額・支払期日を読み取ってください）\n";
-    }
+    if (text) userText += `\n【抽出テキスト】\n"""\n${text}\n"""\n`;
+    else userText += "\n（テキストが弱いため画像から表を読んでください）\n";
     userParts.push({ type: "text", text: userText });
     images.forEach((url) => {
-      userParts.push({ type: "image_url", image_url: { url, detail: "high" } });
+      userParts.push({ type: "image_url", image_url: { url, detail: "low" } });
     });
 
     const ac = new AbortController();
@@ -161,7 +158,7 @@ export default async function handler(req, res) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
         body: JSON.stringify({
           model: MODEL,
-          max_tokens: 8000,
+          max_tokens: 6000,
           temperature: 0.1,
           messages: [
             { role: "system", content: systemText },
@@ -177,7 +174,8 @@ export default async function handler(req, res) {
 
     const aiJson = await aiRes.json().catch(() => ({}));
     if (!aiRes.ok) {
-      throw new Error(aiJson.error?.message || `OpenAI error ${aiRes.status}`);
+      const detail = aiJson.error?.message || `OpenAI error ${aiRes.status}`;
+      throw new Error(detail);
     }
     const content = aiJson.choices?.[0]?.message?.content || "{}";
     let parsed;
@@ -193,6 +191,15 @@ export default async function handler(req, res) {
     const sumIn = entries.filter((e) => e.kind === "in").reduce((a, e) => a + e.amount, 0);
     const sumOut = entries.filter((e) => e.kind === "out").reduce((a, e) => a + e.amount, 0);
 
+    if (!entries.length) {
+      return res.status(422).json({
+        error: "入出金データが抽出できませんでした",
+        hint: "テキスト付きPDFか、表が見えるページのPDFでもう一度お試しください。",
+        ym: resolved.ym,
+        notes: String(parsed.notes || "").slice(0, 300),
+      });
+    }
+
     return res.status(200).json({
       ok: true,
       mode: "pdf",
@@ -205,12 +212,13 @@ export default async function handler(req, res) {
       notes: String(parsed.notes || "").slice(0, 500),
       entries,
       at: new Date().toISOString(),
+      meta: { model: MODEL, textLen: text.length, imageCount: images.length },
     });
   } catch (e) {
     const msg = String((e && e.message) || e);
     const aborted = /abort/i.test(msg);
     return res.status(aborted ? 504 : 500).json({
-      error: aborted ? "PDF解析がタイムアウトしました" : "PDF解析に失敗しました",
+      error: aborted ? "PDF解析がタイムアウトしました（再試行するか、テキスト付きPDFを使ってください）" : "PDF解析に失敗しました",
       detail: msg.slice(0, 400),
     });
   }

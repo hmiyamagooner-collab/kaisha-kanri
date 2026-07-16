@@ -4339,44 +4339,86 @@ document.querySelectorAll("[data-jump]").forEach(b=>b.onclick=()=>{
     return pdfjsReady;
   }
 
+  async function renderPageJpeg(page, scale, quality){
+    const viewport=page.getViewport({ scale:scale||0.9 });
+    // 幅が大きすぎると送信失敗するため縮小
+    const maxW=1200;
+    const s=viewport.width>maxW ? (scale||0.9)*(maxW/viewport.width) : (scale||0.9);
+    const vp=page.getViewport({ scale:s });
+    const canvas=document.createElement('canvas');
+    canvas.width=Math.floor(vp.width);
+    canvas.height=Math.floor(vp.height);
+    await page.render({ canvasContext:canvas.getContext('2d'), viewport:vp }).promise;
+    let q=quality==null?0.55:quality;
+    let url=canvas.toDataURL('image/jpeg', q);
+    // まだ大きいならさらに品質を落とす
+    while(url.length>400000 && q>0.28){
+      q-=0.1;
+      url=canvas.toDataURL('image/jpeg', q);
+    }
+    return url.length>450000 ? '' : url;
+  }
+
   async function extractFromPdf(file){
     const pdfjs=await loadPdfJs();
     const buf=await file.arrayBuffer();
-    const pdf=await pdfjs.getDocument({ data: buf }).promise;
-    const maxPages=Math.min(pdf.numPages, 8);
+    const pdf=await pdfjs.getDocument({ data: new Uint8Array(buf) }).promise;
+    const maxPages=Math.min(pdf.numPages, 10);
     const textParts=[];
-    const images=[];
     for(let i=1;i<=maxPages;i++){
-      const page=await pdf.getPage(i);
-      const content=await page.getTextContent();
-      const pageText=(content.items||[]).map(function(it){ return it.str||''; }).join(' ').replace(/\s+/g,' ').trim();
-      if(pageText) textParts.push('--- p.'+i+' ---\n'+pageText);
-      if(images.length<4 && pageText.length<80){
-        const viewport=page.getViewport({ scale:1.35 });
-        const canvas=document.createElement('canvas');
-        canvas.width=viewport.width; canvas.height=viewport.height;
-        await page.render({ canvasContext:canvas.getContext('2d'), viewport:viewport }).promise;
-        images.push(canvas.toDataURL('image/jpeg', 0.82));
-      }
+      try{
+        const page=await pdf.getPage(i);
+        const content=await page.getTextContent();
+        // 位置つきで並べると表が壊れにくい
+        const items=(content.items||[]).slice();
+        items.sort(function(a,b){
+          const dy=(b.transform&&b.transform[5]||0)-(a.transform&&a.transform[5]||0);
+          if(Math.abs(dy)>2) return dy;
+          return (a.transform&&a.transform[4]||0)-(b.transform&&b.transform[4]||0);
+        });
+        let lineY=null, line=[], lines=[];
+        items.forEach(function(it){
+          const y=it.transform?it.transform[5]:0;
+          const str=it.str||'';
+          if(!str) return;
+          if(lineY==null || Math.abs(lineY-y)<3){ line.push(str); lineY=lineY==null?y:lineY; }
+          else { lines.push(line.join(' ')); line=[str]; lineY=y; }
+        });
+        if(line.length) lines.push(line.join(' '));
+        const pageText=lines.join('\n').replace(/[ \t]+\n/g,'\n').trim();
+        if(pageText) textParts.push('--- p.'+i+' ---\n'+pageText);
+      }catch(e){ console.warn('pdf page text', i, e); }
     }
     let text=textParts.join('\n\n').trim();
-    if(text.length<120 && images.length===0 && pdf.numPages>=1){
-      const page=await pdf.getPage(1);
-      const viewport=page.getViewport({ scale:1.4 });
-      const canvas=document.createElement('canvas');
-      canvas.width=viewport.width; canvas.height=viewport.height;
-      await page.render({ canvasContext:canvas.getContext('2d'), viewport:viewport }).promise;
-      images.push(canvas.toDataURL('image/jpeg', 0.85));
+    const images=[];
+    // テキストが弱いときだけ小さい画像を最大2枚（ペイロード過大で失敗しやすい）
+    if(text.length<350 && pdf.numPages>=1){
+      for(let i=1;i<=Math.min(2, pdf.numPages);i++){
+        try{
+          const page=await pdf.getPage(i);
+          const url=await renderPageJpeg(page, 0.85, 0.5);
+          if(url) images.push(url);
+        }catch(e){ console.warn('pdf page image', i, e); }
+      }
     }
-    if(/項目|引落|収入合計|固定費/.test(text) && images.length===0 && pdf.numPages>=1){
-      const page=await pdf.getPage(1);
-      const viewport=page.getViewport({ scale:1.15 });
-      const canvas=document.createElement('canvas');
-      canvas.width=viewport.width; canvas.height=viewport.height;
-      await page.render({ canvasContext:canvas.getContext('2d'), viewport:viewport }).promise;
-      images.push(canvas.toDataURL('image/jpeg', 0.72));
+    return { text:text.slice(0,20000), images, pages:pdf.numPages };
+  }
+
+  async function postPdfCf(payload){
+    const res=await fetch('/api/pdf-cf',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    const data=await res.json().catch(()=>({}));
+    if(!res.ok || data.ok===false){
+      const msg=[data.error, data.detail, data.hint].filter(Boolean).join(' / ') || ('HTTP '+res.status);
+      const err=new Error(msg);
+      err.status=res.status;
+      err.data=data;
+      throw err;
     }
-    return { text:text.slice(0,28000), images, pages:pdf.numPages };
+    return data;
   }
 
   function applyPdfEntries(data){
@@ -4430,23 +4472,34 @@ document.querySelectorAll("[data-jump]").forEach(b=>b.onclick=()=>{
       for(let i=0;i<pendingFiles.length;i++){
         const file=pendingFiles[i];
         setStatus((i+1)+'/'+pendingFiles.length+' 解析中: '+file.name);
-        const extracted=await extractFromPdf(file);
-        if(!extracted.text && !extracted.images.length) throw new Error(file.name+' から文字・画像を取得できませんでした');
-        setStatus((i+1)+'/'+pendingFiles.length+' AI読取中: '+file.name);
+        let extracted;
+        try{
+          extracted=await extractFromPdf(file);
+        }catch(ex){
+          throw new Error(file.name+' のPDF解析に失敗: '+(ex&&ex.message||ex)+'（ブラウザのキャッシュを消して再読込してください）');
+        }
+        if(!extracted.text && !extracted.images.length) throw new Error(file.name+' から文字を取得できませんでした。スプシから「PDFにダウンロード」したファイルを使ってください');
+        setStatus((i+1)+'/'+pendingFiles.length+' AI読取中: '+file.name+'（文字'+(extracted.text||'').length+'）');
         const hintYm=viewMonthStr(view);
         const [yy,mm]=hintYm.split('-').map(Number);
-        const res=await fetch('/api/pdf-cf',{
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({
-            year:yy, month:mm,
-            fileName:file.name||'document.pdf',
-            text:extracted.text,
-            images:extracted.images
-          })
-        });
-        const data=await res.json().catch(()=>({}));
-        if(!res.ok || data.ok===false) throw new Error(data.error||data.detail||(file.name+' HTTP '+res.status));
+        const base={
+          year:yy, month:mm,
+          fileName:file.name||'document.pdf',
+          text:extracted.text,
+          images:extracted.images||[]
+        };
+        let data;
+        try{
+          data=await postPdfCf(base);
+        }catch(ex){
+          // 画像付きで失敗したらテキストのみで再試行
+          if(base.images.length && base.text){
+            setStatus((i+1)+'/'+pendingFiles.length+' テキストのみで再試行…');
+            data=await postPdfCf({ ...base, images:[] });
+          } else {
+            throw new Error(file.name+': '+(ex&&ex.message||ex));
+          }
+        }
         results.push(applyPdfEntries(data));
       }
       saveAll();
