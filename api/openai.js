@@ -84,7 +84,7 @@ const SYSTEM_ENTAKU = [
   "【出力形式 — 必ずこのJSONのみ。前後に説明やMarkdownを付けない】",
   '{"replies":[{"agent":"secretary|finance|legal","text":"発言本文"}],"actions":[{"title":"具体的な次の一手","owner":"凛|紬|陽翔|社長","due":"例:今週中","module":"任意: cf-forecast等"}]}',
   "・replies は1〜4件。発言が自然につながる順に並べる。各 text は日本語・です/ます調で簡潔に。",
-  "・actions は今回決まった『次の一手』を0〜4件（無ければ空配列）。owner=担当者、due=目安期限、module=関連画面があれば（cf-bank/cf-cases/cf-link/cf-legal/cf-party/cf-forecast/cf-inrou/quest のいずれか）。",
+  "・actions は今回決まった『次の一手』を0〜4件（無ければ空配列）。owner=担当者、due=目安期限、module=関連画面があれば（cf-bank/cf-cases/cf-link/cf-legal/cf-party/biz-cf/cf-forecast/cf-inrou/quest のいずれか。CF予測は biz-cf または cf-forecast）。",
   "・断定的な法的・税務助言は避け、社内の可視化・記録・牽制・採算の観点で答える。",
 ].join("\n");
 

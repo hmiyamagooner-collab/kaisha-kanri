@@ -1695,7 +1695,6 @@ video.dc-card__image{
   <button data-s="cf-flow"><span class="nico">印</span>案件フロー</button>
   <button data-s="cf-legal"><span class="nico">法</span>契約リーガル</button>
   <button data-s="cf-party"><span class="nico">貸</span>関連者貸借</button>
-  <button data-s="cf-forecast"><span class="nico">予</span>CF予測</button>
   <button data-s="cf-inrou"><span class="nico">籠</span>印籠レポート</button>
   <div class="nav-group">記録・精算</div>
   <button data-s="entry"><span class="nico">＋</span>記録する</button>
@@ -2028,25 +2027,6 @@ video.dc-card__image{
       <p class="note">貸借案件は案件ボードで種別「個人会社貸借」を選び、ここに登録した相手を紐づけてください。</p>
     </div>
   </div>
-</section>
-
-<!-- ===== CF: 予測 ===== -->
-<section class="screen" id="s-cf-forecast">
-  <h2 class="stitle">CF予測</h2>
-  <p class="sdesc">予定スケジュールから未来の残高を見ます。予定外・未突合は赤で警告します。</p>
-  <div class="grid-stats">
-    <div class="card stat net"><div class="label">起点残高見込</div><div class="val" id="cfForecastStart">¥0</div><div class="sub">直近残高 or 明細累計</div></div>
-    <div class="card stat out"><div class="label">期間内最低残高見込</div><div class="val" id="cfForecastMin">¥0</div><div class="sub">予定消化後</div></div>
-    <div class="card">
-      <div class="label" style="font-size:12px;color:var(--muted)">予測期間</div>
-      <select id="cfForecastDays" style="margin-top:8px;width:100%">
-        <option value="30">30日</option>
-        <option value="90" selected>90日</option>
-        <option value="180">180日</option>
-      </select>
-    </div>
-  </div>
-  <div class="card" id="cfForecastBody" style="margin-top:14px"></div>
 </section>
 
 <!-- ===== CF: 印籠 ===== -->
@@ -2468,12 +2448,12 @@ video.dc-card__image{
     <div class="biz-hero-photo" style="background-image:url(nav-cf.png)" aria-hidden="true"></div>
     <div class="biz-hero-body">
       <h2 class="stitle">CF（キャッシュフロー）</h2>
-      <p class="sdesc">月のお金の出入りと予測を俯瞰します。詳細は本丸メニューから掘り下げできます。</p>
+      <p class="sdesc">月のお金の出入りとCF予測をここで一体管理します。詳細は本丸メニューから掘り下げできます。</p>
     </div>
   </header>
   <div class="biz-tabs">
     <button type="button" class="on" data-tab="month">月次出入り</button>
-    <button type="button" data-tab="forecast">予測</button>
+    <button type="button" data-tab="forecast">CF予測</button>
   </div>
   <div class="biz-panel on" data-tab="month">
     <div class="biz-grid">
@@ -2488,9 +2468,21 @@ video.dc-card__image{
     </div>
   </div>
   <div class="biz-panel" data-tab="forecast">
-    <p class="sdesc">案件予定と銀行明細から先のキャッシュを読みます。</p>
-    <div class="biz-link-row">
-      <button type="button" data-jump="cf-forecast">CF予測画面</button>
+    <p class="sdesc">予定スケジュールから未来の残高を見ます。予定外・未突合は赤で警告します。</p>
+    <div class="grid-stats">
+      <div class="card stat net"><div class="label">起点残高見込</div><div class="val" id="cfForecastStart">¥0</div><div class="sub">直近残高 or 明細累計</div></div>
+      <div class="card stat out"><div class="label">期間内最低残高見込</div><div class="val" id="cfForecastMin">¥0</div><div class="sub">予定消化後</div></div>
+      <div class="card">
+        <div class="label" style="font-size:12px;color:var(--muted)">予測期間</div>
+        <select id="cfForecastDays" style="margin-top:8px;width:100%">
+          <option value="30">30日</option>
+          <option value="90" selected>90日</option>
+          <option value="180">180日</option>
+        </select>
+      </div>
+    </div>
+    <div class="card" id="cfForecastBody" style="margin-top:14px"></div>
+    <div class="biz-link-row" style="margin-top:14px">
       <button type="button" data-jump="cf-cases">案件ボード</button>
       <button type="button" data-jump="cf-inrou">印籠レポート</button>
     </div>
@@ -4144,6 +4136,22 @@ if(bcGoalForm)bcGoalForm.addEventListener("submit",e=>{
   if(!g){toast("目標額を入力してください");return;}
   S.biz.care.goal=g;saveAll();renderCare();toast("月次目標を保存しました");
 });
+window.openBizCfTab=function(tab){
+  const t=tab||'month';
+  document.querySelector('.gamenav button[data-s="biz-cf"]')?.click();
+  requestAnimationFrame(()=>{
+    const sec=document.getElementById('s-biz-cf');
+    if(!sec) return;
+    const tabs=sec.querySelector('.biz-tabs');
+    const btn=tabs?.querySelector('button[data-tab="'+t+'"]');
+    if(btn){
+      tabs.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
+      btn.classList.add('on');
+      sec.querySelectorAll('.biz-panel').forEach(p=>p.classList.toggle('on',p.dataset.tab===t));
+    }
+    try{renderAll();}catch(e){}
+  });
+};
 $$(".biz-tabs").forEach(tabs=>{
   tabs.querySelectorAll("button").forEach(btn=>{
     btn.onclick=()=>{
@@ -4151,11 +4159,14 @@ $$(".biz-tabs").forEach(tabs=>{
       tabs.querySelectorAll("button").forEach(b=>b.classList.remove("on"));
       btn.classList.add("on");
       sec.querySelectorAll(".biz-panel").forEach(p=>p.classList.toggle("on",p.dataset.tab===btn.dataset.tab));
+      if(sec&&sec.id==='s-biz-cf'){ try{renderAll();}catch(e){} }
     };
   });
 });
 document.querySelectorAll("[data-jump]").forEach(b=>b.onclick=()=>{
-  document.querySelector('.gamenav button[data-s="'+b.dataset.jump+'"]')?.click();
+  const jump=b.dataset.jump;
+  if(jump==='cf-forecast'){ window.openBizCfTab('forecast'); return; }
+  document.querySelector('.gamenav button[data-s="'+jump+'"]')?.click();
 });
 const bdAdd=$("#bdAdd");
 if(bdAdd)bdAdd.onclick=()=>{
@@ -5591,7 +5602,7 @@ window.EntakuAI=(function(){
     { key:'印籠', s:'cf-inrou', label:'印籠レポートへ' },
     { key:'精算', s:'quest', label:'精算クエストへ' },
   ];
-  const AI_TOUR = ['cf-bank','cf-cases','cf-link','cf-flow','cf-forecast','cf-inrou'];
+  const AI_TOUR = ['cf-bank','cf-cases','cf-link','cf-flow','biz-cf','cf-inrou'];
   function setAiWorking(on,opts){
     opts=opts||{};
     document.getElementById('treasury-pane')?.classList.toggle('ai-working', on);
@@ -5614,7 +5625,8 @@ window.EntakuAI=(function(){
     try{
       const cur=activeScreen();
       if(cur && cur!=='dash') S.lastScreen=cur;
-      document.querySelector('.gamenav button[data-s="'+sid+'"]')?.click();
+      if(sid==='cf-forecast'){ window.openBizCfTab?.('forecast'); }
+      else document.querySelector('.gamenav button[data-s="'+sid+'"]')?.click();
     }catch(e){}
     window._entakuSuppressScroll=prev;
   }
