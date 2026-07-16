@@ -749,12 +749,13 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 #treasury-pane .pane-cap::after{background:var(--gold)}
 #office-pane{background:var(--panel);overflow:hidden;display:flex;flex-direction:column;min-height:0;}
 .office-task-dock{
-  flex:1 1 auto;min-height:0;overflow:hidden;
+  flex:0 0 auto;max-height:36%;min-height:0;overflow:hidden;
   display:flex;flex-direction:column;
-  border-bottom:1px solid rgba(210,173,99,.18);
+  border-top:1px solid rgba(210,173,99,.18);
   background:linear-gradient(180deg,rgba(12,16,22,.98),rgba(8,10,14,.96));
   position:relative;z-index:4;
 }
+.office-tk-list{max-height:96px}
 .office-task-head{
   flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:8px;
   padding:8px 10px 6px;
@@ -798,7 +799,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .office-tk-item button:hover{color:#fff;border-color:#fff}
 .office-tk-empty{font-size:11px;color:var(--muted);padding:4px 2px}
 .office-frame{
-  flex:0 0 0;height:0;min-height:0;overflow:hidden;display:none;
+  flex:1 1 auto;min-height:0;overflow:hidden;display:flex;position:relative;
   background:
     radial-gradient(ellipse 70% 50% at 50% 30%,rgba(196,166,106,.04),transparent),
     linear-gradient(180deg,#0c0d11,#050608);
@@ -1066,7 +1067,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .ai-work-log[hidden]{display:none!important}
 .dc-card{
   min-width:0;min-height:0;width:100%;height:100%;max-height:100%;
-  display:grid;grid-template-rows:28px minmax(0,1fr) 34px;
+  display:grid;grid-template-rows:minmax(0,1fr);
   overflow:hidden;position:relative;z-index:1;
   background:linear-gradient(180deg,#121823 0%,#0a0e14 100%);
   border:1px solid rgba(210,173,99,.16);border-radius:0;
@@ -1084,14 +1085,15 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   animation:dcCardIn .52s cubic-bezier(.22,1,.36,1) var(--dc-in-delay,0s) forwards;
 }
 .dc-dept{
-  position:relative;z-index:5;
+  position:absolute;top:0;left:0;right:0;z-index:6;
   display:flex;align-items:center;justify-content:center;
-  height:28px;min-height:28px;
+  height:auto;min-height:0;padding:7px 8px 18px;
   font-family:'Zen Kaku Gothic New',var(--font-body),sans-serif;
   font-size:12px;font-weight:700;letter-spacing:.14em;color:#fff;
-  background:linear-gradient(180deg,rgba(10,12,16,.96),rgba(6,8,12,.92));
-  border-bottom:1px solid rgba(255,255,255,.22);
-  text-shadow:0 1px 2px rgba(0,0,0,.85);
+  background:linear-gradient(180deg,rgba(0,0,0,.72),rgba(0,0,0,.28) 55%,transparent);
+  border-bottom:none;
+  text-shadow:0 1px 3px rgba(0,0,0,.95),0 0 8px rgba(0,0,0,.55);
+  pointer-events:none;
 }
 .dc-cards .dc-card:nth-child(1){--dc-in-delay:0s}
 .dc-cards .dc-card:nth-child(2){--dc-in-delay:.08s}
@@ -1160,7 +1162,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   width:100%;height:100%;overflow:hidden;
 }
 .dc-bubble{
-  position:absolute;top:6px;left:6px;right:6px;z-index:4;
+  position:absolute;top:34px;left:6px;right:6px;z-index:5;
   background:rgba(6,7,10,.92);backdrop-filter:blur(10px);
   border:1px solid rgba(196,166,106,.28);border-radius:var(--radius-sm);
   padding:6px 10px;
@@ -1241,25 +1243,23 @@ video.dc-card__image{
   pointer-events:none;
 }
 .dc-photo:has(.dc-card__image[data-fallback="1"]) .dc-photo-fallback{display:flex}
-.dc-photo::after{
-  content:"";position:absolute;left:0;right:0;bottom:0;height:28%;z-index:3;
-  background:linear-gradient(180deg,transparent,rgba(4,5,6,.55));
-  pointer-events:none;
-}
+.dc-photo::after{display:none}
 .dc-card-foot{
+  position:absolute;left:0;right:0;bottom:0;z-index:6;
   flex-shrink:0;min-width:0;width:100%;
-  height:34px;min-height:34px;max-height:34px;
-  display:flex;flex-direction:column;justify-content:center;gap:0;
-  padding:2px 6px 3px;position:relative;z-index:3;
-  border-top:1px solid rgba(210,173,99,.12);
-  background:linear-gradient(180deg,rgba(8,10,14,.98),rgba(6,8,12,1));
+  height:auto;min-height:0;max-height:none;
+  display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:1px;
+  padding:22px 8px 8px;pointer-events:none;
+  border-top:none;
+  background:linear-gradient(180deg,transparent,rgba(0,0,0,.35) 40%,rgba(0,0,0,.78));
 }
 .dc-name{
   flex:0 0 auto;min-height:0;max-height:none;
-  font-family:var(--font-display);font-size:12px;font-weight:600;color:#fff;
+  font-family:var(--font-display);font-size:13px;font-weight:700;color:#fff;
   text-align:center;padding:0 4px;letter-spacing:.04em;position:relative;z-index:2;
   display:flex;align-items:center;justify-content:center;gap:4px;
   line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  text-shadow:0 1px 3px rgba(0,0,0,.95),0 0 8px rgba(0,0,0,.55);
 }
 .dc-name::before{display:none}
 .dc-name-en{font-size:8px;color:#fff;letter-spacing:.12em;font-family:var(--font-num);font-weight:500;opacity:.92}
@@ -1600,7 +1600,6 @@ video.dc-card__image{
     <div class="dash-cards-wrap" id="dashCompact">
       <div class="dc-cards">
         <div class="dc-card" data-dept="secretary">
-          <div class="dc-dept">秘書</div>
           <div class="dc-photo dc-card__media" data-initial="凛">
             <div class="dc-card__shine" aria-hidden="true"></div>
             <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
@@ -1608,14 +1607,14 @@ video.dc-card__image{
             <div class="dc-avatar-wrap">
               <video class="dc-card__image" src="rin.mp4" poster="dash-secretary.png" data-has-audio="1" muted loop playsinline autoplay preload="metadata" aria-label="凛"></video>
             </div>
-          </div>
-          <div class="dc-card-foot">
-            <div class="dc-name">凛<span class="dc-name-en">RIN</span></div>
-            <div class="dc-role">ヒロ社長秘書</div>
+            <div class="dc-dept">秘書</div>
+            <div class="dc-card-foot">
+              <div class="dc-name">凛<span class="dc-name-en">RIN</span></div>
+              <div class="dc-role">ヒロ社長秘書</div>
+            </div>
           </div>
         </div>
         <div class="dc-card" data-dept="finance">
-          <div class="dc-dept">経理</div>
           <div class="dc-photo dc-card__media" data-initial="紬">
             <div class="dc-card__shine" aria-hidden="true"></div>
             <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
@@ -1623,14 +1622,14 @@ video.dc-card__image{
             <div class="dc-avatar-wrap">
               <video class="dc-card__image" src="tumugi.mp4" poster="dash-finance.png" data-has-audio="1" muted loop playsinline autoplay preload="metadata" aria-label="紬"></video>
             </div>
-          </div>
-          <div class="dc-card-foot">
-            <div class="dc-name">紬<span class="dc-name-en">TUMUGI</span></div>
-            <div class="dc-role">経理部長</div>
+            <div class="dc-dept">経理</div>
+            <div class="dc-card-foot">
+              <div class="dc-name">紬<span class="dc-name-en">TUMUGI</span></div>
+              <div class="dc-role">経理部長</div>
+            </div>
           </div>
         </div>
         <div class="dc-card" data-dept="legal">
-          <div class="dc-dept">法務</div>
           <div class="dc-photo dc-card__media" data-initial="陽">
             <div class="dc-card__shine" aria-hidden="true"></div>
             <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
@@ -1638,10 +1637,11 @@ video.dc-card__image{
             <div class="dc-avatar-wrap">
               <video class="dc-card__image" src="haruto.mp4" poster="dash-legal.png" data-has-audio="1" muted loop playsinline autoplay preload="metadata" aria-label="陽翔"></video>
             </div>
-          </div>
-          <div class="dc-card-foot">
-            <div class="dc-name">陽翔<span class="dc-name-en">HARUTO</span></div>
-            <div class="dc-role">法務部長</div>
+            <div class="dc-dept">法務</div>
+            <div class="dc-card-foot">
+              <div class="dc-name">陽翔<span class="dc-name-en">HARUTO</span></div>
+              <div class="dc-role">法務部長</div>
+            </div>
           </div>
         </div>
       </div>
@@ -1684,6 +1684,9 @@ video.dc-card__image{
       </div>
     </section>
     <section class="quest-pane" id="office-pane">
+      <div class="office-frame">
+        <iframe src="office.html?embedded=1" title="オフィスクエスト マップ"></iframe>
+      </div>
       <div class="office-task-dock">
         <div class="office-task-head">
           <strong>タスク管理</strong>
@@ -1701,9 +1704,6 @@ video.dc-card__image{
           </div>
         </form>
         <div class="office-tk-list" id="officeTkList"></div>
-      </div>
-      <div class="office-frame">
-        <iframe src="office.html?embedded=1" title="オフィスクエスト マップ"></iframe>
       </div>
     </section>
   </div>
@@ -4578,7 +4578,7 @@ window.Treasury={
         <span class="office-tk-title">${esc(t.title)}</span>
         <button type="button" data-office-tk-done="${t.id}">完了</button>
       </div>`;
-    }).join(''):`<div class="office-tk-empty">未完了タスクはありません。上の欄から追加できます。</div>`;
+    }).join(''):`<div class="office-tk-empty">未完了タスクはありません。下の欄から追加できます。</div>`;
   }
 
   function renderTasks(){
