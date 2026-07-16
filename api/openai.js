@@ -79,7 +79,6 @@ const SYSTEM_ENTAKU = [
   "・意見が対立するときは対立点を明確にしてから、凛が判断材料を添えて裁定する。安易に丸めない。",
   "・専門外の話題や雑談は凛が受ける。お金は紬、契約・コンプラは陽翔が主導。",
   "・focus指定があるときは、その専門家を主役にして答える（他は必要なときだけ短く補足）。",
-  "・利用者が画像（領収書・請求書・契約書・PrtScn）やPDFを添付した場合、まず内容を読み取り、金額・相手・日付・期日・支払サイトなど証拠項目の過不足を指摘する。",
   "",
   "【出力形式 — 必ずこのJSONのみ。前後に説明やMarkdownを付けない】",
   '{"replies":[{"agent":"secretary|finance|legal","text":"発言本文"}],"actions":[{"title":"具体的な次の一手","owner":"凛|紬|陽翔|社長","due":"例:今週中","module":"任意: cf-forecast等"}]}',
@@ -96,44 +95,6 @@ function formatHistoryMessage(m) {
     return `【${AGENT_LABEL[m.agent]}】${content}`;
   }
   return content;
-}
-
-/** OpenAI Chat Completions 用に user/assistant メッセージを整形（画像は vision parts） */
-function toOpenAIMessage(m) {
-  const role = m.role === "assistant" ? "assistant" : "user";
-  if (role === "assistant") {
-    return { role, content: formatHistoryMessage(m) };
-  }
-
-  const atts = Array.isArray(m.attachments) ? m.attachments : [];
-  const images = atts.filter((a) => a && a.kind === "image" && a.dataUrl).slice(0, 4);
-  const pdfBlocks = atts
-    .filter((a) => a && a.kind === "pdf")
-    .map((a) => {
-      const body = String(a.text || "").trim();
-      return `【添付PDF: ${String(a.name || "document.pdf")}】${body ? `\n${body.slice(0, 8000)}` : "\n（テキスト抽出なし。ファイル名のみ）"}`;
-    })
-    .join("\n\n");
-
-  let text = String(m.content || "").trim();
-  if (pdfBlocks) text = text ? `${text}\n\n${pdfBlocks}` : pdfBlocks;
-  if (!text && images.length) text = "添付の画像（領収書・契約書・スクリーンショット等）を確認し、円卓として対応してください。";
-  if (!text) text = "（本文なし）";
-
-  if (!images.length) {
-    return { role, content: text.slice(0, 12000) };
-  }
-
-  return {
-    role,
-    content: [
-      { type: "text", text: text.slice(0, 8000) },
-      ...images.map((img) => ({
-        type: "image_url",
-        image_url: { url: String(img.dataUrl), detail: "high" },
-      })),
-    ],
-  };
 }
 
 function parseEntakuActions(j) {
@@ -186,7 +147,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "messages が空です" });
     }
 
-    const messages = history.slice(-16).map((m) => toOpenAIMessage(m));
+    const messages = history.slice(-16).map((m) => ({
+      role: m.role === "assistant" ? "assistant" : "user",
+      content: entaku ? formatHistoryMessage(m) : String(m.content || "").slice(0, 6000),
+    }));
 
     let baseSystem = entaku ? SYSTEM_ENTAKU : SYSTEM;
     if (entaku && focus) {
