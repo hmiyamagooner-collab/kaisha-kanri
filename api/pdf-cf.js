@@ -16,6 +16,20 @@ function clampYm(year, month) {
   return { year: y, month: mm, ym: `${y}-${String(mm).padStart(2, "0")}` };
 }
 
+/** ファイル名・本文・AI応答から対象年月を推定 */
+function detectYm(fileName, text, aiYm, fallbackYear, fallbackMonth) {
+  const blob = `${fileName || ""}\n${String(text || "").slice(0, 2000)}\n${aiYm || ""}`;
+  const full = blob.match(/(20\d{2})\s*[年\/\-._]?\s*(\d{1,2})\s*月/);
+  if (full) return clampYm(+full[1], +full[2]);
+  const mOnly = blob.match(/(?:^|[^\d])(\d{1,2})\s*月\s*(?:CF|分|度)?/i);
+  if (mOnly) return clampYm(fallbackYear, +mOnly[1]);
+  if (/^\d{4}-\d{2}$/.test(String(aiYm || "").trim())) {
+    const [y, m] = String(aiYm).split("-").map(Number);
+    return clampYm(y, m);
+  }
+  return clampYm(fallbackYear, fallbackMonth);
+}
+
 function sanitizeEntries(raw, ym, lastDay) {
   const list = Array.isArray(raw) ? raw : [];
   const out = [];
@@ -76,8 +90,10 @@ export default async function handler(req, res) {
       ? body.images.filter((u) => typeof u === "string" && u.startsWith("data:image/")).slice(0, 4)
       : [];
     const fileName = String(body.fileName || "document.pdf").slice(0, 120);
-    const { year, month, ym } = clampYm(body.year, body.month);
-    const lastDay = new Date(year, month, 0).getDate();
+    const fb = clampYm(body.year, body.month);
+    const guessed = detectYm(fileName, text, "", fb.year, fb.month);
+    const hintYm = guessed.ym;
+    const hintLastDay = new Date(guessed.year, guessed.month, 0).getDate();
 
     if (!text && !images.length) {
       return res.status(400).json({ error: "PDFテキストまたはページ画像が必要です" });
@@ -89,7 +105,8 @@ export default async function handler(req, res) {
       "正式な会計処理ではなく、社内の資金繰り可視化が目的です。",
       "",
       "【抽出ルール】",
-      `- 対象年月は ${ym}（日はその月の1〜${lastDay}）。`,
+      `- 対象年月のヒントは ${hintYm}。PDF見出し（例: 06月CF）やファイル名が正しければそちらを ym に採用する。`,
+      `- 日はその月の1〜末日（ヒント月なら1〜${hintLastDay}）。`,
       "- kind: 入金は in、出金・引落・振込支払は out。",
       "- 月次CF表で「1〜31日」列に金額がある行は、その日を date にする（複数日に金額があれば複数エントリ）。",
       "- 「引落日」「支払期日」「支払日」「〇日」「月末」があれば date に反映（月末は最終日）。",
@@ -104,7 +121,7 @@ export default async function handler(req, res) {
       "【出力JSONのみ。前後に説明やコードフェンス禁止】",
       "{",
       '  "title": "文書の短いタイトル",',
-      `  "ym": "${ym}",`,
+      '  "ym": "YYYY-MM（PDFの月次。必須）",',
       '  "entries": [',
       '    {',
       '      "date": "YYYY-MM-DD",',
@@ -124,7 +141,7 @@ export default async function handler(req, res) {
     ].join("\n");
 
     const userParts = [];
-    let userText = `ファイル名: ${fileName}\n対象月: ${ym}\n`;
+    let userText = `ファイル名: ${fileName}\n対象月ヒント: ${hintYm}\n`;
     if (text) {
       userText += `\n【抽出テキスト】\n"""\n${text.slice(0, 28000)}\n"""\n`;
     } else {
@@ -170,7 +187,9 @@ export default async function handler(req, res) {
       throw new Error("AI応答のJSON解析に失敗しました");
     }
 
-    const entries = sanitizeEntries(parsed.entries, ym, lastDay);
+    const resolved = detectYm(fileName, text, parsed.ym, guessed.year, guessed.month);
+    const lastDay = new Date(resolved.year, resolved.month, 0).getDate();
+    const entries = sanitizeEntries(parsed.entries, resolved.ym, lastDay);
     const sumIn = entries.filter((e) => e.kind === "in").reduce((a, e) => a + e.amount, 0);
     const sumOut = entries.filter((e) => e.kind === "out").reduce((a, e) => a + e.amount, 0);
 
@@ -179,9 +198,9 @@ export default async function handler(req, res) {
       mode: "pdf",
       fileName,
       title: String(parsed.title || fileName).slice(0, 120),
-      ym,
-      year,
-      month,
+      ym: resolved.ym,
+      year: resolved.year,
+      month: resolved.month,
       totals: { in: sumIn, out: sumOut, net: sumIn - sumOut, count: entries.length },
       notes: String(parsed.notes || "").slice(0, 500),
       entries,

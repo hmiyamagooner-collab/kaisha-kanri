@@ -555,6 +555,167 @@
     );
   }
 
+  function scheduleItemLabel(s) {
+    if (s.memo) return String(s.memo);
+    const parts = [s.item, s.content || s.who, s.category].filter(Boolean);
+    return parts.length ? parts.join(" / ") : s.kind === "in" || s.kind === "interest_in" ? "入金" : "出金";
+  }
+
+  /** 項目つきで「いつ・何で・いくら足りなくなるか」を集計 */
+  function analyzeShortage(schedList, startBal) {
+    const sorted = [...(schedList || [])].sort((a, b) => {
+      const d = String(a.date).localeCompare(String(b.date));
+      if (d) return d;
+      const ai = a.kind === "in" || a.kind === "interest_in" ? 0 : 1;
+      const bi = b.kind === "in" || b.kind === "interest_in" ? 0 : 1;
+      return ai - bi;
+    });
+    let running = Number(startBal) || 0;
+    let minBal = running;
+    let minDate = null;
+    let sumIn = 0;
+    let sumOut = 0;
+    const rows = [];
+    const shortfalls = [];
+    const catOut = {};
+    const dayEnd = {};
+
+    sorted.forEach((s) => {
+      const isIn = s.kind === "in" || s.kind === "interest_in";
+      const amt = Math.abs(Number(s.amount) || 0);
+      const signed = isIn ? amt : -amt;
+      const before = running;
+      running += signed;
+      if (isIn) sumIn += amt;
+      else {
+        sumOut += amt;
+        const cat = s.category || "その他";
+        catOut[cat] = (catOut[cat] || 0) + amt;
+      }
+      if (running < minBal) {
+        minBal = running;
+        minDate = s.date;
+      }
+      const label = scheduleItemLabel(s);
+      rows.push({
+        date: s.date,
+        label,
+        category: s.category || "",
+        amount: signed,
+        bal: running,
+        caseId: s.caseId,
+        due: s.due || "",
+        source: s.source || "",
+      });
+      dayEnd[s.date] = running;
+      // 黒字→赤字に転落した「きっかけ」の出金
+      if (!isIn && before >= 0 && running < 0) {
+        shortfalls.push({
+          date: s.date,
+          label,
+          category: s.category || "",
+          amount: amt,
+          bal: running,
+          need: Math.abs(running),
+          phase: "turn",
+        });
+      } else if (!isIn && running < 0 && before < 0) {
+        shortfalls.push({
+          date: s.date,
+          label,
+          category: s.category || "",
+          amount: amt,
+          bal: running,
+          need: Math.abs(running),
+          phase: "deepen",
+        });
+      }
+    });
+
+    const net = sumIn - sumOut;
+    const monthShort = Math.max(0, sumOut - sumIn);
+    const negDays = Object.keys(dayEnd)
+      .filter((d) => dayEnd[d] < 0)
+      .sort();
+    const topCats = Object.entries(catOut)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8);
+    // 転落きっかけ優先、なければ深掘りの大口
+    const triggers = shortfalls
+      .filter((x) => x.phase === "turn")
+      .concat(
+        shortfalls
+          .filter((x) => x.phase === "deepen")
+          .sort((a, b) => b.amount - a.amount)
+          .slice(0, 8)
+      )
+      .slice(0, 12);
+
+    return {
+      rows,
+      sumIn,
+      sumOut,
+      net,
+      monthShort,
+      minBal,
+      minDate,
+      negDays,
+      triggers,
+      topCats,
+      endBal: running,
+      startBal: Number(startBal) || 0,
+    };
+  }
+
+  function shortageHtml(analysis, opts) {
+    const o = opts || {};
+    const title = o.title || "何が足りなくなるか";
+    const a = analysis;
+    const ok = a.minBal >= 0 && a.monthShort <= 0;
+    const lead = ok
+      ? `この範囲では資金ショート見込みはありません（最低残高見込 ${T().yen(a.minBal)}）。`
+      : a.monthShort > 0
+        ? `入金合計より出金が <b class="out">${T().yen(a.monthShort)}</b> 多く、起点残高 ${T().yen(a.startBal)} から見ると最低残高 <b class="out">${T().yen(a.minBal)}</b>${a.minDate ? `（${a.minDate}）` : ""} まで落ちます。`
+        : `月次の差引は黒字ですが、日付のズレで一時的に不足します。最低残高 <b class="out">${T().yen(a.minBal)}</b>${a.minDate ? `（${a.minDate}）` : ""}。`;
+
+    const triggerRows =
+      a.triggers
+        .map(
+          (t) => `<div class="cf-gap-item">
+        <span class="d">${T().esc(t.date.slice(5))}</span>
+        <span class="n">${T().esc(t.label)}${t.category ? `<div class="cat">${T().esc(t.category)}${t.phase === "turn" ? " · ここで赤字転落" : ""}</div>` : t.phase === "turn" ? `<div class="cat">ここで赤字転落</div>` : ""}</span>
+        <span class="a">−${T().yen(t.amount)}<span class="need">この時点の不足 ${T().yen(t.need)}</span></span>
+      </div>`
+        )
+        .join("") || `<div class="cf-empty ok">赤字転落のきっかけ出金はありません</div>`;
+
+    const catRows = a.topCats
+      .map(([cat, amt]) => `<div class="cf-gap-item"><span class="d">出金</span><span class="n">${T().esc(cat)}</span><span class="a">−${T().yen(amt)}</span></div>`)
+      .join("");
+
+    return `<div class="cf-gap-box ${ok ? "ok" : ""}">
+      <h4>${ok ? "✓ " : "⚠ "}${T().esc(title)}</h4>
+      <div class="cf-gap-lead">${lead}</div>
+      <div class="cf-fc-alerts" style="margin-bottom:10px">
+        <div class="cf-fc-tile"><span class="k">予定入金</span><span class="v in">${T().yen(a.sumIn)}</span></div>
+        <div class="cf-fc-tile"><span class="k">予定出金</span><span class="v out">${T().yen(a.sumOut)}</span></div>
+        <div class="cf-fc-tile ${a.net < 0 ? "bad" : "ok"}"><span class="k">差引（入−出）</span><span class="v ${a.net < 0 ? "out" : "in"}">${T().yen(a.net)}</span><span class="sub">${a.monthShort > 0 ? "入金不足 " + T().yen(a.monthShort) : "月次は充足"}</span></div>
+      </div>
+      <div class="cf-col-t">不足のきっかけ（項目）</div>
+      ${triggerRows}
+      ${
+        a.topCats.length
+          ? `<div class="cf-col-t" style="margin-top:12px">出金が大きい区分</div>${catRows}`
+          : ""
+      }
+      ${
+        a.startBal === 0
+          ? `<div class="cf-meta" style="margin-top:10px">※起点残高が ¥0 です。口座CSVを取り込むと「実際に足りなくなる日」の精度が上がります。</div>`
+          : ""
+      }
+    </div>`;
+  }
+
   function renderForecast() {
     const box = document.getElementById("cfForecastBody");
     if (!box) return;
@@ -575,31 +736,70 @@
       .filter((s) => s.date >= start && s.date <= end && !s.linkedBankTxId)
       .sort((a, b) => a.date.localeCompare(b.date));
 
+    // PDF取込月（最大3か月・過去月でもギャップが見える）
+    const pdfYms = [
+      ...new Set(
+        S.schedules
+          .filter((s) => s.source === "pdf")
+          .map((s) => String(s.date).slice(0, 7))
+          .concat(Object.keys(S.pdfCfMonths || {}))
+      ),
+    ]
+      .filter(Boolean)
+      .sort()
+      .slice(-3);
+    const pdfAllSched = S.schedules.filter(
+      (s) => s.source === "pdf" && pdfYms.includes(String(s.date).slice(0, 7)) && !s.linkedBankTxId
+    );
+    const multiAnalysis = pdfAllSched.length ? analyzeShortage(pdfAllSched, bal) : null;
+    const pdfYm = (S.pdfCf && S.pdfCf.ym) || pdfYms[pdfYms.length - 1] || "";
+    const monthSched = pdfYm
+      ? S.schedules.filter((s) => String(s.date).startsWith(pdfYm) && !s.linkedBankTxId)
+      : [];
+    const monthAnalysis = monthSched.length ? analyzeShortage(monthSched, bal) : null;
+    const futureAnalysis = analyzeShortage(sched, bal);
+
     // unexpected: bank txs in window without schedule match / without case link
     const unexpected = S.bankTx.filter((t) => t.date >= start && t.date <= end && (t.needsExplain || !linkedCaseIds(t.id).length));
 
-    let running = bal;
-    let minBal = bal;
-    const rows = [];
-    sched.forEach((s) => {
-      const signed = s.kind === "in" || s.kind === "interest_in" ? s.amount : -Math.abs(s.amount);
-      running += signed;
-      if (running < minBal) minBal = running;
-      rows.push({ date: s.date, label: s.kind, amount: signed, bal: running, caseId: s.caseId });
-    });
-
+    const minBal = futureAnalysis.minBal;
     document.getElementById("cfForecastStart").textContent = T().yen(bal);
     document.getElementById("cfForecastMin").textContent = T().yen(minBal);
     document.getElementById("cfForecastMin").className = "val " + (minBal < 0 ? "out" : "net");
 
-    // --- アラート: 予定外の入出金（勝手な入金＝資金洗浄／勝手な引き出しの早期発見） ---
-    const LARGE = 500000; // 50万円以上は「大口」= 要説明の目安
+    // 月次タブ側のギャップ表示も更新
+    const gapBox = document.getElementById("bcfPdfGap");
+    if (gapBox) {
+      if (multiAnalysis || monthAnalysis) {
+        gapBox.style.display = "block";
+        const parts = [];
+        if (multiAnalysis && pdfYms.length > 1) {
+          parts.push(
+            shortageHtml(multiAnalysis, {
+              title: `取込 ${pdfYms.join("〜")} — 何が足りなくなるか（項目つき）`,
+            })
+          );
+        }
+        if (monthAnalysis) {
+          parts.push(
+            shortageHtml(monthAnalysis, {
+              title: `直近取込月 ${pdfYm} — 何が足りなくなるか`,
+            })
+          );
+        }
+        gapBox.innerHTML = parts.join("");
+      } else {
+        gapBox.style.display = "none";
+        gapBox.innerHTML = "";
+      }
+    }
+
+    // --- アラート: 予定外の入出金 ---
+    const LARGE = 500000;
     const inflows = unexpected.filter((t) => t.amount > 0).sort((a, b) => b.amount - a.amount);
     const outflows = unexpected.filter((t) => t.amount < 0).sort((a, b) => a.amount - b.amount);
     const sumIn = inflows.reduce((a, t) => a + t.amount, 0);
     const sumOut = outflows.reduce((a, t) => a + Math.abs(t.amount), 0);
-    const plannedInSum = sched.filter((s) => s.kind === "in" || s.kind === "interest_in").reduce((a, s) => a + Math.abs(s.amount), 0);
-    const plannedOutSum = sched.filter((s) => !(s.kind === "in" || s.kind === "interest_in")).reduce((a, s) => a + Math.abs(s.amount), 0);
     const alertRow = (t) => {
       const big = Math.abs(t.amount) >= LARGE;
       const inn = t.amount > 0;
@@ -607,23 +807,63 @@
       return `<div class="cf-alert-item ${big ? "sev-hi" : ""}"><span class="${inn ? "in" : "out"}">${inn ? "+" : "−"}${T().yen(Math.abs(t.amount))}</span><span class="num">${t.date}</span><span class="memo">${T().esc(t.memo || "（摘要なし）")}</span><span class="tag ${inn ? "bad" : ""}">${tags}</span></div>`;
     };
 
+    const schedRowsHtml =
+      futureAnalysis.rows
+        .map((r) => {
+          const c = S.cases.find((x) => x.id === r.caseId);
+          const name = r.label || (c ? c.title : "") || "";
+          const inn = r.amount >= 0;
+          return `<div class="cf-sched-item ${r.bal < 0 ? "bad" : ""}">
+            <span class="si-date">${T().esc(r.date)}</span>
+            <span class="si-name" title="${T().esc(name)}">${T().esc(name)}${r.category ? `<span class="cat">${T().esc(r.category)}</span>` : ""}${r.due ? `<span class="cat">期日:${T().esc(r.due)}</span>` : ""}</span>
+            <span class="si-amt ${inn ? "in" : "out"}">${inn ? "+" : "−"}${T().yen(Math.abs(r.amount))}</span>
+            <span class="si-bal ${r.bal < 0 ? "out" : ""}">${T().yen(r.bal)}</span>
+          </div>`;
+        })
+        .join("") || `<div class="cf-empty">期間内の未消化予定はありません</div>`;
+
+    const analysisForList = multiAnalysis || monthAnalysis;
+    const listTitle =
+      multiAnalysis && pdfYms.length > 1 ? `取込 ${pdfYms.join("〜")} の明細（項目）` : `取込月 ${pdfYm} の明細（項目）`;
+    const monthBlock = analysisForList
+      ? (multiAnalysis && pdfYms.length > 1
+          ? shortageHtml(multiAnalysis, { title: `取込 ${pdfYms.join("〜")} — 何が足りなくなるか` })
+          : "") +
+        (monthAnalysis ? shortageHtml(monthAnalysis, { title: `直近月 ${pdfYm} — 何が足りなくなるか` }) : "") +
+        `<div class="cf-col-t" style="margin-top:14px">${T().esc(listTitle)}　<a href="#" id="cfOpenSheetTab" style="color:var(--gold);margin-left:8px">スプシ風の表を開く</a></div>
+        <div class="cf-sched-item" style="opacity:.7;border-bottom:1px solid var(--line)"><span class="si-date">日付</span><span class="si-name">項目</span><span class="si-amt">金額</span><span class="si-bal">残高見込</span></div>
+        ${analysisForList.rows
+          .slice(0, 120)
+          .map((r) => {
+            const inn = r.amount >= 0;
+            return `<div class="cf-sched-item ${r.bal < 0 ? "bad" : ""}">
+              <span class="si-date">${T().esc(r.date)}</span>
+              <span class="si-name">${T().esc(r.label)}${r.category ? `<span class="cat">${T().esc(r.category)}</span>` : ""}</span>
+              <span class="si-amt ${inn ? "in" : "out"}">${inn ? "+" : "−"}${T().yen(Math.abs(r.amount))}</span>
+              <span class="si-bal ${r.bal < 0 ? "out" : ""}">${T().yen(r.bal)}</span>
+            </div>`;
+          })
+          .join("")}`
+      : "";
+
     box.innerHTML = `
-      <div class="cf-fc-alerts">
+      ${monthBlock}
+      <div class="cf-fc-alerts" style="margin-top:${monthBlock ? "18" : "0"}px">
         <div class="cf-fc-tile ${inflows.length ? "bad" : "ok"}"><span class="k">予定外の入金</span><span class="v in">${inflows.length}件 ／ ${T().yen(sumIn)}</span><span class="sub">案件・予定に紐づかない入金。資金洗浄・勝手な入金の疑い</span></div>
         <div class="cf-fc-tile ${outflows.length ? "warn" : "ok"}"><span class="k">予定外の出金</span><span class="v out">${outflows.length}件 ／ ${T().yen(sumOut)}</span><span class="sub">承認・予定のない引き出し</span></div>
-        <div class="cf-fc-tile"><span class="k">今後${days}日の予定入金</span><span class="v in">${T().yen(plannedInSum)}</span><span class="sub">予定出金 ${T().yen(plannedOutSum)}</span></div>
+        <div class="cf-fc-tile"><span class="k">今後${days}日の予定入金</span><span class="v in">${T().yen(futureAnalysis.sumIn)}</span><span class="sub">予定出金 ${T().yen(futureAnalysis.sumOut)}</span></div>
       </div>
+      ${shortageHtml(futureAnalysis, { title: `今後${days}日 — 何が足りなくなるか` })}
       <div class="cf-col-t" style="margin-top:16px">⚠ 予定外・要説明の入出金（大口＝赤で最上位）</div>
       ${[...inflows, ...outflows].slice(0, 40).map(alertRow).join("") || `<div class="cf-empty ok">該当なし — 説明のつかない入出金はありません</div>`}
-      <div class="cf-col-t" style="margin-top:16px">未来の予定キャッシュフロー（残高見込）</div>
-      ${
-        rows
-          .map((r) => {
-            const c = S.cases.find((x) => x.id === r.caseId);
-            return `<div class="cf-sched ${r.bal < 0 ? "bad" : ""}">${r.date} ${r.amount >= 0 ? "+" : "−"}${T().yen(Math.abs(r.amount))} → 残高見込 ${T().yen(r.bal)} <span class="cf-meta">${T().esc(c ? c.title : "")}</span></div>`;
-          })
-          .join("") || `<div class="cf-empty">期間内の未消化予定はありません</div>`
-      }`;
+      <div class="cf-col-t" style="margin-top:16px">未来の予定キャッシュフロー（項目つき）</div>
+      <div class="cf-sched-item" style="opacity:.7;border-bottom:1px solid var(--line)"><span class="si-date">日付</span><span class="si-name">項目</span><span class="si-amt">金額</span><span class="si-bal">残高見込</span></div>
+      ${schedRowsHtml}`;
+
+    document.getElementById("cfOpenSheetTab")?.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      window.openBizCfTab?.("sheet");
+    });
   }
 
   function renderInrou() {
