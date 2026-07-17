@@ -476,6 +476,38 @@ table.ledger tr:hover td{background:rgba(232,184,75,.04)}
 @media(max-width:820px){.tax-grid{grid-template-columns:1fr}}
 .tax-line{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed rgba(42,53,80,.7);font-size:13px}
 .tax-line .v{font-family:var(--font-num)}
+.hud-fiscal{
+  font-family:var(--font-display);font-size:11px;font-weight:600;letter-spacing:.06em;
+  color:var(--gold-hi);padding:4px 10px;border-radius:99px;
+  border:1px solid rgba(196,166,106,.35);background:rgba(196,166,106,.08);white-space:nowrap;
+}
+.fiscal-q-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+@media(max-width:720px){.fiscal-q-grid{grid-template-columns:1fr}}
+.fiscal-q-card{
+  padding:14px 16px;border-radius:12px;border:1px solid rgba(196,166,106,.18);
+  background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.01));
+  cursor:pointer;transition:border-color .2s,background .2s;
+}
+.fiscal-q-card:hover{border-color:rgba(196,166,106,.38);background:rgba(196,166,106,.06)}
+.fiscal-q-card.is-current{border-color:rgba(232,184,75,.55);box-shadow:0 0 0 1px rgba(232,184,75,.12)}
+.fiscal-q-card.is-closed{opacity:.72}
+.fiscal-q-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.fiscal-q-title{font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--gold-hi)}
+.fiscal-q-range{font-size:11px;color:var(--muted)}
+.fiscal-q-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.fiscal-q-stat{font-size:11px;color:var(--muted)}
+.fiscal-q-stat b{display:block;font-size:14px;color:var(--text);font-family:var(--font-num);margin-top:2px}
+.fiscal-q-stat.in b{color:var(--in)}.fiscal-q-stat.out b{color:var(--out)}
+.fiscal-close-due{font-size:10px;color:var(--muted);margin-top:8px}
+.fiscal-settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px}
+.fiscal-settings label{font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.fiscal-settings select,.fiscal-settings input{
+  padding:8px 10px;border-radius:8px;border:1px solid var(--line);
+  background:rgba(255,255,255,.03);color:var(--text);font-size:13px;
+}
+.fiscal-task-list{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.fiscal-task-item{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text)}
+.fiscal-task-item input{accent-color:var(--gold);margin-top:2px}
 .tax-total{display:flex;justify-content:space-between;padding:14px 0 4px;font-size:15px;color:var(--tax)}
 .tax-total .v{font-family:var(--font-num);font-size:22px}
 .note{font-size:11px;color:var(--muted);margin-top:12px;line-height:1.7}
@@ -818,31 +850,19 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   border-top:1px solid rgba(255,255,255,.1);
 }
 .office-tk-open{
-  position:relative;overflow:hidden;cursor:pointer;
-  min-height:40px;padding:0;border-radius:9px;
-  border:1px solid rgba(255,255,255,.55);
-  background:linear-gradient(180deg,#121823 0%,#0d1219 100%);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 2px 8px rgba(0,0,0,.28);
-  display:flex;align-items:center;
+  cursor:pointer;min-height:40px;padding:0 12px;border-radius:9px;
+  border:none;background:var(--gold);
+  box-shadow:0 2px 8px rgba(0,0,0,.28);
+  display:flex;align-items:center;justify-content:center;
+  transition:filter .15s,transform .12s;
 }
-.office-tk-open .nav-photo{
-  position:absolute;inset:0;z-index:0;
-  background-size:cover;background-position:center;
-}
-.office-tk-open .nav-photo::after{
-  content:"";position:absolute;inset:0;
-  background:linear-gradient(90deg,rgba(6,9,14,.15) 0%,rgba(6,9,14,.72) 100%);
-}
+.office-tk-open .nav-photo{display:none}
 .office-tk-open .nav-label{
-  position:relative;z-index:1;width:100%;padding:0 8px;
-  font-size:11px;font-weight:700;color:#fff;text-align:center;
-  text-shadow:0 1px 2px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.7);
-  font-family:var(--font-body);letter-spacing:.02em;
+  position:static;width:auto;padding:0;
+  font-size:11px;font-weight:700;color:#1a1510;text-align:center;
+  text-shadow:none;font-family:var(--font-body);letter-spacing:.02em;
 }
-.office-tk-open:hover{border-color:#fff}
-.office-tk-open:hover .nav-photo::after{
-  background:linear-gradient(90deg,rgba(6,9,14,.08) 0%,rgba(6,9,14,.58) 100%);
-}
+.office-tk-open:hover{filter:brightness(1.06)}
 .office-tk-open:active{transform:translateY(1px)}
 .office-tk-form{
   flex-shrink:0;display:grid;grid-template-columns:1fr;gap:5px;padding:0 10px 8px;
@@ -1847,6 +1867,10 @@ video.dc-card__image{
         <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
         <span class="nav-label">記録する</span>
       </button>
+      <button type="button" class="nav-biz" data-s="fiscal" data-acct="1">
+        <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
+        <span class="nav-label">四半期</span>
+      </button>
       <button type="button" class="nav-biz" data-s="tax" data-acct="1">
         <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
         <span class="nav-label">納税タンク</span>
@@ -2058,6 +2082,7 @@ video.dc-card__image{
       <button id="mPrev" aria-label="前の月">◀</button>
       <span id="mLabel">2026-07</span>
       <button id="mNext" aria-label="次の月">▶</button>
+      <span id="fiscalBadge" class="hud-fiscal" title="会計年度・四半期"></span>
     </div>
     <div class="role-switch" role="group" aria-label="モード切替">
       <button id="roleStaff" class="on">社員</button>
@@ -2085,7 +2110,7 @@ video.dc-card__image{
       <div class="recent-list" id="recentList"></div>
     </div>
     <div class="card">
-      <div class="label" style="font-size:12px;color:var(--muted);letter-spacing:1px;margin-bottom:10px">納税タンク（消費税の概算）</div>
+      <div class="label" style="font-size:12px;color:var(--muted);letter-spacing:1px;margin-bottom:10px">納税タンク（会計年度累計・消費税概算）</div>
       <div class="tank-wrap">
         <div class="tank"><div class="tank-fluid" id="tankFluid"></div></div>
         <div class="tank-info">
@@ -3237,10 +3262,50 @@ video.dc-card__image{
   </div>
 </section>
 
+<!-- ===== 四半期・決算管理 ===== -->
+<section class="screen" id="s-fiscal">
+  <h2 class="stitle">📅 四半期・決算管理</h2>
+  <p class="sdesc">Goonerの会計年度（決算期）を基準に、四半期ごとの入出金と決算タスクを管理します。画面上部の月ナビと連動します。</p>
+  <div class="card" style="padding:14px 16px;margin-bottom:14px">
+    <div class="fiscal-settings">
+      <label>第1期の開始月
+        <input type="month" id="fiscalFirstYm" aria-label="第1期開始月">
+      </label>
+      <label>会計年度の期首月
+        <select id="fiscalStartMonth" aria-label="期首月">
+          <option value="1">1月（暦年）</option>
+          <option value="4" selected>4月</option>
+          <option value="7">7月</option>
+          <option value="10">10月</option>
+        </select>
+      </label>
+      <label>表示する会計年度
+        <select id="fiscalYearSel" aria-label="会計年度"></select>
+      </label>
+    </div>
+    <div class="biz-link-row" style="margin:0">
+      <button type="button" id="fiscalSaveCfg">設定を保存</button>
+      <span id="fiscalHeadline" style="font-size:13px;color:var(--gold-hi);font-weight:600"></span>
+    </div>
+  </div>
+  <div class="grid-stats" style="margin-bottom:12px">
+    <div class="card stat in"><div class="label">年度入金計</div><div class="val" id="fiscalFyIn">¥0</div></div>
+    <div class="card stat out"><div class="label">年度出金計</div><div class="val" id="fiscalFyOut">¥0</div></div>
+    <div class="card stat net"><div class="label">年度差引</div><div class="val" id="fiscalFyNet">¥0</div></div>
+    <div class="card"><div class="label">決算日（本決算）</div><div class="val" id="fiscalCloseDate" style="font-size:18px">—</div><div class="sub" id="fiscalCloseCountdown"></div></div>
+  </div>
+  <div class="fiscal-q-grid" id="fiscalQGrid"></div>
+  <div class="card" style="margin-top:14px">
+    <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">選択中四半期の決算タスク</div>
+    <div id="fiscalTaskPanel" class="fiscal-task-list"></div>
+    <p class="note" style="margin-top:10px">Q2終了後は消費税の中間申告、Q4終了後は本決算・確定申告の準備を進めてください。チェックは端末に保存されます。</p>
+  </div>
+</section>
+
 <!-- ===== 納税タンク ===== -->
 <section class="screen" id="s-tax">
   <h2 class="stitle">Ⓣ 納税タンク</h2>
-  <p class="sdesc">表示中の月までの<b>年度内累計</b>で、納める消費税の概算を出します。</p>
+  <p class="sdesc">表示中の月までの<b>会計年度内累計</b>で、納める消費税の概算を出します（四半期管理の会計年度設定に連動）。</p>
   <div class="tax-grid">
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:14px;color:var(--in);margin-bottom:10px">預り消費税（売上側）</h3>
@@ -3669,11 +3734,66 @@ function seed(){
 /* ---------- 月ナビ ---------- */
 let view=new Date(); view.setDate(1);
 function viewMonthStr(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");}
+function fiscalConfig(){
+  if(!S.fiscal||typeof S.fiscal!=="object") S.fiscal={};
+  const f=S.fiscal;
+  if(!(+f.startMonth>=1&&+f.startMonth<=12)) f.startMonth=4;
+  if(!/^\d{4}-\d{2}$/.test(String(f.firstFyYm||""))) f.firstFyYm="2023-04";
+  if(!f.tasks||typeof f.tasks!=="object") f.tasks={};
+  if(f.selectedFy!=null&&!/^\d{4}$/.test(String(f.selectedFy))) f.selectedFy=null;
+  return f;
+}
+function fiscalYearStartOf(d){
+  const fc=fiscalConfig();
+  const dt=d instanceof Date?d:new Date(d);
+  const y=dt.getFullYear(), m=dt.getMonth()+1;
+  return m>=fc.startMonth?y:y-1;
+}
+function quarterOfDate(d){
+  const fc=fiscalConfig();
+  const dt=d instanceof Date?d:new Date(d);
+  let offset=dt.getMonth()+1-fc.startMonth;
+  if(offset<0) offset+=12;
+  return Math.floor(offset/3)+1;
+}
+function quarterMonths(fyStart,q){
+  const fc=fiscalConfig();
+  const out=[];
+  for(let i=0;i<3;i++){
+    let m=fc.startMonth+(q-1)*3+i, y=fyStart;
+    while(m>12){m-=12;y++;}
+    out.push(y+"-"+String(m).padStart(2,"0"));
+  }
+  return out;
+}
+function fiscalPeriodNumber(fyStart){
+  const fc=fiscalConfig();
+  return fyStart-parseInt(String(fc.firstFyYm).slice(0,4),10)+1;
+}
+function fiscalYearEndDate(fyStart){
+  const ms=quarterMonths(fyStart,4);
+  const last=ms[ms.length-1];
+  const y=+last.slice(0,4), m=+last.slice(5,7);
+  return new Date(y,m,0);
+}
+function quarterEndDate(fyStart,q){
+  const ms=quarterMonths(fyStart,q);
+  const last=ms[ms.length-1];
+  const y=+last.slice(0,4), m=+last.slice(5,7);
+  return new Date(y,m,0);
+}
+function inFiscalYearTx(tx,fyStart){
+  const yms=new Set();
+  for(let q=1;q<=4;q++) quarterMonths(fyStart,q).forEach(ym=>yms.add(ym));
+  return yms.has(tx.date.slice(0,7));
+}
+function inFiscalYearToView(tx){
+  const fy=fiscalConfig().selectedFy!=null?+fiscalConfig().selectedFy:fiscalYearStartOf(view);
+  if(!inFiscalYearTx(tx,fy)) return false;
+  return tx.date.slice(0,7)<=viewMonthStr(view);
+}
 const inMonth=tx=>tx.date.startsWith(viewMonthStr(view));
-const inFY=tx=>{ // 年度内累計（1月〜表示月）※必要なら期首月を変更
-  const y=view.getFullYear(); const end=viewMonthStr(view);
-  return tx.date.slice(0,4)==String(y) && tx.date.slice(0,7)<=end;
-};
+const inFY=tx=>inFiscalYearToView(tx);
 function pdfImportedYms(){
   const yms=new Set();
   (S.schedules||[]).forEach(s=>{ if(s.source==='pdf'&&s.date) yms.add(String(s.date).slice(0,7)); });
@@ -4108,6 +4228,110 @@ function renderTax(){
   $("#xTotal").textContent=yen(Math.max(0,tax(s10,10)+tax(s8,8)-tax(b10,10)-tax(b8,8)));
 }
 
+/* ---------- 四半期・決算管理 ---------- */
+const FISCAL_TASKS=[
+  {k:"trial", label:"試算表・月次残高の確認"},
+  {k:"bank", label:"全口座残高と帳簿の突合"},
+  {k:"vat_mid", label:"消費税 中間申告の準備（Q2終了後）", qOnly:2},
+  {k:"inventory", label:"棚卸・未払計上の確認"},
+  {k:"closing", label:"決算整理仕訳の洗い出し（Q4）", qOnly:4},
+  {k:"audit", label:"決算書ドラフトの社内レビュー（Q4）", qOnly:4},
+];
+let fiscalUiQ=quarterOfDate(view);
+function fiscalTaskKey(fyStart,q,k){return fyStart+"-Q"+q+"-"+k;}
+function daysUntil(d){
+  const t=new Date(); t.setHours(0,0,0,0);
+  const x=new Date(d); x.setHours(0,0,0,0);
+  return Math.round((x-t)/86400000);
+}
+function renderFiscal(){
+  fiscalConfig();
+  const fySel=$("#fiscalYearSel");
+  const curFy=fiscalYearStartOf(view);
+  if(fySel){
+    const years=[];
+    for(let y=curFy-3;y<=curFy+1;y++) years.push(y);
+    const sel=S.fiscal.selectedFy!=null?+S.fiscal.selectedFy:curFy;
+    fySel.innerHTML=years.map(y=>{
+      const n=fiscalPeriodNumber(y);
+      return `<option value="${y}"${y===sel?" selected":""}>第${n}期（${y}年${S.fiscal.startMonth}月期）</option>`;
+    }).join("");
+  }
+  const firstYm=$("#fiscalFirstYm");
+  if(firstYm) firstYm.value=S.fiscal.firstFyYm;
+  const startM=$("#fiscalStartMonth");
+  if(startM) startM.value=String(S.fiscal.startMonth);
+  const fyStart=S.fiscal.selectedFy!=null?+S.fiscal.selectedFy:curFy;
+  if(fyStart===curFy) fiscalUiQ=quarterOfDate(view);
+  const periodN=fiscalPeriodNumber(fyStart);
+  const headline=$("#fiscalHeadline");
+  if(headline) headline.textContent=`第${periodN}期 ／ 現在の四半期 Q${quarterOfDate(view)}`;
+  const fyTx=S.tx.filter(t=>inFiscalYearTx(t,fyStart));
+  const fyIn=fyTx.filter(t=>t.type==="in").reduce((a,t)=>a+t.amount,0);
+  const fyOut=fyTx.filter(t=>t.type==="out").reduce((a,t)=>a+t.amount,0);
+  if($("#fiscalFyIn")) $("#fiscalFyIn").textContent=yen(fyIn);
+  if($("#fiscalFyOut")) $("#fiscalFyOut").textContent=yen(fyOut);
+  if($("#fiscalFyNet")) $("#fiscalFyNet").textContent=(fyIn-fyOut<0?"−":"")+yen(Math.abs(fyIn-fyOut));
+  const closeEnd=fiscalYearEndDate(fyStart);
+  if($("#fiscalCloseDate")) $("#fiscalCloseDate").textContent=closeEnd.getFullYear()+"-"+String(closeEnd.getMonth()+1).padStart(2,"0")+"-"+String(closeEnd.getDate()).padStart(2,"0");
+  const cd=daysUntil(closeEnd);
+  if($("#fiscalCloseCountdown")) $("#fiscalCloseCountdown").textContent=cd>=0?("本決算まで あと "+cd+" 日"):("本決算日を "+Math.abs(cd)+" 日経過");
+  const grid=$("#fiscalQGrid");
+  if(grid){
+    const nowQ=fyStart===curFy?quarterOfDate(view):null;
+    grid.innerHTML=[1,2,3,4].map(q=>{
+      const months=quarterMonths(fyStart,q);
+      const qTx=S.tx.filter(t=>months.includes(t.date.slice(0,7)));
+      const qi=qTx.filter(t=>t.type==="in").reduce((a,t)=>a+t.amount,0);
+      const qo=qTx.filter(t=>t.type==="out").reduce((a,t)=>a+t.amount,0);
+      const qn=qi-qo;
+      const qEnd=quarterEndDate(fyStart,q);
+      const due=daysUntil(qEnd);
+      const isCur=nowQ===q;
+      const range=months[0].replace("-","/")+" 〜 "+months[2].replace("-","/");
+      return `<div class="fiscal-q-card${isCur?" is-current":""}" data-fy="${fyStart}" data-q="${q}" role="button" tabindex="0">
+        <div class="fiscal-q-head"><span class="fiscal-q-title">Q${q}</span><span class="fiscal-q-range">${range}</span></div>
+        <div class="fiscal-q-stats">
+          <div class="fiscal-q-stat in">入金<b>${yen(qi)}</b></div>
+          <div class="fiscal-q-stat out">出金<b>${yen(qo)}</b></div>
+          <div class="fiscal-q-stat">差引<b>${(qn<0?"−":"")+yen(Math.abs(qn))}</b></div>
+        </div>
+        <div class="fiscal-close-due">四半期終了 ${qEnd.getFullYear()}/${qEnd.getMonth()+1}/${qEnd.getDate()}${due>=0?"（あと "+due+" 日）":""}</div>
+      </div>`;
+    }).join("");
+    grid.querySelectorAll(".fiscal-q-card").forEach(card=>{
+      const open=()=>{ fiscalUiQ=+card.dataset.q; setViewYm(quarterMonths(+card.dataset.fy,+card.dataset.q)[0]); renderFiscal(); };
+      card.onclick=open;
+      card.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); open(); } };
+    });
+  }
+  const taskPanel=$("#fiscalTaskPanel");
+  if(taskPanel){
+    const tasks=FISCAL_TASKS.filter(t=>!t.qOnly||t.qOnly===fiscalUiQ);
+    taskPanel.innerHTML=tasks.map(t=>{
+      const key=fiscalTaskKey(fyStart,fiscalUiQ,t.k);
+      const done=!!S.fiscal.tasks[key];
+      return `<label class="fiscal-task-item"><input type="checkbox" data-fiscal-task="${key}"${done?" checked":""}><span>Q${fiscalUiQ}：${t.label}</span></label>`;
+    }).join("");
+    taskPanel.querySelectorAll("[data-fiscal-task]").forEach(chk=>{
+      chk.onchange=()=>{ S.fiscal.tasks[chk.dataset.fiscalTask]=chk.checked; saveAll(); };
+    });
+  }
+}
+const fiscalSaveBtn=$("#fiscalSaveCfg");
+if(fiscalSaveBtn) fiscalSaveBtn.onclick=()=>{
+  const fyYm=$("#fiscalFirstYm")?.value;
+  const sm=+($("#fiscalStartMonth")?.value||4);
+  if(fyYm) S.fiscal.firstFyYm=fyYm;
+  if(sm>=1&&sm<=12) S.fiscal.startMonth=sm;
+  saveAll(); toast("会計年度設定を保存しました"); renderAll();
+};
+const fiscalYearSelEl=$("#fiscalYearSel");
+if(fiscalYearSelEl) fiscalYearSelEl.onchange=()=>{
+  S.fiscal.selectedFy=+fiscalYearSelEl.value;
+  saveAll(); renderFiscal();
+};
+
 /* ---------- 事業ユニット ---------- */
 if(!S.biz) S.biz={detective:[]};
 if(!Array.isArray(S.biz.paradise)) S.biz.paradise=[];
@@ -4172,7 +4396,7 @@ function renderParadise(){
         <div class="bp-deal-head"><span class="bp-artist">${esc(d.artist||"（未設定）")}</span><span class="bp-date">${esc(d.showDate||"興行日未定")}</span></div>
         <div class="bp-deal-sub">${esc(d.agency||"事務所未設定")}${d.introducer?" ／ 紹介: "+esc(d.introducer):""}</div>
         <div class="bp-deal-nums"><span>受注 <b>${yen(+d.order||0)}</b></span><span>原価 <b>${yen(c)}</b></span><span class="bp-margin ${m<0?"neg":""}">粗利 <b>${(m<0?"−":"")+yen(Math.abs(m))}</b>（${rate}%）</span></div>
-        <div class="bp-deal-ctr">${tags}<button type="button" class="btn-reject bp-del" data-bp="${esc(d.id)}">削除</button></div>
+        <div class="bp-deal-ctr">${tags}<button type="button" class="btn-approve bp-edit" data-bp-edit="${esc(d.id)}">修正</button><button type="button" class="btn-reject bp-del" data-bp="${esc(d.id)}">削除</button></div>
       </div>`;
     }).join(""):`<div class="memo" style="color:var(--muted);padding:8px">「案件を追加」から、アーティスト・受注額・原価を登録するとここに集計されます。</div>`;
   }
@@ -4194,24 +4418,64 @@ function renderParadise(){
   }
 }
 const bpForm=$("#bpForm");
+let bpEditId=null;
+function fillBpForm(d){
+  if(!d)return;
+  $("#bpArtist").value=d.artist||"";
+  $("#bpAgency").value=d.agency||"";
+  $("#bpIntro").value=d.introducer||"";
+  $("#bpDate").value=d.showDate||"";
+  $("#bpOrder").value=d.order||"";
+  $("#bpCostAg").value=d.costAgency||"";
+  $("#bpCostIn").value=d.costIntroducer||"";
+  $("#bpKihon").checked=!!d.kihon;
+  $("#bpShutsuen").checked=!!d.shutsuen;
+}
+function resetBpForm(){
+  bpEditId=null;
+  bpForm?.reset();
+  const btn=$("#bpAdd");
+  if(btn) btn.textContent="案件を追加";
+}
 if(bpForm)bpForm.addEventListener("submit",e=>{
   e.preventDefault();
   const artist=$("#bpArtist").value.trim();
   if(!artist){toast("アーティスト名は必須です");return;}
   const num=id=>{const v=parseInt(String($(id).value||"").replace(/[^\d-]/g,""),10);return isNaN(v)?0:v;};
-  S.biz.paradise.unshift({
-    id:(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()),
+  const row={
     artist, agency:$("#bpAgency").value.trim(), introducer:$("#bpIntro").value.trim(),
     showDate:$("#bpDate").value, order:num("#bpOrder"), costAgency:num("#bpCostAg"), costIntroducer:num("#bpCostIn"),
     kihon:$("#bpKihon").checked, shutsuen:$("#bpShutsuen").checked,
+  };
+  if(bpEditId){
+    const d=S.biz.paradise.find(x=>x.id===bpEditId);
+    if(d) Object.assign(d,row);
+    resetBpForm();
+    saveAll();renderParadise();toast("案件を更新しました");
+    return;
+  }
+  S.biz.paradise.unshift(Object.assign({
+    id:(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()),
     inPre:false, inPost:false, outPre:false, outPost:false, at:new Date().toISOString().slice(0,10)
-  });
-  bpForm.reset();
+  },row));
+  resetBpForm();
   saveAll();renderParadise();toast("案件を追加しました");
 });
 document.getElementById("bpShowList")?.addEventListener("click",e=>{
+  const editBtn=e.target.closest("[data-bp-edit]");
+  if(editBtn){
+    const d=S.biz.paradise.find(x=>x.id===editBtn.dataset.bpEdit);
+    if(d){
+      bpEditId=d.id; fillBpForm(d);
+      const btn=$("#bpAdd"); if(btn) btn.textContent="更新する";
+      toast("フォームで修正して「更新する」を押してください");
+      bpForm?.scrollIntoView({behavior:"smooth",block:"nearest"});
+    }
+    return;
+  }
   const b=e.target.closest("[data-bp]");if(!b)return;
   S.biz.paradise=S.biz.paradise.filter(d=>d.id!==b.dataset.bp);
+  if(bpEditId===b.dataset.bp) resetBpForm();
   saveAll();renderParadise();toast("案件を削除しました");
 });
 document.getElementById("bpCloseList")?.addEventListener("change",e=>{
@@ -4245,7 +4509,7 @@ function renderInage(){
         <div class="bp-deal-head"><span class="bp-artist">${esc(d.name||"（未設定）")}</span><span class="bp-date">${esc(d.eventDate||"開催日未定")}</span></div>
         <div class="bp-deal-sub">${esc(sub||"—")}</div>
         <div class="bp-deal-nums"><span>売上 <b>${yen(+d.sales||0)}</b></span><span>製作費 <b>${yen(+d.prodCost||0)}</b></span><span>原価計 <b>${yen(c)}</b></span><span class="bp-margin ${p<0?"neg":""}">利益 <b>${(p<0?"−":"")+yen(Math.abs(p))}</b></span><span>自社折半 <b>${(sh<0?"−":"")+yen(Math.abs(sh))}</b></span>${(+d.sponsorAmt)?`<span>スポンサー <b>${yen(+d.sponsorAmt)}</b></span>`:""}</div>
-        <div class="bp-deal-ctr"><button type="button" class="btn-reject bp-del" data-bi="${esc(d.id)}">削除</button></div>
+        <div class="bp-deal-ctr"><button type="button" class="btn-approve bp-edit" data-bi-edit="${esc(d.id)}">修正</button><button type="button" class="btn-reject bp-del" data-bi="${esc(d.id)}">削除</button></div>
       </div>`;
     }).join(""):`<div class="memo" style="color:var(--muted);padding:8px">「イベントを追加」から登録すると、折半計算がここに集計されます。</div>`;
   }
@@ -4266,24 +4530,62 @@ function renderInage(){
   }
 }
 const biForm=$("#biForm");
+let biEditId=null;
+function fillBiForm(d){
+  if(!d)return;
+  $("#biName").value=d.name||"";
+  $("#biSponsor").value=d.sponsor||"";
+  $("#biIntro").value=d.introducer||"";
+  $("#biDate").value=d.eventDate||"";
+  $("#biSalesIn").value=d.sales||"";
+  $("#biProd").value=d.prodCost||"";
+  $("#biSponsorAmt").value=d.sponsorAmt||"";
+}
+function resetBiForm(){
+  biEditId=null;
+  biForm?.reset();
+  const btn=$("#biAdd");
+  if(btn) btn.textContent="イベントを追加";
+}
 if(biForm)biForm.addEventListener("submit",e=>{
   e.preventDefault();
   const name=$("#biName").value.trim();
   if(!name){toast("イベント名は必須です");return;}
   const num=id=>{const v=parseInt(String($(id).value||"").replace(/[^\d-]/g,""),10);return isNaN(v)?0:v;};
-  S.biz.inage.unshift({
-    id:(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()),
+  const row={
     name, sponsor:$("#biSponsor").value.trim(), introducer:$("#biIntro").value.trim(),
     eventDate:$("#biDate").value, sales:num("#biSalesIn"), prodCost:num("#biProd"), sponsorAmt:num("#biSponsorAmt"),
+  };
+  if(biEditId){
+    const d=S.biz.inage.find(x=>x.id===biEditId);
+    if(d) Object.assign(d,row);
+    resetBiForm();
+    saveAll();renderInage();toast("イベントを更新しました");
+    return;
+  }
+  S.biz.inage.unshift(Object.assign({
+    id:(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()),
     settledWp:false, settledSelf:false, recvSponsor:false, closed:false,
     at:new Date().toISOString().slice(0,10)
-  });
-  biForm.reset();
+  },row));
+  resetBiForm();
   saveAll();renderInage();toast("イベントを追加しました");
 });
 document.getElementById("biProdList")?.addEventListener("click",e=>{
+  const editBtn=e.target.closest("[data-bi-edit]");
+  if(editBtn){
+    const d=S.biz.inage.find(x=>x.id===editBtn.dataset.biEdit);
+    if(d){
+      biEditId=d.id; fillBiForm(d);
+      const btn=$("#biAdd"); if(btn) btn.textContent="更新する";
+      toast("フォームで修正して「更新する」を押してください");
+      biForm?.scrollIntoView({behavior:"smooth",block:"nearest"});
+    }
+    return;
+  }
   const b=e.target.closest("[data-bi]");if(!b)return;
   S.biz.inage=S.biz.inage.filter(d=>d.id!==b.dataset.bi);
+  if(biEditId===b.dataset.bi) resetBiForm();
   saveAll();renderInage();toast("イベントを削除しました");
 });
 document.getElementById("biCloseList")?.addEventListener("change",e=>{
@@ -4995,7 +5297,12 @@ function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",
 const _cfRenderHooks=[];
 function renderAll(){
   $("#mLabel").textContent=viewMonthStr(view);
-  fillCats();renderXP();renderDash();renderQuest();renderFlow();renderLedger();renderTax();renderBiz();
+  const fb=$("#fiscalBadge");
+  if(fb){
+    const fy=fiscalYearStartOf(view);
+    fb.textContent="第"+fiscalPeriodNumber(fy)+"期 Q"+quarterOfDate(view);
+  }
+  fillCats();renderXP();renderDash();renderQuest();renderFlow();renderLedger();renderTax();renderFiscal();renderBiz();
   try{ window.MeetingArchive?.render?.(); }catch(e){}
   try{ window.DocInbox?.render?.(); }catch(e){}
   _cfRenderHooks.forEach(fn=>{try{fn();}catch(e){console.error(e);}});
@@ -5662,19 +5969,43 @@ window.Treasury={
     return true;
   }
 
+  function bindImeSafeEnter(inputEl, onSubmit){
+    if(!inputEl||typeof onSubmit!=='function') return;
+    let composing=false;
+    inputEl.addEventListener('compositionstart',()=>{composing=true;});
+    inputEl.addEventListener('compositionend',()=>{composing=false;});
+    inputEl.addEventListener('keydown',e=>{
+      if(e.key!=='Enter'||e.shiftKey) return;
+      if(composing||e.isComposing||e.keyCode===229) return;
+      e.preventDefault();
+      onSubmit();
+    });
+  }
+
   $("#tkAdd").onclick=()=>{
     const assignee=$("#tkAssignee").value, title=$("#tkTitle").value.trim(), detail=$("#tkDetail").value.trim();
     if(addTask(assignee, title, detail)){ $("#tkTitle").value=''; $("#tkDetail").value=''; }
   };
-  $("#tkTitle").addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();$("#tkAdd").click();} });
+  bindImeSafeEnter($("#tkTitle"), ()=>$("#tkAdd").click());
 
   const officeForm=$("#officeTkForm");
   if(officeForm){
-    officeForm.addEventListener('submit',e=>{
-      e.preventDefault();
+    let officeComposing=false;
+    const officeTitle=$("#officeTkTitle");
+    if(officeTitle){
+      officeTitle.addEventListener('compositionstart',()=>{officeComposing=true;});
+      officeTitle.addEventListener('compositionend',()=>{officeComposing=false;});
+    }
+    const submitOfficeTask=()=>{
       const assignee=$("#officeTkAssignee").value;
       const title=$("#officeTkTitle").value.trim();
       if(addTask(assignee, title, '')){ $("#officeTkTitle").value=''; }
+    };
+    bindImeSafeEnter(officeTitle, submitOfficeTask);
+    officeForm.addEventListener('submit',e=>{
+      e.preventDefault();
+      if(officeComposing) return;
+      submitOfficeTask();
     });
   }
   document.getElementById('office-pane')?.addEventListener('click', e=>{
@@ -7479,10 +7810,10 @@ window.EntakuDocIngest=(function(){
     setTimeout(focusEntakuInput,50);
   };
   document.addEventListener('keydown', function(e){
-    if(e.key==='Enter' && !e.shiftKey){
-      const ta = document.getElementById('entakuText');
-      if(ta && document.activeElement===ta){ e.preventDefault(); sendEntaku(); }
-    }
+    if(e.key!=='Enter' || e.shiftKey) return;
+    if(e.isComposing || e.keyCode===229) return;
+    const ta = document.getElementById('entakuText');
+    if(ta && document.activeElement===ta){ e.preventDefault(); sendEntaku(); }
   });
   (function wireEntakuAttach(){
     const btn=el('entakuAttachBtn'), file=el('entakuFile'), ta=el('entakuText'), form=el('entakuForm');

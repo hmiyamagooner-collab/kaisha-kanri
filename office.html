@@ -661,7 +661,7 @@ const DOW=['日','月','火','水','木','金','土'];
 function dayOfWeekText(){return DOW[new Date().getDay()]+'曜日';}
 
 /* ================= TIME ================= */
-let demoMode=true;
+let demoMode=false;
 let demoMin=9*60;
 function simHour(){
   if(demoMode)return demoMin/60;
@@ -669,11 +669,19 @@ function simHour(){
 }
 function clockText(){
   const h=simHour();const hh=Math.floor(h),mm=Math.floor((h-hh)*60);
-  return (demoMode?'デモ ':'')+String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
+  return String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
+}
+function refreshSyncStat(){
+  const el=document.getElementById('syncstat');
+  if(!el) return;
+  el.textContent=demoMode
+    ? 'Googleカレンダー：未連携（デモ予定で動作中）'
+    : 'Googleカレンダー：未連携（現在時刻で動作中）';
 }
 function toggleMode(){
   demoMode=!demoMode;
   updateModeBtn();
+  refreshSyncStat();
   log(demoMode?'デモ時間モードに切りかえた':'現在時刻モードに切りかえた');
 }
 function updateModeBtn(){
@@ -740,7 +748,7 @@ function atPoint(c,x,y,tol=10){
 /* ================= MOVEMENT ================= */
 function moveAlong(c,dt){
   if(!c.path.length)return;
-  const n=c.path[0],sp=0.14*(c.spd||1)*dt;
+  const n=c.path[0],sp=0.055*(c.spd||1)*dt;
   const dx=n.x-c.px,dy=n.y-c.py,dist=Math.hypot(dx,dy);
   if(dist<=sp){
     c.px=n.x;c.py=n.y;c.path.shift();
@@ -1707,6 +1715,8 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 loadSettings();
+updateModeBtn();
+refreshSyncStat();
 prerenderCity();
 renderMembers();
 log('オフィスクエストが はじまった！');
