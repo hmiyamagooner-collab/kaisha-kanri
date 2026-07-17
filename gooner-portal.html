@@ -30,6 +30,9 @@
   --gold-dim:#8a7348;
   --accent:#74b9e8;
   --in:#5dd9ad;
+  --nav-green:#33c6b3;
+  --nav-green-dim:#1f8f82;
+  --nav-green-soft:rgba(51,198,179,.72);
   --out:#ef7f8c;
   --tax:#b39ddb;
   --text:#f4f1e9;
@@ -213,6 +216,36 @@ input,select,textarea{font-family:inherit}
 .gamenav button.nav-biz.on .nav-photo::after{
   background:linear-gradient(90deg,rgba(210,173,99,.10) 0%,rgba(6,9,14,.60) 100%);
 }
+/* 事業以外（会計・法務・会議）：円卓グリーン寄りの枠 */
+.gamenav button.nav-green{
+  border-color:var(--nav-green-soft);
+  box-shadow:inset 0 1px 0 rgba(51,198,179,.12),0 2px 8px rgba(0,0,0,.28);
+}
+.gamenav button.nav-green::before{
+  background:linear-gradient(180deg,var(--nav-green),var(--nav-green-dim));
+}
+@media(hover:hover){
+  .gamenav button.nav-green:hover{
+    border-color:var(--nav-green);
+    box-shadow:inset 0 1px 0 rgba(51,198,179,.18),0 4px 14px rgba(0,0,0,.32),0 0 12px rgba(51,198,179,.18);
+  }
+}
+.gamenav button.nav-green.on{
+  border-color:var(--nav-green);
+  box-shadow:
+    inset 0 1px 0 rgba(51,198,179,.16),
+    0 4px 14px rgba(0,0,0,.35),
+    0 0 14px rgba(51,198,179,.22);
+}
+.gamenav button.nav-green.on .nav-photo::after{
+  background:linear-gradient(90deg,rgba(51,198,179,.16) 0%,rgba(6,9,14,.60) 100%);
+}
+.gamenav button.nav-green.nav-locked.on{border-color:rgba(51,198,179,.35)}
+/* タスクドック下部ボタンも同系グリーン */
+.office-tk-open{
+  border-color:var(--nav-green-soft)!important;
+}
+.office-tk-open:hover{border-color:var(--nav-green)!important}
 /* 事業画面タブ */
 .biz-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
 .biz-tabs button{
@@ -1831,84 +1864,84 @@ video.dc-card__image{
   <div class="nav-acct-wrap" id="navAcctWrap" hidden>
     <div class="nav-group nav-group-major nav-acct-label" id="navAcctLabel">会計</div>
     <div class="nav-acct-panel" id="navAcctPanel">
-      <button type="button" class="nav-biz" data-s="dash" data-acct="1">
+      <button type="button" class="nav-biz nav-green" data-s="dash" data-acct="1">
         <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
         <span class="nav-label">金庫室</span>
       </button>
-      <button type="button" class="nav-biz" data-s="biz-cf" data-acct="1">
+      <button type="button" class="nav-biz nav-green" data-s="biz-cf" data-acct="1">
         <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
         <span class="nav-label">CF</span>
       </button>
-      <button type="button" class="nav-biz" data-s="ledger" data-acct="1">
+      <button type="button" class="nav-biz nav-green" data-s="ledger" data-acct="1">
         <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
         <span class="nav-label">台帳</span>
       </button>
-      <button type="button" class="nav-biz" data-s="flow" data-acct="1">
+      <button type="button" class="nav-biz nav-green" data-s="flow" data-acct="1">
         <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
         <span class="nav-label">商流</span>
       </button>
-      <button type="button" class="nav-biz" data-s="cf-bank" data-acct="1">
+      <button type="button" class="nav-biz nav-green" data-s="cf-bank" data-acct="1">
         <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
         <span class="nav-label">口座・CSV</span>
       </button>
-      <button type="button" class="nav-biz" data-s="cf-link" data-acct="1">
+      <button type="button" class="nav-biz nav-green" data-s="cf-link" data-acct="1">
         <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
         <span class="nav-label">明細突合</span>
       </button>
-      <button type="button" class="nav-biz" data-s="cf-inrou" data-acct="1">
+      <button type="button" class="nav-biz nav-green" data-s="cf-inrou" data-acct="1">
         <span class="nav-photo" style="background-image:url(nav-detective.png)"></span>
         <span class="nav-label">印籠レポート</span>
       </button>
-      <button type="button" class="nav-biz" data-s="cf-party" data-acct="1">
+      <button type="button" class="nav-biz nav-green" data-s="cf-party" data-acct="1">
         <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
         <span class="nav-label">役員貸付</span>
       </button>
-      <button type="button" class="nav-biz" data-s="entry" data-acct="1">
+      <button type="button" class="nav-biz nav-green" data-s="entry" data-acct="1">
         <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
         <span class="nav-label">記録する</span>
       </button>
-      <button type="button" class="nav-biz" data-s="fiscal" data-acct="1">
+      <button type="button" class="nav-biz nav-green" data-s="fiscal" data-acct="1">
         <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
         <span class="nav-label">四半期</span>
       </button>
-      <button type="button" class="nav-biz" data-s="tax" data-acct="1">
+      <button type="button" class="nav-biz nav-green" data-s="tax" data-acct="1">
         <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
         <span class="nav-label">納税タンク</span>
       </button>
-      <button type="button" class="nav-biz" data-s="quest" data-acct="1">
+      <button type="button" class="nav-biz nav-green" data-s="quest" data-acct="1">
         <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
         <span class="nav-label">精算クエスト</span>
       </button>
     </div>
   </div>
   <div class="nav-group nav-group-major">法務</div>
-  <button type="button" class="nav-biz" data-s="contracts">
+  <button type="button" class="nav-biz nav-green" data-s="contracts">
     <span class="nav-photo" style="background-image:url(dash-legal.png)"></span>
     <span class="nav-label">契約書</span>
   </button>
-  <button type="button" class="nav-biz" data-s="cf-legal">
+  <button type="button" class="nav-biz nav-green" data-s="cf-legal">
     <span class="nav-photo" style="background-image:url(dash-legal.png)"></span>
     <span class="nav-label">契約リーガル</span>
   </button>
   <div class="nav-group nav-group-major">会議</div>
-  <button type="button" class="nav-biz" data-s="mtg-finance">
+  <button type="button" class="nav-biz nav-green" data-s="mtg-finance">
     <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
     <span class="nav-label">経理会議</span>
   </button>
-  <button type="button" class="nav-biz" data-s="mtg-sales">
+  <button type="button" class="nav-biz nav-green" data-s="mtg-sales">
     <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
     <span class="nav-label">営業会議</span>
   </button>
-  <button type="button" class="nav-biz" data-s="mtg-other">
+  <button type="button" class="nav-biz nav-green" data-s="mtg-other">
     <span class="nav-photo" style="background-image:url(dash-secretary.png)"></span>
     <span class="nav-label">その他MT</span>
   </button>
   <!-- タスク管理・タスク評価はサイドバー非表示（オフィスクエスト下ドックへ） -->
-  <button type="button" class="nav-biz" data-s="tasks" hidden aria-hidden="true">
+  <button type="button" class="nav-biz nav-green" data-s="tasks" hidden aria-hidden="true">
     <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
     <span class="nav-label">タスク管理</span>
   </button>
-  <button type="button" class="nav-biz" data-s="biz-task" hidden aria-hidden="true">
+  <button type="button" class="nav-biz nav-green" data-s="biz-task" hidden aria-hidden="true">
     <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
     <span class="nav-label">タスク評価</span>
   </button>
