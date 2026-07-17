@@ -12,7 +12,7 @@
 
   html, body { background: #000; margin: 0; min-height: 100%; }
   html { font-size: 15px; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
-  body { font-family: 'Zen Kaku Gothic New', sans-serif; line-height: 1.6; color: #d4f7f0; overflow-x: hidden; }
+  body { font-family: 'Zen Kaku Gothic New', sans-serif; line-height: 1.6; color: #eefcf8; overflow-x: hidden; }
   @keyframes cardIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 
@@ -35,10 +35,11 @@
   --nav-green-soft:rgba(51,198,179,.72);
   --nav-green-line:rgba(51,198,179,.22);
   --nav-green-line-strong:rgba(51,198,179,.4);
+  --nav-green-bright:#eefcf8;
   --out:#ef7f8c;
   --tax:#b39ddb;
-  --text:#d4f7f0;
-  --muted:#7aaba3;
+  --text:#eefcf8;
+  --muted:#9ecfc4;
   --font-display:'Sora','Zen Kaku Gothic New',sans-serif;
   --font-body:'Zen Kaku Gothic New',sans-serif;
   --font-num:'IBM Plex Mono',monospace;
@@ -99,10 +100,10 @@ input,select,textarea{font-family:inherit}
 }
 .gamenav .nav-group.nav-group-major{
   margin:8px 4px 6px;
-  padding:9px 10px;
+  padding:10px 10px;
   font-family:'Zen Kaku Gothic New',var(--font-body),sans-serif;
-  font-size:14px;font-weight:700;letter-spacing:.12em;
-  color:var(--nav-green);text-align:center;text-transform:none;
+  font-size:17px;font-weight:700;letter-spacing:.1em;
+  color:var(--nav-green-bright);text-align:center;text-transform:none;
   border:none;border-radius:0;
   background:transparent;
   box-shadow:none;
@@ -208,7 +209,7 @@ input,select,textarea{font-family:inherit}
 }
 .gamenav button.nav-biz .nav-label{
   position:relative;z-index:2;width:100%;padding:0 9px;
-  line-height:1.2;font-size:12px;font-weight:700;color:var(--nav-green);
+  line-height:1.2;font-size:12px;font-weight:700;color:#fff;
   text-shadow:0 1px 2px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.7);
   display:flex;align-items:center;
 }
@@ -236,7 +237,7 @@ input,select,textarea{font-family:inherit}
   display:none!important;
 }
 .gamenav button.nav-green .nav-label{
-  color:var(--nav-green);
+  color:var(--nav-green-bright);
   text-shadow:none;
   justify-content:center;
   text-align:center;
@@ -251,14 +252,14 @@ input,select,textarea{font-family:inherit}
     color:var(--nav-green);
     box-shadow:0 0 12px rgba(51,198,179,.18);
   }
-  .gamenav button.nav-green:hover .nav-label{color:var(--nav-green)}
+  .gamenav button.nav-green:hover .nav-label{color:var(--nav-green-bright)}
 }
 .gamenav button.nav-green.on{
   background:#000!important;
   border-color:var(--nav-green);
   box-shadow:0 0 14px rgba(51,198,179,.22);
 }
-.gamenav button.nav-green.on .nav-label{color:var(--nav-green)}
+.gamenav button.nav-green.on .nav-label{color:var(--nav-green-bright)}
 .gamenav button.nav-green.nav-locked.on{border-color:rgba(51,198,179,.35)}
 /* タスクドック下部：黒塗り＋緑枠（旧ゴールド廃止） */
 .office-tk-open{
@@ -267,7 +268,7 @@ input,select,textarea{font-family:inherit}
   box-shadow:none!important;
   filter:none!important;
 }
-.office-tk-open .nav-label{color:var(--nav-green)!important}
+.office-tk-open .nav-label{color:var(--nav-green-bright)!important}
 .office-tk-open:hover{
   border-color:var(--nav-green)!important;
   box-shadow:0 0 12px rgba(51,198,179,.18)!important;
@@ -1230,8 +1231,8 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .entaku-empty[hidden]{display:none!important}
 .entaku-inline-body{
   flex:1;min-height:0;overflow:auto;padding:28px 14px 12px;position:relative;z-index:2;
-  font-family:var(--font-body);font-size:12px;line-height:1.6;
-  background:transparent;
+  font-family:var(--font-body);font-size:13px;line-height:1.65;
+  background:transparent;color:var(--nav-green-bright);
 }
 .entaku-inline .entaku-input{
   flex-shrink:0;display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px;position:relative;z-index:3;
@@ -1629,11 +1630,12 @@ video.dc-card__image{
 .entaku-participant.is-legal{color:#b8e8c8;border-color:rgba(120,190,140,.28)}
 .entaku-jump{font-family:var(--font-body);font-size:11px;font-weight:600;color:#1a1510;background:var(--gold);border:none;border-radius:8px;padding:5px 12px;cursor:pointer}
 #entakuText{
-  flex:1;background:#040506;border:1px solid rgba(196,166,106,.2);border-radius:var(--radius-sm);
-  color:var(--text);font:inherit;font-size:13px;padding:10px;resize:none;line-height:1.5;
+  flex:1;background:#040506;border:1px solid var(--nav-green-line-strong);border-radius:var(--radius-sm);
+  color:var(--nav-green-bright);font:inherit;font-size:13px;padding:10px;resize:none;line-height:1.5;
   box-shadow:inset 0 2px 8px rgba(0,0,0,.35);
 }
-#entakuText:focus{outline:none;border-color:rgba(232,212,168,.4);box-shadow:inset 0 2px 8px rgba(0,0,0,.35),0 0 0 2px rgba(196,166,106,.12)}
+#entakuText::placeholder{color:rgba(238,252,248,.45)}
+#entakuText:focus{outline:none;border-color:var(--nav-green);box-shadow:inset 0 2px 8px rgba(0,0,0,.35),0 0 0 2px rgba(51,198,179,.15)}
 #entakuSend{
   background:linear-gradient(180deg,var(--gold-hi),var(--gold));
   color:#1a1510;border:1px solid rgba(232,212,168,.5);border-radius:var(--radius-sm);
@@ -1643,10 +1645,10 @@ video.dc-card__image{
 #entakuSend:hover{filter:brightness(1.06)}
 #entakuSend:disabled{opacity:.5;cursor:default}
 .entaku-modal.hidden{display:none}
-.ent-msg{margin-bottom:14px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.02);border:1px solid rgba(196,166,106,.06)}
-.ent-msg.ent-me{background:rgba(196,166,106,.04);border-color:rgba(196,166,106,.12)}
-.ent-txt{color:var(--text)}
-.ent-me .ent-txt{color:var(--text)}
+.ent-msg{margin-bottom:14px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.02);border:1px solid rgba(51,198,179,.12)}
+.ent-msg.ent-me{background:rgba(51,198,179,.06);border-color:rgba(51,198,179,.18)}
+.ent-txt{color:var(--nav-green-bright)}
+.ent-me .ent-txt{color:var(--nav-green-bright)}
 .ent-typing{color:var(--muted)}
 .entaku-jumps{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 /* 決定事項・次の一手（アクション化） */
@@ -1876,11 +1878,11 @@ video.dc-card__image{
     <span class="nav-label">IT事業</span>
   </button>
   <button type="button" class="nav-biz" data-s="biz-kanstwifi">
-    <span class="nav-photo" style="background-image:url(nav-it.png)"></span>
+    <span class="nav-photo" style="background-image:url(nav-kanstwifi.png)"></span>
     <span class="nav-label">カンストWiFi</span>
   </button>
   <button type="button" class="nav-biz" data-s="biz-staffing">
-    <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
+    <span class="nav-photo" style="background-image:url(nav-staffing.png)"></span>
     <span class="nav-label">人材派遣</span>
   </button>
   <button type="button" class="nav-biz" data-s="biz-detective">
@@ -1888,7 +1890,7 @@ video.dc-card__image{
     <span class="nav-label">探偵事業</span>
   </button>
   <button type="button" class="nav-biz" data-s="cf-cases">
-    <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
+    <span class="nav-photo" style="background-image:url(nav-cases.png)"></span>
     <span class="nav-label">案件ボード</span>
   </button>
   <button type="button" class="nav-biz" data-s="cf-flow">
@@ -2704,8 +2706,8 @@ video.dc-card__image{
 
 <!-- ===== 事業：カンストWiFi ===== -->
 <section class="screen" id="s-biz-kanstwifi">
-  <header class="biz-hero" style="--biz-photo:url(nav-it.png)">
-    <div class="biz-hero-photo" style="background-image:url(nav-it.png)" aria-hidden="true"></div>
+  <header class="biz-hero" style="--biz-photo:url(nav-kanstwifi.png)">
+    <div class="biz-hero-photo" style="background-image:url(nav-kanstwifi.png)" aria-hidden="true"></div>
     <div class="biz-hero-body">
       <h2 class="stitle">カンストWiFi</h2>
       <p class="sdesc">回線・契約・月額利用の受付と進捗を管理します。</p>
@@ -2731,8 +2733,8 @@ video.dc-card__image{
 
 <!-- ===== 事業：人材派遣 ===== -->
 <section class="screen" id="s-biz-staffing">
-  <header class="biz-hero" style="--biz-photo:url(nav-task.png)">
-    <div class="biz-hero-photo" style="background-image:url(nav-task.png)" aria-hidden="true"></div>
+  <header class="biz-hero" style="--biz-photo:url(nav-staffing.png)">
+    <div class="biz-hero-photo" style="background-image:url(nav-staffing.png)" aria-hidden="true"></div>
     <div class="biz-hero-body">
       <h2 class="stitle">人材派遣</h2>
       <p class="sdesc">派遣先・候補者・稼働状況の受付と進捗を管理します。</p>
