@@ -313,11 +313,25 @@ input,select,textarea{font-family:inherit}
 .biz-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px}
 .biz-stat .val{font-size:22px;font-weight:700;font-family:var(--font-num)}
 .biz-link-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.biz-link-row button{
-  padding:8px 12px;border-radius:8px;font-size:12px;
+.biz-link-row button,.biz-link-row a{
+  padding:8px 12px;border-radius:8px;font-size:12px;font-weight:600;
   background:var(--panel2);border:1px solid var(--line-strong);color:var(--text);
+  text-decoration:none;display:inline-flex;align-items:center;gap:6px;cursor:pointer;
 }
-.biz-link-row button:hover{border-color:var(--nav-green);color:var(--nav-label)}
+.biz-link-row button:hover,.biz-link-row a:hover{border-color:var(--nav-green);color:var(--nav-label)}
+.biz-ext-links .biz-ext-item{
+  display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:10px;
+  border:1px solid var(--nav-green-line);background:rgba(15,138,78,.06);
+}
+.biz-ext-links .biz-ext-item strong{font-size:13px;color:var(--nav-label)}
+.biz-ext-links .biz-ext-item span{font-size:11px;color:var(--muted);line-height:1.45}
+.biz-ext-links .biz-ext-item a{
+  margin-top:6px;align-self:flex-start;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;
+  border:1px solid var(--nav-green-soft);
+  background:linear-gradient(180deg,var(--nav-green-fill-hi) 0%,var(--nav-green-fill) 100%);
+  color:var(--nav-label);text-decoration:none;
+}
+.biz-ext-links .biz-ext-item a:hover{filter:brightness(1.08);border-color:var(--nav-green)}
 .main{flex:1;padding:24px 28px 90px;max-width:1120px;min-width:0}
 .screen{display:none}
 .screen.on{display:block;animation:screenIn .35s ease}
@@ -2560,18 +2574,20 @@ video.dc-card__image{
     <div class="biz-hero-photo" style="background-image:url(nav-paradise.png)" aria-hidden="true"></div>
     <div class="biz-hero-body">
       <h2 class="stitle">パラダイスシティ事業</h2>
-      <p class="sdesc">韓国の制作会社 <b>A-WORKS</b> と直接契約（基本契約＋出演契約の2本）。日本アーティストを韓国VVIPディナーショーへ橋渡しする仲介事業。売上＝A-WORKSからの受注、原価＝紹介者・所属事務所への支払（興行前後で半金ずつ・随時変動）。</p>
+      <p class="sdesc">韓国の制作会社 <b>A-WORKS</b> と直接契約（基本契約＋出演契約の2本）。日本アーティストを韓国VVIPディナーショーへ橋渡しする仲介事業。売上＝A-WORKSからの受注、原価＝紹介者・所属事務所への支払、経費＝接待交際費・渡航費など。</p>
     </div>
   </header>
   <div class="biz-tabs">
     <button type="button" class="on" data-tab="sales">案件・採算</button>
+    <button type="button" data-tab="expense">経費（接待・渡航）</button>
     <button type="button" data-tab="close">前金・後金の管理</button>
   </div>
   <div class="biz-panel on" data-tab="sales">
     <div class="biz-grid">
       <div class="card stat in biz-stat"><div class="label">今月受注（A-WORKS）</div><div class="val" id="bpSales">¥0</div></div>
       <div class="card stat out biz-stat"><div class="label">今月原価（紹介者＋事務所）</div><div class="val" id="bpCost">¥0</div></div>
-      <div class="card stat net biz-stat"><div class="label">粗利</div><div class="val" id="bpMargin">¥0</div></div>
+      <div class="card stat out biz-stat"><div class="label">今月経費（接待・渡航等）</div><div class="val" id="bpExp">¥0</div></div>
+      <div class="card stat net biz-stat"><div class="label">差引（受注−原価−経費）</div><div class="val" id="bpMargin">¥0</div></div>
     </div>
     <div class="card">
       <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">案件を追加（アーティスト／受注・原価）</div>
@@ -2593,6 +2609,40 @@ video.dc-card__image{
     <div class="card">
       <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">案件ボード（アーティスト別）</div>
       <div id="bpShowList" class="recent-list"></div>
+    </div>
+  </div>
+  <div class="biz-panel" data-tab="expense">
+    <div class="biz-grid">
+      <div class="card stat out biz-stat"><div class="label">接待交際費（今月）</div><div class="val" id="bpExpEntertain">¥0</div></div>
+      <div class="card stat out biz-stat"><div class="label">渡航費（今月）</div><div class="val" id="bpExpTravel">¥0</div></div>
+      <div class="card stat out biz-stat"><div class="label">その他経費（今月）</div><div class="val" id="bpExpOther">¥0</div></div>
+      <div class="card stat out biz-stat"><div class="label">経費合計（今月）</div><div class="val" id="bpExpTotal">¥0</div></div>
+    </div>
+    <div class="card">
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">経費を登録（接待交際費・渡航費・宿泊・交通 等）</div>
+      <form id="bpExpForm" class="bp-form">
+        <select id="bpExpKind" class="bp-span2" aria-label="経費区分">
+          <option value="entertain">接待交際費（会食・贈答・接待）</option>
+          <option value="travel">渡航費（航空券・渡航手続）</option>
+          <option value="hotel">宿泊費</option>
+          <option value="transit">現地交通費（タクシー・鉄道 等）</option>
+          <option value="visa">ビザ・渡航書類</option>
+          <option value="attend">通訳・アテンド</option>
+          <option value="other">その他経費</option>
+        </select>
+        <input id="bpExpLabel" class="bp-span2" placeholder="内容（例：A-WORKS歓迎会食／ソウル往復航空券）" required>
+        <input id="bpExpArtist" placeholder="関連アーティスト（任意）">
+        <input id="bpExpDate" type="date" aria-label="支出日">
+        <input id="bpExpAmt" type="number" min="0" inputmode="numeric" placeholder="金額" required>
+        <div class="bp-form-ctr">
+          <label class="bp-ck"><input type="checkbox" id="bpExpPaid"> 支払済</label>
+          <button type="submit" id="bpExpAdd">経費を追加</button>
+        </div>
+      </form>
+    </div>
+    <div class="card">
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">経費ボード</div>
+      <div id="bpExpList" class="recent-list"></div>
     </div>
   </div>
   <div class="biz-panel" data-tab="close">
@@ -2770,9 +2820,29 @@ video.dc-card__image{
     <div class="biz-hero-photo" style="background-image:url(nav-it.png)" aria-hidden="true"></div>
     <div class="biz-hero-body">
       <h2 class="stitle">IT事業</h2>
-      <p class="sdesc">AIシステム構築・アプリ開発の売上を案件単位で管理します。</p>
+      <p class="sdesc">AIシステム構築・アプリ開発の売上を案件単位で管理します。関連プロダクト・提案資料は下のリンクから。</p>
     </div>
   </header>
+  <div class="card" style="margin-bottom:14px">
+    <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:10px">関連リンク</div>
+    <div class="biz-grid biz-ext-links" style="margin-bottom:0">
+      <div class="biz-ext-item">
+        <strong>RELA</strong>
+        <span>人間関係理解AI。App Store / Google Play にて近日販売予定</span>
+        <a href="https://rela-ai.vercel.app/" target="_blank" rel="noopener noreferrer">サイトを開く →</a>
+      </div>
+      <div class="biz-ext-item">
+        <strong>MEKIKI 提案資料</strong>
+        <span>阪急阪神不動産への提案（PowerPoint）</span>
+        <a href="biz-it/MEKIKI_proposal.pptx" target="_blank" rel="noopener noreferrer">資料を開く →</a>
+      </div>
+      <div class="biz-ext-item">
+        <strong>稲毛海浜公園 提案アプリ</strong>
+        <span>稲毛海浜公園向けに提案中のアプリデモ</span>
+        <a href="biz-it/inage-proposal.html" target="_blank" rel="noopener noreferrer">デモを開く →</a>
+      </div>
+    </div>
+  </div>
   <div class="biz-grid">
     <div class="card stat in biz-stat"><div class="label">今月売上</div><div class="val" id="bitSales">¥0</div></div>
     <div class="card biz-stat"><div class="label">進行案件</div><div class="val" id="bitCases">0件</div></div>
@@ -2868,9 +2938,29 @@ video.dc-card__image{
     <div class="biz-hero-photo" style="background-image:url(nav-detective.png)" aria-hidden="true"></div>
     <div class="biz-hero-body">
       <h2 class="stitle">探偵事業</h2>
-      <p class="sdesc">探偵紹介・依頼の受付と進捗管理です。</p>
+      <p class="sdesc">探偵紹介・依頼の受付と進捗管理です。関連サービスへは下のリンクから。</p>
     </div>
   </header>
+  <div class="card" style="margin-bottom:14px">
+    <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:10px">関連リンク</div>
+    <div class="biz-grid biz-ext-links" style="margin-bottom:0">
+      <div class="biz-ext-item">
+        <strong>REPORO</strong>
+        <span>探偵事務所向け AI報告書自動生成・案件管理</span>
+        <a href="http://64.176.49.38/" target="_blank" rel="noopener noreferrer">サイトを開く →</a>
+      </div>
+      <div class="biz-ext-item">
+        <strong>STEALTH FILE</strong>
+        <span>初回お試し調査（一般向け）メディア</span>
+        <a href="https://tantei-trial.netlify.app/" target="_blank" rel="noopener noreferrer">サイトを開く →</a>
+      </div>
+      <div class="biz-ext-item">
+        <strong>KARASU</strong>
+        <span>探偵業向け B2B案件マッチング</span>
+        <a href="https://karasu.website/" target="_blank" rel="noopener noreferrer">サイトを開く →</a>
+      </div>
+    </div>
+  </div>
   <div class="card">
     <div class="entry-grid">
       <div class="fgroup"><label>依頼者名</label><input id="bdClient" placeholder="氏名・会社名"></div>
@@ -3149,16 +3239,80 @@ video.dc-card__image{
 .re-crow-chk input{accent-color:#4ade80;width:15px;height:15px}
 .re-crow-case{flex:1;min-width:150px}
 @media(max-width:640px){#s-biz-realestate .re-summary{grid-template-columns:1fr}#s-biz-realestate .re-pc-body{grid-template-columns:repeat(2,1fr)}#s-biz-realestate .re-tx-grid{grid-template-columns:1fr}}
+/* 案件一覧 */
+#s-biz-realestate .re-list-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 14px}
+#s-biz-realestate .re-list-toolbar h3{font-size:13px;font-weight:700;color:var(--nav-label);margin:0;letter-spacing:.04em}
+#s-biz-realestate .re-proj-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+#s-biz-realestate .re-proj-card{
+  text-align:left;cursor:pointer;padding:14px 15px;border-radius:12px;
+  border:1px solid var(--nav-green-line);background:rgba(15,138,78,.06);
+  transition:border-color .15s,box-shadow .15s,transform .12s;
+}
+#s-biz-realestate .re-proj-card:hover{
+  border-color:var(--nav-green-soft);transform:translateY(-2px);
+  box-shadow:0 8px 22px rgba(0,0,0,.35),0 0 14px rgba(15,138,78,.2);
+}
+#s-biz-realestate .re-proj-card .re-pc-name{font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px;font-family:var(--font-display)}
+#s-biz-realestate .re-proj-card .re-pc-sub{font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.4}
+#s-biz-realestate .re-proj-card .re-pc-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+#s-biz-realestate .re-proj-card .re-pc-chip{font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+#s-biz-realestate .re-proj-card .re-pc-chip.ok{border-color:rgba(74,222,128,.5);color:var(--in);background:rgba(74,222,128,.1)}
+#s-biz-realestate .re-proj-card .re-pc-chip.warn{border-color:rgba(255,157,60,.5);color:var(--out);background:rgba(255,157,60,.1)}
+#s-biz-realestate .re-proj-card .re-pc-nums{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--muted)}
+#s-biz-realestate .re-proj-card .re-pc-nums b{color:var(--gold-hi);font-family:var(--font-num)}
+#s-biz-realestate .re-proj-card .re-pc-bar{height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;margin-top:8px}
+#s-biz-realestate .re-proj-card .re-pc-bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--nav-green-fill-hi),var(--nav-green-fill));border-radius:3px}
+#s-biz-realestate .re-back{
+  display:inline-flex;align-items:center;gap:6px;margin:0 0 12px;padding:7px 12px;border-radius:8px;cursor:pointer;
+  border:1px solid var(--nav-green-soft);background:rgba(15,138,78,.1);color:var(--nav-label);
+  font-size:12px;font-weight:700;
+}
+#s-biz-realestate .re-back:hover{border-color:var(--nav-green);filter:brightness(1.08)}
+/* 資料・PDF */
+#s-biz-realestate .re-files{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:6px}
+#s-biz-realestate .re-files-drop{
+  border:1px dashed rgba(255,255,255,.35);border-radius:10px;padding:18px 14px;text-align:center;cursor:pointer;
+  background:rgba(255,255,255,.03);margin-bottom:12px;transition:border-color .15s,background .15s;
+}
+#s-biz-realestate .re-files-drop:hover,#s-biz-realestate .re-files-drop.is-drag{
+  border-color:var(--nav-green-soft);background:rgba(15,138,78,.08);
+}
+#s-biz-realestate .re-files-drop strong{display:block;font-size:13px;color:var(--nav-label);margin-bottom:4px}
+#s-biz-realestate .re-files-drop span{font-size:11px;color:var(--muted);line-height:1.45}
+#s-biz-realestate .re-file-list{display:flex;flex-direction:column;gap:8px}
+#s-biz-realestate .re-file-item{
+  display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;
+  border:1px solid var(--line);background:var(--panel2);
+}
+#s-biz-realestate .re-file-item .re-file-ico{font-size:18px;flex-shrink:0}
+#s-biz-realestate .re-file-item .re-file-body{flex:1;min-width:0}
+#s-biz-realestate .re-file-item .re-file-name{font-size:12.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#s-biz-realestate .re-file-item .re-file-meta{font-size:10.5px;color:var(--muted);margin-top:2px}
+#s-biz-realestate .re-file-item a,#s-biz-realestate .re-file-item button{
+  flex-shrink:0;font-size:11px;font-weight:700;padding:5px 10px;border-radius:7px;cursor:pointer;
+  border:1px solid var(--nav-green-soft);background:rgba(15,138,78,.12);color:var(--nav-label);text-decoration:none;
+}
+#s-biz-realestate .re-file-item .re-file-del{border-color:rgba(255,120,120,.45);background:transparent;color:#ff9d9d}
 </style>
 <section class="screen" id="s-biz-realestate">
   <header class="biz-hero" style="--biz-photo:url(nav-realestate.png)">
     <div class="biz-hero-photo" style="background-image:url(nav-realestate.png)" aria-hidden="true"></div>
     <div class="biz-hero-body">
       <h2 class="stitle">不動産事業</h2>
-      <p class="sdesc">開発案件ごとに、調達金の配分状況・GK通帳履歴・通帳外取引を一元管理します。上のタブで案件を切り替えられます。</p>
+      <p class="sdesc">開発案件を一覧から選び、調達金の配分・GK通帳・PDF等の資料を案件ごとに管理します。</p>
     </div>
   </header>
 
+  <div id="reListView">
+    <div class="re-list-toolbar">
+      <h3>案件一覧</h3>
+      <button type="button" class="re-addbtn" id="reNewFromList">＋ 新規案件</button>
+    </div>
+    <div class="re-proj-list" id="reProjList"></div>
+  </div>
+
+  <div id="reDetailView" hidden>
+  <button type="button" class="re-back" id="reBackList">← 案件一覧へ</button>
   <div class="re-projtabs" id="reProjTabs"></div>
 
   <div class="re-head">
@@ -3213,6 +3367,19 @@ video.dc-card__image{
   </div>
   <div id="reHistTransfer"></div>
 
+  <div class="re-sec-title">紐づけ契約書（契約書台帳）</div>
+  <div id="reCaseContracts" class="re-files" style="margin-bottom:12px"></div>
+
+  <div class="re-sec-title">資料・PDF（貼付／ドロップ）</div>
+  <div class="re-files" id="reFilesPanel">
+    <div class="re-files-drop" id="reFilesDrop" tabindex="0">
+      <strong>PDF・画像をここにドロップ / クリック選択 / Ctrl+V で貼付</strong>
+      <span>契約書・図面・見積など案件資料を保存できます（ブラウザ内に保持）</span>
+    </div>
+    <input type="file" id="reFilesInput" accept="application/pdf,image/*,.pdf" multiple hidden>
+    <div class="re-file-list" id="reFileList"></div>
+  </div>
+
   <div class="re-data">
     <div class="re-data-t">データ管理</div>
     <div class="re-data-grid">
@@ -3220,6 +3387,7 @@ video.dc-card__image{
       <label class="re-databtn" style="cursor:pointer">↑ JSONインポート<input type="file" accept=".json" id="reImport" style="display:none"></label>
     </div>
   </div>
+  </div><!-- /#reDetailView -->
 </section>
 
 <!-- 不動産：入力モーダル -->
@@ -3331,10 +3499,33 @@ video.dc-card__image{
 #s-contracts .ct-edit{background:var(--panel2);color:var(--gold-hi);border:1px solid var(--line-strong)!important}
 #s-contracts .ct-del{background:transparent;color:var(--out);border:1px solid var(--line-strong)!important;margin-left:auto}
 #s-contracts .ct-empty{font-size:12px;color:var(--muted);padding:16px 2px}
+#s-contracts .ct-case{font-size:11px;color:var(--nav-label);margin:0 14px 8px}
+.biz-ct-panel{
+  margin-top:8px;padding:8px 10px;border-radius:8px;
+  border:1px solid var(--nav-green-line);background:rgba(15,138,78,.05);
+}
+.biz-ct-panel .biz-ct-cap{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.06em;margin-bottom:6px}
+.biz-ct-panel .biz-ct-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}
+.biz-ct-panel .biz-ct-chip{
+  font-size:10.5px;font-weight:700;padding:4px 8px;border-radius:7px;cursor:pointer;
+  border:1px solid var(--nav-green-soft);background:rgba(15,138,78,.12);color:var(--nav-label);
+}
+.biz-ct-panel .biz-ct-chip.unsigned{border-color:rgba(255,157,60,.45);color:var(--out);background:rgba(255,157,60,.1)}
+.biz-ct-panel .biz-ct-chip .x{margin-left:5px;opacity:.7}
+.biz-ct-panel .biz-ct-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.biz-ct-panel .biz-ct-tools select{
+  flex:1;min-width:140px;padding:5px 8px;border-radius:7px;font-size:11px;
+  border:1px solid var(--line);background:var(--panel2);color:var(--text);
+}
+.biz-ct-panel .biz-ct-tools button{
+  font-size:11px;font-weight:700;padding:5px 10px;border-radius:7px;cursor:pointer;
+  border:1px solid var(--nav-green-soft);background:linear-gradient(180deg,var(--nav-green-fill-hi),var(--nav-green-fill));
+  color:var(--nav-label);
+}
 </style>
 <section class="screen" id="s-contracts">
   <h2 class="stitle">📄 契約書台帳</h2>
-  <p class="sdesc">各事業・関係企業との契約書を一元管理します。ここに登録した契約書は、不動産の各案件の関係企業に紐づけて承認要件（全社契約締結）に反映されます。</p>
+  <p class="sdesc">各事業の案件ごとに契約書を紐づけて一元管理します。案件画面からも契約を登録・紐づけできます。</p>
 
   <div class="ct-top">
     <div class="ct-sum">
@@ -3369,8 +3560,13 @@ video.dc-card__image{
         <option value="介護">介護</option>
         <option value="IT">IT</option>
         <option value="探偵">探偵</option>
+        <option value="カンストWiFi">カンストWiFi</option>
+        <option value="人材派遣">人材派遣</option>
         <option value="その他">その他</option>
       </select>
+    </div>
+    <div class="re-field"><label>紐づけ案件</label>
+      <select id="ctF-case"><option value="">— 案件を選ばない —</option></select>
     </div>
     <div class="re-field"><label>契約金額（円・任意）</label><input id="ctF-amount" type="number" placeholder="0"></div>
     <div class="re-field"><label>契約日</label><input id="ctF-date" placeholder="2025/05/28"></div>
@@ -4011,6 +4207,10 @@ window.PortalTTS=(function(){
   const LS_KEY='portal-audio-on';
   let enabled=localStorage.getItem(LS_KEY)!=='0';
   let jpVoice=null;
+  let speaking=false;
+  let intentionalStop=false;
+  let queueGen=0;
+  let resumeTimer=null;
   function pickVoice(){
     if(jpVoice)return jpVoice;
     const vs=window.speechSynthesis?speechSynthesis.getVoices():[];
@@ -4030,9 +4230,89 @@ window.PortalTTS=(function(){
       if(lbl)lbl.textContent=enabled?'🔊':'🔇';
     });
   }
+  function clearResume(){
+    if(resumeTimer){clearInterval(resumeTimer);resumeTimer=null;}
+  }
+  function startResumeKeepalive(){
+    clearResume();
+    // Chrome は長文発話を途中で pause することがある → 定期 resume
+    resumeTimer=setInterval(function(){
+      if(!window.speechSynthesis)return;
+      try{
+        if(speechSynthesis.speaking&&speechSynthesis.paused)speechSynthesis.resume();
+      }catch(e){}
+    },5000);
+  }
+  function splitChunks(text){
+    const s=String(text||'').replace(/\s+/g,' ').trim();
+    if(!s)return [];
+    const parts=s.split(/([。！？!?]+)/);
+    const sentences=[];
+    for(let i=0;i<parts.length;i+=2){
+      const body=(parts[i]||'')+(parts[i+1]||'');
+      if(body.trim())sentences.push(body.trim());
+    }
+    if(!sentences.length)sentences.push(s);
+    const chunks=[];
+    let buf='';
+    for(let i=0;i<sentences.length;i++){
+      const next=sentences[i];
+      if((buf+next).length>180&&buf){chunks.push(buf);buf=next;}
+      else buf+=next;
+    }
+    if(buf)chunks.push(buf);
+    const out=[];
+    for(let i=0;i<chunks.length;i++){
+      const c=chunks[i];
+      if(c.length<=220){out.push(c);continue;}
+      for(let j=0;j<c.length;j+=200)out.push(c.slice(j,j+200));
+    }
+    return out;
+  }
+  function finish(onend){
+    speaking=false;
+    clearResume();
+    if(typeof onend==='function')try{onend();}catch(e){}
+  }
+  function speakChunks(chunks,onend){
+    const gen=++queueGen;
+    speaking=true;
+    intentionalStop=false;
+    startResumeKeepalive();
+    let i=0;
+    function next(){
+      if(gen!==queueGen)return;
+      if(i>=chunks.length){finish(onend);return;}
+      const piece=chunks[i++];
+      try{
+        const u=new SpeechSynthesisUtterance(piece);
+        u.lang='ja-JP';u.rate=1.05;u.volume=1;
+        const v=pickVoice();if(v)u.voice=v;
+        u.onend=function(){next();};
+        u.onerror=function(ev){
+          if(gen!==queueGen)return;
+          const err=ev&&ev.error;
+          // cancel/interrupt は次へ進めない（途中切断扱い）
+          if(intentionalStop||err==='interrupted'||err==='canceled'){
+            speaking=false;clearResume();
+            return;
+          }
+          next();
+        };
+        speechSynthesis.speak(u);
+      }catch(e){finish(onend);}
+    }
+    try{speechSynthesis.cancel();}catch(e){}
+    // cancel 直後に speak すると欠落することがあるため少し待つ
+    setTimeout(function(){if(gen===queueGen)next();},50);
+  }
   if(window.speechSynthesis)speechSynthesis.addEventListener('voiceschanged',()=>{jpVoice=null;});
   const api={
     isEnabled(){return enabled;},
+    isSpeaking(){
+      if(!window.speechSynthesis)return false;
+      return speaking||speechSynthesis.speaking||speechSynthesis.pending;
+    },
     setEnabled(on){
       enabled=!!on;
       localStorage.setItem(LS_KEY, enabled?'1':'0');
@@ -4043,16 +4323,17 @@ window.PortalTTS=(function(){
     toggle(){api.setEnabled(!enabled);},
     speak(text,onend){
       if(!enabled||!text||!window.speechSynthesis){if(typeof onend==='function')try{onend();}catch(e){}return;}
-      try{
-        speechSynthesis.cancel();
-        const u=new SpeechSynthesisUtterance(text);
-        u.lang='ja-JP';u.rate=1.05;u.volume=1;
-        const v=pickVoice();if(v)u.voice=v;
-        if(typeof onend==='function'){u.onend=onend;u.onerror=onend;}
-        speechSynthesis.speak(u);
-      }catch(e){if(typeof onend==='function')try{onend();}catch(e2){}}
+      const chunks=splitChunks(text);
+      if(!chunks.length){if(typeof onend==='function')try{onend();}catch(e){}return;}
+      speakChunks(chunks,onend);
     },
-    stop(){if(window.speechSynthesis)speechSynthesis.cancel();}
+    stop(){
+      intentionalStop=true;
+      queueGen++;
+      speaking=false;
+      clearResume();
+      if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}
+    }
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',syncUi);
   else syncUi();
@@ -4086,6 +4367,7 @@ window.PortalTTS=(function(){
     unlockAudio:unlockPortalAudio,
     hover(d){
       if(document.getElementById('officeQuestModal')&&!document.getElementById('officeQuestModal').hidden)return;
+      if(window.__entakuSpeaking||window.PortalTTS?.isSpeaking?.())return;
       if(!d||!d.charId||officeHoverId===d.charId)return;
       officeHoverId=d.charId;
       if(d.dash){
@@ -4095,6 +4377,10 @@ window.PortalTTS=(function(){
     },
     hoverEnd(){
       officeHoverId=null;
+      if(window.__entakuSpeaking||window.PortalTTS?.isSpeaking?.()){
+        document.querySelectorAll('.dc-card video').forEach(v=>{v.muted=true;});
+        return;
+      }
       window.DashTalk?.stop();
       window.PortalTTS.stop();
       document.querySelectorAll('.dc-card video').forEach(v=>{v.muted=true;});
@@ -4488,7 +4774,10 @@ if(fiscalYearSelEl) fiscalYearSelEl.onchange=()=>{
 
 /* ---------- 事業ユニット ---------- */
 if(!S.biz) S.biz={detective:[]};
-if(!Array.isArray(S.biz.paradise)) S.biz.paradise=[];
+if(Array.isArray(S.biz.paradise)) S.biz.paradise={deals:S.biz.paradise, expense:[]};
+if(!S.biz.paradise || typeof S.biz.paradise!=="object") S.biz.paradise={deals:[], expense:[]};
+if(!Array.isArray(S.biz.paradise.deals)) S.biz.paradise.deals=[];
+if(!Array.isArray(S.biz.paradise.expense)) S.biz.paradise.expense=[];
 if(!Array.isArray(S.biz.inage)) S.biz.inage=[];
 if(!Array.isArray(S.biz.detective)) S.biz.detective=[];
 if(!Array.isArray(S.biz.kanstwifi)) S.biz.kanstwifi=[];
@@ -4513,33 +4802,63 @@ function renderBiz(){
   if($("#bitSales"))$("#bitSales").textContent=yen(itIn);
   if($("#bitCases"))$("#bitCases").textContent=inn.filter(t=>txKw(t,["IT","AI","アプリ","開発","RELA","KARASU"])).length+"件";
   if($("#bitList"))$("#bitList").innerHTML=inn.filter(t=>txKw(t,["IT","AI","アプリ","RELA","KARASU"])).map(t=>`<div class="tx-row in"><span class="who">${esc(t.who)}</span><span class="amt">+${yen(t.amount)}</span></div>`).join("")||`<div class="memo" style="color:var(--muted);padding:8px">IT関連の入金記録がここに表示されます。</div>`;
-  if($("#bdList"))$("#bdList").innerHTML=(S.biz.detective||[]).map((d,i)=>`<div class="tx-row"><span class="who">${esc(d.client)}</span><span class="memo">${esc(d.topic)} → ${esc(d.agent)} [${esc(d.status)}]</span><button class="btn-reject" data-bd="${i}" style="margin-left:auto">削除</button></div>`).join("")||`<div class="memo" style="color:var(--muted);padding:8px">紹介依頼はまだありません。</div>`;
+  if(window.BizCaseLink){
+    let idCh=false;
+    idCh=BizCaseLink.ensureIds(S.biz.detective,'bd')||idCh;
+    idCh=BizCaseLink.ensureIds(S.biz.kanstwifi,'kw')||idCh;
+    idCh=BizCaseLink.ensureIds(S.biz.staffing,'st')||idCh;
+    idCh=BizCaseLink.ensureIds(S.biz.inage,'bi')||idCh;
+    if(idCh) saveAll();
+  }
+  if($("#bdList"))$("#bdList").innerHTML=(S.biz.detective||[]).map(d=>`<div class="bp-deal" style="margin-bottom:8px"><div class="bp-deal-head"><span class="bp-artist">${esc(d.client)}</span><span class="bp-date">${esc(d.status)}</span></div><div class="bp-deal-sub">${esc(d.topic)} → ${esc(d.agent)}</div><div class="bp-deal-ctr"><button class="btn-reject" data-bd-id="${esc(d.id)}">削除</button></div>${window.BizCaseLink?BizCaseLink.panelHtml('探偵', d.id):''}</div>`).join("")||`<div class="memo" style="color:var(--muted);padding:8px">紹介依頼はまだありません。</div>`;
   const kw=(S.biz.kanstwifi||[]);
   const kwActive=kw.filter(d=>d.status==="稼働中");
   const kwSales=kwActive.reduce((a,d)=>a+(+d.fee||0),0);
   if($("#bkwSales"))$("#bkwSales").textContent=yen(kwSales);
   if($("#bkwActive"))$("#bkwActive").textContent=kwActive.length+"回線";
-  if($("#bkwList"))$("#bkwList").innerHTML=kw.map((d,i)=>`<div class="tx-row"><span class="who">${esc(d.client)}</span><span class="memo">${esc(d.plan||"")} ／ ${yen(+d.fee||0)} ／ ${esc(d.status)}</span><button class="btn-reject" data-bkw="${i}" style="margin-left:auto">削除</button></div>`).join("")||`<div class="memo" style="color:var(--muted);padding:8px">回線登録はまだありません。</div>`;
+  if($("#bkwList"))$("#bkwList").innerHTML=kw.map(d=>`<div class="bp-deal" style="margin-bottom:8px"><div class="bp-deal-head"><span class="bp-artist">${esc(d.client)}</span><span class="bp-date">${esc(d.status)}</span></div><div class="bp-deal-sub">${esc(d.plan||"")} ／ ${yen(+d.fee||0)}</div><div class="bp-deal-ctr"><button class="btn-reject" data-bkw-id="${esc(d.id)}">削除</button></div>${window.BizCaseLink?BizCaseLink.panelHtml('カンストWiFi', d.id):''}</div>`).join("")||`<div class="memo" style="color:var(--muted);padding:8px">回線登録はまだありません。</div>`;
   const st=(S.biz.staffing||[]);
   const stActive=st.filter(d=>d.status==="稼働中");
   const stSales=stActive.reduce((a,d)=>a+(+d.fee||0),0);
   if($("#bstSales"))$("#bstSales").textContent=yen(stSales);
   if($("#bstActive"))$("#bstActive").textContent=stActive.length+"件";
-  if($("#bstList"))$("#bstList").innerHTML=st.map((d,i)=>`<div class="tx-row"><span class="who">${esc(d.client)}</span><span class="memo">${esc(d.worker||"")} ／ ${yen(+d.fee||0)} ／ ${esc(d.status)}</span><button class="btn-reject" data-bst="${i}" style="margin-left:auto">削除</button></div>`).join("")||`<div class="memo" style="color:var(--muted);padding:8px">派遣案件はまだありません。</div>`;
+  if($("#bstList"))$("#bstList").innerHTML=st.map(d=>`<div class="bp-deal" style="margin-bottom:8px"><div class="bp-deal-head"><span class="bp-artist">${esc(d.client)}</span><span class="bp-date">${esc(d.status)}</span></div><div class="bp-deal-sub">${esc(d.worker||"")} ／ ${yen(+d.fee||0)}</div><div class="bp-deal-ctr"><button class="btn-reject" data-bst-id="${esc(d.id)}">削除</button></div>${window.BizCaseLink?BizCaseLink.panelHtml('人材派遣', d.id):''}</div>`).join("")||`<div class="memo" style="color:var(--muted);padding:8px">派遣案件はまだありません。</div>`;
   const staff=["凛","紬","岡部","越石","さやか","丹治"];
   if($("#btScoreList"))$("#btScoreList").innerHTML=staff.map((n,i)=>`<div class="tx-row"><span class="who">${n}</span><span class="memo">納期 ${78+i*3}% ／ 速度 ${72+i*4}% ／ 総合 ${75+i*2}点</span></div>`).join("");
   if($("#btDueList"))$("#btDueList").innerHTML=["案件ボード 予定日確認","印籠レポート 月末提出","デイサービス 実績報告"].map(s=>`<div class="tx-row"><span class="who">${s}</span><span class="memo">期日: ${viewMonthStr(view)}-25</span></div>`).join("");
 }
 /* ---------- パラダイスシティ：案件（橋渡し仲介）ボード ---------- */
+const BP_EXP_LABEL={
+  entertain:"接待交際費", travel:"渡航費", hotel:"宿泊費",
+  transit:"現地交通費", visa:"ビザ・渡航書類", attend:"通訳・アテンド", other:"その他経費"
+};
+function paradiseDeals(){return S.biz.paradise.deals;}
+function paradiseExpense(){return S.biz.paradise.expense;}
 function pCost(d){return (+d.costAgency||0)+(+d.costIntroducer||0);}
 function pMargin(d){return (+d.order||0)-pCost(d);}
+function pUid(){return crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random();}
+function pNum(id){const v=parseInt(String($(id).value||"").replace(/[^\d-]/g,""),10);return isNaN(v)?0:v;}
 function renderParadise(){
-  const list=S.biz.paradise||[];
+  const list=paradiseDeals();
+  const expAll=paradiseExpense();
   const view7=viewMonthStr(view);
   const monthDeals=list.filter(d=>(d.showDate||"").slice(0,7)===view7);
+  const monthExp=expAll.filter(d=>(d.date||d.at||"").slice(0,7)===view7);
   const order=monthDeals.reduce((a,d)=>a+(+d.order||0),0);
   const cost=monthDeals.reduce((a,d)=>a+pCost(d),0);
-  if($("#bpSales")){$("#bpSales").textContent=yen(order);$("#bpCost").textContent=yen(cost);$("#bpMargin").textContent=(order-cost<0?"−":"")+yen(Math.abs(order-cost));}
+  const expTotal=monthExp.reduce((a,d)=>a+(+d.amount||0),0);
+  const entertain=monthExp.filter(d=>d.kind==="entertain").reduce((a,d)=>a+(+d.amount||0),0);
+  const travel=monthExp.filter(d=>d.kind==="travel"||d.kind==="hotel"||d.kind==="transit"||d.kind==="visa").reduce((a,d)=>a+(+d.amount||0),0);
+  const otherExp=monthExp.filter(d=>d.kind==="attend"||d.kind==="other").reduce((a,d)=>a+(+d.amount||0),0);
+  const net=order-cost-expTotal;
+  if($("#bpSales"))$("#bpSales").textContent=yen(order);
+  if($("#bpCost"))$("#bpCost").textContent=yen(cost);
+  if($("#bpExp"))$("#bpExp").textContent=yen(expTotal);
+  if($("#bpMargin"))$("#bpMargin").textContent=(net<0?"−":"")+yen(Math.abs(net));
+  if($("#bpExpEntertain"))$("#bpExpEntertain").textContent=yen(entertain);
+  if($("#bpExpTravel"))$("#bpExpTravel").textContent=yen(travel);
+  if($("#bpExpOther"))$("#bpExpOther").textContent=yen(otherExp);
+  if($("#bpExpTotal"))$("#bpExpTotal").textContent=yen(expTotal);
   const sorted=[...list].sort((a,b)=>String(b.showDate||"").localeCompare(String(a.showDate||"")));
   const board=$("#bpShowList");
   if(board){
@@ -4551,8 +4870,23 @@ function renderParadise(){
         <div class="bp-deal-sub">${esc(d.agency||"事務所未設定")}${d.introducer?" ／ 紹介: "+esc(d.introducer):""}</div>
         <div class="bp-deal-nums"><span>受注 <b>${yen(+d.order||0)}</b></span><span>原価 <b>${yen(c)}</b></span><span class="bp-margin ${m<0?"neg":""}">粗利 <b>${(m<0?"−":"")+yen(Math.abs(m))}</b>（${rate}%）</span></div>
         <div class="bp-deal-ctr">${tags}<button type="button" class="btn-approve bp-edit" data-bp-edit="${esc(d.id)}">修正</button><button type="button" class="btn-reject bp-del" data-bp="${esc(d.id)}">削除</button></div>
+        ${window.BizCaseLink?BizCaseLink.panelHtml('パラダイス', d.id):''}
       </div>`;
     }).join(""):`<div class="memo" style="color:var(--muted);padding:8px">「案件を追加」から、アーティスト・受注額・原価を登録するとここに集計されます。</div>`;
+  }
+  const expBoard=$("#bpExpList");
+  if(expBoard){
+    const elist=[...expAll].sort((a,b)=>String(b.date||b.at||"").localeCompare(String(a.date||a.at||"")));
+    expBoard.innerHTML=elist.length?elist.map(d=>{
+      const tag=d.paid?'<span class="bp-tag ok">支払済</span>':'<span class="bp-tag ng">未払</span>';
+      const sub=[d.label||"", d.artist?("関連: "+d.artist):""].filter(Boolean).join(" ／ ");
+      return `<div class="bp-deal">
+        <div class="bp-deal-head"><span class="bp-artist">${esc(BP_EXP_LABEL[d.kind]||d.kind)}</span><span class="bp-date">${esc(d.date||"—")}</span></div>
+        <div class="bp-deal-sub">${esc(sub||"—")}</div>
+        <div class="bp-deal-nums"><span>金額 <b>${yen(+d.amount||0)}</b></span></div>
+        <div class="bp-deal-ctr">${tag}<label class="bp-ck"><input type="checkbox" data-bpe="${esc(d.id)}" data-k="paid"${d.paid?" checked":""}> 支払済</label><button type="button" class="btn-reject bp-del" data-bpe-del="${esc(d.id)}">削除</button></div>
+      </div>`;
+    }).join(""):`<div class="memo" style="color:var(--muted);padding:8px">接待交際費・渡航費・宿泊・交通などを登録するとここに集計されます。</div>`;
   }
   const box=$("#bpCloseList");
   if(box){
@@ -4595,30 +4929,30 @@ if(bpForm)bpForm.addEventListener("submit",e=>{
   e.preventDefault();
   const artist=$("#bpArtist").value.trim();
   if(!artist){toast("アーティスト名は必須です");return;}
-  const num=id=>{const v=parseInt(String($(id).value||"").replace(/[^\d-]/g,""),10);return isNaN(v)?0:v;};
   const row={
     artist, agency:$("#bpAgency").value.trim(), introducer:$("#bpIntro").value.trim(),
-    showDate:$("#bpDate").value, order:num("#bpOrder"), costAgency:num("#bpCostAg"), costIntroducer:num("#bpCostIn"),
+    showDate:$("#bpDate").value, order:pNum("#bpOrder"), costAgency:pNum("#bpCostAg"), costIntroducer:pNum("#bpCostIn"),
     kihon:$("#bpKihon").checked, shutsuen:$("#bpShutsuen").checked,
   };
   if(bpEditId){
-    const d=S.biz.paradise.find(x=>x.id===bpEditId);
+    const d=paradiseDeals().find(x=>x.id===bpEditId);
     if(d) Object.assign(d,row);
     resetBpForm();
     saveAll();renderParadise();toast("案件を更新しました");
     return;
   }
-  S.biz.paradise.unshift(Object.assign({
-    id:(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()),
+  paradiseDeals().unshift(Object.assign({
+    id:pUid(),
     inPre:false, inPost:false, outPre:false, outPost:false, at:new Date().toISOString().slice(0,10)
   },row));
   resetBpForm();
   saveAll();renderParadise();toast("案件を追加しました");
 });
 document.getElementById("bpShowList")?.addEventListener("click",e=>{
+  if(e.target.closest('[data-biz-ct-biz]')) return;
   const editBtn=e.target.closest("[data-bp-edit]");
   if(editBtn){
-    const d=S.biz.paradise.find(x=>x.id===editBtn.dataset.bpEdit);
+    const d=paradiseDeals().find(x=>x.id===editBtn.dataset.bpEdit);
     if(d){
       bpEditId=d.id; fillBpForm(d);
       const btn=$("#bpAdd"); if(btn) btn.textContent="更新する";
@@ -4628,13 +4962,44 @@ document.getElementById("bpShowList")?.addEventListener("click",e=>{
     return;
   }
   const b=e.target.closest("[data-bp]");if(!b)return;
-  S.biz.paradise=S.biz.paradise.filter(d=>d.id!==b.dataset.bp);
+  S.biz.paradise.deals=paradiseDeals().filter(d=>d.id!==b.dataset.bp);
   if(bpEditId===b.dataset.bp) resetBpForm();
   saveAll();renderParadise();toast("案件を削除しました");
 });
 document.getElementById("bpCloseList")?.addEventListener("change",e=>{
   const c=e.target.closest("[data-bpk]");if(!c)return;
-  const d=S.biz.paradise.find(x=>x.id===c.dataset.bpk);if(!d)return;
+  const d=paradiseDeals().find(x=>x.id===c.dataset.bpk);if(!d)return;
+  d[c.dataset.k]=c.checked;saveAll();renderParadise();
+});
+const bpExpForm=$("#bpExpForm");
+if(bpExpForm)bpExpForm.addEventListener("submit",e=>{
+  e.preventDefault();
+  const label=$("#bpExpLabel").value.trim();
+  const amount=pNum("#bpExpAmt");
+  if(!label||!amount){toast("内容と金額は必須です");return;}
+  paradiseExpense().unshift({
+    id:pUid(),
+    kind:$("#bpExpKind").value,
+    label,
+    artist:$("#bpExpArtist").value.trim(),
+    date:$("#bpExpDate").value||new Date().toISOString().slice(0,10),
+    amount,
+    paid:$("#bpExpPaid").checked,
+    at:new Date().toISOString().slice(0,10)
+  });
+  bpExpForm.reset();
+  saveAll();renderParadise();toast("経費を追加しました");
+});
+document.getElementById("bpExpList")?.addEventListener("click",e=>{
+  const del=e.target.closest("[data-bpe-del]");
+  if(del){
+    S.biz.paradise.expense=paradiseExpense().filter(d=>d.id!==del.dataset.bpeDel);
+    saveAll();renderParadise();toast("経費を削除しました");
+  }
+});
+document.getElementById("bpExpList")?.addEventListener("change",e=>{
+  const c=e.target.closest("[data-bpe]");if(!c)return;
+  const d=paradiseExpense().find(x=>x.id===c.dataset.bpe);if(!d)return;
   d[c.dataset.k]=c.checked;saveAll();renderParadise();
 });
 /* ---------- 稲毛海浜公園：イベント・折半ボード ---------- */
@@ -4664,6 +5029,7 @@ function renderInage(){
         <div class="bp-deal-sub">${esc(sub||"—")}</div>
         <div class="bp-deal-nums"><span>売上 <b>${yen(+d.sales||0)}</b></span><span>製作費 <b>${yen(+d.prodCost||0)}</b></span><span>原価計 <b>${yen(c)}</b></span><span class="bp-margin ${p<0?"neg":""}">利益 <b>${(p<0?"−":"")+yen(Math.abs(p))}</b></span><span>自社折半 <b>${(sh<0?"−":"")+yen(Math.abs(sh))}</b></span>${(+d.sponsorAmt)?`<span>スポンサー <b>${yen(+d.sponsorAmt)}</b></span>`:""}</div>
         <div class="bp-deal-ctr"><button type="button" class="btn-approve bp-edit" data-bi-edit="${esc(d.id)}">修正</button><button type="button" class="btn-reject bp-del" data-bi="${esc(d.id)}">削除</button></div>
+        ${window.BizCaseLink?BizCaseLink.panelHtml('稲毛', d.id):''}
       </div>`;
     }).join(""):`<div class="memo" style="color:var(--muted);padding:8px">「イベントを追加」から登録すると、折半計算がここに集計されます。</div>`;
   }
@@ -4726,6 +5092,7 @@ if(biForm)biForm.addEventListener("submit",e=>{
   saveAll();renderInage();toast("イベントを追加しました");
 });
 document.getElementById("biProdList")?.addEventListener("click",e=>{
+  if(e.target.closest('[data-biz-ct-biz]')) return;
   const editBtn=e.target.closest("[data-bi-edit]");
   if(editBtn){
     const d=S.biz.inage.find(x=>x.id===editBtn.dataset.biEdit);
@@ -5411,39 +5778,42 @@ const bdAdd=$("#bdAdd");
 if(bdAdd)bdAdd.onclick=()=>{
   const client=$("#bdClient").value.trim(),topic=$("#bdTopic").value.trim(),agent=$("#bdAgent").value.trim(),status=$("#bdStatus").value;
   if(!client||!topic){toast("依頼者と内容は必須です");return;}
-  S.biz.detective.unshift({client,topic,agent:agent||"未定",status,at:new Date().toISOString().slice(0,10)});
+  S.biz.detective.unshift({id:'bd'+Date.now().toString(36),client,topic,agent:agent||"未定",status,at:new Date().toISOString().slice(0,10)});
   $("#bdClient").value="";$("#bdTopic").value="";$("#bdAgent").value="";
   saveAll();renderBiz();toast("探偵依頼を登録しました");
 };
 document.getElementById("bdList")?.addEventListener("click",e=>{
-  const b=e.target.closest("[data-bd]");if(!b)return;
-  S.biz.detective.splice(+b.dataset.bd,1);saveAll();renderBiz();
+  if(e.target.closest('[data-biz-ct-biz]')) return;
+  const b=e.target.closest("[data-bd-id]");if(!b)return;
+  S.biz.detective=S.biz.detective.filter(d=>d.id!==b.dataset.bdId);saveAll();renderBiz();
 });
 const bkwAdd=$("#bkwAdd");
 if(bkwAdd)bkwAdd.onclick=()=>{
   const client=$("#bkwClient").value.trim(), plan=$("#bkwPlan").value.trim(), fee=+$("#bkwFee").value||0, status=$("#bkwStatus").value;
   if(!client){toast("顧客名は必須です");return;}
   if(!Array.isArray(S.biz.kanstwifi)) S.biz.kanstwifi=[];
-  S.biz.kanstwifi.unshift({client,plan,fee,status,at:new Date().toISOString().slice(0,10)});
+  S.biz.kanstwifi.unshift({id:'kw'+Date.now().toString(36),client,plan,fee,status,at:new Date().toISOString().slice(0,10)});
   $("#bkwClient").value="";$("#bkwPlan").value="";$("#bkwFee").value="";
   saveAll();renderBiz();toast("カンストWiFi回線を登録しました");
 };
 document.getElementById("bkwList")?.addEventListener("click",e=>{
-  const b=e.target.closest("[data-bkw]");if(!b)return;
-  S.biz.kanstwifi.splice(+b.dataset.bkw,1);saveAll();renderBiz();
+  if(e.target.closest('[data-biz-ct-biz]')) return;
+  const b=e.target.closest("[data-bkw-id]");if(!b)return;
+  S.biz.kanstwifi=S.biz.kanstwifi.filter(d=>d.id!==b.dataset.bkwId);saveAll();renderBiz();
 });
 const bstAdd=$("#bstAdd");
 if(bstAdd)bstAdd.onclick=()=>{
   const client=$("#bstClient").value.trim(), worker=$("#bstWorker").value.trim(), fee=+$("#bstFee").value||0, status=$("#bstStatus").value;
   if(!client){toast("派遣先は必須です");return;}
   if(!Array.isArray(S.biz.staffing)) S.biz.staffing=[];
-  S.biz.staffing.unshift({client,worker,fee,status,at:new Date().toISOString().slice(0,10)});
+  S.biz.staffing.unshift({id:'st'+Date.now().toString(36),client,worker,fee,status,at:new Date().toISOString().slice(0,10)});
   $("#bstClient").value="";$("#bstWorker").value="";$("#bstFee").value="";
   saveAll();renderBiz();toast("人材派遣案件を登録しました");
 };
 document.getElementById("bstList")?.addEventListener("click",e=>{
-  const b=e.target.closest("[data-bst]");if(!b)return;
-  S.biz.staffing.splice(+b.dataset.bst,1);saveAll();renderBiz();
+  if(e.target.closest('[data-biz-ct-biz]')) return;
+  const b=e.target.closest("[data-bst-id]");if(!b)return;
+  S.biz.staffing=S.biz.staffing.filter(d=>d.id!==b.dataset.bstId);saveAll();renderBiz();
 });
 
 /* ---------- 共通 ---------- */
@@ -5462,6 +5832,9 @@ function renderAll(){
   _cfRenderHooks.forEach(fn=>{try{fn();}catch(e){console.error(e);}});
 }
 renderAll();
+window.renderBiz=renderBiz;
+window.renderParadise=renderParadise;
+window.renderInage=renderInage;
 
 window.Treasury={
   get S(){return S;},
@@ -5547,6 +5920,7 @@ window.Treasury={
   /* 旧データへスキーム・税・条件・承認フィールドを補完 */
   (function migrate(){
     let changed=false;
+    if(RE.viewMode!=='list'&&RE.viewMode!=='detail'){ RE.viewMode='list'; changed=true; }
     RE.projects.forEach(p=>{
       if(p.scheme===undefined){ p.scheme=(p.id==='camel'?CAMEL_SCHEME:''); changed=true; }
       if(p.exit===undefined){ p.exit=(p.id==='camel'?CAMEL_EXIT:''); changed=true; }
@@ -5556,11 +5930,70 @@ window.Treasury={
       if(!p.tax.rates)p.tax.rates={corp:0.34,cgt:0.20315,consumption:0.10};
       if(!Array.isArray(p.conditions)){ p.conditions=defaultConditions(); changed=true; }
       if(!p.approval){ p.approval={approved:false,by:'',at:''}; changed=true; }
+      if(!Array.isArray(p.files)){ p.files=[]; changed=true; }
     });
     if(changed)T.saveAll();
   })();
 
   function active(){ let p=RE.projects.find(x=>x.id===RE.activeId); if(!p){p=RE.projects[0]; RE.activeId=p.id;} return p; }
+  function setReView(mode){
+    RE.viewMode=mode==='detail'?'detail':'list';
+    const list=$("#reListView"), detail=$("#reDetailView");
+    if(list) list.hidden=RE.viewMode!=='list';
+    if(detail) detail.hidden=RE.viewMode!=='detail';
+  }
+  function openReProject(id){
+    if(id) RE.activeId=id;
+    setReView('detail');
+    T.saveAll();
+    renderRE();
+  }
+  function backReList(){
+    setReView('list');
+    T.saveAll();
+    renderRE();
+  }
+  function fileUid(){return 'f'+(crypto.randomUUID?crypto.randomUUID():Date.now()+Math.random().toString(36).slice(2));}
+  function fmtBytes(n){
+    n=+n||0;
+    if(n<1024)return n+' B';
+    if(n<1048576)return (n/1024).toFixed(1)+' KB';
+    return (n/1048576).toFixed(1)+' MB';
+  }
+  function readFileAsDataUrl(file){
+    return new Promise(function(resolve,reject){
+      const fr=new FileReader();
+      fr.onload=function(){resolve(fr.result);};
+      fr.onerror=reject;
+      fr.readAsDataURL(file);
+    });
+  }
+  async function addReFiles(fileList){
+    const p=active();
+    if(!Array.isArray(p.files)) p.files=[];
+    const files=Array.from(fileList||[]);
+    if(!files.length) return;
+    let added=0;
+    for(const file of files){
+      const isPdf=/pdf/i.test(file.type)||/\.pdf$/i.test(file.name||'');
+      const isImg=/^image\//i.test(file.type);
+      if(!isPdf&&!isImg){ T.toast((file.name||'ファイル')+'はPDFまたは画像のみ対応です'); continue; }
+      if(file.size>8*1024*1024){ T.toast((file.name||'ファイル')+'は8MB超のためスキップ'); continue; }
+      try{
+        const dataUrl=await readFileAsDataUrl(file);
+        p.files.unshift({
+          id:fileUid(),
+          name:file.name||(isPdf?'document.pdf':'image.png'),
+          kind:isPdf?'pdf':'image',
+          size:file.size||0,
+          dataUrl:dataUrl,
+          at:new Date().toISOString().slice(0,10)
+        });
+        added++;
+      }catch(err){ T.toast('読み込みに失敗しました'); }
+    }
+    if(added){ T.saveAll(); renderRE(); T.toast(added+'件の資料を追加しました'); }
+  }
   function contractsAll(){ return Array.isArray(S.contracts)?S.contracts:[]; }
   function caseTitle(id){ const c=contractsAll().find(x=>x.id===id); return c?(c.party+'／'+c.title):''; }
   function caseSigned(id){ const c=contractsAll().find(x=>x.id===id); return !!(c&&c.status==='signed'); }
@@ -5630,9 +6063,56 @@ window.Treasury={
     w.innerHTML=RE.projects.map(p=>`<button type="button" data-re-proj="${esc(p.id)}" class="${p.id===RE.activeId?'on':''}">${esc(p.name)}</button>`).join('')
       +`<button type="button" class="re-newproj" data-re-newproj>＋ 新規案件</button>`;
   }
+  function renderProjList(){
+    const w=$("#reProjList"); if(!w) return;
+    if(!RE.projects.length){
+      w.innerHTML='<div class="re-empty">案件がありません。「＋ 新規案件」から作成してください。</div>';
+      return;
+    }
+    w.innerHTML=RE.projects.map(p=>{
+      const {gk}=calc(p);
+      const prog=p.target?Math.min(gk.income/p.target,1):0;
+      const ap=p.approval&&p.approval.approved;
+      const files=(p.files||[]).length;
+      const chip=ap
+        ?'<span class="re-pc-chip ok">承認済</span>'
+        :(canApprove(p)?'<span class="re-pc-chip warn">承認可能</span>':'<span class="re-pc-chip">準備中</span>');
+      return `<button type="button" class="re-proj-card" data-re-open="${esc(p.id)}">
+        <div class="re-pc-name">${esc(p.name||'（無題）')}</div>
+        <div class="re-pc-sub">${esc(p.sub||'所在地・区分未設定')}</div>
+        <div class="re-pc-meta">${chip}<span class="re-pc-chip">資料 ${files}件</span></div>
+        <div class="re-pc-nums"><span>調達 <b>${fmt(gk.income)}</b></span><span>目標 <b>${fmt(p.target)}</b></span><span>${pct(prog)}</span></div>
+        <div class="re-pc-bar"><i style="width:${(prog*100).toFixed(1)}%"></i></div>
+      </button>`;
+    }).join('');
+  }
+  function renderFiles(p){
+    const list=$("#reFileList"); if(!list) return;
+    const files=Array.isArray(p.files)?p.files:[];
+    if(!files.length){
+      list.innerHTML='<div class="re-empty">まだ資料がありません。上の枠にPDFや画像をドロップ／貼り付けしてください。</div>';
+      return;
+    }
+    list.innerHTML=files.map(f=>{
+      const ico=f.kind==='pdf'?'📄':'🖼';
+      return `<div class="re-file-item">
+        <span class="re-file-ico" aria-hidden="true">${ico}</span>
+        <div class="re-file-body">
+          <div class="re-file-name">${esc(f.name||'資料')}</div>
+          <div class="re-file-meta">${esc(f.at||'—')} ／ ${fmtBytes(f.size)} ／ ${f.kind==='pdf'?'PDF':'画像'}</div>
+        </div>
+        <a href="${f.dataUrl||'#'}" target="_blank" rel="noopener" download="${esc(f.name||'file')}">開く</a>
+        <button type="button" class="re-file-del" data-re-delf="${esc(f.id)}">削除</button>
+      </div>`;
+    }).join('');
+  }
 
   function renderRE(){
-    if(!$("#reProjTabs")) return;
+    if(!$("#reListView")&&!$("#reProjTabs")) return;
+    if(!RE.viewMode) RE.viewMode='list';
+    setReView(RE.viewMode);
+    renderProjList();
+    if(RE.viewMode!=='detail') return;
     renderTabs();
     const p=active(), {gk,paid}=calc(p);
     $("#reHeadSub").textContent=p.sub||'—';
@@ -5691,6 +6171,9 @@ window.Treasury={
     renderApproval(p);
     renderScheme(p);
     renderTaxPanel(p);
+    renderFiles(p);
+    const ctBox=$("#reCaseContracts");
+    if(ctBox) ctBox.innerHTML=window.BizCaseLink?BizCaseLink.panelHtml('不動産', p.id):'<div class="re-empty">契約書台帳と連携できます</div>';
   }
 
   const STAGES=[{role:'入金元',label:'調達金 入金元'},{role:'資金ハブ',label:'資金ハブ（GK口座）'},{role:'配分先',label:'配分先・FA',also:'FA'},{role:'出口',label:'出口'}];
@@ -5807,14 +6290,16 @@ window.Treasury={
     if(projEditId){
       const p=RE.projects.find(x=>x.id===projEditId);
       p.name=name; p.sub=sub; p.target=target; p.reward=reward; p.parties=parties;
+      T.saveAll(); closeAll(); renderRE();
+      T.toast('案件を更新しました');
     }else{
       const id='p'+Date.now();
-      RE.projects.push({id,name,sub,target,reward,parties,payments:[],transfers:[],
+      RE.projects.push({id,name,sub,target,reward,parties,payments:[],transfers:[],files:[],
         scheme:'',exit:'',companies:[],tax:defaultTax(),conditions:defaultConditions(),approval:{approved:false,by:'',at:''}});
-      RE.activeId=id;
+      closeAll();
+      openReProject(id);
+      T.toast('案件を追加しました');
     }
-    T.saveAll(); closeAll(); renderRE();
-    T.toast(projEditId?'案件を更新しました':'案件を追加しました');
   };
 
   $("#reEditProj").onclick=()=>openProjModal(active().id);
@@ -5823,8 +6308,11 @@ window.Treasury={
     if(RE.projects.length<=1){ T.toast('最後の案件は削除できません'); return; }
     if(!confirm(`案件「${p.name}」を削除しますか？この操作は元に戻せません。`)) return;
     RE.projects=RE.projects.filter(x=>x.id!==p.id); RE.activeId=RE.projects[0].id;
-    T.saveAll(); renderRE(); T.toast('案件を削除しました');
+    backReList();
+    T.toast('案件を削除しました');
   };
+  $("#reBackList")?.addEventListener('click', ()=>backReList());
+  $("#reNewFromList")?.addEventListener('click', ()=>openProjModal(null));
 
   $("#reExport").onclick=()=>{
     const a=document.createElement('a');
@@ -5907,15 +6395,23 @@ window.Treasury={
   };
 
   $("#s-biz-realestate").addEventListener('click', e=>{
+    const openCard=e.target.closest('[data-re-open]');
+    if(openCard){ openReProject(openCard.dataset.reOpen); return; }
     const add=e.target.closest('[data-re-add]');
     if(add){ if(add.dataset.reAdd==='payment')openM('#reMPayment'); else{fillTransferSelects(); openM('#reMTransfer');} return; }
     const tab=e.target.closest('[data-re-proj]');
-    if(tab){ RE.activeId=tab.dataset.reProj; T.saveAll(); renderRE(); return; }
+    if(tab){ openReProject(tab.dataset.reProj); return; }
     if(e.target.closest('[data-re-newproj]')){ openProjModal(null); return; }
     const dp=e.target.closest('[data-re-delp]');
     if(dp){ active().payments.splice(+dp.dataset.reDelp,1); T.saveAll(); renderRE(); return; }
     const dt=e.target.closest('[data-re-delt]');
     if(dt){ active().transfers.splice(+dt.dataset.reDelt,1); T.saveAll(); renderRE(); return; }
+    const df=e.target.closest('[data-re-delf]');
+    if(df){
+      const p=active();
+      p.files=(p.files||[]).filter(f=>f.id!==df.dataset.reDelf);
+      T.saveAll(); renderRE(); T.toast('資料を削除しました'); return;
+    }
     if(e.target.closest('#reApprove')){
       const p=active(); if(!canApprove(p)){ T.toast('未充足の項目があります'); return; }
       const who=(window.PortalAuth&&PortalAuth.getUser&&(PortalAuth.getUser()||{}).name)||(T.role==='boss'?'社長 ヒロ':'担当者');
@@ -5930,6 +6426,33 @@ window.Treasury={
     if(tm){ active().tax.mode=tm.dataset.reTaxmode; T.saveAll(); renderRE(); return; }
     if(e.target.closest('#reEditScheme')){ openSchemeModal(); return; }
   });
+
+  /* 資料ドロップ／選択／貼付 */
+  (function wireReFiles(){
+    const drop=$("#reFilesDrop"), input=$("#reFilesInput"), panel=$("#reFilesPanel");
+    if(!drop||!input) return;
+    drop.addEventListener('click', ()=>input.click());
+    input.addEventListener('change', ()=>{ addReFiles(input.files); input.value=''; });
+    ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev, e=>{ e.preventDefault(); drop.classList.add('is-drag'); }));
+    ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev, e=>{ e.preventDefault(); drop.classList.remove('is-drag'); }));
+    drop.addEventListener('drop', e=>{
+      if(e.dataTransfer&&e.dataTransfer.files) addReFiles(e.dataTransfer.files);
+    });
+    const onPaste=e=>{
+      if(RE.viewMode!=='detail') return;
+      const sec=document.getElementById('s-biz-realestate');
+      if(!sec||!sec.classList.contains('on')) return;
+      const items=e.clipboardData&&e.clipboardData.items; if(!items) return;
+      const files=[];
+      for(let i=0;i<items.length;i++){
+        const it=items[i];
+        if(it.kind==='file'){ const f=it.getAsFile(); if(f) files.push(f); }
+      }
+      if(files.length){ e.preventDefault(); addReFiles(files); }
+    };
+    document.addEventListener('paste', onPaste);
+    panel?.addEventListener('paste', onPaste);
+  })();
 
   /* 税入力・条件チェック・契約チェックの反映 */
   $("#s-biz-realestate").addEventListener('input', e=>{
@@ -6196,23 +6719,163 @@ window.Treasury={
 </script>
 
 <script>
-/* ===== 契約書台帳（S.contracts・不動産と連携） ===== */
+/* ===== 事業案件 ↔ 契約書 紐づけ ===== */
+window.BizCaseLink=(function(){
+  const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function S(){ return window.Treasury&&window.Treasury.S; }
+  function ensureIds(arr,prefix){
+    let ch=false;
+    (arr||[]).forEach(d=>{
+      if(!d.id){ d.id=(prefix||'c')+Date.now().toString(36)+Math.random().toString(36).slice(2,6); ch=true; }
+    });
+    return ch;
+  }
+  function casesForBiz(biz){
+    const st=S(); if(!st) return [];
+    if(biz==='不動産'){
+      const ps=(st.realestate&&st.realestate.projects)||[];
+      return ps.map(p=>({id:p.id, label:p.name+(p.sub?'｜'+p.sub:'')}));
+    }
+    if(biz==='パラダイス'){
+      const deals=(st.biz&&st.biz.paradise&&st.biz.paradise.deals)||[];
+      return deals.map(d=>({id:d.id, label:(d.artist||'案件')+(d.showDate?'｜'+d.showDate:'')}));
+    }
+    if(biz==='稲毛'){
+      ensureIds(st.biz&&st.biz.inage,'bi');
+      return (st.biz.inage||[]).map(d=>({id:d.id, label:(d.name||'イベント')+(d.eventDate?'｜'+d.eventDate:'')}));
+    }
+    if(biz==='探偵'){
+      ensureIds(st.biz&&st.biz.detective,'bd');
+      return (st.biz.detective||[]).map(d=>({id:d.id, label:(d.client||'依頼')+'｜'+(d.topic||'')}));
+    }
+    if(biz==='カンストWiFi'){
+      ensureIds(st.biz&&st.biz.kanstwifi,'kw');
+      return (st.biz.kanstwifi||[]).map(d=>({id:d.id, label:(d.client||'顧客')+'｜'+(d.plan||d.status||'')}));
+    }
+    if(biz==='人材派遣'){
+      ensureIds(st.biz&&st.biz.staffing,'st');
+      return (st.biz.staffing||[]).map(d=>({id:d.id, label:(d.client||'派遣先')+'｜'+(d.worker||d.status||'')}));
+    }
+    return [];
+  }
+  function caseLabel(biz, caseId){
+    if(!caseId) return '';
+    const hit=casesForBiz(biz).find(c=>c.id===caseId);
+    return hit?hit.label:'';
+  }
+  function linked(biz, caseId){
+    const st=S(); if(!st||!caseId) return [];
+    return (st.contracts||[]).filter(c=>c.biz===biz&&c.bizCaseId===caseId);
+  }
+  function unlinkable(biz, caseId){
+    const st=S(); if(!st) return [];
+    const used=new Set(linked(biz,caseId).map(c=>c.id));
+    return (st.contracts||[]).filter(c=>(!c.bizCaseId||c.biz===biz)&&!used.has(c.id));
+  }
+  function panelHtml(biz, caseId){
+    if(!caseId) return '';
+    const list=linked(biz, caseId);
+    const opts=unlinkable(biz, caseId);
+    const chips=list.length
+      ?list.map(c=>{
+        const signed=c.status==='signed';
+        return `<button type="button" class="biz-ct-chip ${signed?'':'unsigned'}" data-biz-ct-open="${esc(c.id)}" title="契約書を開く">📄 ${esc(c.party||'')}／${esc(c.title||'')}${signed?' ✓':' 未'}<span class="x" data-biz-ct-unlink="${esc(c.id)}" title="紐づけ解除">×</span></button>`;
+      }).join('')
+      :'<span style="font-size:11px;color:var(--muted)">まだ契約書が紐づいていません</span>';
+    const sel='<option value="">— 既存契約を紐づけ —</option>'+opts.map(c=>
+      `<option value="${esc(c.id)}">${esc(c.party||'')}／${esc(c.title||'')}（${c.status==='signed'?'締結済':'未締結'}）</option>`
+    ).join('');
+    return `<div class="biz-ct-panel" data-biz-ct-biz="${esc(biz)}" data-biz-ct-case="${esc(caseId)}">
+      <div class="biz-ct-cap">契約書紐づけ</div>
+      <div class="biz-ct-chips">${chips}</div>
+      <div class="biz-ct-tools">
+        <select data-biz-ct-pick>${sel}</select>
+        <button type="button" data-biz-ct-link>紐づけ</button>
+        <button type="button" data-biz-ct-new>＋ 新規登録</button>
+      </div>
+    </div>`;
+  }
+  function refreshAll(){
+    if(window.Treasury&&window.Treasury.renderAll) window.Treasury.renderAll();
+    else{
+      try{ window.renderParadise&&window.renderParadise(); }catch(e){}
+      try{ window.renderInage&&window.renderInage(); }catch(e){}
+      try{ window.renderBiz&&window.renderBiz(); }catch(e){}
+    }
+  }
+  function wire(root){
+    const el=root||document;
+    el.addEventListener('click', function(e){
+      const un=e.target.closest('[data-biz-ct-unlink]');
+      if(un){
+        e.preventDefault(); e.stopPropagation();
+        const st=S(); const c=(st.contracts||[]).find(x=>x.id===un.dataset.bizCtUnlink);
+        if(c){ c.bizCaseId=''; window.Treasury.saveAll(); refreshAll(); window.Treasury.toast('紐づけを解除しました'); }
+        return;
+      }
+      const open=e.target.closest('[data-biz-ct-open]');
+      if(open&&!e.target.closest('[data-biz-ct-unlink]')){
+        e.preventDefault();
+        document.querySelector('.gamenav button[data-s="contracts"]')?.click();
+        setTimeout(function(){ window.openContractModal?.(open.dataset.bizCtOpen); }, 80);
+        return;
+      }
+      const linkBtn=e.target.closest('[data-biz-ct-link]');
+      if(linkBtn){
+        e.preventDefault(); e.stopPropagation();
+        const panel=linkBtn.closest('[data-biz-ct-biz]');
+        const sel=panel&&panel.querySelector('[data-biz-ct-pick]');
+        const id=sel&&sel.value;
+        if(!id){ window.Treasury.toast('紐づける契約を選んでください'); return; }
+        const st=S(); const c=(st.contracts||[]).find(x=>x.id===id);
+        if(c){
+          c.biz=panel.dataset.bizCtBiz;
+          c.bizCaseId=panel.dataset.bizCtCase;
+          window.Treasury.saveAll(); refreshAll(); window.Treasury.toast('契約書を案件に紐づけました');
+        }
+        return;
+      }
+      const neu=e.target.closest('[data-biz-ct-new]');
+      if(neu){
+        e.preventDefault(); e.stopPropagation();
+        const panel=neu.closest('[data-biz-ct-biz]');
+        if(!panel) return;
+        const preset={biz:panel.dataset.bizCtBiz, bizCaseId:panel.dataset.bizCtCase};
+        document.querySelector('.gamenav button[data-s="contracts"]')?.click();
+        setTimeout(function(){ window.openContractModal?.(null, preset); }, 80);
+        return;
+      }
+    });
+  }
+  wire(document);
+  return {casesForBiz, caseLabel, linked, panelHtml, ensureIds, refreshAll};
+})();
+
+/* ===== 契約書台帳（S.contracts・各事業案件と連携） ===== */
 (function(){
   const T=window.Treasury; if(!T) return;
   const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)], esc=T.esc;
   const S=T.S;
   if(!Array.isArray(S.contracts)){
     S.contracts=[
-      {id:'ct1', party:'GCエステー', title:'調達金 拠出契約', biz:'不動産', amount:0, date:'2025/05/20', status:'signed', body:'CAMEL Phase I の調達金 入金元'},
-      {id:'ct2', party:'グローバルクラウド', title:'調達金 拠出契約', biz:'不動産', amount:0, date:'2025/07/01', status:'signed', body:''},
-      {id:'ct3', party:'川畑氏', title:'FA（ファイナンシャルアドバイザリー）契約', biz:'不動産', amount:7410000, date:'2025/05/25', status:'unsigned', body:'FAフィー 741万円'},
-      {id:'ct4', party:'深山信次・FGC', title:'配分・立替精算 契約', biz:'不動産', amount:0, date:'', status:'unsigned', body:''},
-      {id:'ct5', party:'GE（グローバルエナジー）', title:'報酬・未収金 契約', biz:'不動産', amount:0, date:'', status:'unsigned', body:''}
+      {id:'ct1', party:'GCエステー', title:'調達金 拠出契約', biz:'不動産', bizCaseId:'camel', amount:0, date:'2025/05/20', status:'signed', body:'CAMEL Phase I の調達金 入金元'},
+      {id:'ct2', party:'グローバルクラウド', title:'調達金 拠出契約', biz:'不動産', bizCaseId:'camel', amount:0, date:'2025/07/01', status:'signed', body:''},
+      {id:'ct3', party:'川畑氏', title:'FA（ファイナンシャルアドバイザリー）契約', biz:'不動産', bizCaseId:'camel', amount:7410000, date:'2025/05/25', status:'unsigned', body:'FAフィー 741万円'},
+      {id:'ct4', party:'深山信次・FGC', title:'配分・立替精算 契約', biz:'不動産', bizCaseId:'camel', amount:0, date:'', status:'unsigned', body:''},
+      {id:'ct5', party:'GE（グローバルエナジー）', title:'報酬・未収金 契約', biz:'不動産', bizCaseId:'camel', amount:0, date:'', status:'unsigned', body:''}
     ];
     T.saveAll();
   }
+  (S.contracts||[]).forEach(c=>{ if(c.bizCaseId===undefined) c.bizCaseId=''; });
   let filter='all', editId=null;
   const fmt=n=>n?'¥'+Math.abs(Math.round(n)).toLocaleString('ja-JP'):'—';
+
+  function fillCaseSelect(biz, selected){
+    const sel=$("#ctF-case"); if(!sel) return;
+    const cases=window.BizCaseLink?BizCaseLink.casesForBiz(biz):[];
+    sel.innerHTML='<option value="">— 案件を選ばない —</option>'+
+      cases.map(c=>`<option value="${esc(c.id)}"${c.id===selected?' selected':''}>${esc(c.label)}</option>`).join('');
+  }
 
   function render(){
     if(!$("#ctList")) return;
@@ -6223,11 +6886,13 @@ window.Treasury={
     const list=all.filter(c=>filter==='all'?true:filter==='signed'?c.status==='signed':c.status!=='signed');
     $("#ctList").innerHTML=list.length?list.map(c=>{
       const signed=c.status==='signed';
+      const caseLbl=window.BizCaseLink?BizCaseLink.caseLabel(c.biz, c.bizCaseId):'';
       return `<div class="ct-card ${signed?'signed':''}">
         <div class="ct-card-head">
           <div><div class="ct-party">${esc(c.party||'（相手先未設定）')}</div><div class="ct-title">${esc(c.title||'')}</div></div>
           <div class="ct-badges"><span class="ct-biz">${esc(c.biz||'—')}</span><span class="ct-status ${signed?'signed':'unsigned'}">${signed?'締結済':'未締結'}</span></div>
         </div>
+        ${caseLbl?`<div class="ct-case">案件：${esc(caseLbl)}</div>`:''}
         <div class="ct-meta">${c.amount?`<span>金額 <b>${fmt(c.amount)}</b></span>`:''}${c.date?`<span>契約日 <b>${esc(c.date)}</b></span>`:''}</div>
         ${c.body?`<div class="ct-note">${esc(c.body)}</div>`:''}
         <div class="ct-acts">
@@ -6239,23 +6904,28 @@ window.Treasury={
     }).join(''):'<div class="ct-empty">該当する契約書がありません。「＋ 契約書を登録」から追加してください。</div>';
   }
 
-  function openModal(id){
+  function openModal(id, preset){
     editId=id||null;
     const c=id?S.contracts.find(x=>x.id===id):null;
     $("#ctModalTitle").textContent=id?'契約書を編集':'契約書を登録';
-    $("#ctF-party").value=c?(c.party||''):'';
+    $("#ctF-party").value=c?(c.party||''):(preset&&preset.party)||'';
     $("#ctF-title").value=c?(c.title||''):'';
-    $("#ctF-biz").value=c?(c.biz||'不動産'):'不動産';
+    const biz=c?(c.biz||'不動産'):(preset&&preset.biz)||'不動産';
+    $("#ctF-biz").value=biz;
+    fillCaseSelect(biz, c?(c.bizCaseId||''):(preset&&preset.bizCaseId)||'');
     $("#ctF-amount").value=c?(c.amount||''):'';
     $("#ctF-date").value=c?(c.date||''):'';
     $("#ctF-status").value=c?(c.status||'unsigned'):'unsigned';
     $("#ctF-body").value=c?(c.body||''):'';
     $("#ctModal").classList.add('open');
   }
+  window.openContractModal=openModal;
+  $("#ctF-biz")?.addEventListener('change', ()=>fillCaseSelect($("#ctF-biz").value, $("#ctF-case").value));
   $("#ctSave").onclick=()=>{
     const party=$("#ctF-party").value.trim();
     if(!party){ T.toast('相手先を入力してください'); return; }
     const data={party, title:$("#ctF-title").value.trim(), biz:$("#ctF-biz").value,
+      bizCaseId:$("#ctF-case")?$("#ctF-case").value:'',
       amount:parseInt($("#ctF-amount").value)||0, date:$("#ctF-date").value.trim(),
       status:$("#ctF-status").value, body:$("#ctF-body").value.trim()};
     if(editId){ Object.assign(S.contracts.find(x=>x.id===editId), data); }
@@ -6277,6 +6947,8 @@ window.Treasury={
 
   T.onRender(render);
   render();
+  /* BizCaseLink 定義後に再描画し、各事業案件の契約紐づけUIを反映 */
+  if(T.renderAll) T.renderAll();
 })();
 </script>
 
@@ -6359,15 +7031,19 @@ window.Treasury={
   let turn = 0, timer = null, hoverDept = null;
 
   function card(dept){ return document.querySelector('.dc-card[data-dept="'+dept+'"]'); }
-  function stopAll(){
+  function entakuBusy(){
+    return !!window.__entakuSpeaking || !!window.PortalTTS?.isSpeaking?.();
+  }
+  function stopAll(opts){
     document.querySelectorAll('.dc-card.is-talking').forEach(c=>c.classList.remove('is-talking'));
     document.querySelectorAll('.dc-bubble').forEach(b=>{ b.hidden = true; });
-    window.PortalTTS?.stop();
+    const keepTts = !!(opts&&opts.keepTts) || !!window.__entakuSpeaking;
+    if(!keepTts) window.PortalTTS?.stop();
     window.TaskBubbles&&window.TaskBubbles.restore();
   }
-  function speak(dept, text, ms){
+  function speak(dept, text, ms, opts){
     if(REDUCED) return;
-    stopAll();
+    stopAll({keepTts: !!(opts&&opts.keepTts) || !!window.__entakuSpeaking});
     const el = card(dept); if(!el) return;
     const bubble = el.querySelector('.dc-bubble');
     const txt = el.querySelector('.dc-bubble-txt');
@@ -6378,6 +7054,7 @@ window.Treasury={
     clearTimeout(timer);
     timer = setTimeout(()=>{
       if(hoverDept === dept) return;
+      if(window.__entakuSpeaking) return;
       el.classList.remove('is-talking');
       bubble.hidden = true;
       window.TaskBubbles&&window.TaskBubbles.restore();
@@ -6389,6 +7066,7 @@ window.Treasury={
   }
   function idleTurn(){
     if(hoverDept) return;
+    if(entakuBusy()) return;
     const c = CHARS[turn % CHARS.length];
     speak(c.dept, pickLine(c));
     turn++;
@@ -6397,19 +7075,21 @@ window.Treasury={
     const dept = el.dataset.dept;
     const c = CHARS.find(x=>x.dept===dept);
     el.addEventListener('mouseenter', ()=>{
+      if(entakuBusy()) return;
       hoverDept = dept;
       speak(dept, pickLine(c), 99999);
     });
     el.addEventListener('mouseleave', ()=>{
       hoverDept = null;
-      stopAll();
+      stopAll({keepTts: entakuBusy()});
     });
   });
   window.DashTalk = {
-    speak: (dept, text, ms)=> speak(dept, text, ms),
+    speak: (dept, text, ms, opts)=> speak(dept, text, ms, opts),
     stop: stopAll,
     reactToText(text){
       if(!text) return;
+      if(entakuBusy()) return;
       if(/経理|入出金|経費|税|CF|精算|口座|明細/.test(text)) speak('finance', '承知しました、確認しますね。', 4200);
       else if(/契約|法務|リーガル|印籠|コンプラ/.test(text)) speak('legal', '法務の観点から見ます。', 4200);
       else speak('secretary', '円卓へお繋ぎしますね。', 3600);
@@ -7212,25 +7892,36 @@ window.EntakuDocIngest=(function(){
   function speakAgentLine(agent, text, done){
     const a = agentOf(agent);
     const plain = entakuTtsPlain(text);
-    window.DashTalk?.speak(agent, plain.slice(0,120) || (a.name+'です。'), 99999);
+    window.__entakuSpeaking = true;
+    window.DashTalk?.speak(agent, plain.slice(0,120) || (a.name+'です。'), 99999, {keepTts:true});
     if(window.PortalTTS?.isEnabled?.() && plain){
       let speech = a.name + 'です。' + plain;
-      if(speech.length > 420) speech = speech.slice(0,420) + '…以降は画面でご確認ください。';
+      // チャンク再生のため長文も可。極端な長さだけ画面確認へ誘導
+      if(speech.length > 2400) speech = speech.slice(0,2400) + '。以降は画面でご確認ください。';
       let advanced = false;
-      const go = function(){ if(advanced) return; advanced = true; setTimeout(done, 220); };
+      let failId = null;
+      const go = function(){
+        if(advanced) return;
+        advanced = true;
+        if(failId) clearTimeout(failId);
+        setTimeout(done, 220);
+      };
       window.PortalTTS.speak(speech, go);
-      // フェイルセーフ（onendが来ない環境向け）
-      setTimeout(go, Math.min(16000, 1600 + plain.length * 90));
+      // フェイルセーフ：日本語〜200ms/字想定。途中切断を避けるため余裕を持たせる
+      failId = setTimeout(go, Math.min(180000, 5000 + speech.length * 200));
     }else{
       setTimeout(done, Math.min(4200, Math.max(1500, plain.length * 70)));
     }
   }
   function playReplies(replies, actions, scrollY){
     S.playing = true;
+    window.__entakuSpeaking = true;
     let i = 0;
     (function step(){
       if(i >= replies.length){
         S.playing = false;
+        window.__entakuSpeaking = false;
+        window.DashTalk?.stop?.({keepTts:true});
         commitActions(actions || []);
         render();
         focusEntakuInput();
@@ -7281,7 +7972,7 @@ window.EntakuDocIngest=(function(){
       return a.name+'です。'+entakuTtsPlain(m.content);
     }).join(' ');
     if(!text)return;
-    if(text.length>480)text=text.slice(0,480)+'…以降は画面でご確認ください。';
+    if(text.length>2400)text=text.slice(0,2400)+'。以降は画面でご確認ください。';
     window.PortalTTS.speak(text);
   }
   function esc(s){ return String(s==null?'':s).replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
@@ -7881,7 +8572,8 @@ window.EntakuDocIngest=(function(){
       render();
       playReplies(replies, actions, scrollY); // 1人ずつ順番に発言＋読み上げ
     }).catch(function(e){
-      S.busy=false; el('entakuSend').disabled=false;
+      S.busy=false; S.playing=false; window.__entakuSpeaking=false;
+      el('entakuSend').disabled=false;
       var msg=e&&e.message==='AI_NOT_CONNECTED'
         ?'⚠ AIは未接続です。Vercel版で開き、OPENAI_API_KEY を設定してください。'
         :'⚠ OpenAIに接続できませんでした（'+(e&&e.message||e)+'）。Vercel版＋OPENAI_API_KEYの設定が必要です。';
