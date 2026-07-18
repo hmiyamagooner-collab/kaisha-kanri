@@ -188,11 +188,26 @@ input,select,textarea{font-family:inherit}
   box-shadow:none;
 }
 .gamenav button.nav-locked.on{border-color:rgba(51,198,179,.35)}
-.gamenav .nav-acct-wrap{display:flex;flex-direction:column;gap:6px}
-.gamenav .nav-acct-panel[hidden],
-.gamenav .nav-acct-label[hidden],
-.gamenav .nav-acct-wrap[hidden]{display:none!important}
-.gamenav .nav-acct-panel{display:flex;flex-direction:column;gap:6px}
+.gamenav .nav-secure-wrap{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.gamenav .nav-secure-wrap[hidden],
+.gamenav .nav-secure-panel[hidden]{display:none!important}
+.gamenav .nav-secure-panel{display:flex;flex-direction:column;gap:6px}
+.gamenav .nav-secure-toggle{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
+  min-height:40px;padding:8px 12px;border-radius:10px;cursor:pointer;
+  font-family:var(--font-body);font-size:12px;font-weight:700;letter-spacing:.04em;
+  color:var(--nav-label);
+  background:linear-gradient(180deg,var(--nav-green-fill-hi) 0%,var(--nav-green-fill) 45%,var(--nav-green-fill-dim) 100%);
+  border:1px solid var(--nav-green-soft);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 8px rgba(0,0,0,.28);
+}
+.gamenav .nav-secure-toggle:hover{border-color:var(--nav-green);filter:brightness(1.06)}
+.gamenav .nav-secure-toggle.is-open{border-color:var(--nav-green)}
+.gamenav .nav-secure-chevron{
+  font-size:10px;opacity:.85;transition:transform .18s ease;
+}
+.gamenav .nav-secure-toggle.is-open .nav-secure-chevron{transform:rotate(180deg)}
+.gamenav .nav-secure-panel .nav-group.nav-group-major{margin-top:2px;padding-top:10px}
 /* 事業ボタン：実写背景＋中央ラベル */
 .gamenav button.nav-biz{
   padding:0;gap:0;min-height:var(--nav-h);
@@ -886,12 +901,6 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   content:"";width:7px;height:7px;border-radius:50%;
   background:var(--accent);box-shadow:0 0 12px rgba(122,171,222,.5);
 }
-#portal-bar .pt-hint{
-  margin-left:auto;font-size:12px;color:var(--muted);
-  font-family:var(--font-body);letter-spacing:.01em;
-  display:flex;gap:16px;flex-wrap:wrap;
-}
-#portal-bar .pt-hint b{color:var(--text);font-weight:600}
 #quests-row{
   height:calc(100dvh - 44px);
   min-height:420px;
@@ -1871,7 +1880,6 @@ video.dc-card__image{
   .entaku-inline{max-height:none;min-height:0;}
   #app-treasury .hud{top:0}
 }
-@media(max-width:600px){#portal-bar .pt-hint{display:none;}}
 /* ===== スマホ対応（横画面前提） ===== */
 #rotate-note{
   display:none;position:fixed;inset:0;z-index:9999;background:var(--bg);
@@ -1966,8 +1974,11 @@ video.dc-card__image{
         <select id="loginRole" required>
           <option value="">選択してください</option>
           <option value="社長">社長</option>
+          <option value="役員">役員</option>
           <option value="経理">経理</option>
           <option value="法務">法務</option>
+          <option value="SE">SE</option>
+          <option value="制作">制作</option>
           <option value="秘書">秘書</option>
           <option value="施設長">施設長</option>
           <option value="看護師">看護師</option>
@@ -2035,9 +2046,13 @@ video.dc-card__image{
     <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
     <span class="nav-label nav-label-2line">イレギュラー<br>案件フロー</span>
   </button>
-  <div class="nav-acct-wrap" id="navAcctWrap" hidden>
-    <div class="nav-group nav-group-major nav-acct-label" id="navAcctLabel">会計</div>
-    <div class="nav-acct-panel" id="navAcctPanel">
+  <div class="nav-secure-wrap" id="navSecureWrap" hidden>
+    <button type="button" class="nav-secure-toggle" id="navSecureToggle" aria-expanded="false" aria-controls="navSecurePanel" title="会計・法務メニュー">
+      <span class="nav-secure-toggle-lbl">会計・法務</span>
+      <span class="nav-secure-chevron" aria-hidden="true">▼</span>
+    </button>
+    <div class="nav-secure-panel" id="navSecurePanel" hidden>
+      <div class="nav-group nav-group-major">会計</div>
       <button type="button" class="nav-biz nav-green" data-s="dash" data-acct="1">
         <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
         <span class="nav-label">金庫室</span>
@@ -2086,17 +2101,17 @@ video.dc-card__image{
         <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
         <span class="nav-label">精算クエスト</span>
       </button>
+      <div class="nav-group nav-group-major">法務</div>
+      <button type="button" class="nav-biz nav-green" data-s="contracts" data-acct="1">
+        <span class="nav-photo" style="background-image:url(dash-legal.png)"></span>
+        <span class="nav-label">契約書</span>
+      </button>
+      <button type="button" class="nav-biz nav-green" data-s="cf-legal" data-acct="1">
+        <span class="nav-photo" style="background-image:url(dash-legal.png)"></span>
+        <span class="nav-label">契約リーガル</span>
+      </button>
     </div>
   </div>
-  <div class="nav-group nav-group-major">法務</div>
-  <button type="button" class="nav-biz nav-green" data-s="contracts">
-    <span class="nav-photo" style="background-image:url(dash-legal.png)"></span>
-    <span class="nav-label">契約書</span>
-  </button>
-  <button type="button" class="nav-biz nav-green" data-s="cf-legal">
-    <span class="nav-photo" style="background-image:url(dash-legal.png)"></span>
-    <span class="nav-label">契約リーガル</span>
-  </button>
   <div class="nav-group nav-group-major">会議</div>
   <button type="button" class="nav-biz nav-green" data-s="mtg-finance">
     <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
@@ -2123,7 +2138,6 @@ video.dc-card__image{
 <div id="portal-main">
 <div id="portal-bar">
   <span class="pt-logo">GOONER PORTAL</span>
-  <span class="pt-hint"><b>左ナビ</b>全高　<b>上段</b>キャラカード全幅　<b>下段</b>円卓｜クエスト横並び</span>
   <span class="pt-user" id="portalUserChip" hidden></span>
   <button type="button" class="pt-logout" id="portalLogoutBtn" hidden>ログアウト</button>
 </div>
@@ -4406,15 +4420,18 @@ function setRole(r){role=r;
 }
 
 /* ---------- ナビ ---------- */
-$$(".gamenav button").forEach(b=>b.onclick=()=>{
+$$(".gamenav button[data-s]").forEach(b=>b.onclick=()=>{
   if(b.dataset.acct==="1"){
     if(!window.PortalAuth||!PortalAuth.canAccessAccounting()){
-      try{toast("会計メニューは社長・経理・法務のみ利用できます");}catch(e){}
+      try{toast("会計・法務メニューは社長・経理・法務のみ利用できます");}catch(e){}
       return;
     }
+    try{ window.PortalAuth?.revealSecureNav?.(true); }catch(e){}
   }
-  $$(".gamenav button").forEach(x=>x.classList.remove("on")); b.classList.add("on");
-  $$(".screen").forEach(x=>x.classList.remove("on")); $("#s-"+b.dataset.s).classList.add("on");
+  $$(".gamenav button[data-s]").forEach(x=>x.classList.remove("on")); b.classList.add("on");
+  $$(".screen").forEach(x=>x.classList.remove("on"));
+  const scr=$("#s-"+b.dataset.s);
+  if(scr) scr.classList.add("on");
   try{ if(window.PortalAuth&&PortalAuth.updateBrandCover) PortalAuth.updateBrandCover(); }catch(e){}
   renderAll();
   try{
@@ -7796,11 +7813,28 @@ window.PortalAuth=(function(){
     const u=getUser();
     return !!(u&&ACCT_ROLES.includes(String(u.role||'').trim()));
   }
-  function isAccountingRevealed(){ return true; }
+  function isAccountingRevealed(){
+    const panel=document.getElementById('navSecurePanel');
+    return !!(panel && !panel.hidden);
+  }
   function isAccountingScreen(sid){
     if(sid==='cf-forecast')return true;
     const b=document.querySelector('.gamenav button[data-s="'+sid+'"]');
     return !!(b&&b.dataset.acct==='1');
+  }
+  function setSecureNavOpen(open){
+    const panel=document.getElementById('navSecurePanel');
+    const toggle=document.getElementById('navSecureToggle');
+    if(!panel||!toggle) return;
+    const on=!!open;
+    panel.hidden=!on;
+    toggle.setAttribute('aria-expanded', on?'true':'false');
+    toggle.classList.toggle('is-open', on);
+  }
+  function revealSecureNav(open){
+    if(!canAccessAccounting()) return false;
+    setSecureNavOpen(open!==false);
+    return true;
   }
   function updateBrandCover(opts){
     opts=opts||{};
@@ -7824,17 +7858,16 @@ window.PortalAuth=(function(){
   }
   function applyNavAcl(){
     const ok=canAccessAccounting();
-    const wrap=document.getElementById('navAcctWrap');
-    const label=document.getElementById('navAcctLabel');
-    const panel=document.getElementById('navAcctPanel');
+    const wrap=document.getElementById('navSecureWrap');
     if(wrap) wrap.hidden=!ok;
-    if(label) label.hidden=!ok;
-    if(panel) panel.hidden=!ok;
+    if(!ok) setSecureNavOpen(false);
+    else if(!document.querySelector('.gamenav button[data-acct="1"].on')) setSecureNavOpen(false);
+    else setSecureNavOpen(true);
     document.querySelectorAll('.gamenav button[data-acct="1"]').forEach(function(b){
       b.classList.toggle('nav-locked', !ok);
       b.setAttribute('aria-disabled', ok?'false':'true');
       if(ok) b.removeAttribute('title');
-      else b.title='会計メニューは社長・経理・法務のみ利用できます';
+      else b.title='会計・法務メニューは社長・経理・法務のみ利用できます';
     });
     // ログイン直後はロゴホーム（会計画面へ自動遷移しない）
     if(!document.querySelector('.gamenav button.on')){
@@ -7912,6 +7945,19 @@ window.PortalAuth=(function(){
       if(!ok&&err)err.textContent='役職・名前・メールを入力してください。';
     });
     document.getElementById('portalLogoutBtn')?.addEventListener('click',logout);
+    const toggle=document.getElementById('navSecureToggle');
+    if(toggle){
+      toggle.addEventListener('click',function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        if(!canAccessAccounting()){
+          try{window.Treasury?.toast?.('会計・法務メニューは社長・経理・法務のみ利用できます');}catch(err){}
+          return;
+        }
+        const panel=document.getElementById('navSecurePanel');
+        setSecureNavOpen(!!(panel&&panel.hidden));
+      });
+    }
     const prev=getUser();
     if(prev){
       document.getElementById('loginRole').value=prev.role;
@@ -7922,7 +7968,7 @@ window.PortalAuth=(function(){
       listStaff();
     }
   });
-  return{getUser,login,logout,userContext,syncUi,serverLog,listStaff,upsertStaff,canAccessAccounting,isAccountingScreen,isAccountingRevealed,applyNavAcl,updateBrandCover};
+  return{getUser,login,logout,userContext,syncUi,serverLog,listStaff,upsertStaff,canAccessAccounting,isAccountingScreen,isAccountingRevealed,revealSecureNav,applyNavAcl,updateBrandCover};
 })();
 </script>
 
@@ -8812,9 +8858,10 @@ window.EntakuDocIngest=(function(){
     opts=opts||{};
     if(window.PortalAuth&&PortalAuth.isAccountingScreen(sid)){
       if(!PortalAuth.canAccessAccounting()){
-        try{toast("会計メニューは社長・経理・法務のみ利用できます");}catch(e){}
+        try{toast("会計・法務メニューは社長・経理・法務のみ利用できます");}catch(e){}
         return;
       }
+      try{ PortalAuth.revealSecureNav?.(true); }catch(e){}
     }
     const prev=window._entakuSuppressScroll;
     if(opts.noScroll)window._entakuSuppressScroll=true;
