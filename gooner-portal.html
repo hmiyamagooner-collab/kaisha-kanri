@@ -42,6 +42,7 @@
   --nav-green-line:rgba(15,138,78,.28);
   --nav-green-line-strong:rgba(15,138,78,.48);
   --nav-green-bright:#3de8d4;
+  --nav-label:#e6f8ee;
   --logo-green:#2ebdb1;
   --out:#ef7f8c;
   --tax:#b39ddb;
@@ -223,9 +224,9 @@ input,select,textarea{font-family:inherit}
   text-shadow:0 1px 2px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.7);
   display:flex;align-items:center;justify-content:center;text-align:center;
 }
-/* 事業ボタン＝白字 / 事業以外＝緑塗り＋白字 */
-.gamenav button.nav-biz:not(.nav-green) .nav-label{color:#fff}
-.gamenav button.nav-green .nav-label{color:#fff!important}
+/* 事業ボタン＝薄い緑白字 / 事業以外＝緑塗り＋薄い緑白字 */
+.gamenav button.nav-biz:not(.nav-green) .nav-label{color:var(--nav-label)}
+.gamenav button.nav-green .nav-label{color:var(--nav-label)!important}
 @media(hover:hover){
   .gamenav button.nav-biz:hover{
     border-color:var(--nav-green);
@@ -245,35 +246,35 @@ input,select,textarea{font-family:inherit}
   background:linear-gradient(180deg,var(--nav-green-fill-hi) 0%,var(--nav-green-fill) 45%,var(--nav-green-fill-dim) 100%)!important;
   border-color:var(--nav-green-soft);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 8px rgba(0,0,0,.28),0 0 14px rgba(15,138,78,.38);
-  color:#fff;
+  color:var(--nav-label);
 }
 .gamenav button.nav-green .nav-photo{
   display:none!important;
 }
 .gamenav button.nav-green .nav-label{
-  color:#fff!important;
+  color:var(--nav-label)!important;
   text-shadow:0 1px 2px rgba(0,0,0,.4);
   justify-content:center;
   text-align:center;
 }
 .gamenav button.nav-green::before{
-  background:#fff;
+  background:var(--nav-label);
 }
 @media(hover:hover){
   .gamenav button.nav-green:hover{
     background:linear-gradient(180deg,var(--nav-green-fill-hover) 0%,var(--nav-green-fill-hi) 40%,var(--nav-green-fill) 100%)!important;
     border-color:var(--nav-green);
-    color:#fff;
+    color:var(--nav-label);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 4px 14px rgba(0,0,0,.32),0 0 18px rgba(15,138,78,.45);
   }
-  .gamenav button.nav-green:hover .nav-label{color:#fff!important}
+  .gamenav button.nav-green:hover .nav-label{color:var(--nav-label)!important}
 }
 .gamenav button.nav-green.on{
   background:linear-gradient(180deg,var(--nav-green-fill-hover) 0%,var(--nav-green-fill-hi) 40%,var(--nav-green-fill) 100%)!important;
   border-color:var(--nav-green);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 4px 14px rgba(0,0,0,.35),0 0 20px rgba(15,138,78,.5);
 }
-.gamenav button.nav-green.on .nav-label{color:#fff!important}
+.gamenav button.nav-green.on .nav-label{color:var(--nav-label)!important}
 .gamenav button.nav-green.nav-locked.on{border-color:rgba(255,255,255,.45)}
 /* タスクドック下部：円卓ネオングリーン塗り＋白字 */
 .office-tk-open{
@@ -281,9 +282,9 @@ input,select,textarea{font-family:inherit}
   border:1px solid var(--nav-green-soft)!important;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 8px rgba(0,0,0,.28),0 0 14px rgba(15,138,78,.35)!important;
   filter:none!important;
-  color:#fff!important;
+  color:var(--nav-label)!important;
 }
-.office-tk-open .nav-label{color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.office-tk-open .nav-label{color:var(--nav-label)!important;text-shadow:0 1px 2px rgba(0,0,0,.4)}
 .office-tk-open:hover{
   background:linear-gradient(180deg,var(--nav-green-fill-hover) 0%,var(--nav-green-fill-hi) 40%,var(--nav-green-fill) 100%)!important;
   border-color:var(--nav-green)!important;
@@ -932,12 +933,12 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 8px rgba(0,0,0,.28),0 0 14px rgba(15,138,78,.35);
   display:flex;align-items:center;justify-content:center;
   transition:border-color .15s,box-shadow .15s,transform .12s,background .15s;
-  color:#fff;
+  color:var(--nav-label);
 }
 .office-tk-open .nav-photo{display:none}
 .office-tk-open .nav-label{
   position:static;width:auto;padding:0;
-  font-size:11px;font-weight:700;color:#fff;text-align:center;
+  font-size:11px;font-weight:700;color:var(--nav-label);text-align:center;
   text-shadow:0 1px 2px rgba(0,0,0,.4);font-family:var(--font-body);letter-spacing:.02em;
 }
 .office-tk-open:hover{
