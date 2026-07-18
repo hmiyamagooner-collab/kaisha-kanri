@@ -833,7 +833,6 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
-  .dc-card.is-talking{border-color:rgba(232,212,168,.42)}
 }
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
@@ -1193,7 +1192,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .entaku-audio-btn.is-off{opacity:.72;border-color:rgba(143,152,166,.35);color:var(--muted)}
 .entaku-inline .entaku-audio-btn{width:36px;height:36px;font-size:15px}
 .entaku-voice-sel{
-  pointer-events:auto;flex:1;min-width:0;max-width:160px;height:28px;margin-left:auto;
+  pointer-events:auto;flex:1;min-width:0;max-width:160px;height:28px;
   padding:0 6px;border-radius:8px;font-size:10.5px;font-weight:600;letter-spacing:0;
   color:var(--nav-label);background:rgba(0,0,0,.45);border:1px solid var(--nav-green-soft);
   cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.35);
@@ -1558,10 +1557,6 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
     0 0 20px rgba(210,173,99,.08);
 }
 .dc-card:active{transform:translate3d(0,-2px,0) scale(.99);transition-duration:120ms}
-.dc-card.is-talking{
-  border-color:rgba(232,212,168,.42);
-  box-shadow:0 0 0 1px rgba(196,166,106,.2),0 12px 32px rgba(0,0,0,.5);
-}
 .dc-card[data-dept="secretary"]:hover{border-color:rgba(196,166,106,.45);box-shadow:0 18px 48px rgba(0,0,0,.62),0 10px 24px rgba(0,0,0,.38),0 0 28px rgba(91,108,255,.1)}
 .dc-card[data-dept="finance"]:hover{border-color:rgba(196,166,106,.45);box-shadow:0 18px 48px rgba(0,0,0,.62),0 10px 24px rgba(0,0,0,.38),0 0 28px rgba(140,150,170,.1)}
 .dc-card[data-dept="legal"]:hover{border-color:rgba(196,166,106,.45);box-shadow:0 18px 48px rgba(0,0,0,.62),0 10px 24px rgba(0,0,0,.38),0 0 28px rgba(150,135,175,.1)}
@@ -1599,39 +1594,6 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   position:absolute;inset:0;z-index:2;
   width:100%;height:100%;overflow:hidden;
 }
-.dc-bubble{
-  position:absolute;top:6px;left:6px;right:6px;z-index:5;
-  background:rgba(6,7,10,.92);backdrop-filter:blur(10px);
-  border:1px solid rgba(196,166,106,.28);border-radius:var(--radius-sm);
-  padding:6px 10px;
-  font-size:11px;line-height:1.5;color:var(--text);font-family:var(--font-body);
-  box-shadow:0 8px 24px rgba(0,0,0,.45);
-  animation:dcBubbleIn .55s ease;
-  pointer-events:none;
-}
-.dc-bubble[hidden]{display:none!important}
-.dc-bubble::after{
-  content:"";position:absolute;bottom:-5px;left:50%;
-  width:8px;height:8px;background:rgba(6,7,10,.94);
-  border-right:1px solid rgba(196,166,106,.35);
-  border-bottom:1px solid rgba(196,166,106,.35);
-  transform:translateX(-50%) rotate(45deg);
-}
-.dc-bubble-txt{display:block}
-.dc-bubble-dots{
-  display:inline-block;margin-left:2px;letter-spacing:1px;
-  animation:dcDots 1.6s steps(4,end) infinite;
-}
-@keyframes dcBubbleIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-@keyframes dcDots{0%{content:""}25%{opacity:.4}50%{opacity:.7}75%,100%{opacity:1}}
-.dc-card[data-dept="secretary"] .dc-bubble{border-color:rgba(91,108,255,.55)}
-.dc-card[data-dept="finance"] .dc-bubble{border-color:rgba(140,150,170,.55)}
-.dc-card[data-dept="legal"] .dc-bubble{border-color:rgba(150,135,175,.55)}
-/* タスク未完了サイン：吹き出しを白く */
-.dc-bubble.task-alert{background:#fff!important;border-color:#fff!important;color:#111!important;box-shadow:0 8px 24px rgba(255,255,255,.28);animation:none}
-.dc-bubble.task-alert .dc-bubble-txt{color:#111}
-.dc-bubble.task-alert::after{background:#fff;border-color:#fff}
-.dc-bubble.task-alert .dc-task-count{display:inline-block;margin-right:5px;min-width:16px;height:16px;line-height:16px;text-align:center;background:#ff9d3c;color:#111;border-radius:99px;font-size:10px;font-weight:800;padding:0 3px}
 .dc-card .dc-photo{
   background:var(--dc-bg-image) center top/cover no-repeat,#060608;
 }
@@ -1764,8 +1726,24 @@ video.dc-card__image{
 }
 #entakuSend:disabled{opacity:.5;cursor:default}
 .entaku-modal.hidden{display:none}
-.ent-msg{margin-bottom:14px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.02);border:1px solid rgba(51,198,179,.12)}
+.ent-msg{margin-bottom:14px;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.02);border:1px solid rgba(51,198,179,.12);position:relative}
 .ent-msg.ent-me{background:rgba(51,198,179,.06);border-color:rgba(51,198,179,.18)}
+.ent-msg-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+.ent-msg-head .ent-who{margin-bottom:0}
+.ent-msg-del{
+  flex-shrink:0;border:1px solid rgba(239,127,140,.45);background:transparent;color:var(--out);
+  border-radius:6px;padding:2px 7px;font-size:10px;font-weight:700;cursor:pointer;line-height:1.3;
+  opacity:.75;
+}
+.ent-msg-del:hover{opacity:1;background:rgba(239,127,140,.12)}
+.entaku-clear-btn{
+  pointer-events:auto;flex-shrink:0;height:28px;padding:0 8px;border-radius:8px;cursor:pointer;
+  margin-left:auto;font-size:10.5px;font-weight:700;letter-spacing:.02em;
+  border:1px solid rgba(239,127,140,.5);background:rgba(80,20,28,.45);color:#ffd0d0;
+  box-shadow:0 2px 8px rgba(0,0,0,.35);
+}
+.entaku-clear-btn:hover{filter:brightness(1.1);border-color:rgba(255,140,150,.75)}
+.entaku-clear-btn:disabled{opacity:.4;cursor:default;pointer-events:none}
 .ent-txt{color:var(--nav-green-bright)}
 .ent-me .ent-txt{color:var(--nav-green-bright)}
 .ent-typing{color:var(--muted)}
@@ -2146,7 +2124,6 @@ video.dc-card__image{
         <div class="dc-card" data-dept="secretary">
           <div class="dc-photo dc-card__media" data-initial="凛">
             <div class="dc-card__shine" aria-hidden="true"></div>
-            <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
             <span class="dc-photo-fallback" aria-hidden="true">凛</span>
             <div class="dc-avatar-wrap">
               <video class="dc-card__image" src="rin.mp4" poster="dash-secretary.png" data-has-audio="1" muted loop playsinline autoplay preload="metadata" aria-label="凛"></video>
@@ -2161,7 +2138,6 @@ video.dc-card__image{
         <div class="dc-card" data-dept="finance">
           <div class="dc-photo dc-card__media" data-initial="紬">
             <div class="dc-card__shine" aria-hidden="true"></div>
-            <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
             <span class="dc-photo-fallback" aria-hidden="true">紬</span>
             <div class="dc-avatar-wrap">
               <video class="dc-card__image" src="tumugi.mp4" poster="dash-finance.png" data-has-audio="1" muted loop playsinline autoplay preload="metadata" aria-label="紬"></video>
@@ -2176,7 +2152,6 @@ video.dc-card__image{
         <div class="dc-card" data-dept="legal">
           <div class="dc-photo dc-card__media" data-initial="陽">
             <div class="dc-card__shine" aria-hidden="true"></div>
-            <div class="dc-bubble" hidden><span class="dc-bubble-txt"></span></div>
             <span class="dc-photo-fallback" aria-hidden="true">陽</span>
             <div class="dc-avatar-wrap">
               <video class="dc-card__image" src="haruto.mp4" poster="dash-legal.png" data-has-audio="1" muted loop playsinline autoplay preload="metadata" aria-label="陽翔"></video>
@@ -2197,6 +2172,7 @@ video.dc-card__image{
       <div class="entaku-inline collapsed" id="entaku-inline">
         <div class="entaku-cap">
           <span>AI円卓会議</span>
+          <button type="button" class="entaku-clear-btn" id="entakuClearBtn" title="相談内容をすべて削除" aria-label="相談内容をクリア" disabled>クリア</button>
           <select class="entaku-voice-sel" id="entakuVoiceSel" title="声の種類" aria-label="声の種類"></select>
           <button type="button" class="entaku-audio-btn" id="entakuAudioBtn" data-portal-audio-btn onclick="PortalTTS.toggle()" aria-pressed="true" title="音声をOFFにする" aria-label="音声ON"><span class="portal-audio-lbl" aria-hidden="true">🔊</span></button>
         </div>
@@ -2565,7 +2541,7 @@ video.dc-card__image{
   </div>
 </section>
 
-<!-- ===== タスク管理（社員タスク・吹き出し連動） ===== -->
+<!-- ===== タスク管理 ===== -->
 <style>
 #s-tasks{
   --panel:#000;--panel2:#0f0f0f;
@@ -7049,14 +7025,6 @@ window.Treasury={
     });
   }
 
-  function updateBubbles(){
-    // 実スタッフタスクはエージェント吹き出しと連動しない
-    document.querySelectorAll('.dc-card .dc-bubble[data-task="1"]').forEach(bubble=>{
-      bubble.classList.remove('task-alert'); bubble.dataset.task=''; bubble.hidden=true;
-      const txt=bubble.querySelector('.dc-bubble-txt'); if(txt)txt.textContent='';
-    });
-  }
-
   function renderOfficeDock(){
     fillAssigneeSelects();
     renderPendingAlerts();
@@ -7094,7 +7062,6 @@ window.Treasury={
   }
 
   function renderTasks(){
-    updateBubbles();
     renderOfficeDock();
     renderStaffJump();
     const cols=$("#tkCols"); if(!cols) return;
@@ -7290,7 +7257,6 @@ window.Treasury={
     if(dl){ S.tasks=S.tasks.filter(x=>String(x.id)!==dl.dataset.tkDel); T.saveAll(); renderTasks(); return; }
   });
 
-  window.TaskBubbles={restore:updateBubbles};
   window.addEventListener('portal-staff-change',renderTasks);
   T.onRender(renderTasks);
   renderTasks();
@@ -7641,83 +7607,17 @@ window.BizCaseLink=(function(){
 </script>
 
 <script>
-/* Dashboard キャラ会話アニメ */
+/* Dashboard キャラ吹き出しは廃止。呼び出し互換のため stub のみ残す */
 (function(){
-  const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const CHARS = [
-    { dept:'secretary', lines:['社長、おかえりなさい！','何かお手伝いしましょうか？','いつでも声かけてくださいね。','円卓、開いておきますね。'] },
-    { dept:'finance', lines:['数字のこと、任せてください。','さっと確認しますね。','経費まわり、気になる点あります？','落ち着いて一緒に見ましょう。'] },
-    { dept:'legal', lines:['契約のこと、気軽にどうぞ。','こちらで整理しておきます。','リスク、一緒に洗い出しましょう。','堅く、でも柔らかく対応します。'] }
-  ];
-  let turn = 0, timer = null, hoverDept = null;
-
-  function card(dept){ return document.querySelector('.dc-card[data-dept="'+dept+'"]'); }
-  function entakuBusy(){
-    return !!window.__entakuSpeaking || !!window.PortalTTS?.isSpeaking?.();
-  }
   function stopAll(opts){
-    document.querySelectorAll('.dc-card.is-talking').forEach(c=>c.classList.remove('is-talking'));
-    document.querySelectorAll('.dc-bubble').forEach(b=>{ b.hidden = true; });
     const keepTts = !!(opts&&opts.keepTts) || !!window.__entakuSpeaking;
     if(!keepTts) window.PortalTTS?.stop();
-    window.TaskBubbles&&window.TaskBubbles.restore();
   }
-  function speak(dept, text, ms, opts){
-    if(REDUCED) return;
-    stopAll({keepTts: !!(opts&&opts.keepTts) || !!window.__entakuSpeaking});
-    const el = card(dept); if(!el) return;
-    const bubble = el.querySelector('.dc-bubble');
-    const txt = el.querySelector('.dc-bubble-txt');
-    if(!bubble || !txt) return;
-    txt.innerHTML = text + (text.endsWith('…') ? '<span class="dc-bubble-dots">…</span>' : '');
-    bubble.hidden = false;
-    el.classList.add('is-talking');
-    clearTimeout(timer);
-    timer = setTimeout(()=>{
-      if(hoverDept === dept) return;
-      if(window.__entakuSpeaking) return;
-      el.classList.remove('is-talking');
-      bubble.hidden = true;
-      window.TaskBubbles&&window.TaskBubbles.restore();
-    }, ms || Math.max(3800, text.length * 140));
-    return el;
-  }
-  function pickLine(c){
-    return c.lines[Math.floor(Math.random() * c.lines.length)];
-  }
-  function idleTurn(){
-    if(hoverDept) return;
-    if(entakuBusy()) return;
-    const c = CHARS[turn % CHARS.length];
-    speak(c.dept, pickLine(c));
-    turn++;
-  }
-  document.querySelectorAll('.dc-card').forEach(el=>{
-    const dept = el.dataset.dept;
-    const c = CHARS.find(x=>x.dept===dept);
-    el.addEventListener('mouseenter', ()=>{
-      if(entakuBusy()) return;
-      hoverDept = dept;
-      speak(dept, pickLine(c), 99999);
-    });
-    el.addEventListener('mouseleave', ()=>{
-      hoverDept = null;
-      stopAll({keepTts: entakuBusy()});
-    });
-  });
   window.DashTalk = {
-    speak: (dept, text, ms, opts)=> speak(dept, text, ms, opts),
+    speak: function(){},
     stop: stopAll,
-    reactToText(text){
-      if(!text) return;
-      if(entakuBusy()) return;
-      if(/経理|入出金|経費|税|CF|精算|口座|明細/.test(text)) speak('finance', '承知しました、確認しますね。', 4200);
-      else if(/契約|法務|リーガル|印籠|コンプラ/.test(text)) speak('legal', '法務の観点から見ます。', 4200);
-      else speak('secretary', '円卓へお繋ぎしますね。', 3600);
-    }
+    reactToText: function(){}
   };
-  setTimeout(idleTurn, 2800);
-  setInterval(idleTurn, 9000);
 })();
 </script>
 
@@ -8948,6 +8848,39 @@ window.EntakuDocIngest=(function(){
       else last.content='資料確認をキャンセルしました。';
     }
   }
+  function deleteEntakuMsg(idx){
+    if(idx<0 || idx>=S.history.length) return;
+    const m=S.history[idx];
+    if(m && m.kind==='meeting-pick' && m.live){ S.awaitingPick=false; S.pickDraft=null; }
+    if(m && m.kind==='doc-clarify' && m.live){
+      S.awaitingDocClarify=false;
+      try{ window.EntakuDocIngest?.cancelClarify?.(); }catch(e){}
+    }
+    S.history.splice(idx,1);
+    if(lastSpokenIdx>=idx) lastSpokenIdx=Math.max(-1, lastSpokenIdx-1);
+    if(lastDashIdx>=idx) lastDashIdx=Math.max(-1, lastDashIdx-1);
+    persistEntaku();
+    render();
+    window.Treasury?.toast?.('相談を1件削除しました');
+  }
+  function clearEntakuHistory(){
+    if(!S.history.length) return;
+    if(!confirm('円卓の相談内容をすべて削除しますか？\n（やることリスト・議事録は残ります）')) return;
+    S.history=[];
+    S.pendingAtt=[];
+    S.pickDraft=null;
+    S.awaitingPick=false;
+    S.awaitingDocClarify=false;
+    S.focus=null;
+    lastSpokenIdx=-1;
+    lastDashIdx=-1;
+    try{ window.EntakuDocIngest?.cancelClarify?.(); }catch(e){}
+    try{ window.DashTalk?.stop?.(); }catch(e){}
+    try{ window.PortalTTS?.stop?.(); }catch(e){}
+    persistEntaku();
+    render();
+    window.Treasury?.toast?.('相談内容をクリアしました');
+  }
   function render(){
     const body = el('entakuBody'); if(!body) return;
     body.innerHTML = S.history.map((m,idx)=>{
@@ -8955,11 +8888,22 @@ window.EntakuDocIngest=(function(){
       const cls = m.role==='user' ? 'ent-me' : ('ent-ai ent-agent-'+(m.agent||'secretary'));
       const jumps = m.role==='assistant' && m.kind!=='load-status' && m.kind!=='doc-clarify' ? jumpButtons(m.content) : '';
       const bodyTxt = m.kind==='load-status' ? '' : esc(m.content).replace(/\n/g,'<br>');
-      return '<div class="ent-msg '+cls+'"><span class="ent-who">'+who+'</span><div class="ent-txt">'+bodyTxt+minutesHtml(m)+meetingPickHtml(m,idx)+docClarifyHtml(m)+attachmentsHtml(m.attachments)+jumps+'</div></div>';
+      return '<div class="ent-msg '+cls+'" data-ent-idx="'+idx+'"><div class="ent-msg-head"><span class="ent-who">'+who+'</span><button type="button" class="ent-msg-del" data-ent-del="'+idx+'" title="この相談を削除" aria-label="削除">削除</button></div><div class="ent-txt">'+bodyTxt+minutesHtml(m)+meetingPickHtml(m,idx)+docClarifyHtml(m)+attachmentsHtml(m.attachments)+jumps+'</div></div>';
     }).join('')
       + (S.busy?'<div class="ent-msg ent-ai ent-agent-secretary"><span class="ent-who">秘書　凛</span><div class="ent-txt ent-typing">凛・紬・陽翔が協議中…</div></div>':'')
       + actionsHtml();
     body.scrollTop = body.scrollHeight;
+    const clearBtn=el('entakuClearBtn');
+    if(clearBtn) clearBtn.disabled=!S.history.length || !!S.busy;
+    body.querySelectorAll('[data-ent-del]').forEach(function(b){
+      b.onclick=function(e){
+        e.preventDefault(); e.stopPropagation();
+        if(S.busy){ window.Treasury?.toast?.('協議中は削除できません'); return; }
+        const i=+b.dataset.entDel;
+        if(!confirm('この相談を削除しますか？')) return;
+        deleteEntakuMsg(i);
+      };
+    });
     body.querySelectorAll('.entaku-jump,.ent-act-jump').forEach(b=>b.onclick=()=>gotoScreen(b.dataset.s,{noScroll:true}));
     body.querySelectorAll('.ent-act-chk').forEach(function(c){
       c.onchange=function(){ const i=+c.dataset.idx; if(S.actions[i]){ S.actions[i].done=c.checked; persistEntaku(); render(); } };
@@ -9124,14 +9068,24 @@ window.EntakuDocIngest=(function(){
     box.setAttribute('aria-label','円卓会議を開始');
     function tryOpen(e){
       if(S.open) return;
-      if(e.target.closest('.entaku-audio-btn,.entaku-voice-sel')) return;
+      if(e.target.closest('.entaku-audio-btn,.entaku-voice-sel,.entaku-clear-btn,.ent-msg-del')) return;
       e.preventDefault();
       openEntaku();
     }
     box.addEventListener('click', tryOpen);
     box.addEventListener('keydown', function(e){
       if(S.open) return;
+      if(e.target.closest('.entaku-clear-btn,.entaku-voice-sel,.entaku-audio-btn')) return;
       if(e.key==='Enter' || e.key===' '){ e.preventDefault(); openEntaku(); }
+    });
+  })();
+  (function wireEntakuClear(){
+    const btn=el('entakuClearBtn');
+    if(!btn) return;
+    btn.addEventListener('click', function(e){
+      e.preventDefault(); e.stopPropagation();
+      if(S.busy){ window.Treasury?.toast?.('協議中はクリアできません'); return; }
+      clearEntakuHistory();
     });
   })();
   window.closeEntaku = function(){
@@ -9604,6 +9558,10 @@ window.EntakuDocIngest=(function(){
   S.awaitingPick=false; S.pickDraft=null; S.awaitingDocClarify=false;
   try{ window.EntakuDocIngest?.cancelClarify?.(); }catch(e){}
   if(S.history.length) render();
+  else{
+    const clearBtn=el('entakuClearBtn');
+    if(clearBtn) clearBtn.disabled=true;
+  }
   syncToggle();
   try{ window.MeetingArchive?.render?.(); }catch(e){}
 })();
