@@ -1,7 +1,5 @@
 // POST /api/dropbox-sync
-// body: { action:'download'|'upload'|'refresh', accessToken?, refreshToken?, content? }
-const SHARED_PATH = "/GOONER Portal/shared-v1.json";
-
+// body: { action:'list'|'link'|'refresh', accessToken?, refreshToken?, path? }
 async function readJson(res) {
   const text = await res.text();
   try {
@@ -29,6 +27,24 @@ async function refreshAccessToken(refreshToken) {
   const parsed = await readJson(res);
   if (!parsed.ok || !parsed.data?.access_token) return null;
   return parsed.data;
+}
+
+function normalizePath(p) {
+  let s = String(p || "").trim();
+  if (!s || s === "/") return "";
+  if (!s.startsWith("/")) s = "/" + s;
+  return s.replace(/\/+$/, "") || "";
+}
+
+function rootPath() {
+  return normalizePath(process.env.DROPBOX_ROOT_PATH || "");
+}
+
+function underRoot(path) {
+  const root = rootPath();
+  const p = normalizePath(path);
+  if (!root) return true;
+  return p === root || p.startsWith(root + "/");
 }
 
 export default async function handler(req, res) {
@@ -59,92 +75,93 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: "accessToken required" });
     }
 
-    if (action === "download") {
-      const dl = await fetch("https://content.dropboxapi.com/2/files/download", {
+    if (action === "list") {
+      let path = normalizePath(body.path);
+      const root = rootPath();
+      if (!path) path = root;
+      if (!underRoot(path)) {
+        return res.status(403).json({ error: "path outside DROPBOX_ROOT_PATH" });
+      }
+      const listRes = await fetch("https://api.dropboxapi.com/2/files/list_folder", {
         method: "POST",
         headers: {
           Authorization: "Bearer " + accessToken,
-          "Dropbox-API-Arg": JSON.stringify({ path: SHARED_PATH }),
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          path,
+          recursive: false,
+          include_mounted_folders: true,
+          include_non_downloadable_files: true,
+          limit: 200,
+        }),
       });
-      if (dl.status === 409 || dl.status === 404) {
-        return res.status(200).json({ ok: true, missing: true, content: null });
-      }
-      const text = await dl.text();
-      if (!dl.ok) {
-        return res.status(dl.status).json({ error: "download failed", detail: text.slice(0, 300) });
-      }
-      let content = null;
-      try {
-        content = JSON.parse(text);
-      } catch {
-        return res.status(500).json({ error: "invalid shared json" });
-      }
-      return res.status(200).json({ ok: true, missing: false, content });
-    }
-
-    if (action === "upload") {
-      const content = body.content;
-      if (!content || typeof content !== "object") {
-        return res.status(400).json({ error: "content object required" });
-      }
-      const payload = JSON.stringify(content);
-      const up = await fetch("https://content.dropboxapi.com/2/files/upload", {
-        method: "POST",
-        headers: {
-          Authorization: "Bearer " + accessToken,
-          "Content-Type": "application/octet-stream",
-          "Dropbox-API-Arg": JSON.stringify({
-            path: SHARED_PATH,
-            mode: "overwrite",
-            autorename: false,
-            mute: true,
-          }),
-        },
-        body: payload,
-      });
-      const parsed = await readJson(up);
-      if (!up.ok) {
-        // 親フォルダが無い場合は作成して再試行
-        if (String(parsed.raw || "").includes("path/not_found") || up.status === 409) {
-          await fetch("https://api.dropboxapi.com/2/files/create_folder_v2", {
-            method: "POST",
-            headers: {
-              Authorization: "Bearer " + accessToken,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ path: "/GOONER Portal", autorename: false }),
-          });
-          const up2 = await fetch("https://content.dropboxapi.com/2/files/upload", {
-            method: "POST",
-            headers: {
-              Authorization: "Bearer " + accessToken,
-              "Content-Type": "application/octet-stream",
-              "Dropbox-API-Arg": JSON.stringify({
-                path: SHARED_PATH,
-                mode: "overwrite",
-                autorename: false,
-                mute: true,
-              }),
-            },
-            body: payload,
-          });
-          if (!up2.ok) {
-            const t = await up2.text();
-            return res.status(up2.status).json({ error: "upload failed", detail: t.slice(0, 300) });
-          }
-          return res.status(200).json({ ok: true });
-        }
-        return res.status(up.status).json({
-          error: "upload failed",
+      const parsed = await readJson(listRes);
+      if (!listRes.ok) {
+        return res.status(listRes.status).json({
+          error: "list failed",
           detail: String(parsed.raw || "").slice(0, 300),
         });
       }
-      return res.status(200).json({ ok: true });
+      const entries = (parsed.data?.entries || []).map((e) => ({
+        id: e.id,
+        name: e.name,
+        path: e.path_display || e.path_lower,
+        tag: e[".tag"],
+        size: e.size || 0,
+        clientModified: e.client_modified || "",
+        serverModified: e.server_modified || "",
+      }));
+      entries.sort((a, b) => {
+        if (a.tag === b.tag) return String(a.name).localeCompare(String(b.name), "ja");
+        return a.tag === "folder" ? -1 : 1;
+      });
+      const parent =
+        path && path !== root
+          ? path.replace(/\/[^/]+$/, "") || root || ""
+          : null;
+      return res.status(200).json({
+        ok: true,
+        path: path || "/",
+        root: root || "/",
+        parent,
+        entries,
+      });
+    }
+
+    if (action === "link") {
+      const path = normalizePath(body.path);
+      if (!path) return res.status(400).json({ error: "path required" });
+      if (!underRoot(path)) {
+        return res.status(403).json({ error: "path outside DROPBOX_ROOT_PATH" });
+      }
+      const linkRes = await fetch("https://api.dropboxapi.com/2/files/get_temporary_link", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + accessToken,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ path }),
+      });
+      const parsed = await readJson(linkRes);
+      if (!linkRes.ok || !parsed.data?.link) {
+        return res.status(linkRes.status || 500).json({
+          error: "link failed",
+          detail: String(parsed.raw || "").slice(0, 300),
+        });
+      }
+      return res.status(200).json({
+        ok: true,
+        link: parsed.data.link,
+        name: parsed.data.metadata?.name || "",
+      });
     }
 
     return res.status(400).json({ error: "unknown action" });
   } catch (e) {
-    return res.status(500).json({ error: "sync failed", detail: String(e?.message || e).slice(0, 200) });
+    return res.status(500).json({
+      error: "dropbox failed",
+      detail: String(e?.message || e).slice(0, 200),
+    });
   }
 }

@@ -7,7 +7,46 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@400;500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.tailwindcss.com"></script>
+<script>
+/* Supabase（タスク共有・名簿）— 公開 publishable キーのみ */
+window.GoonerSB=(function(){
+  const SB_URL='https://bckzazaghgomhyvdikmb.supabase.co';
+  const SB_KEY='sb_publishable_Gd1GILds7uUe6wmnrANNaQ_Fpv7NW3a';
+  const MEM_KEY='gp_member';
+  let client=null;
+  function sb(){
+    if(client) return client;
+    if(!window.supabase||!window.supabase.createClient){
+      console.error('[GoonerSB] supabase-js 未読込');
+      return null;
+    }
+    client=window.supabase.createClient(SB_URL, SB_KEY);
+    return client;
+  }
+  function saveMe(m){ localStorage.setItem(MEM_KEY, JSON.stringify(m)); }
+  function me(){ try{ return JSON.parse(localStorage.getItem(MEM_KEY)); }catch(e){ return null; } }
+  async function registerMember(name, role, email){
+    const c=sb(); if(!c) return null;
+    email=String(email||'').trim().toLowerCase();
+    name=String(name||'').trim();
+    role=String(role||'').trim();
+    if(!email||!name||!role) return null;
+    const { data: existing, error: e1 } = await c.from('members').select('*').eq('email', email).maybeSingle();
+    if(e1){ console.warn('[GoonerSB] members select', e1); }
+    if(existing){ saveMe(existing); return existing; }
+    const { data, error } = await c.from('members').insert({ name, role, email }).select().single();
+    if(error){
+      alert('登録エラー: '+error.message);
+      return null;
+    }
+    saveMe(data);
+    return data;
+  }
+  return { sb, me, saveMe, registerMember, url:SB_URL };
+})();
+</script>
 <style>
 
   html, body { background: #000; margin: 0; min-height: 100%; }
@@ -2032,6 +2071,41 @@ video.dc-card__image{
 .pt-dropbox:hover{filter:brightness(1.08);border-color:var(--nav-green)}
 .pt-dropbox.is-on{border-color:rgba(154,209,74,.65);background:rgba(56,142,60,.22)}
 .pt-dropbox-status{font-size:10px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pt-sync-status{font-size:10px;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#dbx-modal{
+  display:none;position:fixed;inset:0;z-index:9200;background:rgba(4,8,14,.72);
+  align-items:center;justify-content:center;padding:18px;
+}
+#dbx-modal.open{display:flex}
+.dbx-card{
+  width:min(640px,100%);max-height:min(80vh,720px);display:flex;flex-direction:column;
+  background:linear-gradient(180deg,#121820,#0c1118);border:1px solid rgba(196,166,106,.28);
+  border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.45);overflow:hidden;
+}
+.dbx-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(196,166,106,.18)}
+.dbx-head h2{margin:0;font-size:14px;font-weight:700;color:var(--text);flex:1}
+.dbx-head button{
+  font-size:11px;padding:5px 10px;border-radius:8px;cursor:pointer;
+  border:1px solid rgba(143,152,166,.35);background:transparent;color:var(--muted);
+}
+.dbx-head button:hover{color:var(--text);border-color:rgba(196,166,106,.4)}
+.dbx-path{padding:8px 14px;font-size:11px;color:var(--muted);border-bottom:1px solid rgba(143,152,166,.12);word-break:break-all}
+.dbx-list{flex:1;min-height:200px;overflow:auto;padding:6px}
+.dbx-item{
+  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  padding:9px 10px;border:0;border-radius:8px;background:transparent;color:var(--text);
+  cursor:pointer;font-size:12.5px;
+}
+.dbx-item:hover{background:rgba(196,166,106,.08)}
+.dbx-item .dbx-ic{width:22px;text-align:center;opacity:.85}
+.dbx-item .dbx-meta{margin-left:auto;font-size:10px;color:var(--muted);flex-shrink:0}
+.dbx-empty,.dbx-err{padding:28px 16px;text-align:center;color:var(--muted);font-size:12.5px;line-height:1.7}
+.dbx-foot{padding:10px 14px;border-top:1px solid rgba(143,152,166,.12);display:flex;gap:8px;justify-content:flex-end}
+.dbx-foot button{
+  font-size:11px;padding:6px 12px;border-radius:8px;cursor:pointer;
+  border:1px solid rgba(143,152,166,.35);background:transparent;color:var(--muted);
+}
+.dbx-foot button.primary{border-color:rgba(76,175,80,.5);background:rgba(15,138,78,.16);color:var(--nav-label)}
 </style>
 </head>
 <body>
@@ -2228,10 +2302,27 @@ video.dc-card__image{
 <div id="portal-main">
 <div id="portal-bar">
   <span class="pt-logo">GOONER PORTAL</span>
-  <button type="button" class="pt-dropbox" id="portalDropboxBtn" title="クリック＝同期／右クリック＝解除">Dropbox同期</button>
+  <button type="button" class="pt-dropbox" id="portalDropboxBtn" title="クリック＝ファイル一覧／右クリック＝解除">Dropboxファイル</button>
   <span class="pt-dropbox-status" id="portalDropboxStatus" hidden></span>
   <span class="pt-user" id="portalUserChip" hidden></span>
   <button type="button" class="pt-logout" id="portalLogoutBtn" hidden>ログアウト</button>
+</div>
+
+<div id="dbx-modal" aria-hidden="true">
+  <div class="dbx-card" role="dialog" aria-labelledby="dbxTitle">
+    <div class="dbx-head">
+      <h2 id="dbxTitle">Dropbox ファイル</h2>
+      <button type="button" id="dbxUpBtn" title="上のフォルダ">↑ 上へ</button>
+      <button type="button" id="dbxRefreshBtn">更新</button>
+      <button type="button" id="dbxCloseBtn" aria-label="閉じる">閉じる</button>
+    </div>
+    <div class="dbx-path" id="dbxPath">/</div>
+    <div class="dbx-list" id="dbxList"><div class="dbx-empty">読み込み中…</div></div>
+    <div class="dbx-foot">
+      <button type="button" id="dbxDisconnectBtn">接続解除</button>
+      <button type="button" class="primary" id="dbxOpenFolderBtn">このフォルダをDropboxで開く</button>
+    </div>
+  </div>
 </div>
 
 <div id="quests-row">
@@ -2338,7 +2429,7 @@ video.dc-card__image{
           <span id="officeTkHeadHint" style="font-size:10px;color:var(--muted)"></span>
         </div>
         <div class="office-tk-alert" id="officeTkAlert" hidden>
-          <div class="office-tk-alert-msg">タスクが追加されています</div>
+          <div class="office-tk-alert-msg">新しいタスクが届いています</div>
           <div class="office-tk-pending" id="officeTkPending"></div>
         </div>
         <div class="office-tk-staffs" id="officeTkStaffs"></div>
@@ -2712,7 +2803,7 @@ video.dc-card__image{
 </style>
 <section class="screen" id="s-tasks">
   <h2 class="stitle">✔ タスク管理</h2>
-  <p class="sdesc">社長は全員または個別に指示を送れます。指示を受けた社員は赤い通知から承認するとタスクが追加されます。自己申告タスクはそのまま登録できます。</p>
+  <p class="sdesc">タスクは全員で共有されます（リアルタイム）。社長は全員／個別に指示、社員は自己申告。届いた指示は赤い通知から承認→完了してください（削除はできません）。</p>
 
   <div class="tk-add">
     <div class="tk-add-row">
@@ -2725,7 +2816,7 @@ video.dc-card__image{
   </div>
 
   <div class="office-tk-alert" id="tkAlert" hidden style="margin:0 0 14px;max-width:720px">
-    <div class="office-tk-alert-msg">タスクが追加されています（承認すると自分のタスクに入ります）</div>
+    <div class="office-tk-alert-msg">新しいタスクが届いています（承認すると着手できます）</div>
     <div class="office-tk-pending" id="tkPending"></div>
   </div>
 
@@ -4396,7 +4487,6 @@ function loadAll(){
 }
 function saveAll(){
   localStorage.setItem(KEY,JSON.stringify(S));
-  try{ window.GoonerCloud?.schedulePush?.(); }catch(e){}
 }
 function seed(){
   const m=viewMonthStr(new Date());
@@ -7126,126 +7216,161 @@ window.Treasury={
 </script>
 
 <script>
-/* ===== タスク管理（実スタッフ割当・Treasury連携） ===== */
+/* ===== タスク管理（Supabase members / tasks・Realtime） ===== */
 (function(){
   const T=window.Treasury; if(!T) return;
   const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)], esc=T.esc;
-  const AGENT_IDS=new Set(['secretary','finance','legal']);
 
-  const S=T.S;
-  if(!Array.isArray(S.tasks)){ S.tasks=[]; T.saveAll(); }
-  if(!Array.isArray(S.directives)){ S.directives=[]; T.saveAll(); }
-  // AIエージェント向けサンプル／旧タスクは実スタッフ用に移行しない（除去）
-  if(S.tasks.some(t=>AGENT_IDS.has(t.assignee))){
-    S.tasks=S.tasks.filter(t=>!AGENT_IDS.has(t.assignee));
-    T.saveAll();
-  }
-
+  let members=[];
+  let tasks=[];
   let filter='todo';
   let focusStaff='';
+  let liveReady=false;
 
-  function staffList(){
-    const list=(window.PortalAuth&&PortalAuth.listStaff)?PortalAuth.listStaff():[];
-    return Array.isArray(list)?list:[];
-  }
-  function staffById(id){
-    return staffList().find(s=>s.id===id)||null;
-  }
-  function staffLabel(s){
-    if(!s)return '?';
-    return (s.role?s.role+'　':'')+s.name;
-  }
-  function currentStaffId(){
-    const me=window.PortalAuth?.getUser?.();
-    return me&&me.email?String(me.email).toLowerCase():'';
-  }
+  function client(){ return window.GoonerSB?.sb?.() || null; }
+  function me(){ return window.GoonerSB?.me?.() || null; }
   function isPresident(){
-    const me=window.PortalAuth?.getUser?.();
-    return (me&&me.role==='社長') || T.role==='boss';
+    const m=me();
+    const u=window.PortalAuth?.getUser?.();
+    return (m&&m.role==='社長') || (u&&u.role==='社長') || T.role==='boss';
+  }
+  function staffList(){ return members.slice(); }
+  function staffById(id){ return members.find(s=>String(s.id)===String(id))||null; }
+  function staffLabel(s){ if(!s) return '?'; return (s.role?s.role+'　':'')+s.name; }
+  function statusLabel(st){
+    if(st==='pending') return '未承認';
+    if(st==='accepted') return '進行中';
+    if(st==='done') return '完了';
+    return st||'';
+  }
+  function isMine(t, m){
+    if(!t||!m) return false;
+    return !!(t.assigned_all || String(t.assigned_to)===String(m.id));
   }
   function pendingForMe(){
-    const me=currentStaffId();
-    if(!me) return [];
-    return (S.directives||[]).filter(d=>d.status==='pending'&&d.assignee===me)
-      .sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));
+    const m=me(); if(!m) return [];
+    return tasks.filter(t=>t.status==='pending' && isMine(t,m) && String(t.created_by)!==String(m.id))
+      .sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')));
   }
+  function playNotifySound(){
+    try{
+      const Ctx=window.AudioContext||window.webkitAudioContext; if(!Ctx) return;
+      const ctx=new Ctx();
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.type='sine'; o.frequency.value=880;
+      g.gain.value=0.04; o.connect(g); g.connect(ctx.destination);
+      o.start(); setTimeout(function(){ o.stop(); ctx.close(); }, 180);
+    }catch(e){}
+  }
+  function showTaskBadge(){
+    renderPendingAlerts();
+    const a=$("#tkAlert"), b=$("#officeTkAlert");
+    if(a) a.hidden=false;
+    if(b) b.hidden=false;
+  }
+
   function pendingHtml(list){
     if(!list.length) return '';
     return list.map(d=>{
-      const from=d.byName||'社長';
-      return `<div class="office-tk-pend" data-dir-id="${esc(d.id)}">
+      const from=d.created_by_name||'指示者';
+      const when=String(d.created_at||'').slice(0,16).replace('T',' ');
+      return `<div class="office-tk-pend" data-task-id="${esc(d.id)}">
         <div class="office-tk-pend-title">${esc(d.title)}</div>
         ${d.detail?`<div class="office-tk-pend-meta">${esc(d.detail)}</div>`:''}
-        <div class="office-tk-pend-meta">指示：${esc(from)}　${esc(d.at||'')}</div>
+        <div class="office-tk-pend-meta">指示：${esc(from)}　${esc(when)}${d.assigned_all?'　（全員宛）':''}</div>
         <div class="office-tk-pend-acts">
-          <button type="button" class="ok" data-dir-approve="${esc(d.id)}">承認してタスク追加</button>
-          <button type="button" class="ng" data-dir-reject="${esc(d.id)}">却下</button>
+          <button type="button" class="ok" data-task-accept="${esc(d.id)}">承認する</button>
         </div>
       </div>`;
     }).join('');
   }
   function renderPendingAlerts(){
     const mine=pendingForMe();
-    const dockAlert=$("#officeTkAlert"), dockBox=$("#officeTkPending");
-    if(dockAlert&&dockBox){
-      if(mine.length){
-        dockAlert.hidden=false;
-        dockBox.innerHTML=pendingHtml(mine);
-      }else{
-        dockAlert.hidden=true;
-        dockBox.innerHTML='';
-      }
-    }
-    const tkAlert=$("#tkAlert"), tkBox=$("#tkPending");
-    if(tkAlert&&tkBox){
-      if(mine.length){
-        tkAlert.hidden=false;
-        tkBox.innerHTML=pendingHtml(mine);
-      }else{
-        tkAlert.hidden=true;
-        tkBox.innerHTML='';
-      }
-    }
+    [['#officeTkAlert','#officeTkPending'],['#tkAlert','#tkPending']].forEach(function(pair){
+      const alert=$(pair[0]), box=$(pair[1]);
+      if(!alert||!box) return;
+      if(mine.length){ alert.hidden=false; box.innerHTML=pendingHtml(mine); }
+      else{ alert.hidden=true; box.innerHTML=''; }
+    });
   }
 
   function fillAssigneeSelects(){
     const staff=staffList();
     const prez=isPresident();
-    const me=currentStaffId();
+    const m=me();
     let opts='';
     if(!staff.length){
-      opts=`<option value="">（ログイン登録したスタッフがいません）</option>`;
+      opts=`<option value="">（名簿を読み込み中…）</option>`;
     }else if(prez){
-      opts=`<option value="__all__">全員に指示</option>`+
+      opts=`<option value="all">全員に指示</option>`+
         staff.map(s=>`<option value="${esc(s.id)}">${esc(staffLabel(s))}</option>`).join('');
+    }else if(m){
+      opts=`<option value="${esc(m.id)}">${esc(staffLabel(m))}（自己申告）</option>`;
     }else{
-      opts=staff.map(s=>`<option value="${esc(s.id)}">${esc(staffLabel(s))}</option>`).join('');
+      opts=`<option value="">ログインしてください</option>`;
     }
     ['#tkAssignee','#officeTkAssignee'].forEach(sel=>{
       const el=$(sel); if(!el)return;
       const prev=el.value;
       el.innerHTML=opts;
-      if(prev&&[...el.options].some(o=>o.value===prev))el.value=prev;
-      else if(prez) el.value='__all__';
-      else if(me&&[...el.options].some(o=>o.value===me)) el.value=me;
-      else if(staff.length) el.value=staff[0].id;
+      if(prev&&[...el.options].some(o=>o.value===prev)) el.value=prev;
+      else if(prez) el.value='all';
+      else if(m) el.value=m.id;
     });
     const note=$("#officeTkDirNote"), hint=$("#officeTkHeadHint"), sub=$("#officeTkSubmit");
     if(note) note.hidden=!prez;
-    if(hint) hint.textContent=prez?'社長：指示を送れます':'承認待ちは赤字で表示';
+    if(hint) hint.textContent=prez?'社長：指示を送れます（共有・即時反映）':'承認待ちは赤字で表示';
     if(sub) sub.textContent=prez?'指示':'追加';
     const title=$("#officeTkTitle");
-    if(title) title.placeholder=prez?'指示内容（承認後にタスク化）':'タスクを入力（Enterで追加）';
+    if(title) title.placeholder=prez?'指示内容':'タスクを入力（Enterで追加）';
+  }
+
+  function tasksForMember(memberId){
+    return tasks.filter(t=>{
+      if(t.assigned_all) return true;
+      return String(t.assigned_to)===String(memberId);
+    });
+  }
+  function matchesFilter(t){
+    if(filter==='all') return true;
+    if(filter==='done') return t.status==='done';
+    return t.status!=='done'; // 未完了 = pending + accepted
+  }
+
+  function cardActs(t){
+    const m=me();
+    const mine=isMine(t,m);
+    if(t.status==='pending' && mine){
+      return `<button type="button" class="tk-toggle todo" data-task-accept="${esc(t.id)}">承認する</button>`;
+    }
+    if(t.status==='accepted' && mine){
+      return `<button type="button" class="tk-toggle todo" data-task-done="${esc(t.id)}">完了にする</button>`;
+    }
+    if(t.status==='done'){
+      return `<button type="button" class="tk-toggle done" disabled>完了済</button>`;
+    }
+    return `<span class="tk-date">${esc(statusLabel(t.status))}</span>`;
+  }
+
+  function renderTaskCard(t){
+    const dest=t.assigned_all?'全員':(t.assignee?.name||staffById(t.assigned_to)?.name||'—');
+    const src=t.self_reported
+      ?'<span class="tk-src self">自己申告</span>'
+      :'<span class="tk-src boss">指示</span>';
+    const when=String(t.created_at||'').slice(0,10);
+    const doneAt=t.completed_at?String(t.completed_at).slice(0,16).replace('T',' '):'';
+    return `<div class="tk-card ${t.status==='done'?'done':''}">
+      <div class="tk-card-top"><div class="tk-card-title">${esc(t.title)}</div></div>
+      ${t.detail?`<div class="tk-card-detail">${esc(t.detail)}</div>`:''}
+      <div class="tk-card-meta">${src}<span class="tk-date">${esc(statusLabel(t.status))}　宛先:${esc(dest)}　${esc(t.created_by_name||'')}${doneAt?'　完了 '+esc(doneAt):''}　${esc(when)}</span></div>
+      <div class="tk-card-acts">${cardActs(t)}</div>
+    </div>`;
   }
 
   function jumpToStaffTasks(staffId){
     focusStaff=staffId||'';
     document.querySelector('.gamenav button[data-s="tasks"]')?.click();
     renderTasks();
-    requestAnimationFrame(()=>{
-      const col=document.querySelector('.tk-col[data-staff="'+String(staffId).replace(/\\/g,'\\\\').replace(/"/g,'\\"')+'"]');
-      if(col)col.scrollIntoView({behavior:'smooth',block:'nearest'});
-    });
   }
 
   function renderOfficeDock(){
@@ -7253,26 +7378,28 @@ window.Treasury={
     renderPendingAlerts();
     const chips=$("#officeTkStaffs");
     const staff=staffList();
-    const me=currentStaffId();
+    const m=me();
     if(chips){
       chips.innerHTML=staff.length
         ?staff.map(s=>{
-          const pend=(S.directives||[]).filter(d=>d.status==='pending'&&d.assignee===s.id).length;
+          const pend=tasks.filter(t=>t.status==='pending'&&(t.assigned_all||String(t.assigned_to)===String(s.id))).length;
           const mark=pend?` <b style="color:#ff8a8a">+${pend}</b>`:'';
-          return `<button type="button" data-staff-jump="${esc(s.id)}" title="${esc(s.email)}" class="${s.id===me?'on':''}">${esc(s.name)}${mark}</button>`;
+          return `<button type="button" data-staff-jump="${esc(s.id)}" title="${esc(s.email||'')}" class="${m&&s.id===m.id?'on':''}">${esc(s.name)}${mark}</button>`;
         }).join('')
-        :`<span class="office-tk-empty">ログインしたスタッフがここに表示されます</span>`;
+        :`<span class="office-tk-empty">ログインすると名簿が共有表示されます</span>`;
     }
     const list=$("#officeTkList"); if(!list) return;
-    const todos=S.tasks.filter(t=>t.status==='todo')
-      .sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')))
+    const open=tasks.filter(t=>t.status!=='done')
+      .sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')))
       .slice(0,12);
-    list.innerHTML=todos.length?todos.map(t=>{
-      const a=staffById(t.assignee)||{name:t.assignee||'?'};
+    list.innerHTML=open.length?open.map(t=>{
+      const name=t.assigned_all?'全員':(t.assignee?.name||staffById(t.assigned_to)?.name||'?');
+      const aid=t.assigned_all?'':(t.assigned_to||'');
       return `<div class="office-tk-item" data-id="${t.id}">
-        <button type="button" class="office-tk-who" data-staff-jump="${esc(t.assignee)}">${esc(a.name)}</button>
-        <span class="office-tk-title">${esc(t.title)}</span>
-        <button type="button" data-office-tk-done="${t.id}">完了</button>
+        <button type="button" class="office-tk-who" data-staff-jump="${esc(aid)}">${esc(name)}</button>
+        <span class="office-tk-title">${esc(t.title)} <small style="color:var(--muted)">${esc(statusLabel(t.status))}</small></span>
+        ${t.status==='accepted'&&isMine(t,me())?`<button type="button" data-task-done="${esc(t.id)}">完了</button>`:
+          t.status==='pending'&&isMine(t,me())?`<button type="button" data-task-accept="${esc(t.id)}">承認</button>`:''}
       </div>`;
     }).join(''):`<div class="office-tk-empty">未完了タスクはありません。下の欄から追加できます。</div>`;
   }
@@ -7291,113 +7418,113 @@ window.Treasury={
     const hint=$("#tkHint");
     const prez=isPresident();
     if(hint) hint.textContent = prez
-      ? '社長：担当または「全員に指示」で指示を送れます。相手が承認するとタスクに追加されます。'
-      : '社員：自分のタスクを登録できます。社長からの指示は赤い通知で承認してください。';
+      ? '社長：全員または個人へ指示。相手の画面に即時で赤い通知が点灯します。'
+      : '社員：自己申告を登録できます。届いた指示は赤い通知から承認→完了。';
     const addBtn=$("#tkAdd");
     if(addBtn) addBtn.textContent=prez?'＋ 指示を送る':'＋ 追加';
     const staff=staffList();
     if(!staff.length){
-      cols.innerHTML=`<div class="tk-empty" style="padding:16px">まだスタッフがいません。ポータルにログイン登録した人が担当プルダウンと列に表示されます。</div>`;
+      cols.innerHTML=`<div class="tk-empty" style="padding:16px">名簿を読み込み中、またはまだ登録者がいません。ログインするとここに表示されます。</div>`;
       return;
     }
-    const show=focusStaff?staff.filter(s=>s.id===focusStaff):staff;
-    cols.innerHTML=show.map(a=>{
-      const all=S.tasks.filter(t=>t.assignee===a.id);
-      const todo=all.filter(t=>t.status==='todo').length;
-      const pend=(S.directives||[]).filter(d=>d.status==='pending'&&d.assignee===a.id).length;
-      const list=all.filter(t=>filter==='all'?true:t.status===filter)
-        .sort((x,y)=>(x.status===y.status?0:x.status==='todo'?-1:1));
-      const cards=list.length?list.map(t=>{
-        const src=t.by==='boss'?'<span class="tk-src boss">社長指示</span>':'<span class="tk-src self">自己申告</span>';
-        return `<div class="tk-card ${t.status==='done'?'done':''}">
-          <div class="tk-card-top"><div class="tk-card-title">${esc(t.title)}</div></div>
-          ${t.detail?`<div class="tk-card-detail">${esc(t.detail)}</div>`:''}
-          <div class="tk-card-meta">${src}<span class="tk-date">${esc(t.at||'')}</span></div>
-          <div class="tk-card-acts">
-            <button type="button" class="tk-toggle ${t.status==='todo'?'todo':'done'}" data-tk-toggle="${t.id}">${t.status==='todo'?'完了にする':'未完了に戻す'}</button>
-            <button type="button" class="tk-del" data-tk-del="${t.id}" title="削除">×</button>
-          </div>
-        </div>`;
-      }).join(''):`<div class="tk-empty">${filter==='done'?'完了タスクはありません。':filter==='todo'?'未完了タスクはありません。':'タスクはありません。'}</div>`;
+    // 全員宛タスク列
+    const allColTasks=tasks.filter(t=>t.assigned_all && matchesFilter(t))
+      .sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')));
+    const show=focusStaff?staff.filter(s=>String(s.id)===String(focusStaff)):staff;
+    let html='';
+    if(!focusStaff && allColTasks.length){
+      const open=allColTasks.filter(t=>t.status!=='done').length;
+      html+=`<div class="tk-col" data-staff="__all__">
+        <div class="tk-col-head">
+          <div><span class="tk-col-name">全員宛</span><span class="tk-col-role">共有</span></div>
+          <span class="tk-col-cnt ${open?'hot':''}">${open}</span>
+        </div>
+        <div class="tk-col-body">${allColTasks.map(renderTaskCard).join('')||'<div class="tk-empty">なし</div>'}</div>
+      </div>`;
+    }
+    html+=show.map(a=>{
+      const all=tasksForMember(a.id).filter(t=>!t.assigned_all);
+      const open=all.filter(t=>t.status!=='done').length;
+      const pend=all.filter(t=>t.status==='pending').length;
+      const list=all.filter(matchesFilter)
+        .sort((x,y)=>{
+          const rank={pending:0,accepted:1,done:2};
+          return (rank[x.status]??9)-(rank[y.status]??9) || String(y.created_at||'').localeCompare(String(x.created_at||''));
+        });
+      const cards=list.length?list.map(renderTaskCard).join('')
+        :`<div class="tk-empty">${filter==='done'?'完了タスクはありません。':filter==='todo'?'未完了タスクはありません。':'タスクはありません。'}</div>`;
       return `<div class="tk-col ${focusStaff===a.id?'is-focus':''}" data-staff="${esc(a.id)}">
         <div class="tk-col-head">
           <div><span class="tk-col-name">${esc(a.name)}</span><span class="tk-col-role">${esc(a.role||'')}${pend?` <span style="color:#ff8a8a;font-weight:800">承認待 ${pend}</span>`:''}</span></div>
-          <span class="tk-col-cnt ${todo>0||pend>0?'hot':''}">${todo}</span>
+          <span class="tk-col-cnt ${open||pend?'hot':''}">${open}</span>
         </div>
         <div class="tk-col-body">${cards}</div>
       </div>`;
     }).join('');
+    cols.innerHTML=html;
   }
 
-  function addTask(assignee, title, detail, opts){
-    if(!assignee||assignee==='__all__'){ T.toast('担当スタッフを選んでください'); return false; }
+  async function loadMembers(){
+    const c=client(); if(!c) return;
+    const { data, error } = await c.from('members').select('*').order('created_at');
+    if(error){ console.warn('[tasks] members', error); return; }
+    members=data||[];
+    fillAssigneeSelects();
+    renderTasks();
+  }
+
+  async function refreshTaskBoard(){
+    const c=client(); if(!c) return;
+    const { data, error } = await c.from('tasks')
+      .select('*, assignee:assigned_to(name)')
+      .order('created_at', { ascending:false });
+    if(error){ console.warn('[tasks] list', error); return; }
+    tasks=data||[];
+    renderTasks();
+  }
+
+  async function createTask({ title, detail, target }){
+    const c=client(); const m=me();
+    if(!c){ T.toast('Supabase未接続'); return false; }
+    if(!m){ T.toast('先にログインしてください'); return false; }
     if(!title){ T.toast('タスク内容を入力してください'); return false; }
-    const who=staffById(assignee);
-    const byBoss=!!(opts&&opts.byBoss) || T.role==='boss' || isPresident();
-    S.tasks.push({
-      id:Date.now()+Math.floor(Math.random()*1000),
-      assignee, title, detail:detail||'',
-      by:byBoss?'boss':'self',
-      status:'todo',
-      at:new Date().toISOString().slice(0,10)
-    });
-    T.saveAll(); renderTasks();
-    if(!(opts&&opts.silent)) T.toast((who?who.name:assignee)+'にタスクを追加しました');
-    return true;
-  }
-
-  function sendDirective(assigneeKey, title, detail){
-    if(!isPresident()){ T.toast('指示を送れるのは社長のみです'); return false; }
-    if(!title){ T.toast('指示内容を入力してください'); return false; }
-    const me=window.PortalAuth?.getUser?.();
-    const byName=(me&&me.name)||'社長';
-    const byId=currentStaffId();
-    let targets=[];
-    if(assigneeKey==='__all__'){
-      targets=staffList().filter(s=>s.id&&s.id!==byId);
-      if(!targets.length) targets=staffList();
-    }else{
-      const one=staffById(assigneeKey);
-      if(!one){ T.toast('担当スタッフを選んでください'); return false; }
-      targets=[one];
+    if(!isPresident() && target!=='all' && String(target)!==String(m.id)){
+      T.toast('自分宛のみ登録できます'); return false;
     }
-    if(!targets.length){ T.toast('指示先のスタッフがいません'); return false; }
-    const at=new Date().toISOString().slice(0,10);
-    targets.forEach((s,i)=>{
-      S.directives.push({
-        id:'dir'+Date.now().toString(36)+i+Math.random().toString(36).slice(2,5),
-        assignee:s.id, title, detail:detail||'',
-        status:'pending', byName, byId, at
-      });
-    });
-    T.saveAll(); renderTasks();
-    T.toast(targets.length===1
-      ? (targets[0].name+'へ指示を送りました（承認待ち）')
-      : ('全員（'+targets.length+'名）へ指示を送りました（承認待ち）'));
+    const payload={
+      title,
+      detail: detail || null,
+      assigned_all: target==='all',
+      assigned_to: target==='all' ? null : target,
+      created_by: m.id || null,
+      created_by_name: m.name || '不明',
+      self_reported: m.role!=='社長' && String(target)===String(m.id),
+      status: 'pending'
+    };
+    const { error } = await c.from('tasks').insert(payload);
+    if(error){ alert('タスク作成エラー: '+error.message); return false; }
+    T.toast(target==='all'?'全員へ指示を送りました':'タスクを登録しました');
+    await refreshTaskBoard();
     return true;
   }
 
-  function approveDirective(id){
-    const d=(S.directives||[]).find(x=>String(x.id)===String(id));
-    if(!d||d.status!=='pending') return;
-    const me=currentStaffId();
-    if(d.assignee!==me&&!isPresident()){ T.toast('自分宛の指示のみ承認できます'); return; }
-    d.status='approved';
-    d.approvedAt=new Date().toISOString().slice(0,10);
-    d.approvedBy=me;
-    addTask(d.assignee, d.title, d.detail, {byBoss:true, silent:true});
-    T.saveAll(); renderTasks();
-    T.toast('承認しました。タスクに追加されました');
+  async function acceptTask(id){
+    const c=client(); if(!c) return;
+    const { error } = await c.from('tasks')
+      .update({ status:'accepted', accepted_at:new Date().toISOString() })
+      .eq('id', id);
+    if(error){ alert('承認エラー: '+error.message); return; }
+    T.toast('承認しました');
+    await refreshTaskBoard();
   }
-  function rejectDirective(id){
-    const d=(S.directives||[]).find(x=>String(x.id)===String(id));
-    if(!d||d.status!=='pending') return;
-    const me=currentStaffId();
-    if(d.assignee!==me&&!isPresident()){ T.toast('自分宛の指示のみ却下できます'); return; }
-    d.status='rejected';
-    d.rejectedAt=new Date().toISOString().slice(0,10);
-    T.saveAll(); renderTasks();
-    T.toast('指示を却下しました');
+  async function completeTask(id){
+    const c=client(); if(!c) return;
+    const { error } = await c.from('tasks')
+      .update({ status:'done', completed_at:new Date().toISOString() })
+      .eq('id', id);
+    if(error){ alert('完了エラー: '+error.message); return; }
+    T.toast('タスク完了 ✔');
+    await refreshTaskBoard();
   }
 
   function bindImeSafeEnter(inputEl, onSubmit){
@@ -7413,13 +7540,19 @@ window.Treasury={
     });
   }
 
-  $("#tkAdd").onclick=()=>{
-    const assignee=$("#tkAssignee").value, title=$("#tkTitle").value.trim(), detail=$("#tkDetail").value.trim();
-    const ok=isPresident()
-      ? sendDirective(assignee, title, detail)
-      : addTask(assignee, title, detail);
-    if(ok){ $("#tkTitle").value=''; $("#tkDetail").value=''; }
-  };
+  async function submitFromForm(assigneeSel, titleSel, detailSel){
+    const target=$(assigneeSel)?.value;
+    const title=$(titleSel)?.value.trim();
+    const detail=detailSel?($(detailSel)?.value.trim()||''):'';
+    if(!target){ T.toast('宛先を選んでください'); return; }
+    const ok=await createTask({ title, detail, target });
+    if(ok){
+      if($(titleSel)) $(titleSel).value='';
+      if(detailSel && $(detailSel)) $(detailSel).value='';
+    }
+  }
+
+  $("#tkAdd").onclick=()=>submitFromForm('#tkAssignee','#tkTitle','#tkDetail');
   bindImeSafeEnter($("#tkTitle"), ()=>$("#tkAdd").click());
 
   const officeForm=$("#officeTkForm");
@@ -7430,14 +7563,7 @@ window.Treasury={
       officeTitle.addEventListener('compositionstart',()=>{officeComposing=true;});
       officeTitle.addEventListener('compositionend',()=>{officeComposing=false;});
     }
-    const submitOfficeTask=()=>{
-      const assignee=$("#officeTkAssignee").value;
-      const title=$("#officeTkTitle").value.trim();
-      const ok=isPresident()
-        ? sendDirective(assignee, title, '')
-        : addTask(assignee, title, '');
-      if(ok){ $("#officeTkTitle").value=''; }
-    };
+    const submitOfficeTask=()=>submitFromForm('#officeTkAssignee','#officeTkTitle',null);
     bindImeSafeEnter(officeTitle, submitOfficeTask);
     officeForm.addEventListener('submit',e=>{
       e.preventDefault();
@@ -7445,44 +7571,64 @@ window.Treasury={
       submitOfficeTask();
     });
   }
-  function handleDirClick(e){
-    const ap=e.target.closest('[data-dir-approve]');
-    if(ap){ approveDirective(ap.dataset.dirApprove); return true; }
-    const rj=e.target.closest('[data-dir-reject]');
-    if(rj){ rejectDirective(rj.dataset.dirReject); return true; }
+
+  function handleTaskClick(e){
+    const ac=e.target.closest('[data-task-accept]');
+    if(ac){ acceptTask(ac.dataset.taskAccept); return true; }
+    const dn=e.target.closest('[data-task-done]');
+    if(dn){ completeTask(dn.dataset.taskDone); return true; }
     return false;
   }
+
   document.getElementById('office-pane')?.addEventListener('click', e=>{
-    if(handleDirClick(e)) return;
+    if(handleTaskClick(e)) return;
     const jump=e.target.closest('[data-staff-jump]');
     if(jump){ jumpToStaffTasks(jump.dataset.staffJump); return; }
-    const done=e.target.closest('[data-office-tk-done]');
-    if(done){
-      const t=S.tasks.find(x=>String(x.id)===done.dataset.officeTkDone);
-      if(t){ t.status='done'; T.saveAll(); renderTasks(); T.toast('タスク完了 ✔'); }
-      return;
-    }
     const nav=e.target.closest('[data-jump]');
-    if(nav){
-      document.querySelector('.gamenav button[data-s="'+nav.dataset.jump+'"]')?.click();
-    }
+    if(nav) document.querySelector('.gamenav button[data-s="'+nav.dataset.jump+'"]')?.click();
   });
 
   $("#s-tasks").addEventListener('click', e=>{
-    if(handleDirClick(e)) return;
+    if(handleTaskClick(e)) return;
     const sf=e.target.closest('[data-staff-focus]');
     if(sf){ focusStaff=sf.dataset.staffFocus||''; renderTasks(); return; }
     const f=e.target.closest('[data-tk-filter]');
-    if(f){ filter=f.dataset.tkFilter; $$('#s-tasks .tk-filter:not(.tk-staff-jump) button').forEach(b=>b.classList.toggle('on',b===f)); renderTasks(); return; }
-    const tg=e.target.closest('[data-tk-toggle]');
-    if(tg){ const t=S.tasks.find(x=>String(x.id)===tg.dataset.tkToggle); if(t){ t.status=t.status==='todo'?'done':'todo'; T.saveAll(); renderTasks(); if(t.status==='done')T.toast('タスク完了 ✔'); } return; }
-    const dl=e.target.closest('[data-tk-del]');
-    if(dl){ S.tasks=S.tasks.filter(x=>String(x.id)!==dl.dataset.tkDel); T.saveAll(); renderTasks(); return; }
+    if(f){
+      filter=f.dataset.tkFilter;
+      $$('#s-tasks .tk-filter:not(.tk-staff-jump) button').forEach(b=>b.classList.toggle('on',b===f));
+      renderTasks();
+    }
   });
 
-  window.addEventListener('portal-staff-change',renderTasks);
-  T.onRender(renderTasks);
-  renderTasks();
+  function subscribeLive(){
+    const c=client(); if(!c||liveReady) return;
+    liveReady=true;
+    c.channel('members-live')
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'members' }, function(){ loadMembers(); })
+      .subscribe();
+    c.channel('tasks-live')
+      .on('postgres_changes', { event:'*', schema:'public', table:'tasks' }, function(payload){
+        const t=payload.new; const m=me();
+        const mine=t && isMine(t,m);
+        if(payload.eventType==='INSERT' && mine && t && String(t.created_by)!==String(m?.id)){
+          showTaskBadge();
+          playNotifySound();
+          T.toast('新しいタスクが届きました');
+        }
+        refreshTaskBoard();
+      })
+      .subscribe();
+  }
+
+  async function boot(){
+    subscribeLive();
+    await loadMembers();
+    await refreshTaskBoard();
+  }
+
+  window.addEventListener('portal-member-ready', boot);
+  T.onRender(function(){ renderTasks(); });
+  boot();
 })();
 </script>
 
@@ -7899,7 +8045,6 @@ window.PortalAuth=(function(){
     list.sort((a,b)=>a.name.localeCompare(b.name,'ja'));
     try{localStorage.setItem(STAFF_KEY,JSON.stringify(list));}catch(e){}
     window.dispatchEvent(new CustomEvent('portal-staff-change'));
-    try{ window.GoonerCloud?.schedulePush?.(); }catch(e){}
     return list;
   }
   function saveLog(entry){
@@ -8063,7 +8208,7 @@ window.PortalAuth=(function(){
     }
     try{applyNavAcl();}catch(e){}
   }
-  function login(user){
+  async function login(user){
     const u={
       role:String(user.role||'').trim(),
       name:String(user.name||'').trim(),
@@ -8073,16 +8218,25 @@ window.PortalAuth=(function(){
     if(!u.role||!u.name||!u.email)return false;
     localStorage.setItem(USER_KEY,JSON.stringify(u));
     upsertStaff(u);
+    try{
+      const m=await window.GoonerSB?.registerMember?.(u.name, u.role, u.email);
+      if(m&&m.id){
+        u.memberId=m.id;
+        localStorage.setItem(USER_KEY,JSON.stringify(u));
+      }
+    }catch(e){ console.warn('[PortalAuth] registerMember', e); }
     const entry={...u,action:'login',ts:Date.now()};
     saveLog(entry);
     serverLog('login','portal-open');
     syncUi();
+    try{ window.dispatchEvent(new CustomEvent('portal-member-ready')); }catch(e){}
     return true;
   }
   function logout(){
     const u=getUser();
     if(u){saveLog({...u,action:'logout',ts:Date.now()});serverLog('logout','');}
     localStorage.removeItem(USER_KEY);
+    try{ localStorage.removeItem('gp_member'); }catch(e){}
     try{ sessionStorage.removeItem('gooner_acct_revealed'); }catch(e){}
     syncUi();
   }
@@ -8095,15 +8249,21 @@ window.PortalAuth=(function(){
     syncUi();
     const form=document.getElementById('portalLoginForm');
     const err=document.getElementById('portalLoginErr');
-    if(form)form.addEventListener('submit',function(ev){
+    if(form)form.addEventListener('submit',async function(ev){
       ev.preventDefault();
       if(err)err.textContent='';
-      const ok=login({
-        role:document.getElementById('loginRole')?.value,
-        name:document.getElementById('loginName')?.value,
-        email:document.getElementById('loginEmail')?.value
-      });
-      if(!ok&&err)err.textContent='役職・名前・メールを入力してください。';
+      const btn=form.querySelector('.portal-login-submit');
+      if(btn){ btn.disabled=true; btn.textContent='登録中…'; }
+      try{
+        const ok=await login({
+          role:document.getElementById('loginRole')?.value,
+          name:document.getElementById('loginName')?.value,
+          email:document.getElementById('loginEmail')?.value
+        });
+        if(!ok&&err)err.textContent='役職・名前・メールを入力してください。';
+      }finally{
+        if(btn){ btn.disabled=false; btn.textContent='ログインして開始'; }
+      }
     });
     document.getElementById('portalLogoutBtn')?.addEventListener('click',logout);
     document.querySelectorAll('.nav-drop-toggle').forEach(function(toggle){
@@ -8126,6 +8286,14 @@ window.PortalAuth=(function(){
       document.getElementById('loginName').value=prev.name;
       document.getElementById('loginEmail').value=prev.email;
       upsertStaff(prev);
+      // 既存セッションも members に載せる
+      window.GoonerSB?.registerMember?.(prev.name, prev.role, prev.email).then(function(m){
+        if(m&&m.id){
+          prev.memberId=m.id;
+          localStorage.setItem(USER_KEY, JSON.stringify(prev));
+          try{ window.dispatchEvent(new CustomEvent('portal-member-ready')); }catch(e){}
+        }
+      }).catch(function(){});
     }else{
       listStaff();
     }
@@ -8142,26 +8310,19 @@ window.PortalAuth=(function(){
 </script>
 
 <script>
-/* Dropbox 共有同期：タスク・会計データ・スタッフ・円卓履歴 */
-window.GoonerCloud=(function(){
+/* Dropbox：既存フォルダのファイル一覧・プレビュー */
+window.DropboxFiles=(function(){
   const LS_TOK='gooner_dropbox_tokens';
-  const LS_META='gooner_dropbox_meta';
-  const TREASURY_KEY='gooner_treasury_v1';
-  const STAFF_KEY='gooner_portal_staff';
-  const ENTAKU_KEY='gooner_entaku_v2';
-  let pushTimer=null;
-  let syncing=false;
+  let currentPath='';
+  let busy=false;
 
   function statusEl(){ return document.getElementById('portalDropboxStatus'); }
   function btnEl(){ return document.getElementById('portalDropboxBtn'); }
-  function setStatus(msg, on){
-    const s=statusEl(), b=btnEl();
-    if(s){ s.hidden=!msg; s.textContent=msg||''; }
-    if(b){
-      b.classList.toggle('is-on', !!on);
-      b.textContent=on?'Dropbox同期中':'Dropbox同期';
-    }
-  }
+  function modal(){ return document.getElementById('dbx-modal'); }
+  function listEl(){ return document.getElementById('dbxList'); }
+  function pathEl(){ return document.getElementById('dbxPath'); }
+  function toast(msg){ try{ window.Treasury?.toast?.(msg); }catch(e){} }
+
   function loadTokens(){
     try{ return JSON.parse(localStorage.getItem(LS_TOK)||'null'); }catch(e){ return null; }
   }
@@ -8170,15 +8331,16 @@ window.GoonerCloud=(function(){
     else localStorage.setItem(LS_TOK, JSON.stringify(t));
     updateUi();
   }
-  function meta(){
-    try{ return JSON.parse(localStorage.getItem(LS_META)||'{}'); }catch(e){ return {}; }
-  }
-  function saveMeta(m){ localStorage.setItem(LS_META, JSON.stringify(m||{})); }
-  function isConnected(){ const t=loadTokens(); return !!(t&& (t.access||t.refresh)); }
+  function isConnected(){ const t=loadTokens(); return !!(t&&(t.access||t.refresh)); }
   function updateUi(){
-    if(!isConnected()){ setStatus('', false); return; }
-    const m=meta();
-    setStatus(m.updatedAt ? ('最終同期 '+String(m.updatedAt).slice(5,16).replace('T',' ')) : '接続済', true);
+    const s=statusEl(), b=btnEl();
+    const on=isConnected();
+    if(s){ s.hidden=!on; s.textContent=on?'接続済':''; }
+    if(b){
+      b.classList.toggle('is-on', on);
+      b.textContent='Dropboxファイル';
+      b.title=on?'クリック＝ファイル一覧／右クリック＝解除':'クリック＝Dropboxに接続';
+    }
   }
 
   function captureHashTokens(){
@@ -8189,19 +8351,11 @@ window.GoonerCloud=(function(){
     const refresh=q.get('dbx_refresh')||'';
     const expires=parseInt(q.get('dbx_expires')||'14400',10)||14400;
     if(access){
-      saveTokens({
-        access:access,
-        refresh:refresh,
-        exp:Date.now()+expires*1000-60000
-      });
+      saveTokens({ access:access, refresh:refresh, exp:Date.now()+expires*1000-60000 });
       history.replaceState(null,'',location.pathname+location.search);
       toast('Dropbox に接続しました');
-      pull().then(function(){ push(); });
+      openBrowser();
     }
-  }
-
-  function toast(msg){
-    try{ window.Treasury?.toast?.(msg); }catch(e){}
   }
 
   async function ensureAccess(){
@@ -8217,118 +8371,13 @@ window.GoonerCloud=(function(){
     const data=await res.json().catch(function(){return {};});
     if(!res.ok || !data.accessToken){
       saveTokens(null);
-      setStatus('再接続が必要です', false);
+      toast('Dropboxの再接続が必要です');
       return null;
     }
     t.access=data.accessToken;
     t.exp=Date.now()+(data.expiresIn||14400)*1000-60000;
     saveTokens(t);
     return t.access;
-  }
-
-  function mergeById(a, b, idKey, timeKeys){
-    const map=new Map();
-    function put(item){
-      if(!item||item[idKey]==null) return;
-      const id=String(item[idKey]);
-      const prev=map.get(id);
-      if(!prev){ map.set(id, item); return; }
-      const tOf=function(x){
-        for(let i=0;i<(timeKeys||[]).length;i++){
-          const v=Date.parse(x[timeKeys[i]]||'')||0;
-          if(v) return v;
-        }
-        return 0;
-      };
-      map.set(id, tOf(item)>=tOf(prev)?item:prev);
-    }
-    (a||[]).forEach(put);
-    (b||[]).forEach(put);
-    return Array.from(map.values());
-  }
-
-  function collectLocal(){
-    let treasury=null;
-    try{ treasury=JSON.parse(localStorage.getItem(TREASURY_KEY)||'null'); }catch(e){}
-    let staff=[];
-    try{ staff=JSON.parse(localStorage.getItem(STAFF_KEY)||'[]'); }catch(e){}
-    let entaku=null;
-    try{ entaku=JSON.parse(localStorage.getItem(ENTAKU_KEY)||'null'); }catch(e){}
-    const u=window.PortalAuth?.getUser?.();
-    return {
-      version:1,
-      updatedAt:new Date().toISOString(),
-      updatedBy:u?(u.name+'/'+u.email):'unknown',
-      treasury:treasury,
-      staff:Array.isArray(staff)?staff:[],
-      entaku:entaku
-    };
-  }
-
-  function applyRemote(remote){
-    if(!remote||typeof remote!=='object') return false;
-    let changed=false;
-    // treasury: タスク／指示はIDマージ、他は新しい方を採用
-    try{
-      const local=JSON.parse(localStorage.getItem(TREASURY_KEY)||'null')||{};
-      const rt=remote.treasury||{};
-      const localAt=Date.parse(meta().updatedAt||'')||0;
-      const remoteAt=Date.parse(remote.updatedAt||'')||0;
-      let next=Object.assign({}, local);
-      if(remoteAt>=localAt){
-        next=Object.assign({}, rt, {
-          tasks: mergeById(local.tasks||[], rt.tasks||[], 'id', ['at','updatedAt']),
-          directives: mergeById(local.directives||[], rt.directives||[], 'id', ['at','updatedAt'])
-        });
-      }else{
-        next.tasks=mergeById(local.tasks||[], rt.tasks||[], 'id', ['at','updatedAt']);
-        next.directives=mergeById(local.directives||[], rt.directives||[], 'id', ['at','updatedAt']);
-      }
-      localStorage.setItem(TREASURY_KEY, JSON.stringify(next));
-      changed=true;
-    }catch(e){}
-    try{
-      const localStaff=JSON.parse(localStorage.getItem(STAFF_KEY)||'[]');
-      const map=new Map();
-      (localStaff||[]).forEach(function(s){ if(s&&s.id) map.set(String(s.id), s); });
-      (remote.staff||[]).forEach(function(s){
-        if(!s||!s.id) return;
-        const id=String(s.id);
-        map.set(id, Object.assign({}, map.get(id)||{}, s));
-      });
-      localStorage.setItem(STAFF_KEY, JSON.stringify(Array.from(map.values())));
-      changed=true;
-    }catch(e){}
-    try{
-      if(remote.entaku){
-        const localE=JSON.parse(localStorage.getItem(ENTAKU_KEY)||'null')||{};
-        const remoteAt=Date.parse(remote.updatedAt||'')||0;
-        const localAt=Date.parse(meta().updatedAt||'')||0;
-        if(remoteAt>=localAt || !localE.history || !localE.history.length){
-          localStorage.setItem(ENTAKU_KEY, JSON.stringify(remote.entaku));
-          changed=true;
-        }
-      }
-    }catch(e){}
-    saveMeta({ updatedAt: remote.updatedAt||new Date().toISOString(), updatedBy: remote.updatedBy||'' });
-    return changed;
-  }
-
-  function reloadAppData(){
-    try{
-      if(window.Treasury && typeof Treasury.loadFromStorage==='function'){
-        Treasury.loadFromStorage();
-      }else{
-        location.reload();
-        return;
-      }
-    }catch(e){ location.reload(); return; }
-    try{ window.dispatchEvent(new CustomEvent('portal-staff-change')); }catch(e){}
-    try{ window.PortalAuth?.syncUi?.(); }catch(e){}
-    try{
-      const d=JSON.parse(localStorage.getItem(ENTAKU_KEY)||'null');
-      if(d && typeof window.__entakuReloadFromStorage==='function') window.__entakuReloadFromStorage(d);
-    }catch(e){}
   }
 
   async function api(action, extra){
@@ -8345,61 +8394,94 @@ window.GoonerCloud=(function(){
       }, extra||{}))
     });
     const data=await res.json().catch(function(){return {};});
-    if(!res.ok) throw new Error(data.error||('HTTP '+res.status));
+    if(!res.ok) throw new Error(data.error||data.detail||('HTTP '+res.status));
     return data;
   }
 
-  async function pull(){
-    if(syncing) return;
-    if(!isConnected()) return;
-    syncing=true;
-    setStatus('受信中…', true);
-    try{
-      const data=await api('download');
-      if(data.missing){
-        setStatus('初回アップロード待ち', true);
-        await push();
-        return;
-      }
-      const changed=applyRemote(data.content);
-      updateUi();
-      if(changed){
-        toast('Dropboxから同期しました');
-        reloadAppData();
-      }else updateUi();
-    }catch(e){
-      setStatus('同期エラー', isConnected());
-      console.warn('[GoonerCloud] pull', e);
-    }finally{ syncing=false; }
+  function fmtSize(n){
+    n=+n||0;
+    if(n<1024) return n+' B';
+    if(n<1024*1024) return (n/1024).toFixed(0)+' KB';
+    return (n/1024/1024).toFixed(1)+' MB';
   }
 
-  async function push(){
-    if(!isConnected()) return;
-    syncing=true;
-    setStatus('送信中…', true);
-    try{
-      const content=collectLocal();
-      await api('upload',{ content:content });
-      saveMeta({ updatedAt: content.updatedAt, updatedBy: content.updatedBy });
-      updateUi();
-    }catch(e){
-      setStatus('送信エラー', isConnected());
-      console.warn('[GoonerCloud] push', e);
-    }finally{ syncing=false; }
+  function renderList(data){
+    currentPath=data.path==='/'?'':(data.path||'');
+    if(pathEl()) pathEl().textContent=data.path||'/';
+    const up=document.getElementById('dbxUpBtn');
+    if(up) up.disabled=data.parent===null || data.parent===undefined;
+    const box=listEl(); if(!box) return;
+    const entries=data.entries||[];
+    if(!entries.length){
+      box.innerHTML='<div class="dbx-empty">このフォルダにはファイルがありません</div>';
+      return;
+    }
+    box.innerHTML=entries.map(function(e){
+      const folder=e.tag==='folder';
+      const ic=folder?'📁':'📄';
+      const meta=folder?'フォルダ':fmtSize(e.size);
+      return '<button type="button" class="dbx-item" data-dbx-tag="'+e.tag+'" data-dbx-path="'+String(e.path||'').replace(/"/g,'&quot;')+'">'+
+        '<span class="dbx-ic">'+ic+'</span><span>'+esc(e.name)+'</span><span class="dbx-meta">'+esc(meta)+'</span></button>';
+    }).join('');
+    box.querySelectorAll('.dbx-item').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        const tag=btn.getAttribute('data-dbx-tag');
+        const p=btn.getAttribute('data-dbx-path')||'';
+        if(tag==='folder') loadPath(p);
+        else openFile(p);
+      });
+    });
   }
 
-  function schedulePush(){
-    if(!isConnected()) return;
-    clearTimeout(pushTimer);
-    pushTimer=setTimeout(function(){ push(); }, 1200);
+  function esc(s){
+    return String(s||'').replace(/[&<>"']/g,function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+
+  async function loadPath(path){
+    if(busy) return;
+    busy=true;
+    const box=listEl();
+    if(box) box.innerHTML='<div class="dbx-empty">読み込み中…</div>';
+    try{
+      const data=await api('list',{ path:path==null?'':path });
+      renderList(data);
+    }catch(e){
+      if(box) box.innerHTML='<div class="dbx-err">読み込めませんでした<br>'+esc(e.message||e)+'</div>';
+    }finally{ busy=false; }
+  }
+
+  async function openFile(path){
+    try{
+      const data=await api('link',{ path:path });
+      if(data.link) window.open(data.link,'_blank','noopener');
+      else toast('リンクを取得できませんでした');
+    }catch(e){
+      toast('ファイルを開けません: '+(e.message||e));
+    }
+  }
+
+  function openBrowser(){
+    const m=modal();
+    if(!m) return;
+    m.classList.add('open');
+    m.setAttribute('aria-hidden','false');
+    loadPath(currentPath||'');
+  }
+  function closeBrowser(){
+    const m=modal();
+    if(!m) return;
+    m.classList.remove('open');
+    m.setAttribute('aria-hidden','true');
   }
 
   function connect(){ location.href='/api/dropbox-auth'; }
   function disconnect(){
-    if(!confirm('Dropbox同期を解除しますか？（ローカルデータは残ります）')) return;
+    if(!confirm('Dropbox接続を解除しますか？')) return;
     saveTokens(null);
-    setStatus('', false);
-    toast('Dropbox同期を解除しました');
+    closeBrowser();
+    toast('Dropbox接続を解除しました');
   }
 
   function wire(){
@@ -8407,9 +8489,8 @@ window.GoonerCloud=(function(){
     updateUi();
     const b=btnEl();
     if(b){
-      b.title='クリック＝同期／右クリック＝解除';
       b.addEventListener('click', function(){
-        if(isConnected()) pull().then(function(){ return push(); });
+        if(isConnected()) openBrowser();
         else connect();
       });
       b.addEventListener('contextmenu', function(e){
@@ -8417,16 +8498,31 @@ window.GoonerCloud=(function(){
         if(isConnected()) disconnect();
       });
     }
-    document.addEventListener('visibilitychange', function(){
-      if(document.visibilityState==='visible') pull();
+    document.getElementById('dbxCloseBtn')?.addEventListener('click', closeBrowser);
+    document.getElementById('dbxRefreshBtn')?.addEventListener('click', function(){ loadPath(currentPath); });
+    document.getElementById('dbxUpBtn')?.addEventListener('click', async function(){
+      try{
+        const data=await api('list',{ path:currentPath });
+        if(data.parent!==null && data.parent!==undefined) loadPath(data.parent);
+      }catch(e){ toast(String(e.message||e)); }
     });
-    if(isConnected()) setTimeout(function(){ pull(); }, 800);
+    document.getElementById('dbxDisconnectBtn')?.addEventListener('click', disconnect);
+    document.getElementById('dbxOpenFolderBtn')?.addEventListener('click', function(){
+      const p=currentPath||'';
+      const url=p
+        ? 'https://www.dropbox.com/home'+encodeURI(p)
+        : 'https://www.dropbox.com/home';
+      window.open(url,'_blank','noopener');
+    });
+    modal()?.addEventListener('click', function(e){
+      if(e.target===modal()) closeBrowser();
+    });
   }
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire);
   else wire();
 
-  return { connect, disconnect, pull, push, schedulePush, isConnected, updateUi };
+  return { connect, disconnect, openBrowser, isConnected, updateUi };
 })();
 </script>
 
@@ -8965,7 +9061,6 @@ window.EntakuDocIngest=(function(){
         actions: S.actions || [],
         minutes: (S.minutes || []).slice(-200)
       }));
-      try{ window.GoonerCloud?.schedulePush?.(); }catch(e){}
     }catch(e){}
   }
   function restoreEntaku(){

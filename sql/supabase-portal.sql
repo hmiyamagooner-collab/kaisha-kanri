@@ -1,0 +1,4 @@
+-- 【廃止】このSQLは使いません。
+-- タスク共有は構築済みプロジェクト gooner-portal の
+--   members / tasks テーブル（Realtime・RLS設定済み）を使用します。
+-- テーブルやポリシーをここで作成・変更しないこと（CURSOR_HANDOFF_task_system.md 参照）。
