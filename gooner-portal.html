@@ -2302,7 +2302,7 @@ video.dc-card__image{
 <div id="portal-main">
 <div id="portal-bar">
   <span class="pt-logo">GOONER PORTAL</span>
-  <button type="button" class="pt-dropbox" id="portalDropboxBtn" title="クリック＝ファイル一覧／右クリック＝解除">Dropboxファイル</button>
+  <button type="button" class="pt-dropbox" id="portalDropboxBtn" title="/GoonerPortal を一覧・ダウンロード">Dropbox同期</button>
   <span class="pt-dropbox-status" id="portalDropboxStatus" hidden></span>
   <span class="pt-user" id="portalUserChip" hidden></span>
   <button type="button" class="pt-logout" id="portalLogoutBtn" hidden>ログアウト</button>
@@ -2311,16 +2311,19 @@ video.dc-card__image{
 <div id="dbx-modal" aria-hidden="true">
   <div class="dbx-card" role="dialog" aria-labelledby="dbxTitle">
     <div class="dbx-head">
-      <h2 id="dbxTitle">Dropbox ファイル</h2>
+      <h2 id="dbxTitle">Dropbox同期</h2>
       <button type="button" id="dbxUpBtn" title="上のフォルダ">↑ 上へ</button>
       <button type="button" id="dbxRefreshBtn">更新</button>
       <button type="button" id="dbxCloseBtn" aria-label="閉じる">閉じる</button>
     </div>
-    <div class="dbx-path" id="dbxPath">/</div>
+    <div class="dbx-path" id="dbxPath">/GoonerPortal</div>
     <div class="dbx-list" id="dbxList"><div class="dbx-empty">読み込み中…</div></div>
     <div class="dbx-foot">
-      <button type="button" id="dbxDisconnectBtn">接続解除</button>
-      <button type="button" class="primary" id="dbxOpenFolderBtn">このフォルダをDropboxで開く</button>
+      <label class="dbx-up-label" style="margin-right:auto;font-size:11px;color:var(--muted);cursor:pointer">
+        <input type="file" id="dbxUploadInput" multiple hidden>
+        <span class="primary" style="display:inline-block;padding:6px 12px;border-radius:8px;border:1px solid rgba(76,175,80,.5);background:rgba(15,138,78,.16);color:var(--nav-label)">このフォルダへアップロード</span>
+      </label>
+      <button type="button" class="primary" id="dbxCloseBtn2">閉じる</button>
     </div>
   </div>
 </div>
@@ -3909,6 +3912,14 @@ video.dc-card__image{
       <select id="ctF-status"><option value="unsigned">未締結</option><option value="signed">締結済</option></select>
     </div>
     <div class="re-field"><label>契約書本文・メモ（任意）</label><textarea id="ctF-body" rows="4" placeholder="契約書の要旨・条項メモ・保管場所URLなど"></textarea></div>
+    <div class="re-field">
+      <label>資料ファイル（任意）</label>
+      <input type="file" id="ctF-file" accept="application/pdf,image/*,.pdf,.doc,.docx" multiple>
+      <label class="bp-chk" style="margin-top:8px">
+        <input type="checkbox" id="ctF-dbx" checked>
+        <span>Dropboxにも保存 <b>（/GoonerPortal/契約書）</b></span>
+      </label>
+    </div>
     <div class="re-modal-btns">
       <button class="re-submit" id="ctSave">保存</button>
       <button class="re-cancel" data-re-close>キャンセル</button>
@@ -7871,7 +7882,7 @@ window.BizCaseLink=(function(){
   }
   window.openContractModal=openModal;
   $("#ctF-biz")?.addEventListener('change', ()=>fillCaseSelect($("#ctF-biz").value, $("#ctF-case").value));
-  $("#ctSave").onclick=()=>{
+  $("#ctSave").onclick=async ()=>{
     const party=$("#ctF-party").value.trim();
     if(!party){ T.toast('相手先を入力してください'); return; }
     const data={party, title:$("#ctF-title").value.trim(), biz:$("#ctF-biz").value,
@@ -7880,7 +7891,26 @@ window.BizCaseLink=(function(){
       status:$("#ctF-status").value, body:$("#ctF-body").value.trim()};
     if(editId){ Object.assign(S.contracts.find(x=>x.id===editId), data); }
     else{ S.contracts.push({id:'ct'+Date.now(), ...data}); }
-    T.saveAll(); $("#ctModal").classList.remove('open'); render(); if(T.renderAll)T.renderAll();
+    T.saveAll();
+    const fileInp=$("#ctF-file");
+    const toDbx=$("#ctF-dbx")?.checked;
+    const files=fileInp&&fileInp.files?Array.from(fileInp.files):[];
+    if(toDbx && files.length && window.dbxUpload){
+      for(const file of files){
+        try{
+          const res=await window.dbxUpload(file, '/契約書');
+          if(res&&res.error){
+            T.toast('Dropbox保存失敗: '+(typeof res.error==='string'?res.error:JSON.stringify(res.error)));
+          }else{
+            T.toast('Dropboxに保存しました: '+(res.name||file.name));
+          }
+        }catch(e){
+          T.toast('Dropbox保存失敗: '+(e.message||e));
+        }
+      }
+    }
+    if(fileInp) fileInp.value='';
+    $("#ctModal").classList.remove('open'); render(); if(T.renderAll)T.renderAll();
     T.toast(editId?'契約書を更新しました':'契約書を登録しました');
   };
 
@@ -8310,156 +8340,139 @@ window.PortalAuth=(function(){
 </script>
 
 <script>
-/* Dropbox：既存フォルダのファイル一覧・プレビュー */
-window.DropboxFiles=(function(){
-  const LS_TOK='gooner_dropbox_tokens';
-  let currentPath='';
+/* Dropbox同期 — /api/dropbox 経由のみ（キー・トークンはサーバー側） */
+(function(){
+  const ROOT='/GoonerPortal';
+  let relPath=''; // PORTAL_ROOT からの相対（例: "" または "/契約書"）
   let busy=false;
 
+  function toast(msg){ try{ window.Treasury?.toast?.(msg); }catch(e){} }
   function statusEl(){ return document.getElementById('portalDropboxStatus'); }
   function btnEl(){ return document.getElementById('portalDropboxBtn'); }
   function modal(){ return document.getElementById('dbx-modal'); }
   function listEl(){ return document.getElementById('dbxList'); }
   function pathEl(){ return document.getElementById('dbxPath'); }
-  function toast(msg){ try{ window.Treasury?.toast?.(msg); }catch(e){} }
-
-  function loadTokens(){
-    try{ return JSON.parse(localStorage.getItem(LS_TOK)||'null'); }catch(e){ return null; }
-  }
-  function saveTokens(t){
-    if(!t) localStorage.removeItem(LS_TOK);
-    else localStorage.setItem(LS_TOK, JSON.stringify(t));
-    updateUi();
-  }
-  function isConnected(){ const t=loadTokens(); return !!(t&&(t.access||t.refresh)); }
-  function updateUi(){
-    const s=statusEl(), b=btnEl();
-    const on=isConnected();
-    if(s){ s.hidden=!on; s.textContent=on?'接続済':''; }
-    if(b){
-      b.classList.toggle('is-on', on);
-      b.textContent='Dropboxファイル';
-      b.title=on?'クリック＝ファイル一覧／右クリック＝解除':'クリック＝Dropboxに接続';
-    }
-  }
-
-  function captureHashTokens(){
-    const h=String(location.hash||'').replace(/^#/,'');
-    if(!h || h.indexOf('dbx_access=')<0) return;
-    const q=new URLSearchParams(h);
-    const access=q.get('dbx_access')||'';
-    const refresh=q.get('dbx_refresh')||'';
-    const expires=parseInt(q.get('dbx_expires')||'14400',10)||14400;
-    if(access){
-      saveTokens({ access:access, refresh:refresh, exp:Date.now()+expires*1000-60000 });
-      history.replaceState(null,'',location.pathname+location.search);
-      toast('Dropbox に接続しました');
-      openBrowser();
-    }
-  }
-
-  async function ensureAccess(){
-    let t=loadTokens();
-    if(!t) return null;
-    if(t.access && t.exp && Date.now()<t.exp) return t.access;
-    if(!t.refresh) return t.access||null;
-    const res=await fetch('/api/dropbox-sync',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'refresh', refreshToken:t.refresh})
+  function esc(s){
+    return String(s||'').replace(/[&<>"']/g,function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
     });
-    const data=await res.json().catch(function(){return {};});
-    if(!res.ok || !data.accessToken){
-      saveTokens(null);
-      toast('Dropboxの再接続が必要です');
-      return null;
-    }
-    t.access=data.accessToken;
-    t.exp=Date.now()+(data.expiresIn||14400)*1000-60000;
-    saveTokens(t);
-    return t.access;
   }
-
-  async function api(action, extra){
-    const access=await ensureAccess();
-    const t=loadTokens()||{};
-    if(!access && !t.refresh) throw new Error('NOT_CONNECTED');
-    const res=await fetch('/api/dropbox-sync',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify(Object.assign({
-        action:action,
-        accessToken:access||'',
-        refreshToken:t.refresh||''
-      }, extra||{}))
-    });
-    const data=await res.json().catch(function(){return {};});
-    if(!res.ok) throw new Error(data.error||data.detail||('HTTP '+res.status));
-    return data;
+  function toRel(full){
+    let p=String(full||'');
+    if(p.startsWith(ROOT)) p=p.slice(ROOT.length);
+    if(p && p[0]!=='/') p='/'+p;
+    return p||'';
   }
-
+  function parentRel(p){
+    if(!p||p==='/') return '';
+    const i=p.lastIndexOf('/');
+    if(i<=0) return '';
+    return p.slice(0,i);
+  }
   function fmtSize(n){
     n=+n||0;
+    if(!n) return '';
     if(n<1024) return n+' B';
     if(n<1024*1024) return (n/1024).toFixed(0)+' KB';
     return (n/1024/1024).toFixed(1)+' MB';
   }
 
-  function renderList(data){
-    currentPath=data.path==='/'?'':(data.path||'');
-    if(pathEl()) pathEl().textContent=data.path||'/';
+  async function dbxList(path){
+    path = path==null ? '' : path;
+    const r=await fetch('/api/dropbox?action=list&path='+encodeURIComponent(path));
+    const data=await r.json().catch(function(){return {};});
+    if(!r.ok) throw new Error(typeof data.error==='string'?data.error:JSON.stringify(data.error||data));
+    return data.entries||[];
+  }
+  async function dbxDownload(path){
+    const r=await fetch('/api/dropbox?action=download&path='+encodeURIComponent(path));
+    const data=await r.json().catch(function(){return {};});
+    if(!r.ok) throw new Error(typeof data.error==='string'?data.error:JSON.stringify(data.error||data));
+    const a=document.createElement('a');
+    a.href='data:application/octet-stream;base64,'+data.base64;
+    a.download=data.name||'download';
+    a.click();
+  }
+  async function dbxUpload(file, subdir){
+    subdir=subdir||'';
+    const base64=await new Promise(function(ok, ng){
+      const fr=new FileReader();
+      fr.onload=function(){ ok(String(fr.result||'').split(',')[1]||''); };
+      fr.onerror=ng;
+      fr.readAsDataURL(file);
+    });
+    const path=(subdir.replace(/\/$/,'')+'/'+file.name).replace(/\/+/g,'/');
+    const r=await fetch('/api/dropbox',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ action:'upload', path:path, base64:base64 })
+    });
+    const data=await r.json().catch(function(){return {};});
+    if(!r.ok) throw new Error(typeof data.error==='string'?data.error:JSON.stringify(data.error||data));
+    return data;
+  }
+  window.dbxList=dbxList;
+  window.dbxDownload=dbxDownload;
+  window.dbxUpload=dbxUpload;
+
+  function updateUi(ok){
+    const s=statusEl(), b=btnEl();
+    if(s){ s.hidden=!ok; s.textContent=ok?'/GoonerPortal':''; }
+    if(b){
+      b.classList.toggle('is-on', !!ok);
+      b.textContent='Dropbox同期';
+      b.title='クリック＝/GoonerPortal を開く';
+    }
+  }
+
+  function renderEntries(entries){
+    if(pathEl()) pathEl().textContent=ROOT+(relPath||'');
     const up=document.getElementById('dbxUpBtn');
-    if(up) up.disabled=data.parent===null || data.parent===undefined;
+    if(up) up.disabled=!relPath;
     const box=listEl(); if(!box) return;
-    const entries=data.entries||[];
     if(!entries.length){
       box.innerHTML='<div class="dbx-empty">このフォルダにはファイルがありません</div>';
       return;
     }
-    box.innerHTML=entries.map(function(e){
-      const folder=e.tag==='folder';
+    const sorted=entries.slice().sort(function(a,b){
+      if(a.type===b.type) return String(a.name).localeCompare(String(b.name),'ja');
+      return a.type==='folder'?-1:1;
+    });
+    box.innerHTML=sorted.map(function(e){
+      const folder=e.type==='folder';
       const ic=folder?'📁':'📄';
       const meta=folder?'フォルダ':fmtSize(e.size);
-      return '<button type="button" class="dbx-item" data-dbx-tag="'+e.tag+'" data-dbx-path="'+String(e.path||'').replace(/"/g,'&quot;')+'">'+
+      const rel=toRel(e.path);
+      return '<button type="button" class="dbx-item" data-dbx-type="'+esc(e.type)+'" data-dbx-rel="'+esc(rel)+'">'+
         '<span class="dbx-ic">'+ic+'</span><span>'+esc(e.name)+'</span><span class="dbx-meta">'+esc(meta)+'</span></button>';
     }).join('');
     box.querySelectorAll('.dbx-item').forEach(function(btn){
-      btn.addEventListener('click', function(){
-        const tag=btn.getAttribute('data-dbx-tag');
-        const p=btn.getAttribute('data-dbx-path')||'';
-        if(tag==='folder') loadPath(p);
-        else openFile(p);
+      btn.addEventListener('click', async function(){
+        const type=btn.getAttribute('data-dbx-type');
+        const rel=btn.getAttribute('data-dbx-rel')||'';
+        if(type==='folder') loadPath(rel);
+        else{
+          try{ await dbxDownload(rel); toast('ダウンロードしました'); }
+          catch(err){ toast('ダウンロード失敗: '+(err.message||err)); }
+        }
       });
-    });
-  }
-
-  function esc(s){
-    return String(s||'').replace(/[&<>"']/g,function(c){
-      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
     });
   }
 
   async function loadPath(path){
     if(busy) return;
     busy=true;
+    relPath=path||'';
     const box=listEl();
     if(box) box.innerHTML='<div class="dbx-empty">読み込み中…</div>';
     try{
-      const data=await api('list',{ path:path==null?'':path });
-      renderList(data);
+      const entries=await dbxList(relPath);
+      updateUi(true);
+      renderEntries(entries);
     }catch(e){
+      updateUi(false);
       if(box) box.innerHTML='<div class="dbx-err">読み込めませんでした<br>'+esc(e.message||e)+'</div>';
     }finally{ busy=false; }
-  }
-
-  async function openFile(path){
-    try{
-      const data=await api('link',{ path:path });
-      if(data.link) window.open(data.link,'_blank','noopener');
-      else toast('リンクを取得できませんでした');
-    }catch(e){
-      toast('ファイルを開けません: '+(e.message||e));
-    }
   }
 
   function openBrowser(){
@@ -8467,7 +8480,7 @@ window.DropboxFiles=(function(){
     if(!m) return;
     m.classList.add('open');
     m.setAttribute('aria-hidden','false');
-    loadPath(currentPath||'');
+    loadPath(relPath||'');
   }
   function closeBrowser(){
     const m=modal();
@@ -8476,53 +8489,33 @@ window.DropboxFiles=(function(){
     m.setAttribute('aria-hidden','true');
   }
 
-  function connect(){ location.href='/api/dropbox-auth'; }
-  function disconnect(){
-    if(!confirm('Dropbox接続を解除しますか？')) return;
-    saveTokens(null);
-    closeBrowser();
-    toast('Dropbox接続を解除しました');
-  }
-
   function wire(){
-    captureHashTokens();
-    updateUi();
     const b=btnEl();
-    if(b){
-      b.addEventListener('click', function(){
-        if(isConnected()) openBrowser();
-        else connect();
-      });
-      b.addEventListener('contextmenu', function(e){
-        e.preventDefault();
-        if(isConnected()) disconnect();
-      });
-    }
+    if(b) b.addEventListener('click', openBrowser);
     document.getElementById('dbxCloseBtn')?.addEventListener('click', closeBrowser);
-    document.getElementById('dbxRefreshBtn')?.addEventListener('click', function(){ loadPath(currentPath); });
-    document.getElementById('dbxUpBtn')?.addEventListener('click', async function(){
-      try{
-        const data=await api('list',{ path:currentPath });
-        if(data.parent!==null && data.parent!==undefined) loadPath(data.parent);
-      }catch(e){ toast(String(e.message||e)); }
-    });
-    document.getElementById('dbxDisconnectBtn')?.addEventListener('click', disconnect);
-    document.getElementById('dbxOpenFolderBtn')?.addEventListener('click', function(){
-      const p=currentPath||'';
-      const url=p
-        ? 'https://www.dropbox.com/home'+encodeURI(p)
-        : 'https://www.dropbox.com/home';
-      window.open(url,'_blank','noopener');
+    document.getElementById('dbxCloseBtn2')?.addEventListener('click', closeBrowser);
+    document.getElementById('dbxRefreshBtn')?.addEventListener('click', function(){ loadPath(relPath); });
+    document.getElementById('dbxUpBtn')?.addEventListener('click', function(){ loadPath(parentRel(relPath)); });
+    document.getElementById('dbxUploadInput')?.addEventListener('change', async function(ev){
+      const files=Array.from(ev.target.files||[]);
+      ev.target.value='';
+      for(const file of files){
+        try{
+          const res=await dbxUpload(file, relPath||'');
+          toast('アップロードしました: '+(res.name||file.name));
+        }catch(e){ toast('アップロード失敗: '+(e.message||e)); }
+      }
+      loadPath(relPath);
     });
     modal()?.addEventListener('click', function(e){
       if(e.target===modal()) closeBrowser();
     });
+    // 疎通（ステータス表示用）
+    dbxList('').then(function(){ updateUi(true); }).catch(function(){ updateUi(false); });
   }
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire);
   else wire();
-
-  return { connect, disconnect, openBrowser, isConnected, updateUi };
 })();
 </script>
 
