@@ -188,11 +188,11 @@ input,select,textarea{font-family:inherit}
   box-shadow:none;
 }
 .gamenav button.nav-locked.on{border-color:rgba(51,198,179,.35)}
-.gamenav .nav-drops{display:flex;flex-direction:column;gap:2px;flex:0 0 auto}
-.gamenav .nav-drop{display:flex;flex-direction:column;gap:3px}
+.gamenav .nav-drops{display:flex;flex-direction:column;gap:4px;flex:0 0 auto}
+.gamenav .nav-drop{display:flex;flex-direction:column;gap:5px;flex:0 0 auto}
 .gamenav .nav-drop[hidden],
 .gamenav .nav-drop-panel[hidden]{display:none!important}
-.gamenav .nav-drop-panel{display:flex;flex-direction:column;gap:3px;padding:0 0 2px}
+.gamenav .nav-drop-panel{display:flex;flex-direction:column;gap:5px;padding:0 0 4px}
 /* プルダウン見出し：枠なし（セクション名＋▼のみ） */
 .gamenav .nav-drop-toggle{
   display:flex;align-items:center;justify-content:center;gap:6px;width:100%;
@@ -213,16 +213,15 @@ input,select,textarea{font-family:inherit}
   font-size:9px;opacity:.8;letter-spacing:0;transition:transform .18s ease;
 }
 .gamenav .nav-drop-toggle.is-open .nav-drop-chevron{transform:rotate(180deg)}
-/* 事業ボタン：実写背景＋中央ラベル */
+/* 事業ボタン：実写背景＋中央ラベル（高さ固定で重なり防止） */
 .gamenav button.nav-biz{
-  padding:0;gap:0;min-height:var(--nav-h);
+  padding:0;gap:0;
+  flex:0 0 auto;
+  flex-shrink:0;
+  min-height:44px;
+  height:44px;
   align-items:center;justify-content:center;text-align:center;
   border-color:var(--nav-green-soft);
-}
-/* 主スタック内は円卓下端まで高さを分配するため固定min-heightを外す */
-#portal-shell > .gamenav .nav-main-stack > button.nav-biz{
-  min-height:28px;
-  height:auto;
 }
 .gamenav button.nav-biz .nav-photo{
   position:absolute;inset:0;width:auto;z-index:0;
@@ -880,38 +879,33 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   min-height:100dvh;
   background:#000;
 }
-/* サイドバー：円卓下端まで高さを合わせ、主ボタンを均等配分 */
+/* サイドバー：縦積み（重ならない）＋全部開いたら下まで並び、溢れたらスクロール */
 #portal-shell > .gamenav{
   position:sticky;
   top:0;
   align-self:start;
-  height:100dvh;
+  height:auto;
+  min-height:100dvh;
   max-height:100dvh;
   overflow-x:hidden;
   overflow-y:auto;
   z-index:400;
   width:var(--nav-w);
-  padding:10px 8px 8px;
-  gap:4px;
+  padding:10px 8px 12px;
+  gap:6px;
   box-sizing:border-box;
 }
 .gamenav .nav-main-stack{
-  flex:1 1 auto;
-  min-height:0;
+  flex:0 0 auto;
   display:flex;
   flex-direction:column;
-  gap:4px;
+  gap:5px;
 }
 .gamenav .nav-main-stack > .nav-group.nav-group-major{
   flex:0 0 auto;
   margin:0;
   padding:6px 8px 2px;
   font-size:13px;
-}
-.gamenav .nav-main-stack > button.nav-biz{
-  flex:1 1 0;
-  min-height:28px;
-  height:auto;
 }
 #portal-main{
   min-width:0;display:block;
