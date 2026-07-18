@@ -101,10 +101,19 @@ input,select,textarea{font-family:inherit}
 .gamenav{
   width:var(--nav-w);flex-shrink:0;padding:12px 8px 22px;
   display:flex;flex-direction:column;gap:6px;
-  background:#000;
+  position:relative;
+  isolation:isolate;
+  background:#020603;
   border-right:1px solid var(--nav-green-line);
   box-shadow:none;
 }
+.gamenav-matrix{
+  position:absolute;inset:0;z-index:0;
+  width:100%;height:100%;
+  pointer-events:none;
+  opacity:.9;
+}
+.gamenav > :not(.gamenav-matrix){position:relative;z-index:1}
 .gamenav .nav-group{
   font-size:10px;color:var(--gold-dim);letter-spacing:.14em;
   padding:14px 10px 5px;font-family:var(--font-display);font-weight:600;
@@ -1827,6 +1836,7 @@ video.dc-card__image{
     z-index:450;
     /* 横並び時のみ横スクロール可（縦のボタン内スクロールは使わない） */
   }
+  .gamenav-matrix{display:none!important}
   #portal-shell > .gamenav .nav-group{display:none}
   #portal-shell > .gamenav button.nav-biz{
     width:auto;min-width:104px;max-width:128px;flex-shrink:0;flex-direction:column;
@@ -1983,6 +1993,7 @@ video.dc-card__image{
 
 <div id="portal-shell" hidden>
 <nav class="gamenav" aria-label="メインメニュー">
+  <canvas class="gamenav-matrix" id="gamenavMatrix" aria-hidden="true"></canvas>
   <div class="nav-group nav-group-major">事業</div>
   <button type="button" class="nav-biz on" data-s="biz-paradise">
     <span class="nav-photo" style="background-image:url(nav-paradise.png)"></span>
@@ -3817,6 +3828,93 @@ video.dc-card__image{
 
 </div><!-- /#portal-main -->
 </div><!-- /#portal-shell -->
+
+<script>
+/* サイドバー：マトリクス風緑文字落下 */
+(function(){
+  const canvas=document.getElementById('gamenavMatrix');
+  const nav=canvas&&canvas.closest('.gamenav');
+  if(!canvas||!nav) return;
+  const ctx=canvas.getContext('2d');
+  if(!ctx) return;
+  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
+  const narrow=window.matchMedia('(max-width:980px)');
+  const CHARS='ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ0123456789<>*+|';
+  const FONT=13;
+  let drops=[];
+  let raf=0;
+  let w=0,h=0;
+
+  function visible(){
+    const shell=document.getElementById('portal-shell');
+    return !!(shell && !shell.hidden && !narrow.matches && !reduced.matches && nav.offsetParent);
+  }
+  function resize(){
+    const cssW=nav.clientWidth||192;
+    const cssH=Math.max(nav.scrollHeight||0, nav.clientHeight||0, window.innerHeight||0);
+    const dpr=Math.min(window.devicePixelRatio||1, 2);
+    w=cssW; h=cssH;
+    canvas.width=Math.floor(cssW*dpr);
+    canvas.height=Math.floor(cssH*dpr);
+    canvas.style.width=cssW+'px';
+    canvas.style.height=cssH+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    const n=Math.max(1, Math.ceil(cssW/FONT));
+    if(drops.length!==n){
+      drops=Array.from({length:n},function(_,i){
+        return drops[i]!=null ? drops[i] : Math.random()* -40;
+      });
+    }
+  }
+  function tick(){
+    raf=0;
+    if(!visible()) return;
+    ctx.fillStyle='rgba(2,6,3,0.10)';
+    ctx.fillRect(0,0,w,h);
+    ctx.font=FONT+'px "Courier New",ui-monospace,monospace';
+    ctx.textBaseline='top';
+    for(let i=0;i<drops.length;i++){
+      const x=i*FONT;
+      const y=drops[i]*FONT;
+      const ch=CHARS[(Math.random()*CHARS.length)|0];
+      ctx.fillStyle='rgba(180,255,190,0.95)';
+      ctx.shadowColor='rgba(80,255,120,0.55)';
+      ctx.shadowBlur=6;
+      ctx.fillText(ch,x,y);
+      ctx.shadowBlur=0;
+      ctx.fillStyle='rgba(56,180,80,0.55)';
+      if(y>FONT) ctx.fillText(CHARS[(Math.random()*CHARS.length)|0],x,y-FONT);
+      drops[i]++;
+      if(y>h && Math.random()>0.975) drops[i]=Math.random()*-20;
+    }
+    schedule();
+  }
+  function schedule(){
+    if(raf||!visible()) return;
+    raf=requestAnimationFrame(tick);
+  }
+  function kick(){
+    resize();
+    if(!visible()){
+      if(raf){ cancelAnimationFrame(raf); raf=0; }
+      ctx.clearRect(0,0,w,h);
+      return;
+    }
+    schedule();
+  }
+  if(typeof ResizeObserver!=='undefined'){
+    new ResizeObserver(kick).observe(nav);
+  }
+  window.addEventListener('resize',kick,{passive:true});
+  narrow.addEventListener('change',kick);
+  reduced.addEventListener('change',kick);
+  const shell=document.getElementById('portal-shell');
+  if(shell && typeof MutationObserver!=='undefined'){
+    new MutationObserver(kick).observe(shell,{attributes:true,attributeFilter:['hidden']});
+  }
+  kick();
+})();
+</script>
 
 <script>/**
  * @license React
