@@ -188,15 +188,15 @@ input,select,textarea{font-family:inherit}
   box-shadow:none;
 }
 .gamenav button.nav-locked.on{border-color:rgba(51,198,179,.35)}
-.gamenav .nav-drops{display:flex;flex-direction:column;gap:2px;flex:0 0 auto;margin-top:auto}
+.gamenav .nav-drops{display:flex;flex-direction:column;gap:2px;flex:0 0 auto}
 .gamenav .nav-drop{display:flex;flex-direction:column;gap:5px;flex:0 0 auto}
 .gamenav .nav-drop[hidden]{display:none!important}
 .gamenav .nav-drop-panel[hidden]{display:none!important}
 .gamenav .nav-drop-panel{display:flex;flex-direction:column;gap:5px;padding:2px 0 8px}
 .gamenav .nav-drop-panel > button.nav-biz{
   flex:0 0 auto;
-  min-height:44px;
-  height:44px;
+  min-height:var(--nav-h);
+  height:auto;
 }
 /* プルダウン見出し：枠なし（セクション名＋▼のみ） */
 .gamenav .nav-drop-toggle{
@@ -222,7 +222,7 @@ input,select,textarea{font-family:inherit}
 .gamenav button.nav-biz{
   padding:0;gap:0;
   flex-shrink:0;
-  min-height:44px;
+  min-height:var(--nav-h);
   align-items:center;justify-content:center;text-align:center;
   border-color:var(--nav-green-soft);
 }
@@ -882,43 +882,33 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   min-height:100dvh;
   background:#000;
 }
-/* サイドバー：閉じ時は法務＝円卓下端。開いたら枠を下へ伸ばして全ボタン表示 */
+/* サイドバー：ボタンは通常サイズ。マトリクス枠は会社ロゴ下端まで伸ばす */
 #portal-shell > .gamenav{
   position:sticky;
   top:0;
   align-self:start;
   height:auto;
-  min-height:0;
-  max-height:100dvh;
+  min-height:var(--nav-matrix-h, 100dvh);
+  max-height:none;
   overflow-x:hidden;
-  overflow-y:auto;
+  overflow-y:visible;
   z-index:400;
   width:var(--nav-w);
   padding:10px 8px 12px;
   gap:6px;
   box-sizing:border-box;
 }
-#portal-shell > .gamenav.is-nav-expanded{
-  max-height:none;
-  overflow:visible;
-}
 .gamenav .nav-align-zone{
   display:flex;
   flex-direction:column;
   flex:0 0 auto;
-  height:var(--nav-align-h, auto);
-  min-height:0;
-}
-.gamenav.is-nav-expanded .nav-align-zone{
-  height:auto;
-  min-height:var(--nav-align-h, 0);
+  gap:6px;
 }
 .gamenav .nav-main-stack{
-  flex:1 1 auto;
-  min-height:0;
   display:flex;
   flex-direction:column;
-  gap:4px;
+  gap:6px;
+  flex:0 0 auto;
 }
 .gamenav .nav-main-stack > .nav-group.nav-group-major{
   flex:0 0 auto;
@@ -927,14 +917,9 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   font-size:13px;
 }
 .gamenav .nav-main-stack > button.nav-biz{
-  flex:1 1 0;
-  min-height:28px;
-  height:auto;
-}
-.gamenav.is-nav-expanded .nav-main-stack > button.nav-biz{
   flex:0 0 auto;
-  min-height:40px;
-  height:40px;
+  min-height:var(--nav-h);
+  height:auto;
 }
 #portal-main{
   min-width:0;display:block;
@@ -1904,9 +1889,8 @@ video.dc-card__image{
   #portal-shell > .gamenav .nav-main-stack,
   #portal-shell > .gamenav .nav-drops{display:contents}
   #portal-shell > .gamenav{
-    --nav-align-h:auto!important;height:auto;min-height:0;max-height:none;overflow:visible;
+    --nav-matrix-h:auto!important;height:auto;min-height:0;max-height:none;overflow:visible;
   }
-  #portal-shell > .gamenav.is-nav-expanded{max-height:none;overflow:visible}
   #portal-shell > .gamenav .nav-drop[hidden]{display:none!important}
   #portal-shell > .gamenav .nav-drop:not([hidden]){display:contents}
   #portal-shell > .gamenav .nav-main-stack > button.nav-biz{
@@ -7911,12 +7895,6 @@ window.PortalAuth=(function(){
     return document.getElementById('navDropPanel-'+key)
       || document.querySelector('.nav-drop-panel[data-nav-drop="'+key+'"]');
   }
-  function syncNavExpanded(){
-    const nav=document.querySelector('#portal-shell > .gamenav');
-    if(!nav) return;
-    const open=!!document.querySelector('.gamenav .nav-drop-panel:not([hidden])');
-    nav.classList.toggle('is-nav-expanded', open);
-  }
   function setDropOpen(drop, open){
     if(!drop) return;
     const panel=panelForDrop(drop);
@@ -7926,8 +7904,7 @@ window.PortalAuth=(function(){
     panel.hidden=!on;
     toggle.setAttribute('aria-expanded', on?'true':'false');
     toggle.classList.toggle('is-open', on);
-    syncNavExpanded();
-    requestAnimationFrame(syncNavAlign);
+    requestAnimationFrame(syncNavMatrix);
   }
   function dropForSid(sid){
     if(!sid) return null;
@@ -7950,27 +7927,28 @@ window.PortalAuth=(function(){
     setDropOpen(drop, open!==false);
     return true;
   }
-  function syncNavAlign(){
+  function syncNavMatrix(){
     const nav=document.querySelector('#portal-shell > .gamenav');
-    const zone=document.getElementById('navAlignZone');
-    const entaku=document.querySelector('.dash-entaku-pane');
-    if(!nav||!zone) return;
-    syncNavExpanded();
-    if(window.matchMedia('(max-width:980px)').matches){
-      nav.style.removeProperty('--nav-align-h');
-      nav.classList.remove('is-nav-expanded');
+    if(!nav) return;
+    if(window.matchMedia('(max-width:980px)').matches || nav.offsetParent===null){
+      nav.style.removeProperty('--nav-matrix-h');
       return;
     }
-    if(!entaku || nav.offsetParent===null){
-      nav.style.removeProperty('--nav-align-h');
-      return;
+    const cover=document.getElementById('mainBrandCover');
+    const logo=cover && !cover.hidden ? (cover.querySelector('img')||cover) : null;
+    const navTopDoc=nav.getBoundingClientRect().top+window.scrollY;
+    let bottomDoc;
+    if(logo){
+      bottomDoc=logo.getBoundingClientRect().bottom+window.scrollY;
+    }else{
+      const pane=document.getElementById('treasury-pane');
+      bottomDoc=pane
+        ? (pane.getBoundingClientRect().bottom+window.scrollY)
+        : (navTopDoc+window.innerHeight);
     }
-    const navTop=nav.getBoundingClientRect().top;
-    const entakuBottom=entaku.getBoundingClientRect().bottom;
-    const padBottom=12;
-    const h=Math.round(entakuBottom - navTop - padBottom);
-    if(h>200) nav.style.setProperty('--nav-align-h', h+'px');
-    else nav.style.removeProperty('--nav-align-h');
+    const h=Math.round(Math.max(bottomDoc-navTopDoc, nav.scrollHeight, window.innerHeight));
+    if(h>160) nav.style.setProperty('--nav-matrix-h', h+'px');
+    else nav.style.removeProperty('--nav-matrix-h');
   }
   function updateBrandCover(opts){
     opts=opts||{};
@@ -7991,6 +7969,12 @@ window.PortalAuth=(function(){
         });
       }catch(e){}
     }
+    const img=cover.querySelector('img');
+    if(img && !img.dataset.matrixBound){
+      img.dataset.matrixBound='1';
+      img.addEventListener('load', function(){ requestAnimationFrame(syncNavMatrix); });
+    }
+    requestAnimationFrame(syncNavMatrix);
   }
   function applyNavAcl(){
     const ok=canAccessAccounting();
@@ -8021,7 +8005,7 @@ window.PortalAuth=(function(){
     }else{
       updateBrandCover();
     }
-    requestAnimationFrame(syncNavAlign);
+    requestAnimationFrame(syncNavMatrix);
   }
   function syncUi(){
     const u=getUser();
@@ -8114,19 +8098,23 @@ window.PortalAuth=(function(){
     }else{
       listStaff();
     }
-    window.addEventListener('resize',syncNavAlign,{passive:true});
+    window.addEventListener('resize',syncNavMatrix,{passive:true});
     const shell=document.getElementById('portal-shell');
     if(shell && typeof MutationObserver!=='undefined'){
-      new MutationObserver(function(){ requestAnimationFrame(syncNavAlign); })
+      new MutationObserver(function(){ requestAnimationFrame(syncNavMatrix); })
         .observe(shell,{attributes:true,attributeFilter:['hidden']});
     }
-    const entaku=document.querySelector('.dash-entaku-pane');
-    if(entaku && typeof ResizeObserver!=='undefined'){
-      new ResizeObserver(function(){ syncNavAlign(); }).observe(entaku);
+    const cover=document.getElementById('mainBrandCover');
+    if(cover && typeof ResizeObserver!=='undefined'){
+      new ResizeObserver(function(){ syncNavMatrix(); }).observe(cover);
     }
-    requestAnimationFrame(syncNavAlign);
+    const pane=document.getElementById('treasury-pane');
+    if(pane && typeof ResizeObserver!=='undefined'){
+      new ResizeObserver(function(){ syncNavMatrix(); }).observe(pane);
+    }
+    requestAnimationFrame(syncNavMatrix);
   });
-  return{getUser,login,logout,userContext,syncUi,serverLog,listStaff,upsertStaff,canAccessAccounting,isAccountingScreen,isAccountingRevealed,revealSecureNav,applyNavAcl,updateBrandCover,syncNavAlign};
+  return{getUser,login,logout,userContext,syncUi,serverLog,listStaff,upsertStaff,canAccessAccounting,isAccountingScreen,isAccountingRevealed,revealSecureNav,applyNavAcl,updateBrandCover,syncNavMatrix};
 })();
 </script>
 
