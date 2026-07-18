@@ -188,31 +188,41 @@ input,select,textarea{font-family:inherit}
   box-shadow:none;
 }
 .gamenav button.nav-locked.on{border-color:rgba(51,198,179,.35)}
-.gamenav .nav-secure-wrap{display:flex;flex-direction:column;gap:6px;margin-top:4px}
-.gamenav .nav-secure-wrap[hidden],
-.gamenav .nav-secure-panel[hidden]{display:none!important}
-.gamenav .nav-secure-panel{display:flex;flex-direction:column;gap:6px}
-.gamenav .nav-secure-toggle{
-  display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
-  min-height:40px;padding:8px 12px;border-radius:10px;cursor:pointer;
-  font-family:var(--font-body);font-size:12px;font-weight:700;letter-spacing:.04em;
-  color:var(--nav-label);
-  background:linear-gradient(180deg,var(--nav-green-fill-hi) 0%,var(--nav-green-fill) 45%,var(--nav-green-fill-dim) 100%);
-  border:1px solid var(--nav-green-soft);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 8px rgba(0,0,0,.28);
+.gamenav .nav-drops{display:flex;flex-direction:column;gap:2px;flex:0 0 auto}
+.gamenav .nav-drop{display:flex;flex-direction:column;gap:3px}
+.gamenav .nav-drop[hidden],
+.gamenav .nav-drop-panel[hidden]{display:none!important}
+.gamenav .nav-drop-panel{display:flex;flex-direction:column;gap:3px;padding:0 0 2px}
+/* プルダウン見出し：枠なし（セクション名＋▼のみ） */
+.gamenav .nav-drop-toggle{
+  display:flex;align-items:center;justify-content:center;gap:6px;width:100%;
+  margin:0;padding:8px 6px 4px;border:none!important;border-radius:0;cursor:pointer;
+  min-height:0;height:auto;
+  background:transparent!important;box-shadow:none!important;
+  font-family:'Zen Kaku Gothic New',var(--font-body),sans-serif;
+  font-size:13px;font-weight:700;letter-spacing:.12em;
+  color:var(--nav-green-bright);text-shadow:0 0 16px rgba(61,232,212,.28);
 }
-.gamenav .nav-secure-toggle:hover{border-color:var(--nav-green);filter:brightness(1.06)}
-.gamenav .nav-secure-toggle.is-open{border-color:var(--nav-green)}
-.gamenav .nav-secure-chevron{
-  font-size:10px;opacity:.85;transition:transform .18s ease;
+.gamenav .nav-drop-toggle:hover,
+.gamenav .nav-drop-toggle:active,
+.gamenav .nav-drop-toggle.is-open{
+  filter:brightness(1.12);background:transparent!important;border:none!important;box-shadow:none!important;
 }
-.gamenav .nav-secure-toggle.is-open .nav-secure-chevron{transform:rotate(180deg)}
-.gamenav .nav-secure-panel .nav-group.nav-group-major{margin-top:2px;padding-top:10px}
+.gamenav .nav-drop-toggle::before{display:none!important}
+.gamenav .nav-drop-chevron{
+  font-size:9px;opacity:.8;letter-spacing:0;transition:transform .18s ease;
+}
+.gamenav .nav-drop-toggle.is-open .nav-drop-chevron{transform:rotate(180deg)}
 /* 事業ボタン：実写背景＋中央ラベル */
 .gamenav button.nav-biz{
   padding:0;gap:0;min-height:var(--nav-h);
   align-items:center;justify-content:center;text-align:center;
   border-color:var(--nav-green-soft);
+}
+/* 主スタック内は円卓下端まで高さを分配するため固定min-heightを外す */
+#portal-shell > .gamenav .nav-main-stack > button.nav-biz{
+  min-height:28px;
+  height:auto;
 }
 .gamenav button.nav-biz .nav-photo{
   position:absolute;inset:0;width:auto;z-index:0;
@@ -870,17 +880,38 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   min-height:100dvh;
   background:#000;
 }
-/* サイドバー：ボタン領域だけのスクロールはしない。ページ全体スクロールで下まで見る */
+/* サイドバー：円卓下端まで高さを合わせ、主ボタンを均等配分 */
 #portal-shell > .gamenav{
-  position:relative;
-  top:auto;
-  height:auto;
-  max-height:none;
-  overflow:visible;
+  position:sticky;
+  top:0;
+  align-self:start;
+  height:100dvh;
+  max-height:100dvh;
+  overflow-x:hidden;
+  overflow-y:auto;
   z-index:400;
   width:var(--nav-w);
-  padding:12px 8px 22px;
-  gap:6px;
+  padding:10px 8px 8px;
+  gap:4px;
+  box-sizing:border-box;
+}
+.gamenav .nav-main-stack{
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.gamenav .nav-main-stack > .nav-group.nav-group-major{
+  flex:0 0 auto;
+  margin:0;
+  padding:6px 8px 2px;
+  font-size:13px;
+}
+.gamenav .nav-main-stack > button.nav-biz{
+  flex:1 1 0;
+  min-height:28px;
+  height:auto;
 }
 #portal-main{
   min-width:0;display:block;
@@ -1846,6 +1877,15 @@ video.dc-card__image{
     /* 横並び時のみ横スクロール可（縦のボタン内スクロールは使わない） */
   }
   .gamenav-matrix{display:none!important}
+  #portal-shell > .gamenav .nav-main-stack,
+  #portal-shell > .gamenav .nav-drops{display:contents}
+  #portal-shell > .gamenav .nav-drop[hidden]{display:none!important}
+  #portal-shell > .gamenav .nav-drop:not([hidden]){display:contents}
+  #portal-shell > .gamenav .nav-main-stack > button.nav-biz{
+    flex:0 0 auto;min-height:0;height:auto;
+  }
+  #portal-shell > .gamenav .nav-drop-panel{display:contents}
+  #portal-shell > .gamenav .nav-drop-panel[hidden]{display:none!important}
   #portal-shell > .gamenav .nav-group{display:none}
   #portal-shell > .gamenav button.nav-biz{
     width:auto;min-width:104px;max-width:128px;flex-shrink:0;flex-direction:column;
@@ -2005,6 +2045,7 @@ video.dc-card__image{
 <div id="portal-shell" hidden>
 <nav class="gamenav" aria-label="メインメニュー">
   <canvas class="gamenav-matrix" id="gamenavMatrix" aria-hidden="true"></canvas>
+  <div class="nav-main-stack">
   <div class="nav-group nav-group-major">事業</div>
   <button type="button" class="nav-biz on" data-s="biz-paradise">
     <span class="nav-photo" style="background-image:url(nav-paradise.png)"></span>
@@ -2046,85 +2087,98 @@ video.dc-card__image{
     <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
     <span class="nav-label nav-label-2line">イレギュラー<br>案件フロー</span>
   </button>
-  <div class="nav-secure-wrap" id="navSecureWrap" hidden>
-    <button type="button" class="nav-secure-toggle" id="navSecureToggle" aria-expanded="false" aria-controls="navSecurePanel" title="会計・法務メニュー">
-      <span class="nav-secure-toggle-lbl">会計・法務</span>
-      <span class="nav-secure-chevron" aria-hidden="true">▼</span>
-    </button>
-    <div class="nav-secure-panel" id="navSecurePanel" hidden>
-      <div class="nav-group nav-group-major">会計</div>
-      <button type="button" class="nav-biz nav-green" data-s="dash" data-acct="1">
-        <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
-        <span class="nav-label">金庫室</span>
+  </div>
+  <div class="nav-drops">
+    <div class="nav-drop" data-nav-drop="mtg">
+      <button type="button" class="nav-drop-toggle" aria-expanded="false" aria-controls="navDropPanel-mtg">
+        <span>会議</span><span class="nav-drop-chevron" aria-hidden="true">▼</span>
       </button>
-      <button type="button" class="nav-biz nav-green" data-s="biz-cf" data-acct="1">
-        <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
-        <span class="nav-label">CF</span>
+      <div class="nav-drop-panel" id="navDropPanel-mtg" hidden>
+        <button type="button" class="nav-biz nav-green" data-s="mtg-finance">
+          <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
+          <span class="nav-label">経理会議</span>
+        </button>
+        <button type="button" class="nav-biz nav-green" data-s="mtg-sales">
+          <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
+          <span class="nav-label">営業会議</span>
+        </button>
+        <button type="button" class="nav-biz nav-green" data-s="mtg-other">
+          <span class="nav-photo" style="background-image:url(dash-secretary.png)"></span>
+          <span class="nav-label">その他MT</span>
+        </button>
+      </div>
+    </div>
+    <div class="nav-drop" data-nav-drop="acct" data-secure="1" hidden>
+      <button type="button" class="nav-drop-toggle" aria-expanded="false" aria-controls="navDropPanel-acct">
+        <span>会計</span><span class="nav-drop-chevron" aria-hidden="true">▼</span>
       </button>
-      <button type="button" class="nav-biz nav-green" data-s="ledger" data-acct="1">
-        <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
-        <span class="nav-label">台帳</span>
+      <div class="nav-drop-panel" id="navDropPanel-acct" hidden>
+        <button type="button" class="nav-biz nav-green" data-s="dash" data-acct="1">
+          <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
+          <span class="nav-label">金庫室</span>
+        </button>
+        <button type="button" class="nav-biz nav-green" data-s="biz-cf" data-acct="1">
+          <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
+          <span class="nav-label">CF</span>
+        </button>
+        <button type="button" class="nav-biz nav-green" data-s="ledger" data-acct="1">
+          <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
+          <span class="nav-label">台帳</span>
+        </button>
+        <button type="button" class="nav-biz nav-green" data-s="flow" data-acct="1">
+          <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
+          <span class="nav-label">商流</span>
+        </button>
+        <button type="button" class="nav-biz nav-green" data-s="cf-bank" data-acct="1">
+          <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
+          <span class="nav-label">口座・CSV</span>
+        </button>
+        <button type="button" class="nav-biz nav-green" data-s="cf-link" data-acct="1">
+          <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
+          <span class="nav-label">明細突合</span>
+        </button>
+        <button type="button" class="nav-biz nav-green" data-s="cf-inrou" data-acct="1">
+          <span class="nav-photo" style="background-image:url(nav-detective.png)"></span>
+          <span class="nav-label">印籠レポート</span>
+        </button>
+        <button type="button" class="nav-biz nav-green" data-s="cf-party" data-acct="1">
+          <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
+          <span class="nav-label">役員貸付</span>
+        </button>
+        <button type="button" class="nav-biz nav-green" data-s="entry" data-acct="1">
+          <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
+          <span class="nav-label">記録する</span>
+        </button>
+        <button type="button" class="nav-biz nav-green" data-s="fiscal" data-acct="1">
+          <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
+          <span class="nav-label">四半期</span>
+        </button>
+        <button type="button" class="nav-biz nav-green" data-s="tax" data-acct="1">
+          <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
+          <span class="nav-label">納税タンク</span>
+        </button>
+        <button type="button" class="nav-biz nav-green" data-s="quest" data-acct="1">
+          <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
+          <span class="nav-label">精算クエスト</span>
+        </button>
+      </div>
+    </div>
+    <div class="nav-drop" data-nav-drop="legal" data-secure="1" hidden>
+      <button type="button" class="nav-drop-toggle" aria-expanded="false" aria-controls="navDropPanel-legal">
+        <span>法務</span><span class="nav-drop-chevron" aria-hidden="true">▼</span>
       </button>
-      <button type="button" class="nav-biz nav-green" data-s="flow" data-acct="1">
-        <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
-        <span class="nav-label">商流</span>
-      </button>
-      <button type="button" class="nav-biz nav-green" data-s="cf-bank" data-acct="1">
-        <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
-        <span class="nav-label">口座・CSV</span>
-      </button>
-      <button type="button" class="nav-biz nav-green" data-s="cf-link" data-acct="1">
-        <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
-        <span class="nav-label">明細突合</span>
-      </button>
-      <button type="button" class="nav-biz nav-green" data-s="cf-inrou" data-acct="1">
-        <span class="nav-photo" style="background-image:url(nav-detective.png)"></span>
-        <span class="nav-label">印籠レポート</span>
-      </button>
-      <button type="button" class="nav-biz nav-green" data-s="cf-party" data-acct="1">
-        <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
-        <span class="nav-label">役員貸付</span>
-      </button>
-      <button type="button" class="nav-biz nav-green" data-s="entry" data-acct="1">
-        <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
-        <span class="nav-label">記録する</span>
-      </button>
-      <button type="button" class="nav-biz nav-green" data-s="fiscal" data-acct="1">
-        <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
-        <span class="nav-label">四半期</span>
-      </button>
-      <button type="button" class="nav-biz nav-green" data-s="tax" data-acct="1">
-        <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
-        <span class="nav-label">納税タンク</span>
-      </button>
-      <button type="button" class="nav-biz nav-green" data-s="quest" data-acct="1">
-        <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
-        <span class="nav-label">精算クエスト</span>
-      </button>
-      <div class="nav-group nav-group-major">法務</div>
-      <button type="button" class="nav-biz nav-green" data-s="contracts" data-acct="1">
-        <span class="nav-photo" style="background-image:url(dash-legal.png)"></span>
-        <span class="nav-label">契約書</span>
-      </button>
-      <button type="button" class="nav-biz nav-green" data-s="cf-legal" data-acct="1">
-        <span class="nav-photo" style="background-image:url(dash-legal.png)"></span>
-        <span class="nav-label">契約リーガル</span>
-      </button>
+      <div class="nav-drop-panel" id="navDropPanel-legal" hidden>
+        <button type="button" class="nav-biz nav-green" data-s="contracts" data-acct="1">
+          <span class="nav-photo" style="background-image:url(dash-legal.png)"></span>
+          <span class="nav-label">契約書</span>
+        </button>
+        <button type="button" class="nav-biz nav-green" data-s="cf-legal" data-acct="1">
+          <span class="nav-photo" style="background-image:url(dash-legal.png)"></span>
+          <span class="nav-label">契約リーガル</span>
+        </button>
+      </div>
     </div>
   </div>
-  <div class="nav-group nav-group-major">会議</div>
-  <button type="button" class="nav-biz nav-green" data-s="mtg-finance">
-    <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
-    <span class="nav-label">経理会議</span>
-  </button>
-  <button type="button" class="nav-biz nav-green" data-s="mtg-sales">
-    <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
-    <span class="nav-label">営業会議</span>
-  </button>
-  <button type="button" class="nav-biz nav-green" data-s="mtg-other">
-    <span class="nav-photo" style="background-image:url(dash-secretary.png)"></span>
-    <span class="nav-label">その他MT</span>
-  </button>
   <!-- タスク管理・タスク評価はサイドバー非表示（オフィスクエスト下ドックへ） -->
   <button type="button" class="nav-biz nav-green" data-s="tasks" hidden aria-hidden="true">
     <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
@@ -4426,8 +4480,8 @@ $$(".gamenav button[data-s]").forEach(b=>b.onclick=()=>{
       try{toast("会計・法務メニューは社長・経理・法務のみ利用できます");}catch(e){}
       return;
     }
-    try{ window.PortalAuth?.revealSecureNav?.(true); }catch(e){}
   }
+  try{ window.PortalAuth?.revealSecureNav?.(true, b.dataset.s); }catch(e){}
   $$(".gamenav button[data-s]").forEach(x=>x.classList.remove("on")); b.classList.add("on");
   $$(".screen").forEach(x=>x.classList.remove("on"));
   const scr=$("#s-"+b.dataset.s);
@@ -7814,26 +7868,33 @@ window.PortalAuth=(function(){
     return !!(u&&ACCT_ROLES.includes(String(u.role||'').trim()));
   }
   function isAccountingRevealed(){
-    const panel=document.getElementById('navSecurePanel');
-    return !!(panel && !panel.hidden);
+    return !!document.querySelector('.nav-drop[data-secure="1"] .nav-drop-panel:not([hidden])');
   }
   function isAccountingScreen(sid){
     if(sid==='cf-forecast')return true;
     const b=document.querySelector('.gamenav button[data-s="'+sid+'"]');
     return !!(b&&b.dataset.acct==='1');
   }
-  function setSecureNavOpen(open){
-    const panel=document.getElementById('navSecurePanel');
-    const toggle=document.getElementById('navSecureToggle');
+  function setDropOpen(drop, open){
+    if(!drop) return;
+    const panel=drop.querySelector('.nav-drop-panel');
+    const toggle=drop.querySelector('.nav-drop-toggle');
     if(!panel||!toggle) return;
     const on=!!open;
     panel.hidden=!on;
     toggle.setAttribute('aria-expanded', on?'true':'false');
     toggle.classList.toggle('is-open', on);
   }
-  function revealSecureNav(open){
-    if(!canAccessAccounting()) return false;
-    setSecureNavOpen(open!==false);
+  function dropForSid(sid){
+    if(!sid) return null;
+    const b=document.querySelector('.gamenav button[data-s="'+sid+'"]');
+    return b ? b.closest('.nav-drop') : null;
+  }
+  function revealSecureNav(open, sid){
+    const drop=dropForSid(sid) || document.querySelector('.gamenav button[data-s].on')?.closest('.nav-drop');
+    if(!drop) return false;
+    if(drop.dataset.secure==='1' && !canAccessAccounting()) return false;
+    setDropOpen(drop, open!==false);
     return true;
   }
   function updateBrandCover(opts){
@@ -7858,16 +7919,20 @@ window.PortalAuth=(function(){
   }
   function applyNavAcl(){
     const ok=canAccessAccounting();
-    const wrap=document.getElementById('navSecureWrap');
-    if(wrap) wrap.hidden=!ok;
-    if(!ok) setSecureNavOpen(false);
-    else if(!document.querySelector('.gamenav button[data-acct="1"].on')) setSecureNavOpen(false);
-    else setSecureNavOpen(true);
+    document.querySelectorAll('.nav-drop[data-secure="1"]').forEach(function(drop){
+      drop.hidden=!ok;
+      if(!ok) setDropOpen(drop, false);
+    });
     document.querySelectorAll('.gamenav button[data-acct="1"]').forEach(function(b){
       b.classList.toggle('nav-locked', !ok);
       b.setAttribute('aria-disabled', ok?'false':'true');
       if(ok) b.removeAttribute('title');
       else b.title='会計・法務メニューは社長・経理・法務のみ利用できます';
+    });
+    document.querySelectorAll('.nav-drop').forEach(function(drop){
+      if(drop.hidden){ setDropOpen(drop, false); return; }
+      const active=drop.querySelector('button[data-s].on');
+      if(active) setDropOpen(drop, true);
     });
     // ログイン直後はロゴホーム（会計画面へ自動遷移しない）
     if(!document.querySelector('.gamenav button.on')){
@@ -7945,19 +8010,20 @@ window.PortalAuth=(function(){
       if(!ok&&err)err.textContent='役職・名前・メールを入力してください。';
     });
     document.getElementById('portalLogoutBtn')?.addEventListener('click',logout);
-    const toggle=document.getElementById('navSecureToggle');
-    if(toggle){
+    document.querySelectorAll('.nav-drop-toggle').forEach(function(toggle){
       toggle.addEventListener('click',function(e){
         e.preventDefault();
         e.stopPropagation();
-        if(!canAccessAccounting()){
+        const drop=toggle.closest('.nav-drop');
+        if(!drop) return;
+        if(drop.dataset.secure==='1' && !canAccessAccounting()){
           try{window.Treasury?.toast?.('会計・法務メニューは社長・経理・法務のみ利用できます');}catch(err){}
           return;
         }
-        const panel=document.getElementById('navSecurePanel');
-        setSecureNavOpen(!!(panel&&panel.hidden));
+        const panel=drop.querySelector('.nav-drop-panel');
+        setDropOpen(drop, !!(panel&&panel.hidden));
       });
-    }
+    });
     const prev=getUser();
     if(prev){
       document.getElementById('loginRole').value=prev.role;
@@ -8861,7 +8927,7 @@ window.EntakuDocIngest=(function(){
         try{toast("会計・法務メニューは社長・経理・法務のみ利用できます");}catch(e){}
         return;
       }
-      try{ PortalAuth.revealSecureNav?.(true); }catch(e){}
+      try{ PortalAuth.revealSecureNav?.(true, sid); }catch(e){}
     }
     const prev=window._entakuSuppressScroll;
     if(opts.noScroll)window._entakuSuppressScroll=true;
