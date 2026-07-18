@@ -1,10 +1,30 @@
-/* 請求・見積書 / 領収書 — 利益率25%社長決裁・下請けPDF原価・印刷・Dropbox保管確認 */
+/* 請求書・見積書・領収書（試作テンプレート） */
 (function () {
   const MIN_MARGIN = 0.25;
   const LS_INV = "gp_billing_invoices_v1";
   const LS_RCP = "gp_billing_receipts_v1";
   const DBX_INV = "/GoonerPortal/請求書";
   const DBX_RCP = "/GoonerPortal/領収書";
+  const TAX_RATE = 0.1;
+
+  /** 発行元（試作・後で正式情報に差し替え可） */
+  const ISSUER = {
+    name: "株式会社Gooner",
+    brand: "GOONER",
+    tagline: "For the Should Be",
+    rep: "代表取締役　深山　弘次",
+    zip: "〒000-0000",
+    addr: "（試作）本社所在地は正式登録後に表示",
+    tel: "TEL （試作）000-0000-0000",
+    email: "billing@gooner.example",
+    invoiceReg: "登録番号　T0000000000000（試作）",
+    bank: {
+      name: "〇〇銀行　〇〇支店",
+      type: "普通",
+      number: "1234567",
+      holder: "カ）グーナー",
+    },
+  };
 
   function esc(s) {
     return String(s == null ? "" : s)
@@ -19,6 +39,17 @@
   function today() {
     const d = new Date();
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function addDays(iso, days) {
+    const d = new Date(String(iso || today()) + "T12:00:00");
+    if (isNaN(d.getTime())) return today();
+    d.setDate(d.getDate() + (days || 0));
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function fmtDate(iso) {
+    const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return esc(iso || "");
+    return m[1] + "年" + Number(m[2]) + "月" + Number(m[3]) + "日";
   }
   function load(key) {
     try {
@@ -48,6 +79,10 @@
   function uid(prefix) {
     return prefix + "-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 7);
   }
+  function docNo(prefix, dateIso) {
+    const d = String(dateIso || today()).replace(/-/g, "");
+    return prefix + "-" + d + "-" + String(Math.floor(Math.random() * 900) + 100);
+  }
 
   function injectStyles() {
     if (document.getElementById("billingDocsCss")) return;
@@ -55,10 +90,11 @@
     st.id = "billingDocsCss";
     st.textContent = `
 #billingInvoiceApp,#billingReceiptApp{color:var(--text)}
-.bd-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:14px}
-@media(max-width:900px){.bd-grid{grid-template-columns:1fr}}
+.bd-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:14px}
+@media(max-width:980px){.bd-grid{grid-template-columns:1fr}}
 .bd-card{background:var(--panel,#111);border:1px solid var(--line,rgba(255,255,255,.2));border-radius:12px;padding:14px}
 .bd-card h3{margin:0 0 10px;font-size:14px}
+.bd-proto{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.06em;background:rgba(210,173,99,.2);color:#e7cd84;vertical-align:middle}
 .bd-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .bd-row.full{grid-template-columns:1fr}
 .bd-field label{display:block;font-size:11px;color:var(--muted,#9aa);margin-bottom:4px}
@@ -73,38 +109,73 @@
 }
 .bd-actions button.secondary,.bd-mini.secondary{background:transparent;border:1px solid var(--line);color:var(--text)}
 .bd-actions button.warn{background:#8a4b00;color:#fff8e8}
-.bd-alert{
-  margin:10px 0;padding:12px 14px;border-radius:10px;border-left:4px solid #e0a040;
-  background:rgba(224,160,64,.12);color:#f0c878;font-size:13px;line-height:1.55
-}
+.bd-alert{margin:10px 0;padding:12px 14px;border-radius:10px;border-left:4px solid #e0a040;background:rgba(224,160,64,.12);color:#f0c878;font-size:13px;line-height:1.55}
 .bd-alert.ok{border-left-color:#33c6b3;background:rgba(51,198,179,.1);color:#9fe8dc}
 .bd-alert.bad{border-left-color:#e07070;background:rgba(224,80,80,.12);color:#ffc0c0}
 .bd-sheet{
-  background:#fff;color:#1a1a1a;border-radius:4px;padding:28px 32px;min-height:420px;
-  font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;box-shadow:0 8px 28px rgba(0,0,0,.35)
+  background:#fff;color:#1a1a1a;border-radius:6px;padding:0;overflow:hidden;
+  font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;
+  box-shadow:0 8px 28px rgba(0,0,0,.35);min-height:520px
 }
-.bd-sheet .bd-co{font-size:20px;font-weight:800;letter-spacing:.08em;margin:0 0 4px}
-.bd-sheet .bd-meta{font-size:12px;color:#444;margin-bottom:18px}
-.bd-sheet h4{margin:0 0 12px;font-size:22px;border-bottom:2px solid #222;padding-bottom:6px}
-.bd-sheet table{width:100%;border-collapse:collapse;font-size:13px;margin:14px 0}
-.bd-sheet th,.bd-sheet td{border:1px solid #bbb;padding:8px 10px;text-align:left}
-.bd-sheet th{background:#f3f3f3}
-.bd-sheet .num{text-align:right;font-variant-numeric:tabular-nums}
-.bd-sheet .bd-total{margin-top:10px;text-align:right;font-size:16px;font-weight:800}
-.bd-sheet .bd-stamp{margin-top:28px;display:flex;justify-content:flex-end;gap:24px}
-.bd-sheet .bd-box{width:88px;height:88px;border:1px solid #888;display:flex;align-items:center;justify-content:center;font-size:11px;color:#666}
+.bd-sheet-inner{padding:28px 30px 32px}
+.bd-ribbon{background:#0d1412;color:#9fe8dc;font-size:10px;letter-spacing:.14em;font-weight:800;padding:6px 14px;text-align:center}
+.bd-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:18px}
+.bd-head-left .bd-co{font-size:22px;font-weight:800;letter-spacing:.12em;margin:0;color:#0d1412}
+.bd-head-left .bd-tag{font-size:11px;color:#667;margin:2px 0 0}
+.bd-doc-title{margin:0;font-size:26px;font-weight:800;letter-spacing:.2em;text-align:right;border-bottom:3px solid #1a1a1a;padding-bottom:6px}
+.bd-doc-sub{text-align:right;font-size:11px;color:#666;margin-top:6px;line-height:1.5}
+.bd-parties{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;margin:18px 0}
+.bd-client{font-size:16px;font-weight:700;border-bottom:1px solid #222;padding-bottom:6px;margin-bottom:8px}
+.bd-client small{display:block;font-size:11px;font-weight:500;color:#666;margin-top:4px}
+.bd-issuer{font-size:11px;line-height:1.65;color:#333;text-align:right}
+.bd-issuer b{display:block;font-size:13px;margin-bottom:4px}
+.bd-summary{display:flex;justify-content:flex-end;margin:10px 0 16px}
+.bd-summary-box{min-width:240px;border:2px solid #1a1a1a;padding:10px 14px;background:#f7faf8}
+.bd-summary-box .lab{font-size:11px;color:#555}
+.bd-summary-box .val{font-size:22px;font-weight:800;letter-spacing:.02em;margin-top:2px}
+.bd-sheet table{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0 12px}
+.bd-sheet th,.bd-sheet td{border:1px solid #b8b8b8;padding:8px 9px;text-align:left;vertical-align:top}
+.bd-sheet th{background:#eef2f0;font-weight:700}
+.bd-sheet .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bd-totals{width:280px;margin-left:auto;font-size:12px}
+.bd-totals tr td{border:none;padding:4px 0}
+.bd-totals .grand td{border-top:2px solid #1a1a1a;padding-top:8px;font-size:14px;font-weight:800}
+.bd-notes{margin-top:16px;font-size:11px;line-height:1.65;color:#333;border-top:1px dashed #ccc;padding-top:12px}
+.bd-notes h5{margin:0 0 6px;font-size:12px}
+.bd-bank{background:#f5f7f6;border:1px solid #d0d6d3;border-radius:6px;padding:10px 12px;margin-top:8px}
+.bd-stamp{margin-top:22px;display:flex;justify-content:flex-end;gap:16px}
+.bd-box{width:84px;height:84px;border:1px solid #888;display:flex;align-items:flex-start;justify-content:center;padding-top:8px;font-size:11px;color:#666}
+.bd-foot{margin-top:18px;font-size:10px;color:#888;text-align:center}
 .bd-check{margin-top:12px;padding:12px;border:1px dashed rgba(255,255,255,.3);border-radius:10px;font-size:12px}
 .bd-check li{margin:6px 0}
 .bd-hist{max-height:220px;overflow:auto;font-size:12px}
 .bd-hist button{margin-left:8px}
-.bd-items .bd-item-row{display:grid;grid-template-columns:1.4fr .6fr .6fr auto;gap:6px;margin-bottom:6px;align-items:end}
+.bd-items .bd-item-row{display:grid;grid-template-columns:1.4fr .55fr .55fr auto;gap:6px;margin-bottom:6px;align-items:end}
 @media print{
   body *{visibility:hidden!important}
   #bdPrintRoot,#bdPrintRoot *{visibility:visible!important}
-  #bdPrintRoot{position:absolute;left:0;top:0;width:100%;background:#fff;padding:0}
+  #bdPrintRoot{position:absolute;left:0;top:0;width:100%;background:#fff;padding:12px}
+  .bd-ribbon{display:none!important}
+  .bd-sheet{box-shadow:none!important}
 }
 `;
     document.head.appendChild(st);
+  }
+
+  function taxBreak(gross) {
+    const total = Math.round(Number(gross) || 0);
+    const net = Math.round(total / (1 + TAX_RATE));
+    const tax = total - net;
+    return { total: total, net: net, tax: tax };
+  }
+
+  function marginInfo(sell, cost) {
+    sell = Number(sell) || 0;
+    cost = Number(cost) || 0;
+    if (sell <= 0) return { rate: null, ok: true, profit: sell - cost };
+    const profit = sell - cost;
+    const rate = profit / sell;
+    return { rate: rate, ok: rate >= MIN_MARGIN, profit: profit };
   }
 
   function parseMoneyFromText(text) {
@@ -116,18 +187,8 @@
       const n = Number(String(m[1]).replace(/,/g, ""));
       if (n >= 1000) amounts.push(n);
     }
-    amounts.sort((a, b) => b - a);
-    const cost = amounts[0] || 0;
-    const lines = [];
-    s.split(/\r?\n/).forEach(function (line) {
-      const am = line.match(/(?:¥|￥)?\s*([0-9]{1,3}(?:,[0-9]{3})+|[0-9]{4,})\s*円?/);
-      if (!am) return;
-      const n = Number(String(am[1]).replace(/,/g, ""));
-      if (n < 1000) return;
-      const name = line.replace(am[0], "").replace(/[:：]/s*$/, "").trim().slice(0, 60) || "下請け項目";
-      lines.push({ name: name, qty: 1, unit: n });
-    });
-    return { cost: cost, lines: lines.slice(0, 20), rawHits: amounts.slice(0, 8) };
+    amounts.sort(function (a, b) { return b - a; });
+    return { cost: amounts[0] || 0, rawHits: amounts.slice(0, 8) };
   }
 
   async function extractPdfText(file) {
@@ -157,15 +218,6 @@
     return text;
   }
 
-  function marginInfo(sell, cost) {
-    sell = Number(sell) || 0;
-    cost = Number(cost) || 0;
-    if (sell <= 0) return { rate: null, ok: true, profit: sell - cost };
-    const profit = sell - cost;
-    const rate = profit / sell;
-    return { rate: rate, ok: rate >= MIN_MARGIN, profit: profit };
-  }
-
   function printSheet(html) {
     let root = document.getElementById("bdPrintRoot");
     if (!root) {
@@ -174,9 +226,7 @@
       document.body.appendChild(root);
     }
     root.innerHTML = html;
-    setTimeout(function () {
-      window.print();
-    }, 50);
+    setTimeout(function () { window.print(); }, 50);
   }
 
   function utf8ToBase64(str) {
@@ -191,18 +241,107 @@
     const wrapped =
       "<!DOCTYPE html><html lang=\"ja\"><head><meta charset=\"UTF-8\"><title>" +
       esc(filename) +
-      "</title><style>body{font-family:serif;padding:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #999;padding:8px}.num{text-align:right}</style></head><body>" +
+      "</title><style>body{font-family:sans-serif;padding:16px;background:#fff;color:#111}table{border-collapse:collapse;width:100%}td,th{border:1px solid #999;padding:8px}.num{text-align:right}</style></head><body>" +
       html +
       "</body></html>";
     const path = (folder.replace(/\/$/, "") + "/" + filename).replace(/\/+/g, "/");
     return window.dbxUploadBase64(path, utf8ToBase64(wrapped), { mode: "add" });
   }
 
+  function issuerBlock() {
+    return (
+      '<div class="bd-issuer"><b>' +
+      esc(ISSUER.name) +
+      "</b>" +
+      esc(ISSUER.rep) +
+      "<br>" +
+      esc(ISSUER.zip) +
+      "　" +
+      esc(ISSUER.addr) +
+      "<br>" +
+      esc(ISSUER.tel) +
+      "<br>" +
+      esc(ISSUER.invoiceReg) +
+      "</div>"
+    );
+  }
+
+  /* ---------- サンプル ---------- */
+  function sampleInvoice() {
+    const d = today();
+    return {
+      docType: "invoice",
+      no: docNo("INV", d),
+      client: "株式会社サンプル商事",
+      clientHonor: "御中",
+      title: "パラダイスシティ関連　出演手配業務（試作）",
+      date: d,
+      due: addDays(d, 30),
+      note: "お振込手数料は貴社負担にてお願いいたします。\n本書類はポータル試作テンプレートです。正式運用前に文言・口座を確定してください。",
+      items: [
+        { name: "出演手配フィー（仲介）", qty: 1, unit: 880000 },
+        { name: "渡航・現地調整サポート", qty: 1, unit: 110000 },
+        { name: "事務手数料", qty: 1, unit: 22000 },
+      ],
+      subCost: 650000,
+      subNote: "下請け見積（試作）\n紹介者・事務所支払 合計 650,000円",
+      prezApproved: false,
+      localSaved: false,
+      dropboxSaved: false,
+      dropboxPath: "",
+      id: "",
+    };
+  }
+
+  function sampleEstimate() {
+    const d = today();
+    return {
+      docType: "estimate",
+      no: docNo("EST", d),
+      client: "ワールドパーク株式会社",
+      clientHonor: "御中",
+      title: "稲毛海浜公園　イベント運営見積（試作）",
+      date: d,
+      due: addDays(d, 14),
+      note: "本見積の有効期限は発行日より14日間です。\n人数・日程変更により金額が変動する場合があります。\n※試作サンプルです。",
+      items: [
+        { name: "イベント企画・運営一式", qty: 1, unit: 550000 },
+        { name: "スタッフ手配（1日）", qty: 4, unit: 18000 },
+        { name: "音響・簡易設備レンタル", qty: 1, unit: 88000 },
+      ],
+      subCost: 280000,
+      subNote: "外注見積（試作）280,000円",
+      prezApproved: false,
+      localSaved: false,
+      dropboxSaved: false,
+      dropboxPath: "",
+      id: "",
+    };
+  }
+
+  function sampleReceipt() {
+    return {
+      id: "",
+      no: docNo("RCP", today()),
+      date: today(),
+      payee: "株式会社サンプル商事",
+      amount: 1012000,
+      forWhat: "御請求書番号 INV 代金として",
+      method: "振込",
+      note: "上記正に領収いたしました。（試作テンプレート）",
+      localSaved: false,
+      dropboxSaved: false,
+      dropboxPath: "",
+    };
+  }
+
   /* ---------- 請求・見積 ---------- */
   function invoiceState() {
     return {
       docType: "invoice",
+      no: "",
       client: "",
+      clientHonor: "御中",
       title: "",
       date: today(),
       due: "",
@@ -218,7 +357,7 @@
     };
   }
 
-  let INV = invoiceState();
+  let INV = sampleInvoice();
 
   function sellTotal() {
     return INV.items.reduce(function (s, it) {
@@ -228,13 +367,19 @@
 
   function renderInvoiceSheet() {
     const sell = sellTotal();
+    const tb = taxBreak(sell);
     const mi = marginInfo(sell, INV.subCost);
+    const isEst = INV.docType === "estimate";
+    const label = isEst ? "御見積書" : "請求書";
+    const no = INV.no || docNo(isEst ? "EST" : "INV", INV.date);
     const rows = INV.items
       .filter(function (it) { return it.name || it.unit; })
-      .map(function (it) {
+      .map(function (it, idx) {
         const line = (Number(it.qty) || 0) * (Number(it.unit) || 0);
         return (
-          "<tr><td>" +
+          "<tr><td class=\"num\">" +
+          (idx + 1) +
+          "</td><td>" +
           esc(it.name || "—") +
           "</td><td class=\"num\">" +
           esc(it.qty) +
@@ -246,39 +391,93 @@
         );
       })
       .join("");
-    const label = INV.docType === "estimate" ? "御見積書" : "請求書";
+
+    const bankHtml = isEst
+      ? "<p>本見積の有効期限：" +
+        fmtDate(INV.due || addDays(INV.date, 14)) +
+        "</p><p>ご発注後、正式な請求書を発行いたします。</p>"
+      : '<div class="bd-bank"><b>お振込先（試作）</b><br>' +
+        esc(ISSUER.bank.name) +
+        "　" +
+        esc(ISSUER.bank.type) +
+        "　" +
+        esc(ISSUER.bank.number) +
+        "<br>口座名義　" +
+        esc(ISSUER.bank.holder) +
+        "<br>お支払期限　" +
+        fmtDate(INV.due || "") +
+        "</div>";
+
     return (
       '<div class="bd-sheet" id="bdInvoiceSheet">' +
-      '<p class="bd-co">GOONER</p>' +
-      '<div class="bd-meta">発行日 ' +
-      esc(INV.date) +
-      (INV.due ? " ／ お支払期限 " + esc(INV.due) : "") +
-      "</div>" +
-      "<h4>" +
+      '<div class="bd-ribbon">PROTOTYPE　試作書類　正式運用前</div>' +
+      '<div class="bd-sheet-inner">' +
+      '<div class="bd-head">' +
+      '<div class="bd-head-left"><p class="bd-co">' +
+      esc(ISSUER.brand) +
+      '</p><p class="bd-tag">' +
+      esc(ISSUER.tagline) +
+      "</p></div>" +
+      "<div><h4 class=\"bd-doc-title\">" +
       label +
-      "</h4>" +
-      "<p><b>御中：</b>" +
-      esc(INV.client || "（取引先）") +
-      "</p>" +
-      (INV.title ? "<p><b>件名：</b>" + esc(INV.title) + "</p>" : "") +
-      "<table><thead><tr><th>品目</th><th>数量</th><th>単価</th><th>金額</th></tr></thead><tbody>" +
-      (rows || "<tr><td colspan=\"4\">（明細なし）</td></tr>") +
-      "</tbody></table>" +
-      '<div class="bd-total">合計（税込想定） ' +
-      yen(sell) +
+      '</h4><div class="bd-doc-sub">書類番号　' +
+      esc(no) +
+      "<br>発行日　" +
+      fmtDate(INV.date) +
+      (INV.due ? "<br>" + (isEst ? "有効期限　" : "お支払期限　") + fmtDate(INV.due) : "") +
+      "</div></div></div>" +
+      '<div class="bd-parties">' +
+      "<div><div class=\"bd-client\">" +
+      esc(INV.client || "（取引先名）") +
+      "　" +
+      esc(INV.clientHonor || "御中") +
+      "<small>件名：" +
+      esc(INV.title || "（件名未設定）") +
+      "</small></div>" +
+      "<p style=\"font-size:12px;line-height:1.7;margin:0\">下記の通り" +
+      (isEst ? "お見積り" : "ご請求") +
+      "申し上げます。</p></div>" +
+      issuerBlock() +
       "</div>" +
-      (INV.note ? "<p style=\"margin-top:16px;font-size:12px\">備考：" + esc(INV.note) + "</p>" : "") +
-      '<div class="bd-stamp"><div class="bd-box">担当</div><div class="bd-box">確認</div><div class="bd-box">社長</div></div>' +
+      '<div class="bd-summary"><div class="bd-summary-box"><div class="lab">' +
+      (isEst ? "お見積金額（税込）" : "ご請求金額（税込）") +
+      '</div><div class="val">' +
+      yen(tb.total) +
+      "</div></div></div>" +
+      "<table><thead><tr><th style=\"width:40px\">No</th><th>品目・内容</th><th style=\"width:70px\">数量</th><th style=\"width:100px\">単価</th><th style=\"width:110px\">金額</th></tr></thead><tbody>" +
+      (rows || '<tr><td colspan="5">（明細なし）</td></tr>') +
+      "</tbody></table>" +
+      '<table class="bd-totals"><tr><td>小計（税抜）</td><td class="num">' +
+      yen(tb.net) +
+      "</td></tr><tr><td>消費税（10%）</td><td class=\"num\">" +
+      yen(tb.tax) +
+      '</td></tr><tr class="grand"><td>合計（税込）</td><td class="num">' +
+      yen(tb.total) +
+      "</td></tr></table>" +
+      '<div class="bd-notes"><h5>' +
+      (isEst ? "見積条件・備考" : "お支払・備考") +
+      "</h5>" +
+      bankHtml +
+      (INV.note
+        ? "<p style=\"margin-top:8px;white-space:pre-wrap\">" + esc(INV.note) + "</p>"
+        : "") +
       (mi.rate != null
-        ? '<p style="margin-top:18px;font-size:11px;color:#666">社内控：原価 ' +
+        ? '<p style="margin-top:10px;color:#888">【社内控・印刷時は非推奨】原価 ' +
           yen(INV.subCost) +
           " ／ 利益率 " +
           (mi.rate * 100).toFixed(1) +
           "%" +
-          (mi.ok ? "" : " 【社長決裁対象】") +
+          (mi.ok ? "" : "　※25%未満・社長決裁対象") +
           "</p>"
         : "") +
-      "</div>"
+      "</div>" +
+      '<div class="bd-stamp"><div class="bd-box">担当</div><div class="bd-box">確認</div><div class="bd-box">承認</div></div>' +
+      '<p class="bd-foot">' +
+      esc(ISSUER.name) +
+      "　試作テンプレート　" +
+      esc(no) +
+      "</p>" +
+      "</div></div>"
     );
   }
 
@@ -286,6 +485,7 @@
     const root = document.getElementById("billingInvoiceApp");
     if (!root) return;
     injectStyles();
+    if (!INV.no) INV.no = docNo(INV.docType === "estimate" ? "EST" : "INV", INV.date);
     const sell = sellTotal();
     const mi = marginInfo(sell, INV.subCost);
     const needPrez = INV.docType === "invoice" && mi.rate != null && !mi.ok;
@@ -311,16 +511,14 @@
     const itemRows = INV.items
       .map(function (it, i) {
         return (
-          '<div class="bd-item-row" data-i="' +
-          i +
-          '">' +
+          '<div class="bd-item-row">' +
           '<div class="bd-field"><label>品目</label><input data-f="name" value="' +
           esc(it.name) +
           '"></div>' +
           '<div class="bd-field"><label>数量</label><input data-f="qty" type="number" min="0" step="1" value="' +
           esc(it.qty) +
           '"></div>' +
-          '<div class="bd-field"><label>単価</label><input data-f="unit" type="number" min="0" step="1" value="' +
+          '<div class="bd-field"><label>単価（税込）</label><input data-f="unit" type="number" min="0" step="1" value="' +
           esc(it.unit) +
           '"></div>' +
           '<button type="button" class="bd-mini secondary" data-rm="' +
@@ -333,21 +531,36 @@
     root.innerHTML =
       '<div class="bd-grid">' +
       '<div class="bd-card">' +
-      "<h3>作成</h3>" +
-      '<div class="bd-row">' +
+      "<h3>作成 <span class=\"bd-proto\">試作</span></h3>" +
+      '<div class="bd-alert">試作テンプレートです。「サンプル読込」で中身付きの見本を表示できます。住所・口座は仮値です。</div>' +
+      '<div class="bd-actions" style="margin-top:0">' +
+      '<button type="button" id="bdSampleInv">請求サンプル</button>' +
+      '<button type="button" id="bdSampleEst">見積サンプル</button>' +
+      '<button type="button" class="secondary" id="bdBlank">空の新規</button>' +
+      "</div>" +
+      '<div class="bd-row" style="margin-top:12px">' +
       '<div class="bd-field"><label>書類種別</label><select id="bdDocType"><option value="invoice"' +
       (INV.docType === "invoice" ? " selected" : "") +
       ">請求書</option><option value=\"estimate\"" +
       (INV.docType === "estimate" ? " selected" : "") +
       ">見積書</option></select></div>" +
+      '<div class="bd-field"><label>書類番号</label><input id="bdNo" value="' +
+      esc(INV.no) +
+      '"></div></div>' +
+      '<div class="bd-row">' +
       '<div class="bd-field"><label>発行日</label><input id="bdDate" type="date" value="' +
       esc(INV.date) +
+      '"></div>' +
+      '<div class="bd-field"><label>' +
+      (INV.docType === "estimate" ? "有効期限" : "お支払期限") +
+      '</label><input id="bdDue" type="date" value="' +
+      esc(INV.due) +
       '"></div></div>' +
       '<div class="bd-row"><div class="bd-field"><label>取引先</label><input id="bdClient" value="' +
       esc(INV.client) +
-      '" placeholder="株式会社◯◯ 御中"></div>' +
-      '<div class="bd-field"><label>お支払期限</label><input id="bdDue" type="date" value="' +
-      esc(INV.due) +
+      '" placeholder="株式会社◯◯"></div>' +
+      '<div class="bd-field"><label>敬称</label><input id="bdHonor" value="' +
+      esc(INV.clientHonor || "御中") +
       '"></div></div>' +
       '<div class="bd-row full"><div class="bd-field"><label>件名</label><input id="bdTitle" value="' +
       esc(INV.title) +
@@ -360,29 +573,28 @@
       '<div class="bd-field"><label>下請け原価合計</label><input id="bdSubCost" type="number" min="0" step="1" value="' +
       esc(INV.subCost) +
       '"></div>' +
-      '<div class="bd-field"><label>販売合計（自動）</label><input readonly value="' +
+      '<div class="bd-field"><label>販売合計（税込・自動）</label><input readonly value="' +
       esc(sell) +
       '"></div></div>' +
-      '<div class="bd-field" style="margin-top:8px"><label>下請け見積メモ／貼り付けテキスト</label>' +
-      '<textarea id="bdSubText" rows="4" placeholder="下請け見積の金額行を貼り付け、または下でPDFを選択">' +
+      '<div class="bd-field" style="margin-top:8px"><label>下請け見積メモ／貼り付け</label>' +
+      '<textarea id="bdSubText" rows="3" placeholder="下請け見積の金額行を貼付、またはPDF取込">' +
       esc(INV.subNote) +
       "</textarea></div>" +
       '<div class="bd-actions">' +
       '<button type="button" id="bdParseText">テキストから原価計算</button>' +
-      '<label class="bd-mini secondary" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">PDF取込<input type="file" id="bdPdf" accept="application/pdf,.pdf" hidden></label>' +
+      '<label class="bd-mini secondary" style="display:inline-flex;align-items:center;cursor:pointer">PDF取込<input type="file" id="bdPdf" accept="application/pdf,.pdf" hidden></label>' +
       "</div>" +
       alertHtml +
       (needPrez && !INV.prezApproved && isPresident()
         ? '<div class="bd-actions"><button type="button" class="warn" id="bdPrezOk">社長決裁する</button></div>'
         : "") +
-      '<div class="bd-field" style="margin-top:8px"><label>備考</label><textarea id="bdNote" rows="2">' +
+      '<div class="bd-field" style="margin-top:8px"><label>備考</label><textarea id="bdNote" rows="3">' +
       esc(INV.note) +
       "</textarea></div>" +
       '<div class="bd-actions">' +
       '<button type="button" id="bdSaveLocal">保管（ローカル）</button>' +
-      '<button type="button" id="bdPrint">印刷（コピー機／プリンタ）</button>' +
+      '<button type="button" id="bdPrint">印刷</button>' +
       '<button type="button" id="bdDropbox">Dropboxへ保管</button>' +
-      '<button type="button" class="secondary" id="bdNew">新規作成</button>' +
       "</div>" +
       '<div class="bd-check"><b>保管確認</b><ul>' +
       "<li>ローカル保管：" +
@@ -391,9 +603,9 @@
       "<li>Dropbox保管（" +
       esc(DBX_INV) +
       "）：" +
-      (INV.dropboxSaved ? "✓ 済 " + esc(INV.dropboxPath) : "未 — 作成後は必ずDropboxへ保管してください") +
+      (INV.dropboxSaved ? "✓ 済 " + esc(INV.dropboxPath) : "未 — 作成後はDropboxへ保管してください") +
       "</li></ul></div>" +
-      '<div style="margin-top:14px"><h3>保管一覧</h3><div class="bd-hist" id="bdHist">' +
+      '<div style="margin-top:14px"><h3>保管一覧</h3><div class="bd-hist">' +
       (hist.length
         ? hist
             .map(function (h) {
@@ -413,7 +625,7 @@
               );
             })
             .join("")
-        : "<div class=\"bd-alert\">まだ保管がありません</div>") +
+        : '<div class="bd-alert">まだ保管がありません</div>') +
       "</div></div></div>" +
       '<div class="bd-card"><h3>プレビュー</h3>' +
       renderInvoiceSheet() +
@@ -424,8 +636,10 @@
 
   function readInvoiceForm(root) {
     INV.docType = root.querySelector("#bdDocType")?.value || "invoice";
+    INV.no = root.querySelector("#bdNo")?.value || INV.no;
     INV.date = root.querySelector("#bdDate")?.value || today();
     INV.client = root.querySelector("#bdClient")?.value || "";
+    INV.clientHonor = root.querySelector("#bdHonor")?.value || "御中";
     INV.due = root.querySelector("#bdDue")?.value || "";
     INV.title = root.querySelector("#bdTitle")?.value || "";
     INV.subCost = Number(root.querySelector("#bdSubCost")?.value || 0);
@@ -456,8 +670,22 @@
       readInvoiceForm(root);
       renderInvoiceApp();
     };
-    root.querySelector("#bdDocType")?.addEventListener("change", refresh);
-    ["bdDate", "bdClient", "bdDue", "bdTitle", "bdSubCost", "bdSubText", "bdNote"].forEach(function (id) {
+    root.querySelector("#bdSampleInv")?.addEventListener("click", function () {
+      INV = sampleInvoice();
+      renderInvoiceApp();
+      toast("請求書サンプルを読み込みました");
+    });
+    root.querySelector("#bdSampleEst")?.addEventListener("click", function () {
+      INV = sampleEstimate();
+      renderInvoiceApp();
+      toast("見積書サンプルを読み込みました");
+    });
+    root.querySelector("#bdBlank")?.addEventListener("click", function () {
+      INV = invoiceState();
+      INV.no = docNo("INV", INV.date);
+      renderInvoiceApp();
+    });
+    ["bdDocType", "bdNo", "bdDate", "bdClient", "bdHonor", "bdDue", "bdTitle", "bdSubCost", "bdSubText", "bdNote"].forEach(function (id) {
       root.querySelector("#" + id)?.addEventListener("change", refresh);
     });
     root.querySelector("#bdItems")?.addEventListener("change", refresh);
@@ -469,8 +697,7 @@
     root.querySelectorAll("[data-rm]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         readInvoiceForm(root);
-        const i = Number(btn.getAttribute("data-rm"));
-        INV.items.splice(i, 1);
+        INV.items.splice(Number(btn.getAttribute("data-rm")), 1);
         if (!INV.items.length) INV.items.push({ name: "", qty: 1, unit: 0 });
         renderInvoiceApp();
       });
@@ -479,17 +706,11 @@
       readInvoiceForm(root);
       const parsed = parseMoneyFromText(INV.subNote);
       if (!parsed.cost) {
-        toast("金額を読み取れませんでした。テキストを貼り付けてください");
+        toast("金額を読み取れませんでした");
         return;
       }
       INV.subCost = parsed.cost;
-      if (parsed.lines.length) {
-        INV.subNote =
-          INV.subNote +
-          "\n--- 抽出 ---\n" +
-          parsed.lines.map(function (l) { return l.name + " " + l.unit; }).join("\n");
-      }
-      toast("下請け原価を自動計算しました: " + yen(parsed.cost));
+      toast("下請け原価を自動計算: " + yen(parsed.cost));
       renderInvoiceApp();
     });
     root.querySelector("#bdPdf")?.addEventListener("change", async function (ev) {
@@ -503,17 +724,14 @@
         INV.subNote = (INV.subNote ? INV.subNote + "\n" : "") + text.slice(0, 8000);
         const parsed = parseMoneyFromText(text);
         if (parsed.cost) INV.subCost = parsed.cost;
-        toast(parsed.cost ? "PDFから原価 " + yen(parsed.cost) + " を取り込みました" : "PDFテキストを取り込みました（金額は手入力）");
+        toast(parsed.cost ? "PDFから原価 " + yen(parsed.cost) + " を取り込みました" : "PDFテキストを取り込みました");
         renderInvoiceApp();
       } catch (e) {
         toast("PDF取込失敗: " + (e.message || e));
       }
     });
     root.querySelector("#bdPrezOk")?.addEventListener("click", function () {
-      if (!isPresident()) {
-        toast("社長のみ決裁できます");
-        return;
-      }
+      if (!isPresident()) return toast("社長のみ決裁できます");
       if (!confirm("利益率25%未満の請求書を社長決裁しますか？")) return;
       readInvoiceForm(root);
       INV.prezApproved = true;
@@ -524,37 +742,22 @@
       readInvoiceForm(root);
       if (!canFinalizeInvoice()) return;
       printSheet(renderInvoiceSheet());
-      toast("印刷ダイアログを開きました（コピー機／プリンタを選択）");
+      toast("印刷ダイアログを開きました");
     });
     root.querySelector("#bdSaveLocal")?.addEventListener("click", function () {
       readInvoiceForm(root);
-      if (!INV.client) {
-        toast("取引先を入力してください");
-        return;
-      }
+      if (!INV.client) return toast("取引先を入力してください");
       if (!canFinalizeInvoice()) return;
       if (!INV.id) INV.id = uid("INV");
+      if (!INV.no) INV.no = docNo(INV.docType === "estimate" ? "EST" : "INV", INV.date);
       const sell = sellTotal();
       const arr = load(LS_INV).filter(function (x) { return x.id !== INV.id; });
-      const rec = {
-        id: INV.id,
-        docType: INV.docType,
-        client: INV.client,
-        title: INV.title,
-        date: INV.date,
-        due: INV.due,
-        note: INV.note,
-        items: INV.items,
-        subCost: INV.subCost,
-        subNote: INV.subNote,
-        prezApproved: INV.prezApproved,
+      const rec = Object.assign({}, INV, {
         sell: sell,
         localSaved: true,
-        dropboxSaved: INV.dropboxSaved,
-        dropboxPath: INV.dropboxPath,
         by: who(),
         at: new Date().toISOString(),
-      };
+      });
       arr.unshift(rec);
       save(LS_INV, arr);
       INV.localSaved = true;
@@ -565,43 +768,41 @@
       readInvoiceForm(root);
       if (!canFinalizeInvoice()) return;
       if (!INV.localSaved) {
-        if (!confirm("まだローカル保管が未です。先にローカル保管してからDropboxへ進めますか？")) return;
+        if (!confirm("先にローカル保管してからDropboxへ進めますか？")) return;
         root.querySelector("#bdSaveLocal")?.click();
       }
-      if (!confirm("作成した請求／見積を Dropbox の " + DBX_INV + " に保管しますか？\n保管後、保管有無の確認欄が更新されます。")) return;
+      if (!confirm("Dropbox の " + DBX_INV + " に保管しますか？")) return;
       try {
         if (!INV.id) INV.id = uid("INV");
         const name =
           (INV.docType === "estimate" ? "見積_" : "請求_") +
-          (INV.date || today()) +
+          (INV.no || INV.date) +
           "_" +
           (INV.client || "取引先").replace(/[\\/:*?"<>|]/g, "_").slice(0, 40) +
           ".html";
-        const res = await uploadHtmlToDropbox(DBX_INV, name, document.getElementById("bdInvoiceSheet")?.innerHTML || renderInvoiceSheet());
+        const res = await uploadHtmlToDropbox(
+          DBX_INV,
+          name,
+          document.getElementById("bdInvoiceSheet")?.outerHTML || renderInvoiceSheet()
+        );
         INV.dropboxSaved = true;
         INV.dropboxPath = res.path || DBX_INV + "/" + name;
         INV.localSaved = true;
         const arr = load(LS_INV);
         const i = arr.findIndex(function (x) { return x.id === INV.id; });
-        const sell = sellTotal();
-        const rec = Object.assign({}, INV, { sell: sell, by: who(), at: new Date().toISOString() });
+        const rec = Object.assign({}, INV, { sell: sellTotal(), by: who(), at: new Date().toISOString() });
         if (i >= 0) arr[i] = rec;
         else arr.unshift(rec);
         save(LS_INV, arr);
         toast("Dropboxへ保管しました: " + INV.dropboxPath);
         renderInvoiceApp();
       } catch (e) {
-        toast("Dropbox保管失敗: " + (e.message || e) + "（ログインとDropbox許可を確認）");
+        toast("Dropbox保管失敗: " + (e.message || e));
       }
-    });
-    root.querySelector("#bdNew")?.addEventListener("click", function () {
-      INV = invoiceState();
-      renderInvoiceApp();
     });
     root.querySelectorAll("[data-load]").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        const id = btn.getAttribute("data-load");
-        const h = load(LS_INV).find(function (x) { return x.id === id; });
+        const h = load(LS_INV).find(function (x) { return x.id === btn.getAttribute("data-load"); });
         if (!h) return;
         INV = Object.assign(invoiceState(), h);
         renderInvoiceApp();
@@ -610,42 +811,79 @@
   }
 
   /* ---------- 領収書 ---------- */
-  let RCP = {
-    id: "",
-    date: today(),
-    payee: "",
-    amount: 0,
-    forWhat: "",
-    method: "現金",
-    note: "",
-    localSaved: false,
-    dropboxSaved: false,
-    dropboxPath: "",
-  };
+  let RCP = sampleReceipt();
+
+  function receiptState() {
+    return {
+      id: "",
+      no: "",
+      date: today(),
+      payee: "",
+      amount: 0,
+      forWhat: "",
+      method: "現金",
+      note: "",
+      localSaved: false,
+      dropboxSaved: false,
+      dropboxPath: "",
+    };
+  }
 
   function renderReceiptSheet() {
+    const no = RCP.no || docNo("RCP", RCP.date);
+    const tb = taxBreak(RCP.amount);
     return (
       '<div class="bd-sheet" id="bdReceiptSheet">' +
-      '<p class="bd-co">GOONER</p>' +
-      '<div class="bd-meta">発行日 ' +
-      esc(RCP.date) +
-      "</div>" +
-      "<h4>領　収　書</h4>" +
-      "<p style=\"font-size:18px;margin:18px 0\"><b>" +
+      '<div class="bd-ribbon">PROTOTYPE　試作書類　正式運用前</div>' +
+      '<div class="bd-sheet-inner">' +
+      '<div class="bd-head">' +
+      '<div class="bd-head-left"><p class="bd-co">' +
+      esc(ISSUER.brand) +
+      '</p><p class="bd-tag">' +
+      esc(ISSUER.tagline) +
+      "</p></div>" +
+      '<div><h4 class="bd-doc-title">領　収　書</h4>' +
+      '<div class="bd-doc-sub">書類番号　' +
+      esc(no) +
+      "<br>発行日　" +
+      fmtDate(RCP.date) +
+      "</div></div></div>" +
+      '<div class="bd-parties">' +
+      '<div><div class="bd-client" style="font-size:20px">' +
       esc(RCP.payee || "（宛名）") +
-      "</b> 様</p>" +
-      '<p style="font-size:28px;font-weight:800;text-align:center;margin:24px 0;border-bottom:2px solid #222;padding-bottom:10px">' +
+      "　様</div>" +
+      '<p style="font-size:13px;margin:16px 0 0;line-height:1.8">下記金額を正に領収いたしました。</p></div>' +
+      issuerBlock() +
+      "</div>" +
+      '<div class="bd-summary"><div class="bd-summary-box"><div class="lab">領収金額（税込）</div><div class="val">' +
       yen(RCP.amount) +
-      "</p>" +
-      "<p>但し　" +
-      esc(RCP.forWhat || "（但し書き）") +
-      "　として正に領収いたしました。</p>" +
-      "<p style=\"margin-top:12px\">お支払方法：" +
-      esc(RCP.method) +
-      "</p>" +
-      (RCP.note ? "<p style=\"margin-top:8px;font-size:12px\">備考：" + esc(RCP.note) + "</p>" : "") +
+      "</div></div></div>" +
+      "<table><tbody>" +
+      "<tr><th style=\"width:28%\">但し</th><td>" +
+      esc(RCP.forWhat || "—") +
+      "</td></tr>" +
+      "<tr><th>お支払方法</th><td>" +
+      esc(RCP.method || "—") +
+      "</td></tr>" +
+      "<tr><th>内訳（税抜）</th><td class=\"num\">" +
+      yen(tb.net) +
+      "</td></tr>" +
+      "<tr><th>うち消費税（10%）</th><td class=\"num\">" +
+      yen(tb.tax) +
+      "</td></tr>" +
+      "</tbody></table>" +
+      (RCP.note
+        ? '<div class="bd-notes"><h5>備考</h5><p style="white-space:pre-wrap;margin:0">' +
+          esc(RCP.note) +
+          "</p></div>"
+        : "") +
       '<div class="bd-stamp"><div class="bd-box">収入印紙</div><div class="bd-box">社印</div></div>' +
-      "</div>"
+      '<p class="bd-foot">' +
+      esc(ISSUER.name) +
+      "　試作テンプレート　" +
+      esc(no) +
+      "</p>" +
+      "</div></div>"
     );
   }
 
@@ -653,35 +891,45 @@
     const root = document.getElementById("billingReceiptApp");
     if (!root) return;
     injectStyles();
+    if (!RCP.no) RCP.no = docNo("RCP", RCP.date);
     const hist = load(LS_RCP);
     root.innerHTML =
-      '<div class="bd-grid"><div class="bd-card"><h3>作成</h3>' +
-      '<div class="bd-row"><div class="bd-field"><label>発行日</label><input id="rcDate" type="date" value="' +
-      esc(RCP.date) +
+      '<div class="bd-grid"><div class="bd-card"><h3>作成 <span class="bd-proto">試作</span></h3>' +
+      '<div class="bd-alert">試作テンプレートです。「領収サンプル」で中身付きの見本を表示できます。</div>' +
+      '<div class="bd-actions" style="margin-top:0">' +
+      '<button type="button" id="rcSample">領収サンプル</button>' +
+      '<button type="button" class="secondary" id="rcNew">空の新規</button>' +
+      "</div>" +
+      '<div class="bd-row" style="margin-top:12px">' +
+      '<div class="bd-field"><label>書類番号</label><input id="rcNo" value="' +
+      esc(RCP.no) +
       '"></div>' +
-      '<div class="bd-field"><label>お支払方法</label><select id="rcMethod"><option' +
-      (RCP.method === "現金" ? " selected" : "") +
-      ">現金</option><option" +
-      (RCP.method === "振込" ? " selected" : "") +
-      ">振込</option><option" +
-      (RCP.method === "その他" ? " selected" : "") +
-      ">その他</option></select></div></div>" +
+      '<div class="bd-field"><label>発行日</label><input id="rcDate" type="date" value="' +
+      esc(RCP.date) +
+      '"></div></div>' +
+      '<div class="bd-row">' +
+      '<div class="bd-field"><label>お支払方法</label><select id="rcMethod">' +
+      ["現金", "振込", "カード", "その他"]
+        .map(function (m) {
+          return "<option" + (RCP.method === m ? " selected" : "") + ">" + m + "</option>";
+        })
+        .join("") +
+      "</select></div>" +
+      '<div class="bd-field"><label>金額（税込）</label><input id="rcAmt" type="number" min="0" step="1" value="' +
+      esc(RCP.amount) +
+      '"></div></div>' +
       '<div class="bd-row full"><div class="bd-field"><label>宛名</label><input id="rcPayee" value="' +
       esc(RCP.payee) +
       '" placeholder="◯◯ 様"></div></div>' +
-      '<div class="bd-row"><div class="bd-field"><label>金額</label><input id="rcAmt" type="number" min="0" step="1" value="' +
-      esc(RCP.amount) +
-      '"></div>' +
-      '<div class="bd-field"><label>但し書き</label><input id="rcFor" value="' +
+      '<div class="bd-row full"><div class="bd-field"><label>但し書き</label><input id="rcFor" value="' +
       esc(RCP.forWhat) +
       '" placeholder="御請求書代金として"></div></div>' +
       '<div class="bd-field"><label>備考</label><textarea id="rcNote" rows="2">' +
       esc(RCP.note) +
       "</textarea></div>" +
       '<div class="bd-actions"><button type="button" id="rcSave">保管（ローカル）</button>' +
-      '<button type="button" id="rcPrint">印刷（コピー機／プリンタ）</button>' +
-      '<button type="button" id="rcDropbox">Dropboxへ保管</button>' +
-      '<button type="button" class="secondary" id="rcNew">新規</button></div>' +
+      '<button type="button" id="rcPrint">印刷</button>' +
+      '<button type="button" id="rcDropbox">Dropboxへ保管</button></div>' +
       '<div class="bd-check"><b>保管確認</b><ul>' +
       "<li>ローカル保管：" +
       (RCP.localSaved ? "✓ 済" : "未") +
@@ -689,7 +937,7 @@
       "<li>Dropbox保管（" +
       esc(DBX_RCP) +
       "）：" +
-      (RCP.dropboxSaved ? "✓ 済 " + esc(RCP.dropboxPath) : "未 — 作成後は必ずDropboxへ保管してください") +
+      (RCP.dropboxSaved ? "✓ 済 " + esc(RCP.dropboxPath) : "未 — 作成後はDropboxへ保管してください") +
       "</li></ul></div>" +
       '<div style="margin-top:14px"><h3>保管一覧</h3><div class="bd-hist">' +
       (hist.length
@@ -709,13 +957,14 @@
               );
             })
             .join("")
-        : "<div class=\"bd-alert\">まだ保管がありません</div>") +
+        : '<div class="bd-alert">まだ保管がありません</div>') +
       "</div></div>" +
       '<div class="bd-card"><h3>プレビュー</h3>' +
       renderReceiptSheet() +
       "</div></div>";
 
     const read = function () {
+      RCP.no = root.querySelector("#rcNo")?.value || RCP.no;
       RCP.date = root.querySelector("#rcDate")?.value || today();
       RCP.method = root.querySelector("#rcMethod")?.value || "現金";
       RCP.payee = root.querySelector("#rcPayee")?.value || "";
@@ -723,7 +972,17 @@
       RCP.forWhat = root.querySelector("#rcFor")?.value || "";
       RCP.note = root.querySelector("#rcNote")?.value || "";
     };
-    ["rcDate", "rcMethod", "rcPayee", "rcAmt", "rcFor", "rcNote"].forEach(function (id) {
+    root.querySelector("#rcSample")?.addEventListener("click", function () {
+      RCP = sampleReceipt();
+      renderReceiptApp();
+      toast("領収書サンプルを読み込みました");
+    });
+    root.querySelector("#rcNew")?.addEventListener("click", function () {
+      RCP = receiptState();
+      RCP.no = docNo("RCP", RCP.date);
+      renderReceiptApp();
+    });
+    ["rcNo", "rcDate", "rcMethod", "rcPayee", "rcAmt", "rcFor", "rcNote"].forEach(function (id) {
       root.querySelector("#" + id)?.addEventListener("change", function () {
         read();
         renderReceiptApp();
@@ -732,15 +991,13 @@
     root.querySelector("#rcPrint")?.addEventListener("click", function () {
       read();
       printSheet(renderReceiptSheet());
-      toast("印刷ダイアログを開きました（コピー機／プリンタを選択）");
+      toast("印刷ダイアログを開きました");
     });
     root.querySelector("#rcSave")?.addEventListener("click", function () {
       read();
-      if (!RCP.payee || !RCP.amount) {
-        toast("宛名と金額を入力してください");
-        return;
-      }
+      if (!RCP.payee || !RCP.amount) return toast("宛名と金額を入力してください");
       if (!RCP.id) RCP.id = uid("RCP");
+      if (!RCP.no) RCP.no = docNo("RCP", RCP.date);
       RCP.localSaved = true;
       const arr = load(LS_RCP).filter(function (x) { return x.id !== RCP.id; });
       arr.unshift(Object.assign({}, RCP, { by: who(), at: new Date().toISOString() }));
@@ -751,16 +1008,20 @@
     root.querySelector("#rcDropbox")?.addEventListener("click", async function () {
       read();
       if (!RCP.localSaved) root.querySelector("#rcSave")?.click();
-      if (!confirm("領収書を Dropbox の " + DBX_RCP + " に保管しますか？")) return;
+      if (!confirm("Dropbox の " + DBX_RCP + " に保管しますか？")) return;
       try {
         if (!RCP.id) RCP.id = uid("RCP");
         const name =
           "領収_" +
-          (RCP.date || today()) +
+          (RCP.no || RCP.date) +
           "_" +
           (RCP.payee || "宛名").replace(/[\\/:*?"<>|]/g, "_").slice(0, 40) +
           ".html";
-        const res = await uploadHtmlToDropbox(DBX_RCP, name, document.getElementById("bdReceiptSheet")?.innerHTML || renderReceiptSheet());
+        const res = await uploadHtmlToDropbox(
+          DBX_RCP,
+          name,
+          document.getElementById("bdReceiptSheet")?.outerHTML || renderReceiptSheet()
+        );
         RCP.dropboxSaved = true;
         RCP.dropboxPath = res.path || DBX_RCP + "/" + name;
         RCP.localSaved = true;
@@ -776,26 +1037,11 @@
         toast("Dropbox保管失敗: " + (e.message || e));
       }
     });
-    root.querySelector("#rcNew")?.addEventListener("click", function () {
-      RCP = {
-        id: "",
-        date: today(),
-        payee: "",
-        amount: 0,
-        forWhat: "",
-        method: "現金",
-        note: "",
-        localSaved: false,
-        dropboxSaved: false,
-        dropboxPath: "",
-      };
-      renderReceiptApp();
-    });
     root.querySelectorAll("[data-rload]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         const h = load(LS_RCP).find(function (x) { return x.id === btn.getAttribute("data-rload"); });
         if (!h) return;
-        RCP = Object.assign({}, h);
+        RCP = Object.assign(receiptState(), h);
         renderReceiptApp();
       });
     });
@@ -819,5 +1065,10 @@
     });
   });
 
-  window.BillingDocs = { renderInvoiceApp: renderInvoiceApp, renderReceiptApp: renderReceiptApp, MIN_MARGIN: MIN_MARGIN };
+  window.BillingDocs = {
+    renderInvoiceApp: renderInvoiceApp,
+    renderReceiptApp: renderReceiptApp,
+    MIN_MARGIN: MIN_MARGIN,
+    ISSUER: ISSUER,
+  };
 })();
