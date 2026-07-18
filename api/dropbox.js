@@ -35,6 +35,7 @@ async function checkPermission(req) {
 
   const SB = process.env.SUPABASE_URL;
   const KEY = process.env.SUPABASE_ANON_KEY;
+  if (!SB || !KEY) return { ok: false, reason: "server_misconfigured" };
 
   // 1) トークンが本物のログインか確認
   const u = await fetch(SB + "/auth/v1/user", {
@@ -43,13 +44,36 @@ async function checkPermission(req) {
   if (!u.ok) return { ok: false, reason: "invalid_session" };
   const user = await u.json();
 
-  // 2) 名簿で許可を確認
+  // 2) 名簿で許可を確認（auth_user_id → 無ければ email で照合）
+  const headers = { apikey: KEY, Authorization: "Bearer " + jwt };
+  let me = null;
   const m = await fetch(
-    SB + "/rest/v1/members?auth_user_id=eq." + user.id + "&select=role,dropbox_allowed",
-    { headers: { apikey: KEY, Authorization: "Bearer " + jwt } }
+    SB + "/rest/v1/members?auth_user_id=eq." + encodeURIComponent(user.id) + "&select=id,role,dropbox_allowed,email",
+    { headers }
   );
   const rows = await m.json();
-  const me = rows && rows[0];
+  if (Array.isArray(rows) && rows[0]) me = rows[0];
+
+  if (!me && user.email) {
+    const m2 = await fetch(
+      SB +
+        "/rest/v1/members?email=eq." +
+        encodeURIComponent(String(user.email).toLowerCase()) +
+        "&select=id,role,dropbox_allowed,email",
+      { headers }
+    );
+    const rows2 = await m2.json();
+    if (Array.isArray(rows2) && rows2[0]) {
+      me = rows2[0];
+      // 紐付け（失敗しても閲覧判定は続行）
+      await fetch(SB + "/rest/v1/members?id=eq." + encodeURIComponent(me.id), {
+        method: "PATCH",
+        headers: { ...headers, "Content-Type": "application/json", Prefer: "return=minimal" },
+        body: JSON.stringify({ auth_user_id: user.id }),
+      }).catch(function () {});
+    }
+  }
+
   if (!me) return { ok: false, reason: "not_registered" };
   if (me.role === "社長" || me.dropbox_allowed === true) return { ok: true };
   return { ok: false, reason: "not_allowed" };
@@ -71,6 +95,8 @@ export default async function handler(req, res) {
         invalid_session: "セッションが無効です。再ログインしてください",
         not_registered: "名簿に登録がありません",
         not_allowed: "Dropbox閲覧の許可がありません。社長に許可を依頼してください",
+        server_misconfigured:
+          "サーバー設定不足です。Vercel に SUPABASE_URL と SUPABASE_ANON_KEY を登録してください",
       }[gate.reason] || "権限がありません";
       return res.status(403).json({ error: msg, reason: gate.reason });
     }
@@ -79,13 +105,25 @@ export default async function handler(req, res) {
     const action = (req.method === "GET" ? req.query.action : req.body?.action) || "list";
 
     if (action === "list") {
+      const listPath = safePath(req.query?.path);
       const r = await fetch("https://api.dropboxapi.com/2/files/list_folder", {
         method: "POST",
         headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
-        body: JSON.stringify({ path: safePath(req.query.path) }),
+        body: JSON.stringify({
+          path: listPath,
+          include_mounted_folders: true,
+          include_non_downloadable_files: true,
+        }),
       });
       const data = await r.json();
-      if (!r.ok) return res.status(500).json({ error: data });
+      if (!r.ok) {
+        // ルート未作成などは分かりやすく
+        const summary = data?.error_summary || data?.error || data;
+        return res.status(500).json({
+          error: typeof summary === "string" ? summary : JSON.stringify(summary),
+          detail: data,
+        });
+      }
       return res.status(200).json({
         entries: (data.entries || []).map(e => ({
           type: e[".tag"], name: e.name, path: e.path_display,
