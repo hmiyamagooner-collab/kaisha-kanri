@@ -56,7 +56,8 @@
   --shadow:0 12px 40px rgba(0,0,0,.5);
   --glass:#000;
   --lux-ring:linear-gradient(155deg,rgba(225,194,125,.38),rgba(210,173,99,.08) 35%,rgba(80,68,44,.12) 65%,rgba(225,194,125,.22));
-  --nav-h:48px;
+  --nav-h:52px;
+  --nav-w:192px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 
@@ -98,8 +99,8 @@ input,select,textarea{font-family:inherit}
 /* ===== レイアウト ===== */
 .layout{display:block;min-height:0;}
 .gamenav{
-  width:180px;flex-shrink:0;padding:14px 8px 24px;
-  display:flex;flex-direction:column;gap:5px;
+  width:var(--nav-w);flex-shrink:0;padding:12px 8px 22px;
+  display:flex;flex-direction:column;gap:6px;
   background:#000;
   border-right:1px solid var(--nav-green-line);
   box-shadow:none;
@@ -110,39 +111,38 @@ input,select,textarea{font-family:inherit}
   text-transform:uppercase;
 }
 .gamenav .nav-group.nav-group-major{
-  margin:8px 4px 6px;
-  padding:10px 10px;
+  margin:6px 2px 2px;
+  padding:8px 8px 6px;
   font-family:'Zen Kaku Gothic New',var(--font-body),sans-serif;
-  font-size:17px;font-weight:700;letter-spacing:.1em;
+  font-size:15px;font-weight:700;letter-spacing:.12em;
   color:var(--nav-green-bright);text-align:center;text-transform:none;
   border:none;border-radius:0;
   background:transparent;
   box-shadow:none;
-  text-shadow:0 0 18px rgba(61,232,212,.35);
+  text-shadow:0 0 16px rgba(61,232,212,.28);
 }
 .gamenav button{
-  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
-  color:var(--text);
+  display:flex;align-items:center;justify-content:center;gap:0;width:100%;
+  color:var(--nav-label);
   min-height:var(--nav-h);
-  padding:0 12px 0 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;
-  font-family:var(--font-body);letter-spacing:.02em;
-  position:relative;
+  padding:0;border-radius:10px;font-size:12px;font-weight:700;
+  font-family:var(--font-body);letter-spacing:.03em;
+  position:relative;overflow:hidden;
   background:linear-gradient(180deg,#121823 0%,#0d1219 100%);
   border:1px solid var(--nav-green-soft);
-  box-shadow:inset 0 1px 0 rgba(51,198,179,.08),0 2px 8px rgba(0,0,0,.28);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 2px 8px rgba(0,0,0,.28);
   transition:
-    transform .24s cubic-bezier(.22,1,.36,1),
-    border-color .24s ease,
-    background .24s ease,
-    box-shadow .24s ease,
-    filter .24s ease;
+    border-color .2s ease,
+    background .2s ease,
+    box-shadow .2s ease,
+    filter .2s ease;
 }
 /* display:flex が HTML hidden を上書きするため明示的に隠す */
 .gamenav button[hidden]{display:none!important}
 .gamenav button::before{
-  content:"";position:absolute;left:0;top:8px;bottom:8px;width:0;border-radius:0 2px 2px 0;
-  background:linear-gradient(180deg,var(--gold-hi),var(--gold));
-  opacity:0;transition:opacity .24s ease,width .24s ease;
+  content:"";position:absolute;left:0;top:7px;bottom:7px;width:0;border-radius:0 2px 2px 0;
+  background:linear-gradient(180deg,var(--nav-green-bright),var(--nav-green-hi));
+  opacity:0;transition:opacity .2s ease,width .2s ease;z-index:3;
 }
 .gamenav button .nico{
   font-family:var(--font-num);font-size:11px;width:28px;height:28px;
@@ -151,44 +151,22 @@ input,select,textarea{font-family:inherit}
   background:linear-gradient(180deg,#1a2230,#10151d);
   border:1px solid rgba(210,173,99,.2);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
-  transition:box-shadow .24s ease,filter .24s ease;
 }
 @media(hover:hover){
   .gamenav button:hover{
-    color:var(--nav-green);border-color:var(--nav-green);
-    transform:translate3d(4px,0,0);
-    background:linear-gradient(180deg,#161d28 0%,#10151d 100%);
-    box-shadow:inset 0 1px 0 rgba(51,198,179,.1),0 4px 14px rgba(0,0,0,.32);
+    border-color:var(--nav-green);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 4px 14px rgba(0,0,0,.32),0 0 12px rgba(15,138,78,.22);
   }
-  .gamenav button.nav-biz:hover::after{opacity:.26;filter:saturate(1.15) brightness(1.08)}
 }
-.gamenav button:active{
-  transform:translate3d(2px,0,0);
-  transition-duration:.12s;
-}
+.gamenav button:active{filter:brightness(1.06);transition-duration:.1s}
 .gamenav button.on{
-  color:var(--text);
   border-color:var(--nav-green);
-  background:linear-gradient(180deg,#1a2230 0%,#141b26 100%);
   box-shadow:
-    inset 0 1px 0 rgba(51,198,179,.1),
-    0 4px 14px rgba(0,0,0,.35);
+    inset 0 1px 0 rgba(255,255,255,.12),
+    0 4px 14px rgba(0,0,0,.35),
+    0 0 14px rgba(15,138,78,.28);
 }
 .gamenav button.on::before{width:3px;opacity:1}
-.gamenav button.on .nico{
-  color:var(--gold-hi);
-  background:linear-gradient(180deg,#222c3c,#161d28);
-  border-color:rgba(210,173,99,.35);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.1),
-    0 0 12px rgba(210,173,99,.18);
-}
-@media(hover:hover){
-  .gamenav button.on:hover{
-    filter:none;color:var(--text);
-    transform:translate3d(4px,0,0);
-  }
-}
 .gamenav button.nav-locked,
 .gamenav button.nav-locked.nav-biz{
   opacity:.38;filter:grayscale(.55);cursor:not-allowed;
@@ -198,38 +176,45 @@ input,select,textarea{font-family:inherit}
 .gamenav button.nav-locked:hover,
 .gamenav button.nav-locked.on:hover{
   transform:none!important;filter:grayscale(.55);opacity:.38;
+  box-shadow:none;
 }
 .gamenav button.nav-locked.on{border-color:rgba(51,198,179,.35)}
-.gamenav .nav-acct-wrap{display:flex;flex-direction:column;gap:5px}
+.gamenav .nav-acct-wrap{display:flex;flex-direction:column;gap:6px}
 .gamenav .nav-acct-panel[hidden],
 .gamenav .nav-acct-label[hidden],
 .gamenav .nav-acct-wrap[hidden]{display:none!important}
-.gamenav .nav-acct-panel{display:flex;flex-direction:column;gap:5px}
-/* 事業ボタン：実写アイコンをボタン全面に浸透＋文字を上に載せる */
+.gamenav .nav-acct-panel{display:flex;flex-direction:column;gap:6px}
+/* 事業ボタン：実写背景＋中央ラベル */
 .gamenav button.nav-biz{
-  padding:0;gap:0;min-height:var(--nav-h);overflow:hidden;
+  padding:0;gap:0;min-height:var(--nav-h);
   align-items:center;justify-content:center;text-align:center;
   border-color:var(--nav-green-soft);
 }
 .gamenav button.nav-biz .nav-photo{
   position:absolute;inset:0;width:auto;z-index:0;
   background-size:cover;background-position:center;
-  opacity:.6;
+  opacity:.55;
+  transition:opacity .2s ease,filter .2s ease;
 }
 .gamenav button.nav-biz .nav-photo::after{
   content:"";position:absolute;inset:0;
-  background:linear-gradient(90deg,rgba(6,9,14,.30) 0%,rgba(6,9,14,.66) 100%);
-  transition:background .24s ease;
+  background:
+    linear-gradient(180deg,rgba(0,0,0,.18) 0%,rgba(0,0,0,.42) 45%,rgba(0,0,0,.62) 100%),
+    linear-gradient(90deg,rgba(6,9,14,.35) 0%,rgba(6,9,14,.2) 50%,rgba(6,9,14,.45) 100%);
+  transition:background .2s ease;
 }
 .gamenav button.nav-biz .nav-label{
-  position:relative;z-index:2;width:100%;padding:0 9px;
-  line-height:1.2;font-size:12px;font-weight:700;
-  text-shadow:0 1px 2px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.7);
+  position:relative;z-index:2;width:100%;
+  padding:6px 10px;
+  line-height:1.25;font-size:11.5px;font-weight:700;letter-spacing:.04em;
+  text-shadow:0 1px 2px rgba(0,0,0,.9),0 0 8px rgba(0,0,0,.55);
   display:flex;align-items:center;justify-content:center;text-align:center;
+  color:var(--nav-label);
+  word-break:keep-all;
 }
 .gamenav button.nav-biz .nav-label.nav-label-2line{
-  flex-direction:column;white-space:normal;line-height:1.15;
-  font-size:10.5px;gap:1px;padding:2px 6px;
+  flex-direction:column;white-space:normal;line-height:1.18;
+  font-size:11px;gap:1px;padding:5px 8px;
 }
 /* 事業ボタン＝薄い緑白字 / 事業以外＝緑塗り＋薄い緑白字 */
 .gamenav button.nav-biz:not(.nav-green) .nav-label{color:var(--nav-label)}
@@ -237,22 +222,30 @@ input,select,textarea{font-family:inherit}
 @media(hover:hover){
   .gamenav button.nav-biz:hover{
     border-color:var(--nav-green);
-    box-shadow:inset 0 1px 0 rgba(51,198,179,.1),0 4px 14px rgba(0,0,0,.32),0 0 10px rgba(51,198,179,.16);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 4px 14px rgba(0,0,0,.32),0 0 12px rgba(15,138,78,.22);
   }
-  .gamenav button.nav-biz:hover .nav-photo::after{background:linear-gradient(90deg,rgba(6,9,14,.12) 0%,rgba(6,9,14,.48) 100%)}
+  .gamenav button.nav-biz:hover .nav-photo{opacity:.72;filter:saturate(1.08) brightness(1.05)}
+  .gamenav button.nav-biz:hover .nav-photo::after{
+    background:
+      linear-gradient(180deg,rgba(0,0,0,.08) 0%,rgba(0,0,0,.28) 45%,rgba(0,0,0,.5) 100%),
+      linear-gradient(90deg,rgba(6,9,14,.2) 0%,rgba(6,9,14,.1) 50%,rgba(6,9,14,.3) 100%);
+  }
 }
 .gamenav button.nav-biz.on{
   border-color:var(--nav-green);
-  box-shadow:inset 0 1px 0 rgba(51,198,179,.12),0 4px 14px rgba(0,0,0,.35),0 0 12px rgba(51,198,179,.2);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 4px 14px rgba(0,0,0,.35),0 0 14px rgba(15,138,78,.28);
 }
+.gamenav button.nav-biz.on .nav-photo{opacity:.68}
 .gamenav button.nav-biz.on .nav-photo::after{
-  background:linear-gradient(90deg,rgba(51,198,179,.14) 0%,rgba(6,9,14,.60) 100%);
+  background:
+    linear-gradient(180deg,rgba(15,138,78,.16) 0%,rgba(0,0,0,.35) 50%,rgba(0,0,0,.58) 100%),
+    linear-gradient(90deg,rgba(6,9,14,.25) 0%,rgba(6,9,14,.15) 50%,rgba(6,9,14,.4) 100%);
 }
 /* 事業以外（会計・法務・会議）：円卓ネオングリーン塗り＋白字 */
 .gamenav button.nav-green{
   background:linear-gradient(180deg,var(--nav-green-fill-hi) 0%,var(--nav-green-fill) 45%,var(--nav-green-fill-dim) 100%)!important;
   border-color:var(--nav-green-soft);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 8px rgba(0,0,0,.28),0 0 14px rgba(15,138,78,.38);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 8px rgba(0,0,0,.28),0 0 12px rgba(15,138,78,.32);
   color:var(--nav-label);
 }
 .gamenav button.nav-green .nav-photo{
@@ -260,26 +253,31 @@ input,select,textarea{font-family:inherit}
 }
 .gamenav button.nav-green .nav-label{
   color:var(--nav-label)!important;
-  text-shadow:0 1px 2px rgba(0,0,0,.4);
+  text-shadow:0 1px 2px rgba(0,0,0,.35);
   justify-content:center;
   text-align:center;
+  padding:6px 10px;
+  font-size:12px;letter-spacing:.05em;
+}
+.gamenav button.nav-green .nav-label.nav-label-2line{
+  font-size:11px;line-height:1.18;gap:1px;padding:5px 8px;
 }
 .gamenav button.nav-green::before{
-  background:var(--nav-label);
+  background:linear-gradient(180deg,#9ff5e4,var(--nav-green-bright));
 }
 @media(hover:hover){
   .gamenav button.nav-green:hover{
     background:linear-gradient(180deg,var(--nav-green-fill-hover) 0%,var(--nav-green-fill-hi) 40%,var(--nav-green-fill) 100%)!important;
     border-color:var(--nav-green);
     color:var(--nav-label);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 4px 14px rgba(0,0,0,.32),0 0 18px rgba(15,138,78,.45);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 4px 14px rgba(0,0,0,.32),0 0 16px rgba(15,138,78,.4);
   }
   .gamenav button.nav-green:hover .nav-label{color:var(--nav-label)!important}
 }
 .gamenav button.nav-green.on{
   background:linear-gradient(180deg,var(--nav-green-fill-hover) 0%,var(--nav-green-fill-hi) 40%,var(--nav-green-fill) 100%)!important;
   border-color:var(--nav-green);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 4px 14px rgba(0,0,0,.35),0 0 20px rgba(15,138,78,.5);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 4px 14px rgba(0,0,0,.35),0 0 18px rgba(15,138,78,.45);
 }
 .gamenav button.nav-green.on .nav-label{color:var(--nav-label)!important}
 .gamenav button.nav-green.nav-locked.on{border-color:rgba(255,255,255,.45)}
@@ -287,15 +285,15 @@ input,select,textarea{font-family:inherit}
 .office-tk-open{
   background:linear-gradient(180deg,var(--nav-green-fill-hi) 0%,var(--nav-green-fill) 45%,var(--nav-green-fill-dim) 100%)!important;
   border:1px solid var(--nav-green-soft)!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 8px rgba(0,0,0,.28),0 0 14px rgba(15,138,78,.35)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 8px rgba(0,0,0,.28),0 0 12px rgba(15,138,78,.3)!important;
   filter:none!important;
   color:var(--nav-label)!important;
 }
-.office-tk-open .nav-label{color:var(--nav-label)!important;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.office-tk-open .nav-label{color:var(--nav-label)!important;text-shadow:0 1px 2px rgba(0,0,0,.35)}
 .office-tk-open:hover{
   background:linear-gradient(180deg,var(--nav-green-fill-hover) 0%,var(--nav-green-fill-hi) 40%,var(--nav-green-fill) 100%)!important;
   border-color:var(--nav-green)!important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 4px 14px rgba(0,0,0,.32),0 0 18px rgba(15,138,78,.45)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 4px 14px rgba(0,0,0,.32),0 0 16px rgba(15,138,78,.4)!important;
   filter:none!important;
 }
 /* 事業画面タブ */
@@ -840,7 +838,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 /* ===== 統合ポータル：上段クエスト2列＋下段ダッシュボード ===== */
 #portal-shell{
   display:grid;
-  grid-template-columns:180px minmax(0,1fr);
+  grid-template-columns:var(--nav-w) minmax(0,1fr);
   align-items:start;
   min-height:100dvh;
   background:#000;
@@ -853,9 +851,9 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   max-height:none;
   overflow:visible;
   z-index:400;
-  width:180px;
-  padding:14px 8px 24px;
-  gap:5px;
+  width:var(--nav-w);
+  padding:12px 8px 22px;
+  gap:6px;
 }
 #portal-main{
   min-width:0;display:block;
@@ -1801,15 +1799,22 @@ video.dc-card__image{
   }
   #portal-shell > .gamenav .nav-group{display:none}
   #portal-shell > .gamenav button.nav-biz{
-    width:auto;min-width:96px;flex-shrink:0;flex-direction:column;padding:6px 8px;gap:4px;
+    width:auto;min-width:104px;max-width:128px;flex-shrink:0;flex-direction:column;
+    padding:7px 8px 6px;gap:5px;min-height:0;border-radius:10px;
   }
   #portal-shell > .gamenav button.nav-biz .nav-photo{
-    position:relative;inset:auto;width:52px;height:40px;min-height:40px;border-radius:8px;z-index:0;
-    box-shadow:inset 0 -8px 16px rgba(0,0,0,.35);
+    position:relative;inset:auto;width:56px;height:40px;min-height:40px;border-radius:8px;z-index:0;
+    opacity:.7;box-shadow:inset 0 -8px 16px rgba(0,0,0,.35);
   }
-  #portal-shell > .gamenav button.nav-biz .nav-photo::after{background:linear-gradient(180deg,rgba(6,9,14,.05),rgba(6,9,14,.5))}
-  #portal-shell > .gamenav button.nav-biz .nav-label{padding:0;font-size:10px;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.9)}
-  #portal-shell > .gamenav button.nav-biz .nav-label.nav-label-2line{font-size:9px;line-height:1.12}
+  #portal-shell > .gamenav button.nav-biz .nav-photo::after{
+    background:linear-gradient(180deg,rgba(6,9,14,.08),rgba(6,9,14,.55));
+  }
+  #portal-shell > .gamenav button.nav-biz .nav-label{
+    padding:0 2px;font-size:10px;line-height:1.2;letter-spacing:.02em;
+    text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.9);
+  }
+  #portal-shell > .gamenav button.nav-biz .nav-label.nav-label-2line{font-size:9.5px;line-height:1.15;gap:0}
+  #portal-shell > .gamenav button.nav-green{min-width:96px;padding:8px 10px}
   #quests-row{
     height:auto;overflow:visible;
     grid-template-rows:minmax(220px,40vh) minmax(180px,1fr);
@@ -1948,35 +1953,35 @@ video.dc-card__image{
   <div class="nav-group nav-group-major">事業</div>
   <button type="button" class="nav-biz on" data-s="biz-paradise">
     <span class="nav-photo" style="background-image:url(nav-paradise.png)"></span>
-    <span class="nav-label">パラダイスシティ事業</span>
+    <span class="nav-label nav-label-2line">パラダイス<br>シティ事業</span>
   </button>
   <button type="button" class="nav-biz" data-s="biz-inage">
     <span class="nav-photo" style="background-image:url(nav-inage.png)"></span>
-    <span class="nav-label">稲毛海浜公園事業</span>
+    <span class="nav-label nav-label-2line">稲毛海浜<br>公園事業</span>
   </button>
   <button type="button" class="nav-biz" data-s="biz-realestate">
     <span class="nav-photo" style="background-image:url(nav-realestate.png)"></span>
-    <span class="nav-label">不動産事業</span>
+    <span class="nav-label nav-label-2line">不動産<br>事業</span>
   </button>
   <button type="button" class="nav-biz" data-s="biz-care">
     <span class="nav-photo" style="background-image:url(nav-care.png)"></span>
-    <span class="nav-label">介護事業</span>
+    <span class="nav-label nav-label-2line">介護<br>事業</span>
   </button>
   <button type="button" class="nav-biz" data-s="biz-it">
     <span class="nav-photo" style="background-image:url(nav-it.png)"></span>
-    <span class="nav-label">IT事業</span>
+    <span class="nav-label nav-label-2line">IT<br>事業</span>
   </button>
   <button type="button" class="nav-biz" data-s="biz-kanstwifi">
     <span class="nav-photo" style="background-image:url(nav-kanstwifi.png)"></span>
-    <span class="nav-label">カンストWiFi</span>
+    <span class="nav-label nav-label-2line">カンスト<br>WiFi</span>
   </button>
   <button type="button" class="nav-biz" data-s="biz-staffing">
     <span class="nav-photo" style="background-image:url(nav-staffing.png)"></span>
-    <span class="nav-label">人材派遣</span>
+    <span class="nav-label nav-label-2line">人材<br>派遣</span>
   </button>
   <button type="button" class="nav-biz" data-s="biz-detective">
     <span class="nav-photo" style="background-image:url(nav-detective.png)"></span>
-    <span class="nav-label">探偵事業</span>
+    <span class="nav-label nav-label-2line">探偵<br>事業</span>
   </button>
   <button type="button" class="nav-biz" data-s="cf-cases">
     <span class="nav-photo" style="background-image:url(nav-cases.png)"></span>
@@ -2007,19 +2012,19 @@ video.dc-card__image{
       </button>
       <button type="button" class="nav-biz nav-green" data-s="cf-bank" data-acct="1">
         <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
-        <span class="nav-label">口座・CSV</span>
+        <span class="nav-label nav-label-2line">口座<br>CSV</span>
       </button>
       <button type="button" class="nav-biz nav-green" data-s="cf-link" data-acct="1">
         <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
-        <span class="nav-label">明細突合</span>
+        <span class="nav-label nav-label-2line">明細<br>突合</span>
       </button>
       <button type="button" class="nav-biz nav-green" data-s="cf-inrou" data-acct="1">
         <span class="nav-photo" style="background-image:url(nav-detective.png)"></span>
-        <span class="nav-label">印籠レポート</span>
+        <span class="nav-label nav-label-2line">印籠<br>レポート</span>
       </button>
       <button type="button" class="nav-biz nav-green" data-s="cf-party" data-acct="1">
         <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
-        <span class="nav-label">役員貸付</span>
+        <span class="nav-label nav-label-2line">役員<br>貸付</span>
       </button>
       <button type="button" class="nav-biz nav-green" data-s="entry" data-acct="1">
         <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
@@ -2031,11 +2036,11 @@ video.dc-card__image{
       </button>
       <button type="button" class="nav-biz nav-green" data-s="tax" data-acct="1">
         <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
-        <span class="nav-label">納税タンク</span>
+        <span class="nav-label nav-label-2line">納税<br>タンク</span>
       </button>
       <button type="button" class="nav-biz nav-green" data-s="quest" data-acct="1">
         <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
-        <span class="nav-label">精算クエスト</span>
+        <span class="nav-label nav-label-2line">精算<br>クエスト</span>
       </button>
     </div>
   </div>
@@ -2046,20 +2051,20 @@ video.dc-card__image{
   </button>
   <button type="button" class="nav-biz nav-green" data-s="cf-legal">
     <span class="nav-photo" style="background-image:url(dash-legal.png)"></span>
-    <span class="nav-label">契約リーガル</span>
+    <span class="nav-label nav-label-2line">契約<br>リーガル</span>
   </button>
   <div class="nav-group nav-group-major">会議</div>
   <button type="button" class="nav-biz nav-green" data-s="mtg-finance">
     <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
-    <span class="nav-label">経理会議</span>
+    <span class="nav-label nav-label-2line">経理<br>会議</span>
   </button>
   <button type="button" class="nav-biz nav-green" data-s="mtg-sales">
     <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
-    <span class="nav-label">営業会議</span>
+    <span class="nav-label nav-label-2line">営業<br>会議</span>
   </button>
   <button type="button" class="nav-biz nav-green" data-s="mtg-other">
     <span class="nav-photo" style="background-image:url(dash-secretary.png)"></span>
-    <span class="nav-label">その他MT</span>
+    <span class="nav-label nav-label-2line">その他<br>MT</span>
   </button>
   <!-- タスク管理・タスク評価はサイドバー非表示（オフィスクエスト下ドックへ） -->
   <button type="button" class="nav-biz nav-green" data-s="tasks" hidden aria-hidden="true">
@@ -2664,7 +2669,7 @@ video.dc-card__image{
     <div class="biz-hero-photo" style="background-image:url(nav-inage.png)" aria-hidden="true"></div>
     <div class="biz-hero-body">
       <h2 class="stitle">稲毛海浜公園事業</h2>
-      <p class="sdesc">指定管理会社 <b>株式会社ワールドパーク</b> と契約し、園内でイベント開催・スポンサー誘致。イベント利益（売上−原価）は<b>ワールドパークと折半</b>。紹介者がいる場合は紹介料（売上の20%）＋製作費が原価。</p>
+      <p class="sdesc">収益＝<b>チケット</b>＋<b>場所代</b>＋<b>スポンサー費</b>。スポンサー費から紹介料20%・製作費30%（変動可）を差し引き、残りの利益を指定管理会社 <b>ワールドパーク</b> と折半します。</p>
     </div>
   </header>
   <div class="biz-tabs">
@@ -2673,21 +2678,28 @@ video.dc-card__image{
   </div>
   <div class="biz-panel on" data-tab="prod">
     <div class="biz-grid">
-      <div class="card stat in biz-stat"><div class="label">今月売上</div><div class="val" id="biSales">¥0</div></div>
-      <div class="card stat out biz-stat"><div class="label">今月原価（紹介料＋製作費）</div><div class="val" id="biCost">¥0</div></div>
+      <div class="card stat in biz-stat"><div class="label">今月収益（チケ＋場所＋SP）</div><div class="val" id="biSales">¥0</div></div>
+      <div class="card stat out biz-stat"><div class="label">今月原価（紹介20%＋製作）</div><div class="val" id="biCost">¥0</div></div>
       <div class="card stat net biz-stat"><div class="label">自社取り分（折半後）</div><div class="val" id="biShare">¥0</div></div>
     </div>
+    <div class="biz-grid" style="margin-top:10px">
+      <div class="card biz-stat"><div class="label">チケット（今月）</div><div class="val" id="biTicketSum" style="font-size:18px">¥0</div></div>
+      <div class="card biz-stat"><div class="label">場所代（今月）</div><div class="val" id="biVenueSum" style="font-size:18px">¥0</div></div>
+      <div class="card biz-stat"><div class="label">スポンサー（今月）</div><div class="val" id="biSponsorSum" style="font-size:18px">¥0</div></div>
+    </div>
     <div class="card">
-      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">イベントを追加（売上・製作費／紹介者がいれば紹介料20%を自動計上）</div>
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">イベントを追加（スポンサー費入力で紹介料20%・製作費30%を自動案出／製作費は変更可）</div>
       <form id="biForm" class="bp-form">
-        <input id="biName" placeholder="イベント名" required>
-        <input id="biSponsor" placeholder="スポンサー（任意）">
-        <input id="biIntro" placeholder="紹介者（いれば売上の20%が紹介料）">
+        <input id="biName" class="bp-span2" placeholder="イベント名" required>
         <input id="biDate" type="date" aria-label="開催日">
-        <input id="biSalesIn" type="number" min="0" inputmode="numeric" placeholder="売上">
-        <input id="biProd" type="number" min="0" inputmode="numeric" placeholder="製作費">
-        <input id="biSponsorAmt" type="number" min="0" inputmode="numeric" placeholder="スポンサー収益（任意・別計上）">
-        <div class="bp-form-ctr">
+        <input id="biTicket" type="number" min="0" inputmode="numeric" placeholder="チケット収益">
+        <input id="biVenue" type="number" min="0" inputmode="numeric" placeholder="場所代">
+        <input id="biSponsor" placeholder="スポンサー名（任意）">
+        <input id="biSponsorAmt" type="number" min="0" inputmode="numeric" placeholder="スポンサー費">
+        <input id="biIntro" placeholder="紹介者（いればスポンサー費の20%が紹介料）">
+        <input id="biProd" type="number" min="0" inputmode="numeric" placeholder="製作費（既定：スポンサー費の30%）">
+        <div class="bp-form-ctr bp-span2">
+          <span class="note" id="biCalcHint" style="margin:0;flex:1">紹介料・製作費・折半はスポンサー費から自動計算されます。</span>
           <button type="submit" id="biAdd">イベントを追加</button>
         </div>
       </form>
@@ -2699,7 +2711,7 @@ video.dc-card__image{
   </div>
   <div class="biz-panel" data-tab="close">
     <div class="card">
-      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:10px">折半計算・精算（利益÷2をワールドパークと折半）</div>
+      <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:10px">折半・精算（残利益÷2をワールドパークと折半）</div>
       <div id="biCloseList"></div>
     </div>
   </div>
@@ -2861,23 +2873,43 @@ video.dc-card__image{
     <div class="biz-hero-photo" style="background-image:url(nav-kanstwifi.png)" aria-hidden="true"></div>
     <div class="biz-hero-body">
       <h2 class="stitle">カンストWiFi</h2>
-      <p class="sdesc">回線・契約・月額利用の受付と進捗を管理します。</p>
+      <p class="sdesc">基本は「販売」または「リース」。販売先ごとに紹介者（インセンティブ契約書締結済）への支払いも管理します。商品名・価格は後日マスタ投入予定です。</p>
     </div>
   </header>
   <div class="biz-grid">
-    <div class="card stat in biz-stat"><div class="label">今月売上見込</div><div class="val" id="bkwSales">¥0</div></div>
-    <div class="card biz-stat"><div class="label">稼働回線</div><div class="val" id="bkwActive">0</div></div>
+    <div class="card stat in biz-stat"><div class="label">売上見込（稼働）</div><div class="val" id="bkwSales">¥0</div></div>
+    <div class="card biz-stat"><div class="label">稼働件数</div><div class="val" id="bkwActive">0</div></div>
+    <div class="card biz-stat"><div class="label">紹介料 未払</div><div class="val" id="bkwIntroDue" style="color:var(--out)">¥0</div></div>
   </div>
   <div class="card" style="margin-top:12px">
+    <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">案件を登録</div>
     <div class="entry-grid">
-      <div class="fgroup"><label>顧客名</label><input id="bkwClient" placeholder="氏名・店舗名"></div>
-      <div class="fgroup"><label>プラン</label><input id="bkwPlan" placeholder="例：月額3,980円 / 無制限"></div>
-      <div class="fgroup"><label>月額（円）</label><input id="bkwFee" type="number" min="0" placeholder="3980"></div>
+      <div class="fgroup"><label>販売先・顧客名</label><input id="bkwClient" placeholder="氏名・店舗名・法人名"></div>
+      <div class="fgroup"><label>契約形態</label>
+        <select id="bkwMode">
+          <option value="sale">販売</option>
+          <option value="lease">リース</option>
+        </select>
+      </div>
+      <div class="fgroup"><label>商品</label>
+        <select id="bkwProduct"><option value="">— 商品を選択 —</option></select>
+      </div>
+      <div class="fgroup"><label id="bkwPriceLabel">販売価格（円）</label>
+        <input id="bkwFee" type="number" min="0" placeholder="商品選択で自動入力（後から修正可）">
+      </div>
+      <div class="fgroup"><label>紹介者</label><input id="bkwIntro" placeholder="紹介者名（インセンティブ契約済）"></div>
+      <div class="fgroup"><label>紹介料・インセンティブ（円）</label>
+        <input id="bkwIntroFee" type="number" min="0" placeholder="支払額">
+      </div>
       <div class="fgroup"><label>ステータス</label>
         <select id="bkwStatus"><option>受付</option><option>開通準備</option><option>稼働中</option><option>解約</option></select>
       </div>
+      <div class="fgroup" style="display:flex;align-items:flex-end">
+        <label class="bp-ck" style="padding-bottom:8px"><input type="checkbox" id="bkwIntroPaid"> 紹介料 支払済</label>
+      </div>
     </div>
-    <button class="save-btn" id="bkwAdd" style="margin-top:12px">回線を登録</button>
+    <p class="note" style="margin-top:8px">商品マスタは後日データ投入します。投入後はプルダウンから選択してください。</p>
+    <button class="save-btn" id="bkwAdd" style="margin-top:12px">案件を登録</button>
     <div id="bkwList" class="recent-list" style="margin-top:16px"></div>
   </div>
 </section>
@@ -2943,40 +2975,61 @@ video.dc-card__image{
     <div class="biz-hero-photo" style="background-image:url(nav-detective.png)" aria-hidden="true"></div>
     <div class="biz-hero-body">
       <h2 class="stitle">探偵事業</h2>
-      <p class="sdesc">探偵紹介・依頼の受付と進捗管理です。関連サービスへは下のリンクから。</p>
+      <p class="sdesc">収益は3本柱です。カラス＝BtoB紹介料／ステルスファイル＝公式LINE経由のBtoC紹介料／REPORO＝報告書AIのサブスク。</p>
     </div>
   </header>
   <div class="card" style="margin-bottom:14px">
-    <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:10px">関連リンク</div>
+    <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:10px">収益モデル</div>
     <div class="biz-grid biz-ext-links" style="margin-bottom:0">
       <div class="biz-ext-item">
-        <strong>REPORO</strong>
-        <span>探偵事務所向け AI報告書自動生成・案件管理</span>
-        <a href="http://64.176.49.38/" target="_blank" rel="noopener noreferrer">サイトを開く →</a>
+        <strong>カラス（KARASU）</strong>
+        <span>探偵業向け BtoB案件マッチング。紹介料が収益。</span>
+        <a href="https://karasu.website/" target="_blank" rel="noopener noreferrer">サイトを開く →</a>
       </div>
       <div class="biz-ext-item">
-        <strong>STEALTH FILE</strong>
-        <span>初回お試し調査（一般向け）メディア</span>
+        <strong>ステルスファイル</strong>
+        <span>公式LINEでインフィニティ探偵事務所がコンシェルジュ。BtoC契約になった案件の紹介料が収益。</span>
         <a href="https://tantei-trial.netlify.app/" target="_blank" rel="noopener noreferrer">サイトを開く →</a>
       </div>
       <div class="biz-ext-item">
-        <strong>KARASU</strong>
-        <span>探偵業向け B2B案件マッチング</span>
-        <a href="https://karasu.website/" target="_blank" rel="noopener noreferrer">サイトを開く →</a>
+        <strong>REPORO</strong>
+        <span>探偵事務所向け 報告書自動生成AIのサブスクリプション。</span>
+        <a href="http://64.176.49.38/" target="_blank" rel="noopener noreferrer">サイトを開く →</a>
       </div>
     </div>
   </div>
-  <div class="card">
+  <div class="biz-grid">
+    <div class="card stat in biz-stat"><div class="label">カラス 紹介料</div><div class="val" id="bdKarasu">¥0</div></div>
+    <div class="card stat in biz-stat"><div class="label">ステルス 紹介料</div><div class="val" id="bdStealth">¥0</div></div>
+    <div class="card stat in biz-stat"><div class="label">REPORO サブスク</div><div class="val" id="bdReporo">¥0</div></div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <div class="label" style="font-size:12px;color:var(--muted);margin-bottom:8px">収益案件を登録</div>
     <div class="entry-grid">
-      <div class="fgroup"><label>依頼者名</label><input id="bdClient" placeholder="氏名・会社名"></div>
-      <div class="fgroup"><label>依頼内容</label><input id="bdTopic" placeholder="調査テーマ"></div>
-      <div class="fgroup"><label>紹介先探偵</label><input id="bdAgent" placeholder="提携探偵事務所"></div>
+      <div class="fgroup"><label>収益チャネル</label>
+        <select id="bdChannel">
+          <option value="karasu">カラス（BtoB紹介料）</option>
+          <option value="stealth">ステルスファイル（BtoC紹介料）</option>
+          <option value="reporo">REPORO（サブスク）</option>
+        </select>
+      </div>
+      <div class="fgroup"><label id="bdClientLab">相手・事務所名</label><input id="bdClient" placeholder="探偵事務所名"></div>
+      <div class="fgroup"><label id="bdTopicLab">案件・内容</label><input id="bdTopic" placeholder="マッチング案件の概要"></div>
+      <div class="fgroup" id="bdAgentWrap"><label id="bdAgentLab">紹介先・担当</label><input id="bdAgent" placeholder="提携探偵事務所"></div>
+      <div class="fgroup"><label id="bdFeeLab">紹介料（円）</label><input id="bdFee" type="number" min="0" placeholder="0"></div>
       <div class="fgroup"><label>ステータス</label>
-        <select id="bdStatus"><option>受付</option><option>紹介済</option><option>調査中</option><option>完了</option></select>
+        <select id="bdStatus"></select>
       </div>
     </div>
-    <button class="save-btn" id="bdAdd" style="margin-top:12px">依頼を登録</button>
-    <div id="bdList" class="recent-list" style="margin-top:16px"></div>
+    <p class="note" id="bdChannelNote" style="margin-top:8px"></p>
+    <button class="save-btn" id="bdAdd" style="margin-top:12px">登録</button>
+    <div class="ct-filter" id="bdFilter" style="margin-top:16px">
+      <button type="button" class="on" data-bd-filter="all">すべて</button>
+      <button type="button" data-bd-filter="karasu">カラス</button>
+      <button type="button" data-bd-filter="stealth">ステルス</button>
+      <button type="button" data-bd-filter="reporo">REPORO</button>
+    </div>
+    <div id="bdList" class="recent-list" style="margin-top:12px"></div>
   </div>
 </section>
 
@@ -4817,6 +4870,34 @@ if(!Array.isArray(S.biz.care.income)) S.biz.care.income=[];
 if(!Array.isArray(S.biz.care.subsidy)) S.biz.care.subsidy=[];
 if(!Array.isArray(S.biz.care.expense)) S.biz.care.expense=[];
 if(!(+S.biz.care.goal>0)) S.biz.care.goal=800000;
+/* 探偵：収益チャネル定義（カラス / ステルス / REPORO） */
+const BD_CH={
+  karasu:{
+    short:'カラス', feeLab:'紹介料（円）',
+    clientLab:'相手事務所（BtoB）', clientPh:'探偵事務所名',
+    topicLab:'案件・マッチング内容', topicPh:'紹介案件の概要',
+    agentLab:'先方担当・メモ', agentPh:'任意', agentShow:true, agentDefault:'',
+    note:'カラス経由の BtoB マッチング紹介料を登録します。',
+    statuses:['受付','マッチング中','紹介料確定','入金済','失注']
+  },
+  stealth:{
+    short:'ステルス', feeLab:'紹介料（円）',
+    clientLab:'一般顧客（BtoC）', clientPh:'氏名・ハンドル名',
+    topicLab:'案件内容', topicPh:'調査テーマ・契約概要',
+    agentLab:'コンシェルジュ', agentPh:'インフィニティ探偵事務所', agentShow:true, agentDefault:'インフィニティ探偵事務所',
+    note:'公式LINE → インフィニティ探偵事務所がコンシェルジュ → BtoC契約になった案件の紹介料です。',
+    statuses:['LINE受付','コンシェルジュ中','BtoC契約','紹介料確定','入金済','失注']
+  },
+  reporo:{
+    short:'REPORO', feeLab:'月額サブスク（円）',
+    clientLab:'契約事務所', clientPh:'探偵事務所名',
+    topicLab:'プラン・メモ', topicPh:'例：スタンダード / 年契約',
+    agentLab:'担当', agentPh:'任意', agentShow:false, agentDefault:'',
+    note:'報告書自動生成AI（REPORO）のサブスクリプション契約です。',
+    statuses:['トライアル','契約中','請求済','解約']
+  }
+};
+let bdFilter='all';
 function txKw(tx,kws){const s=(tx.memo+tx.who+tx.cat);return kws.some(k=>s.includes(k));}
 function renderBiz(){
   const txm=S.tx.filter(inMonth);
@@ -4840,13 +4921,50 @@ function renderBiz(){
     idCh=BizCaseLink.ensureIds(S.biz.inage,'bi')||idCh;
     if(idCh) saveAll();
   }
-  if($("#bdList"))$("#bdList").innerHTML=(S.biz.detective||[]).map(d=>`<div class="bp-deal" style="margin-bottom:8px"><div class="bp-deal-head"><span class="bp-artist">${esc(d.client)}</span><span class="bp-date">${esc(d.status)}</span></div><div class="bp-deal-sub">${esc(d.topic)} → ${esc(d.agent)}</div><div class="bp-deal-ctr"><button class="btn-reject" data-bd-id="${esc(d.id)}">削除</button></div>${window.BizCaseLink?BizCaseLink.panelHtml('探偵', d.id):''}</div>`).join("")||`<div class="memo" style="color:var(--muted);padding:8px">紹介依頼はまだありません。</div>`;
+  const bdAll=S.biz.detective||[];
+  const bdSum=ch=>bdAll.filter(d=>(d.channel||'karasu')===ch).reduce((a,d)=>a+(+d.fee||0),0);
+  if($("#bdKarasu"))$("#bdKarasu").textContent=yen(bdSum('karasu'));
+  if($("#bdStealth"))$("#bdStealth").textContent=yen(bdSum('stealth'));
+  if($("#bdReporo"))$("#bdReporo").textContent=yen(bdSum('reporo'));
+  const bdView=bdFilter==='all'?bdAll:bdAll.filter(d=>(d.channel||'karasu')===bdFilter);
+  if($("#bdList"))$("#bdList").innerHTML=bdView.length?bdView.map(d=>{
+    const ch=d.channel||'karasu';
+    const chLab=BD_CH[ch]?BD_CH[ch].short:ch;
+    const feeLab=ch==='reporo'?'月額':'紹介料';
+    const sub=[d.topic||'', d.agent?('担当: '+d.agent):''].filter(Boolean).join(' ／ ');
+    return `<div class="bp-deal" style="margin-bottom:8px">
+      <div class="bp-deal-head"><span class="bp-artist">${esc(d.client)}</span><span class="bp-date">${esc(d.status)}</span></div>
+      <div class="bp-deal-sub"><span class="bp-tag ok">${esc(chLab)}</span> ${esc(sub||'—')}</div>
+      <div class="bp-deal-nums"><span>${feeLab} <b>${yen(+d.fee||0)}</b></span></div>
+      <div class="bp-deal-ctr"><button class="btn-reject" data-bd-id="${esc(d.id)}">削除</button></div>
+      ${window.BizCaseLink?BizCaseLink.panelHtml('探偵', d.id):''}
+    </div>`;
+  }).join(""):`<div class="memo" style="color:var(--muted);padding:8px">このチャネルの登録はまだありません。</div>`;
+  fillKwProductSelect();
   const kw=(S.biz.kanstwifi||[]);
-  const kwActive=kw.filter(d=>d.status==="稼働中");
-  const kwSales=kwActive.reduce((a,d)=>a+(+d.fee||0),0);
+  const kwLive=kw.filter(d=>d.status==="稼働中");
+  const kwSales=kwLive.reduce((a,d)=>a+(+d.fee||0),0);
+  const kwIntroDue=kw.filter(d=>d.introducer&&(+d.introFee||0)>0&&!d.introPaid).reduce((a,d)=>a+(+d.introFee||0),0);
   if($("#bkwSales"))$("#bkwSales").textContent=yen(kwSales);
-  if($("#bkwActive"))$("#bkwActive").textContent=kwActive.length+"回線";
-  if($("#bkwList"))$("#bkwList").innerHTML=kw.map(d=>`<div class="bp-deal" style="margin-bottom:8px"><div class="bp-deal-head"><span class="bp-artist">${esc(d.client)}</span><span class="bp-date">${esc(d.status)}</span></div><div class="bp-deal-sub">${esc(d.plan||"")} ／ ${yen(+d.fee||0)}</div><div class="bp-deal-ctr"><button class="btn-reject" data-bkw-id="${esc(d.id)}">削除</button></div>${window.BizCaseLink?BizCaseLink.panelHtml('カンストWiFi', d.id):''}</div>`).join("")||`<div class="memo" style="color:var(--muted);padding:8px">回線登録はまだありません。</div>`;
+  if($("#bkwActive"))$("#bkwActive").textContent=kwLive.length+"件";
+  if($("#bkwIntroDue"))$("#bkwIntroDue").textContent=yen(kwIntroDue);
+  if($("#bkwList"))$("#bkwList").innerHTML=kw.length?kw.map(d=>{
+    const mode=kwModeLabel(d.mode||(d.plan?'lease':'sale'));
+    const prod=d.productName||d.plan||'商品未設定';
+    const intro=d.introducer
+      ?`紹介: ${esc(d.introducer)} ／ 紹介料 ${yen(+d.introFee||0)}${d.introPaid?'（支払済）':'（未払）'}`
+      :'紹介者なし';
+    const tag=`<span class="bp-tag ${d.mode==='lease'?'ng':'ok'}">${esc(mode)}</span>`
+      +`<span class="bp-tag ${d.introPaid||!d.introducer?'ok':'ng'}">${d.introducer?(d.introPaid?'紹介料済':'紹介料未'):'直販'}</span>`;
+    return `<div class="bp-deal" style="margin-bottom:8px">
+      <div class="bp-deal-head"><span class="bp-artist">${esc(d.client)}</span><span class="bp-date">${esc(d.status)}</span></div>
+      <div class="bp-deal-sub">${esc(mode)} ／ ${esc(prod)}</div>
+      <div class="bp-deal-nums"><span>${d.mode==='lease'?'月額':'販売'} <b>${yen(+d.fee||0)}</b></span><span class="bp-margin">粗利見込 <b>${yen(Math.max(0,(+d.fee||0)-(+d.introFee||0)))}</b></span></div>
+      <div class="bp-deal-sub" style="margin-top:4px">${intro}</div>
+      <div class="bp-deal-ctr">${tag}<label class="bp-ck"${d.introducer?'':' style="display:none"'}><input type="checkbox" data-bkw-intro="${esc(d.id)}"${d.introPaid?' checked':''}> 紹介料支払済</label><button class="btn-reject" data-bkw-id="${esc(d.id)}">削除</button></div>
+      ${window.BizCaseLink?BizCaseLink.panelHtml('カンストWiFi', d.id):''}
+    </div>`;
+  }).join(""):`<div class="memo" style="color:var(--muted);padding:8px">案件はまだありません。販売／リースを選んで登録してください。</div>`;
   const st=(S.biz.staffing||[]);
   const stActive=st.filter(d=>d.status==="稼働中");
   const stSales=stActive.reduce((a,d)=>a+(+d.fee||0),0);
@@ -5032,32 +5150,72 @@ document.getElementById("bpExpList")?.addEventListener("change",e=>{
   const d=paradiseExpense().find(x=>x.id===c.dataset.bpe);if(!d)return;
   d[c.dataset.k]=c.checked;saveAll();renderParadise();
 });
-/* ---------- 稲毛海浜公園：イベント・折半ボード ---------- */
-function iIntroFee(d){
-  const sales=+d.sales||0;
-  return (d.introducer&&String(d.introducer).trim())?Math.round(sales*0.2):0;
+/* ---------- 稲毛海浜公園：チケット／場所代／スポンサー → 紹介20%・製作30% → WP折半 ---------- */
+function iTicket(d){
+  if(d.ticket!=null&&d.ticket!=='') return +d.ticket||0;
+  /* 旧データ：sales のみの場合はチケット相当として扱う */
+  if(!(+d.venue||0)&&!(+d.sponsorAmt||0)) return +d.sales||0;
+  return Math.max(0,(+d.sales||0)-(+d.venue||0)-(+d.sponsorAmt||0));
 }
-function iCost(d){return iIntroFee(d)+(+d.prodCost||0);}
-function iProfit(d){return (+d.sales||0)-iCost(d);}
+function iVenue(d){return +d.venue||0;}
+function iSponsorRev(d){return +d.sponsorAmt||0;}
+function iGross(d){return iTicket(d)+iVenue(d)+iSponsorRev(d);}
+function iIntroFee(d){
+  if(!(d.introducer&&String(d.introducer).trim())) return 0;
+  return Math.round(iSponsorRev(d)*0.2); /* スポンサー費の20% */
+}
+function iProdCost(d){
+  if(d.prodCost!=null&&d.prodCost!=='') return +d.prodCost||0;
+  return Math.round(iSponsorRev(d)*0.3); /* 既定：スポンサー費の30%（変動可） */
+}
+function iCost(d){return iIntroFee(d)+iProdCost(d);}
+function iProfit(d){return iGross(d)-iCost(d);}
 function iShare(d){return Math.floor(iProfit(d)/2);}
+function syncBiProdDefault(){
+  const sp=parseInt(String($("#biSponsorAmt")?.value||"").replace(/[^\d]/g,""),10)||0;
+  const prod=$("#biProd");
+  if(!prod||prod.dataset.manual==='1') return;
+  prod.value=sp?String(Math.round(sp*0.3)):'';
+  updateBiCalcHint();
+}
+function updateBiCalcHint(){
+  const num=id=>{const v=parseInt(String($(id)?.value||"").replace(/[^\d-]/g,""),10);return isNaN(v)?0:v;};
+  const ticket=num("#biTicket"), venue=num("#biVenue"), sp=num("#biSponsorAmt"), prod=num("#biProd");
+  const intro=$("#biIntro")?.value.trim()?Math.round(sp*0.2):0;
+  const gross=ticket+venue+sp, cost=intro+prod, profit=gross-cost, share=Math.floor(profit/2);
+  const el=$("#biCalcHint");
+  if(el) el.textContent=`収益 ${yen(gross)} − 紹介料 ${yen(intro)} − 製作費 ${yen(prod)} ＝ 利益 ${yen(profit)} → 自社折半 ${yen(share)} ／ WP ${yen(share)}`;
+}
 function renderInage(){
   const list=S.biz.inage||[];
   const view7=viewMonthStr(view);
   const monthEv=list.filter(d=>(d.eventDate||"").slice(0,7)===view7);
-  const sales=monthEv.reduce((a,d)=>a+(+d.sales||0),0);
+  const sales=monthEv.reduce((a,d)=>a+iGross(d),0);
   const cost=monthEv.reduce((a,d)=>a+iCost(d),0);
   const share=monthEv.reduce((a,d)=>a+iShare(d),0);
   if($("#biSales")){$("#biSales").textContent=yen(sales);$("#biCost").textContent=yen(cost);$("#biShare").textContent=(share<0?"−":"")+yen(Math.abs(share));}
+  if($("#biTicketSum"))$("#biTicketSum").textContent=yen(monthEv.reduce((a,d)=>a+iTicket(d),0));
+  if($("#biVenueSum"))$("#biVenueSum").textContent=yen(monthEv.reduce((a,d)=>a+iVenue(d),0));
+  if($("#biSponsorSum"))$("#biSponsorSum").textContent=yen(monthEv.reduce((a,d)=>a+iSponsorRev(d),0));
   const sorted=[...list].sort((a,b)=>String(b.eventDate||"").localeCompare(String(a.eventDate||"")));
   const board=$("#biProdList");
   if(board){
     board.innerHTML=sorted.length?sorted.map(d=>{
-      const intro=iIntroFee(d),c=iCost(d),p=iProfit(d),sh=iShare(d);
-      const sub=[d.sponsor?("スポンサー: "+d.sponsor):"",d.introducer?("紹介: "+d.introducer+"（紹介料 "+yen(intro)+"）"):"紹介者なし"].filter(Boolean).join(" ／ ");
+      const intro=iIntroFee(d),prod=iProdCost(d),c=iCost(d),p=iProfit(d),sh=iShare(d);
+      const sub=[d.sponsor?("スポンサー: "+d.sponsor):"",d.introducer?("紹介: "+d.introducer+"（紹介料20% "+yen(intro)+"）"):"紹介者なし"].filter(Boolean).join(" ／ ");
       return `<div class="bp-deal">
         <div class="bp-deal-head"><span class="bp-artist">${esc(d.name||"（未設定）")}</span><span class="bp-date">${esc(d.eventDate||"開催日未定")}</span></div>
         <div class="bp-deal-sub">${esc(sub||"—")}</div>
-        <div class="bp-deal-nums"><span>売上 <b>${yen(+d.sales||0)}</b></span><span>製作費 <b>${yen(+d.prodCost||0)}</b></span><span>原価計 <b>${yen(c)}</b></span><span class="bp-margin ${p<0?"neg":""}">利益 <b>${(p<0?"−":"")+yen(Math.abs(p))}</b></span><span>自社折半 <b>${(sh<0?"−":"")+yen(Math.abs(sh))}</b></span>${(+d.sponsorAmt)?`<span>スポンサー <b>${yen(+d.sponsorAmt)}</b></span>`:""}</div>
+        <div class="bp-deal-nums">
+          <span>チケット <b>${yen(iTicket(d))}</b></span>
+          <span>場所代 <b>${yen(iVenue(d))}</b></span>
+          <span>スポンサー <b>${yen(iSponsorRev(d))}</b></span>
+          <span>収益計 <b>${yen(iGross(d))}</b></span>
+          <span>製作費 <b>${yen(prod)}</b></span>
+          <span>原価計 <b>${yen(c)}</b></span>
+          <span class="bp-margin ${p<0?"neg":""}">残利益 <b>${(p<0?"−":"")+yen(Math.abs(p))}</b></span>
+          <span>自社折半 <b>${(sh<0?"−":"")+yen(Math.abs(sh))}</b></span>
+        </div>
         <div class="bp-deal-ctr"><button type="button" class="btn-approve bp-edit" data-bi-edit="${esc(d.id)}">修正</button><button type="button" class="btn-reject bp-del" data-bi="${esc(d.id)}">削除</button></div>
         ${window.BizCaseLink?BizCaseLink.panelHtml('稲毛', d.id):''}
       </div>`;
@@ -5069,11 +5227,13 @@ function renderInage(){
     else{
       let unpaidWp=0,unrecvSp=0;
       const rows=sorted.map(d=>{
-        const sh=iShare(d),sp=+d.sponsorAmt||0;
+        const sh=iShare(d),sp=iSponsorRev(d),tk=iTicket(d),vn=iVenue(d);
         if(!d.settledWp)unpaidWp+=Math.max(0,sh);
         if(sp&&!d.recvSponsor)unrecvSp+=sp;
         const ck=(k,label,amt)=>`<label class="bp-chk"><input type="checkbox" data-bik="${esc(d.id)}" data-k="${k}"${d[k]?" checked":""}><span>${label}</span><b>${yen(amt)}</b></label>`;
-        return `<div class="bp-close-deal"><div class="bp-close-title">${esc(d.name||"イベント")} <span>${esc(d.eventDate||"")}</span></div><div class="bp-close-grid">${ck("settledWp","ワールドパークへ折半支払（自社と同額を相手へ）",Math.max(0,sh))}${ck("settledSelf","自社取り分の入金確認",Math.max(0,sh))}${sp?ck("recvSponsor","スポンサー入金",sp):""}${ck("closed","当月締め完了",0)}</div></div>`;
+        return `<div class="bp-close-deal"><div class="bp-close-title">${esc(d.name||"イベント")} <span>${esc(d.eventDate||"")}</span></div>
+          <div class="bp-deal-sub" style="margin-bottom:6px">チケ ${yen(tk)} ＋ 場所 ${yen(vn)} ＋ SP ${yen(sp)} − 紹介 ${yen(iIntroFee(d))} − 製作 ${yen(iProdCost(d))} → 折半各 ${yen(Math.max(0,sh))}</div>
+          <div class="bp-close-grid">${ck("settledWp","ワールドパークへ折半支払",Math.max(0,sh))}${ck("settledSelf","自社取り分の入金確認",Math.max(0,sh))}${sp?ck("recvSponsor","スポンサー入金",sp):""}${tk?ck("recvTicket","チケット入金",tk):""}${vn?ck("recvVenue","場所代入金",vn):""}${ck("closed","当月締め完了",0)}</div></div>`;
       }).join("");
       box.innerHTML=`<div class="bp-close-sum">未精算（WP折半） <b>${yen(unpaidWp)}</b>　／　スポンサー未入金 <b>${yen(unrecvSp)}</b></div>`+rows;
     }
@@ -5087,24 +5247,40 @@ function fillBiForm(d){
   $("#biSponsor").value=d.sponsor||"";
   $("#biIntro").value=d.introducer||"";
   $("#biDate").value=d.eventDate||"";
-  $("#biSalesIn").value=d.sales||"";
-  $("#biProd").value=d.prodCost||"";
+  $("#biTicket").value=iTicket(d)||"";
+  $("#biVenue").value=iVenue(d)||"";
   $("#biSponsorAmt").value=d.sponsorAmt||"";
+  const prod=$("#biProd");
+  if(prod){ prod.value=d.prodCost!=null?d.prodCost:""; prod.dataset.manual=d.prodCost!=null&&d.prodCost!==''?'1':'0'; }
+  updateBiCalcHint();
 }
 function resetBiForm(){
   biEditId=null;
   biForm?.reset();
+  const prod=$("#biProd"); if(prod) prod.dataset.manual='0';
   const btn=$("#biAdd");
   if(btn) btn.textContent="イベントを追加";
+  updateBiCalcHint();
 }
+$("#biSponsorAmt")?.addEventListener('input', syncBiProdDefault);
+$("#biIntro")?.addEventListener('input', updateBiCalcHint);
+$("#biTicket")?.addEventListener('input', updateBiCalcHint);
+$("#biVenue")?.addEventListener('input', updateBiCalcHint);
+$("#biProd")?.addEventListener('input', ()=>{
+  const prod=$("#biProd"); if(prod) prod.dataset.manual='1';
+  updateBiCalcHint();
+});
 if(biForm)biForm.addEventListener("submit",e=>{
   e.preventDefault();
   const name=$("#biName").value.trim();
   if(!name){toast("イベント名は必須です");return;}
   const num=id=>{const v=parseInt(String($(id).value||"").replace(/[^\d-]/g,""),10);return isNaN(v)?0:v;};
+  const ticket=num("#biTicket"), venue=num("#biVenue"), sponsorAmt=num("#biSponsorAmt"), prodCost=num("#biProd");
   const row={
     name, sponsor:$("#biSponsor").value.trim(), introducer:$("#biIntro").value.trim(),
-    eventDate:$("#biDate").value, sales:num("#biSalesIn"), prodCost:num("#biProd"), sponsorAmt:num("#biSponsorAmt"),
+    eventDate:$("#biDate").value,
+    ticket, venue, sponsorAmt, prodCost,
+    sales:ticket+venue+sponsorAmt /* 互換：旧集計用 */
   };
   if(biEditId){
     const d=S.biz.inage.find(x=>x.id===biEditId);
@@ -5115,7 +5291,7 @@ if(biForm)biForm.addEventListener("submit",e=>{
   }
   S.biz.inage.unshift(Object.assign({
     id:(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random()),
-    settledWp:false, settledSelf:false, recvSponsor:false, closed:false,
+    settledWp:false, settledSelf:false, recvSponsor:false, recvTicket:false, recvVenue:false, closed:false,
     at:new Date().toISOString().slice(0,10)
   },row));
   resetBiForm();
@@ -5804,32 +5980,126 @@ function renderCfSheetTable(){
     setViewYm(yms[i>=0&&i<yms.length-1?i+1:0]);
   });
 })();
+/* ---------- 探偵事業：カラス / ステルスファイル / REPORO ---------- */
+function syncBdChannelForm(){
+  const ch=$("#bdChannel")?.value||'karasu';
+  const m=BD_CH[ch]||BD_CH.karasu;
+  if($("#bdClientLab")) $("#bdClientLab").textContent=m.clientLab;
+  if($("#bdClient")) $("#bdClient").placeholder=m.clientPh;
+  if($("#bdTopicLab")) $("#bdTopicLab").textContent=m.topicLab;
+  if($("#bdTopic")) $("#bdTopic").placeholder=m.topicPh;
+  if($("#bdFeeLab")) $("#bdFeeLab").textContent=m.feeLab;
+  if($("#bdAgentLab")) $("#bdAgentLab").textContent=m.agentLab;
+  if($("#bdAgent")){ $("#bdAgent").placeholder=m.agentPh; if(m.agentDefault&&!$("#bdAgent").value) $("#bdAgent").value=m.agentDefault; }
+  if($("#bdAgentWrap")) $("#bdAgentWrap").style.display=m.agentShow?'':'none';
+  if($("#bdChannelNote")) $("#bdChannelNote").textContent=m.note;
+  const st=$("#bdStatus");
+  if(st){
+    const cur=st.value;
+    st.innerHTML=m.statuses.map(s=>`<option>${s}</option>`).join('');
+    if(m.statuses.includes(cur)) st.value=cur;
+  }
+}
+$("#bdChannel")?.addEventListener('change', ()=>{
+  if($("#bdAgent")) $("#bdAgent").value='';
+  syncBdChannelForm();
+});
+syncBdChannelForm();
 const bdAdd=$("#bdAdd");
 if(bdAdd)bdAdd.onclick=()=>{
-  const client=$("#bdClient").value.trim(),topic=$("#bdTopic").value.trim(),agent=$("#bdAgent").value.trim(),status=$("#bdStatus").value;
-  if(!client||!topic){toast("依頼者と内容は必須です");return;}
-  S.biz.detective.unshift({id:'bd'+Date.now().toString(36),client,topic,agent:agent||"未定",status,at:new Date().toISOString().slice(0,10)});
-  $("#bdClient").value="";$("#bdTopic").value="";$("#bdAgent").value="";
-  saveAll();renderBiz();toast("探偵依頼を登録しました");
+  const channel=$("#bdChannel")?.value||'karasu';
+  const m=BD_CH[channel]||BD_CH.karasu;
+  const client=$("#bdClient").value.trim();
+  const topic=$("#bdTopic").value.trim();
+  const agent=m.agentShow?($("#bdAgent").value.trim()||m.agentDefault||''):'';
+  const fee=+$("#bdFee").value||0;
+  const status=$("#bdStatus").value;
+  if(!client){toast("相手・顧客名は必須です");return;}
+  if(channel!=='reporo'&&!topic){toast("案件内容は必須です");return;}
+  if(!Array.isArray(S.biz.detective)) S.biz.detective=[];
+  S.biz.detective.unshift({
+    id:'bd'+Date.now().toString(36),
+    channel, client, topic, agent, fee, status,
+    at:new Date().toISOString().slice(0,10)
+  });
+  $("#bdClient").value=""; $("#bdTopic").value=""; $("#bdFee").value="";
+  if($("#bdAgent")) $("#bdAgent").value=m.agentDefault||'';
+  saveAll();renderBiz();toast(m.short+' を登録しました');
 };
 document.getElementById("bdList")?.addEventListener("click",e=>{
   if(e.target.closest('[data-biz-ct-biz]')) return;
   const b=e.target.closest("[data-bd-id]");if(!b)return;
   S.biz.detective=S.biz.detective.filter(d=>d.id!==b.dataset.bdId);saveAll();renderBiz();
 });
+document.getElementById("bdFilter")?.addEventListener("click",e=>{
+  const f=e.target.closest('[data-bd-filter]'); if(!f) return;
+  bdFilter=f.dataset.bdFilter||'all';
+  [...document.querySelectorAll('#bdFilter button')].forEach(b=>b.classList.toggle('on',b===f));
+  renderBiz();
+});
+/* ---------- カンストWiFi：販売／リース・商品マスタ・紹介者 ---------- */
+/** 商品マスタ（後日データ差し替え）。salePrice=販売価格 / leaseMonthly=リース月額 */
+const KW_PRODUCTS=[
+  // 例: {id:'kwp1', name:'ルーターセットA', salePrice:49800, leaseMonthly:3980},
+];
+function kwModeLabel(m){return m==='lease'?'リース':'販売';}
+function kwProductById(id){return KW_PRODUCTS.find(p=>p.id===id)||null;}
+function fillKwProductSelect(){
+  const sel=$("#bkwProduct"); if(!sel) return;
+  const cur=sel.value;
+  const opts=KW_PRODUCTS.length
+    ?KW_PRODUCTS.map(p=>`<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('')
+    :'<option value="" disabled>（商品マスタ未登録・後日投入予定）</option>';
+  sel.innerHTML='<option value="">— 商品を選択 —</option>'+opts;
+  if(cur&&[...sel.options].some(o=>o.value===cur)) sel.value=cur;
+}
+function syncKwPriceFromProduct(){
+  const p=kwProductById($("#bkwProduct")?.value);
+  const mode=$("#bkwMode")?.value||'sale';
+  const lab=$("#bkwPriceLabel");
+  if(lab) lab.textContent=mode==='lease'?'リース月額（円）':'販売価格（円）';
+  if(!p||!$("#bkwFee")) return;
+  $("#bkwFee").value=mode==='lease'?(p.leaseMonthly||0):(p.salePrice||0);
+}
+$("#bkwMode")?.addEventListener('change', syncKwPriceFromProduct);
+$("#bkwProduct")?.addEventListener('change', syncKwPriceFromProduct);
+fillKwProductSelect();
 const bkwAdd=$("#bkwAdd");
 if(bkwAdd)bkwAdd.onclick=()=>{
-  const client=$("#bkwClient").value.trim(), plan=$("#bkwPlan").value.trim(), fee=+$("#bkwFee").value||0, status=$("#bkwStatus").value;
-  if(!client){toast("顧客名は必須です");return;}
+  const client=$("#bkwClient").value.trim();
+  const mode=$("#bkwMode").value||'sale';
+  const productId=$("#bkwProduct").value||'';
+  const p=kwProductById(productId);
+  const productName=p?p.name:($("#bkwProduct")?.selectedOptions?.[0]?.text||'');
+  const fee=+$("#bkwFee").value||0;
+  const introducer=$("#bkwIntro").value.trim();
+  const introFee=+$("#bkwIntroFee").value||0;
+  const introPaid=!!$("#bkwIntroPaid")?.checked;
+  const status=$("#bkwStatus").value;
+  if(!client){toast("販売先・顧客名は必須です");return;}
+  if(!productId&&!KW_PRODUCTS.length){ /* マスタ未投入時は商品なしで登録可 */ }
+  else if(!productId){toast("商品を選択してください");return;}
   if(!Array.isArray(S.biz.kanstwifi)) S.biz.kanstwifi=[];
-  S.biz.kanstwifi.unshift({id:'kw'+Date.now().toString(36),client,plan,fee,status,at:new Date().toISOString().slice(0,10)});
-  $("#bkwClient").value="";$("#bkwPlan").value="";$("#bkwFee").value="";
-  saveAll();renderBiz();toast("カンストWiFi回線を登録しました");
+  S.biz.kanstwifi.unshift({
+    id:'kw'+Date.now().toString(36),
+    client, mode, productId, productName:productName||'（未設定）',
+    plan:productName||'', fee, introducer, introFee, introPaid,
+    status, at:new Date().toISOString().slice(0,10)
+  });
+  $("#bkwClient").value=""; $("#bkwIntro").value=""; $("#bkwIntroFee").value="";
+  $("#bkwFee").value=""; if($("#bkwIntroPaid")) $("#bkwIntroPaid").checked=false;
+  if($("#bkwProduct")) $("#bkwProduct").value="";
+  saveAll();renderBiz();toast("カンストWiFi案件を登録しました");
 };
 document.getElementById("bkwList")?.addEventListener("click",e=>{
   if(e.target.closest('[data-biz-ct-biz]')) return;
   const b=e.target.closest("[data-bkw-id]");if(!b)return;
   S.biz.kanstwifi=S.biz.kanstwifi.filter(d=>d.id!==b.dataset.bkwId);saveAll();renderBiz();
+});
+document.getElementById("bkwList")?.addEventListener("change",e=>{
+  const c=e.target.closest("[data-bkw-intro]"); if(!c) return;
+  const d=(S.biz.kanstwifi||[]).find(x=>x.id===c.dataset.bkwIntro); if(!d) return;
+  d.introPaid=!!c.checked; saveAll(); renderBiz();
 });
 const bstAdd=$("#bstAdd");
 if(bstAdd)bstAdd.onclick=()=>{
@@ -6772,15 +7042,26 @@ window.BizCaseLink=(function(){
     }
     if(biz==='稲毛'){
       ensureIds(st.biz&&st.biz.inage,'bi');
-      return (st.biz.inage||[]).map(d=>({id:d.id, label:(d.name||'イベント')+(d.eventDate?'｜'+d.eventDate:'')}));
+      return (st.biz.inage||[]).map(d=>{
+        const g=(+d.ticket||0)+(+d.venue||0)+(+d.sponsorAmt||0)||(+d.sales||0);
+        return {id:d.id, label:(d.name||'イベント')+(d.eventDate?'｜'+d.eventDate:'')+(g?'｜¥'+g.toLocaleString('ja-JP'):'')};
+      });
     }
     if(biz==='探偵'){
       ensureIds(st.biz&&st.biz.detective,'bd');
-      return (st.biz.detective||[]).map(d=>({id:d.id, label:(d.client||'依頼')+'｜'+(d.topic||'')}));
+      const chLab={karasu:'カラス',stealth:'ステルス',reporo:'REPORO'};
+      return (st.biz.detective||[]).map(d=>{
+        const ch=chLab[d.channel]||d.channel||'案件';
+        return {id:d.id, label:ch+'｜'+(d.client||'依頼')+(d.topic?'｜'+d.topic:'')};
+      });
     }
     if(biz==='カンストWiFi'){
       ensureIds(st.biz&&st.biz.kanstwifi,'kw');
-      return (st.biz.kanstwifi||[]).map(d=>({id:d.id, label:(d.client||'顧客')+'｜'+(d.plan||d.status||'')}));
+      return (st.biz.kanstwifi||[]).map(d=>{
+        const mode=d.mode==='lease'?'リース':'販売';
+        const prod=d.productName||d.plan||'';
+        return {id:d.id, label:(d.client||'顧客')+'｜'+mode+(prod?'｜'+prod:'')};
+      });
     }
     if(biz==='人材派遣'){
       ensureIds(st.biz&&st.biz.staffing,'st');
