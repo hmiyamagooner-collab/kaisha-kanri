@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>社員向け説明書｜GOONER PORTAL</title>
+<style>
+  :root{
+    --ink:#1a2332;
+    --muted:#5a6578;
+    --line:#d8dee8;
+    --bg:#f3f5f8;
+    --card:#fff;
+    --accent:#1e4d7b;
+    --soft:#e8f0f7;
+    --warn:#8a4b00;
+    --warn-bg:#fff6e8;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(ellipse 80% 50% at 10% 0%, #dce8f4 0%, transparent 55%),
+      radial-gradient(ellipse 60% 40% at 100% 20%, #e8ebe4 0%, transparent 50%),
+      var(--bg);
+    line-height:1.7;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:28px 20px 64px}
+  header{
+    margin-bottom:28px;
+    padding-bottom:20px;
+    border-bottom:1px solid var(--line);
+  }
+  .brand{
+    font-size:13px;
+    letter-spacing:.12em;
+    color:var(--accent);
+    font-weight:700;
+    margin:0 0 8px;
+  }
+  h1{
+    margin:0 0 10px;
+    font-size:clamp(1.5rem,4vw,1.9rem);
+    font-weight:800;
+    letter-spacing:.02em;
+  }
+  .lead{margin:0;color:var(--muted);font-size:15px}
+  .url{
+    margin-top:14px;
+    padding:12px 14px;
+    background:var(--soft);
+    border-radius:8px;
+    font-size:14px;
+  }
+  .url a{color:var(--accent);word-break:break-all}
+  nav.toc{
+    margin:24px 0;
+    padding:16px 18px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+  }
+  nav.toc strong{display:block;margin-bottom:8px;font-size:13px;color:var(--muted)}
+  nav.toc ol{margin:0;padding-left:1.3em}
+  nav.toc a{color:var(--accent);text-decoration:none}
+  nav.toc a:hover{text-decoration:underline}
+  section{
+    margin:28px 0;
+    padding:22px 20px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:12px;
+  }
+  h2{
+    margin:0 0 12px;
+    font-size:1.15rem;
+    color:var(--accent);
+    border-left:4px solid var(--accent);
+    padding-left:10px;
+  }
+  h3{margin:18px 0 8px;font-size:1rem}
+  ol,ul{margin:8px 0 0;padding-left:1.35em}
+  li{margin:6px 0}
+  .note{
+    margin-top:14px;
+    padding:12px 14px;
+    background:var(--warn-bg);
+    border-left:4px solid #e0a040;
+    border-radius:0 8px 8px 0;
+    font-size:14px;
+    color:var(--warn);
+  }
+  .ok{color:#1a5c38}
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:14px;
+    margin-top:10px;
+  }
+  th,td{
+    border:1px solid var(--line);
+    padding:10px 12px;
+    text-align:left;
+    vertical-align:top;
+  }
+  th{background:var(--soft);width:28%}
+  footer{
+    margin-top:36px;
+    font-size:13px;
+    color:var(--muted);
+    text-align:center;
+  }
+  @media print{
+    body{background:#fff}
+    section{break-inside:avoid;border:none;padding:0;margin:20px 0}
+    nav.toc{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="brand">GOONER PORTAL</p>
+    <h1>社員向け説明書</h1>
+    <p class="lead">会社ポータルの使い方です。パソコン・スマホ（よこ画面）どちらでも使えます。</p>
+    <div class="url">
+      入口：<a href="https://kaisha-kanri.vercel.app/gooner-portal" target="_blank" rel="noopener">https://kaisha-kanri.vercel.app/gooner-portal</a>
+    </div>
+  </header>
+
+  <nav class="toc" aria-label="目次">
+    <strong>目次</strong>
+    <ol>
+      <li><a href="#login">ログイン・新規登録</a></li>
+      <li><a href="#tasks">タスクの使い方</a></li>
+      <li><a href="#dropbox">Dropbox（ファイル閲覧）</a></li>
+      <li><a href="#phone">スマホでの見方</a></li>
+      <li><a href="#faq">困ったとき</a></li>
+    </ol>
+  </nav>
+
+  <section id="login">
+    <h2>1. ログイン・新規登録</h2>
+    <h3>初めて使うとき（新規登録）</h3>
+    <ol>
+      <li>上記の入口を開きます。</li>
+      <li>「新規登録」タブを選びます。</li>
+      <li><strong>役職</strong>・<strong>お名前</strong>・<strong>メールアドレス</strong>・<strong>パスワード（6文字以上）</strong>を入力します。</li>
+      <li>「新規登録」を押します。</li>
+    </ol>
+    <h3>2回目以降（ログイン）</h3>
+    <ol>
+      <li>「ログイン」タブを選びます。</li>
+      <li>メールアドレスとパスワードを入力して「ログイン」します。</li>
+      <li>パスワード横の 👁 で、入力内容の表示／非表示を切り替えられます。</li>
+    </ol>
+    <div class="note">
+      役職は自分の担当に近いものを選んでください（例：介護職員、SE、制作 など）。わからない場合は「社員」で問題ありません。社長アカウントは社長専用です。
+    </div>
+  </section>
+
+  <section id="tasks">
+    <h2>2. タスクの使い方</h2>
+    <p>タスクは全員で共有され、リアルタイムで更新されます。<strong>削除はできません</strong>（完了にして管理します）。</p>
+
+    <h3>自分でタスクを追加する</h3>
+    <ol>
+      <li>ログイン後、オフィスマップ下の「タスク」欄、または「タスク管理」を開きます。</li>
+      <li>内容を入力して「追加」（または Enter）します。</li>
+      <li>自分のタスクとして一覧に出ます。</li>
+    </ol>
+
+    <h3>社長から指示が届いたとき</h3>
+    <ol>
+      <li>赤い通知「新しいタスクが届いています」が出ます。</li>
+      <li>内容を確認し、<strong>承認</strong>すると着手できます。</li>
+      <li>終わったら<strong>完了</strong>にします。</li>
+    </ol>
+
+    <table>
+      <tr><th>画面</th><td>なにができるか</td></tr>
+      <tr><th>オフィスタスク欄</th><td>追加・承認待ちの確認・未完了一覧</td></tr>
+      <tr><th>タスク管理</th><td>全員分の一覧・未完了／完了の切替</td></tr>
+      <tr><th>タスク評価</th><td>進捗や評価の確認（会社のルールに従って使う）</td></tr>
+    </table>
+    <div class="note">
+      届いた指示は承認してから進めてください。消し忘れ防止のため、タスクの物理削除はありません。
+    </div>
+  </section>
+
+  <section id="dropbox">
+    <h2>3. Dropbox（ファイル閲覧）</h2>
+    <p>共有ファイルの一覧・ダウンロード用です。アップロード同期ではなく、<strong>既存ファイルを見る</strong>機能です。</p>
+    <ol>
+      <li>ログインした状態で、画面上の「Dropbox同期」ボタンを押します。</li>
+      <li>フォルダを開いてファイルを選び、ダウンロードできます。</li>
+    </ol>
+    <div class="note">
+      ボタンが出ない、または「許可されていません」と出る場合は、社長による Dropbox 許可が必要です。社長に「Dropbox許可」を依頼してください。
+    </div>
+  </section>
+
+  <section id="phone">
+    <h2>4. スマホでの見方</h2>
+    <ul>
+      <li>スマホでは<strong>よこ画面（横向き）</strong>で見てください。縦のときは案内が出ます。</li>
+      <li>ログイン・タスク・Dropboxの手順はパソコンと同じです。</li>
+      <li>終わったら右上付近の「ログアウト」を押すと安全です（共用端末のとき特に）。</li>
+    </ul>
+  </section>
+
+  <section id="faq">
+    <h2>5. 困ったとき</h2>
+    <table>
+      <tr>
+        <th>症状</th>
+        <td>対処</td>
+      </tr>
+      <tr>
+        <th>ログインできない</th>
+        <td>メール・パスワードを確認。未登録なら「新規登録」。それでもだめなら社長／管理者へ連絡。</td>
+      </tr>
+      <tr>
+        <th>タスクが見えない</th>
+        <td>ログイン済みか確認。画面を再読み込み。別端末でも同じアカウントなら同じ一覧が出ます。</td>
+      </tr>
+      <tr>
+        <th>Dropboxが開けない</th>
+        <td>ログインしているか確認。許可がオフなら社長に許可を依頼。</td>
+      </tr>
+      <tr>
+        <th>会計・法務メニューが使えない</th>
+        <td>役職により制限があります。社員向けの通常作業（タスク等）は使えます。</td>
+      </tr>
+    </table>
+    <p style="margin-top:16px;font-size:14px;color:var(--muted)">
+      この説明書は社員向けです。社長側の操作（指示送信・Dropbox許可など）は別途、管理者用の手順になります。
+    </p>
+  </section>
+
+  <footer>
+    GOONER PORTAL 社員向け説明書 · 印刷して配布しても使えます
+  </footer>
+</div>
+</body>
+</html>
