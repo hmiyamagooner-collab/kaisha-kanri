@@ -30,11 +30,15 @@
   --gold-dim:#8a7348;
   --accent:#74b9e8;
   --in:#5dd9ad;
-  /* ボタン塗り＝ネオン感のある濃いダークグリーン / 項目名＝ロゴ級の明るいティール */
+  /* ボタン塗り＝ネオン感のある濃いダークグリーン（透明度90%） / 項目名＝ロゴ級の明るいティール */
   --nav-green:#0b6e3f;
   --nav-green-dim:#064528;
   --nav-green-hi:#0f8a4e;
-  --nav-green-soft:rgba(15,138,78,.82);
+  --nav-green-fill:rgba(11,110,63,.9);
+  --nav-green-fill-dim:rgba(6,69,40,.9);
+  --nav-green-fill-hi:rgba(15,138,78,.9);
+  --nav-green-fill-hover:rgba(18,168,90,.9);
+  --nav-green-soft:rgba(15,138,78,.9);
   --nav-green-line:rgba(15,138,78,.28);
   --nav-green-line-strong:rgba(15,138,78,.48);
   --nav-green-bright:#3de8d4;
@@ -237,7 +241,7 @@ input,select,textarea{font-family:inherit}
 }
 /* 事業以外（会計・法務・会議）：円卓ネオングリーン塗り＋白字 */
 .gamenav button.nav-green{
-  background:linear-gradient(180deg,var(--nav-green-hi) 0%,var(--nav-green) 45%,var(--nav-green-dim) 100%)!important;
+  background:linear-gradient(180deg,var(--nav-green-fill-hi) 0%,var(--nav-green-fill) 45%,var(--nav-green-fill-dim) 100%)!important;
   border-color:var(--nav-green-soft);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 8px rgba(0,0,0,.28),0 0 14px rgba(15,138,78,.38);
   color:#fff;
@@ -256,7 +260,7 @@ input,select,textarea{font-family:inherit}
 }
 @media(hover:hover){
   .gamenav button.nav-green:hover{
-    background:linear-gradient(180deg,#12a85a 0%,var(--nav-green-hi) 40%,var(--nav-green) 100%)!important;
+    background:linear-gradient(180deg,var(--nav-green-fill-hover) 0%,var(--nav-green-fill-hi) 40%,var(--nav-green-fill) 100%)!important;
     border-color:var(--nav-green);
     color:#fff;
     box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 4px 14px rgba(0,0,0,.32),0 0 18px rgba(15,138,78,.45);
@@ -264,7 +268,7 @@ input,select,textarea{font-family:inherit}
   .gamenav button.nav-green:hover .nav-label{color:#fff!important}
 }
 .gamenav button.nav-green.on{
-  background:linear-gradient(180deg,#12a85a 0%,var(--nav-green-hi) 40%,var(--nav-green) 100%)!important;
+  background:linear-gradient(180deg,var(--nav-green-fill-hover) 0%,var(--nav-green-fill-hi) 40%,var(--nav-green-fill) 100%)!important;
   border-color:var(--nav-green);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 4px 14px rgba(0,0,0,.35),0 0 20px rgba(15,138,78,.5);
 }
@@ -272,7 +276,7 @@ input,select,textarea{font-family:inherit}
 .gamenav button.nav-green.nav-locked.on{border-color:rgba(255,255,255,.45)}
 /* タスクドック下部：円卓ネオングリーン塗り＋白字 */
 .office-tk-open{
-  background:linear-gradient(180deg,var(--nav-green-hi) 0%,var(--nav-green) 45%,var(--nav-green-dim) 100%)!important;
+  background:linear-gradient(180deg,var(--nav-green-fill-hi) 0%,var(--nav-green-fill) 45%,var(--nav-green-fill-dim) 100%)!important;
   border:1px solid var(--nav-green-soft)!important;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 8px rgba(0,0,0,.28),0 0 14px rgba(15,138,78,.35)!important;
   filter:none!important;
@@ -280,7 +284,7 @@ input,select,textarea{font-family:inherit}
 }
 .office-tk-open .nav-label{color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.4)}
 .office-tk-open:hover{
-  background:linear-gradient(180deg,#12a85a 0%,var(--nav-green-hi) 40%,var(--nav-green) 100%)!important;
+  background:linear-gradient(180deg,var(--nav-green-fill-hover) 0%,var(--nav-green-fill-hi) 40%,var(--nav-green-fill) 100%)!important;
   border-color:var(--nav-green)!important;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 4px 14px rgba(0,0,0,.32),0 0 18px rgba(15,138,78,.45)!important;
   filter:none!important;
@@ -923,7 +927,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 .office-tk-open{
   cursor:pointer;min-height:40px;padding:0 12px;border-radius:9px;
-  border:1px solid var(--nav-green-soft);background:linear-gradient(180deg,var(--nav-green-hi) 0%,var(--nav-green) 45%,var(--nav-green-dim) 100%);
+  border:1px solid var(--nav-green-soft);background:linear-gradient(180deg,var(--nav-green-fill-hi) 0%,var(--nav-green-fill) 45%,var(--nav-green-fill-dim) 100%);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 8px rgba(0,0,0,.28),0 0 14px rgba(15,138,78,.35);
   display:flex;align-items:center;justify-content:center;
   transition:border-color .15s,box-shadow .15s,transform .12s,background .15s;
@@ -936,7 +940,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   text-shadow:0 1px 2px rgba(0,0,0,.4);font-family:var(--font-body);letter-spacing:.02em;
 }
 .office-tk-open:hover{
-  background:linear-gradient(180deg,#12a85a 0%,var(--nav-green-hi) 40%,var(--nav-green) 100%);
+  background:linear-gradient(180deg,var(--nav-green-fill-hover) 0%,var(--nav-green-fill-hi) 40%,var(--nav-green-fill) 100%);
   border-color:var(--nav-green);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 4px 14px rgba(0,0,0,.32),0 0 18px rgba(15,138,78,.45);
   filter:none;
