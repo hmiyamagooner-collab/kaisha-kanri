@@ -30,15 +30,15 @@
   --gold-dim:#8a7348;
   --accent:#74b9e8;
   --in:#5dd9ad;
-  /* ボタン塗り＝薄い黄緑（ライム寄り） / ラベル＝淡い黄緑白 */
-  --nav-green:#7eb83a;
-  --nav-green-dim:#5a8a28;
-  --nav-green-hi:#9ad14a;
-  --nav-green-fill:rgba(126,184,58,.45);
-  --nav-green-fill-dim:rgba(90,138,40,.4);
-  --nav-green-fill-hi:rgba(154,209,74,.52);
-  --nav-green-fill-hover:rgba(176,220,90,.58);
-  --nav-green-soft:rgba(154,209,74,.55);
+  /* 事業以外ボタン塗り＝緑寄り・透明度15% / ラベル＝淡い黄緑白 */
+  --nav-green:#4caf50;
+  --nav-green-dim:#388e3c;
+  --nav-green-hi:#66bb6a;
+  --nav-green-fill:rgba(56,142,60,.15);
+  --nav-green-fill-dim:rgba(46,125,50,.15);
+  --nav-green-fill-hi:rgba(76,175,80,.15);
+  --nav-green-fill-hover:rgba(102,187,106,.15);
+  --nav-green-soft:rgba(76,175,80,.35);
   --nav-green-line:rgba(154,209,74,.28);
   --nav-green-line-strong:rgba(154,209,74,.45);
   --nav-green-bright:#b8f06a;
@@ -205,16 +205,18 @@ input,select,textarea{font-family:inherit}
 }
 .gamenav button.nav-biz .nav-label{
   position:relative;z-index:2;width:100%;
-  padding:6px 10px;
-  line-height:1.25;font-size:11.5px;font-weight:700;letter-spacing:.04em;
+  padding:6px 8px;
+  line-height:1.2;font-size:11px;font-weight:700;letter-spacing:.02em;
   text-shadow:0 1px 2px rgba(0,0,0,.9),0 0 8px rgba(0,0,0,.55);
   display:flex;align-items:center;justify-content:center;text-align:center;
   color:var(--nav-label);
-  word-break:keep-all;
+  white-space:nowrap; /* イレギュラー以外は必ず1行 */
+  overflow:hidden;text-overflow:ellipsis;
 }
 .gamenav button.nav-biz .nav-label.nav-label-2line{
   flex-direction:column;white-space:normal;line-height:1.18;
   font-size:11px;gap:1px;padding:5px 8px;
+  overflow:visible;text-overflow:clip;
 }
 /* 事業ボタン＝薄い緑白字 / 事業以外＝緑塗り＋薄い緑白字 */
 .gamenav button.nav-biz:not(.nav-green) .nav-label{color:var(--nav-label)}
@@ -256,11 +258,13 @@ input,select,textarea{font-family:inherit}
   text-shadow:0 1px 2px rgba(0,0,0,.35);
   justify-content:center;
   text-align:center;
-  padding:6px 10px;
-  font-size:12px;letter-spacing:.05em;
+  padding:6px 8px;
+  font-size:11.5px;letter-spacing:.03em;
+  white-space:nowrap;
 }
 .gamenav button.nav-green .nav-label.nav-label-2line{
   font-size:11px;line-height:1.18;gap:1px;padding:5px 8px;
+  white-space:normal;
 }
 .gamenav button.nav-green::before{
   background:linear-gradient(180deg,#9ff5e4,var(--nav-green-bright));
@@ -1810,10 +1814,13 @@ video.dc-card__image{
     background:linear-gradient(180deg,rgba(6,9,14,.08),rgba(6,9,14,.55));
   }
   #portal-shell > .gamenav button.nav-biz .nav-label{
-    padding:0 2px;font-size:10px;line-height:1.2;letter-spacing:.02em;
+    padding:0 2px;font-size:10px;line-height:1.2;letter-spacing:.01em;
     text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.9);
+    white-space:nowrap;
   }
-  #portal-shell > .gamenav button.nav-biz .nav-label.nav-label-2line{font-size:9.5px;line-height:1.15;gap:0}
+  #portal-shell > .gamenav button.nav-biz .nav-label.nav-label-2line{
+    font-size:9.5px;line-height:1.15;gap:0;white-space:normal;
+  }
   #portal-shell > .gamenav button.nav-green{min-width:96px;padding:8px 10px}
   #quests-row{
     height:auto;overflow:visible;
@@ -1953,35 +1960,35 @@ video.dc-card__image{
   <div class="nav-group nav-group-major">事業</div>
   <button type="button" class="nav-biz on" data-s="biz-paradise">
     <span class="nav-photo" style="background-image:url(nav-paradise.png)"></span>
-    <span class="nav-label nav-label-2line">パラダイス<br>シティ事業</span>
+    <span class="nav-label">パラダイスシティ事業</span>
   </button>
   <button type="button" class="nav-biz" data-s="biz-inage">
     <span class="nav-photo" style="background-image:url(nav-inage.png)"></span>
-    <span class="nav-label nav-label-2line">稲毛海浜<br>公園事業</span>
+    <span class="nav-label">稲毛海浜公園事業</span>
   </button>
   <button type="button" class="nav-biz" data-s="biz-realestate">
     <span class="nav-photo" style="background-image:url(nav-realestate.png)"></span>
-    <span class="nav-label nav-label-2line">不動産<br>事業</span>
+    <span class="nav-label">不動産事業</span>
   </button>
   <button type="button" class="nav-biz" data-s="biz-care">
     <span class="nav-photo" style="background-image:url(nav-care.png)"></span>
-    <span class="nav-label nav-label-2line">介護<br>事業</span>
+    <span class="nav-label">介護事業</span>
   </button>
   <button type="button" class="nav-biz" data-s="biz-it">
     <span class="nav-photo" style="background-image:url(nav-it.png)"></span>
-    <span class="nav-label nav-label-2line">IT<br>事業</span>
+    <span class="nav-label">IT事業</span>
   </button>
   <button type="button" class="nav-biz" data-s="biz-kanstwifi">
     <span class="nav-photo" style="background-image:url(nav-kanstwifi.png)"></span>
-    <span class="nav-label nav-label-2line">カンスト<br>WiFi</span>
+    <span class="nav-label">カンストWiFi</span>
   </button>
   <button type="button" class="nav-biz" data-s="biz-staffing">
     <span class="nav-photo" style="background-image:url(nav-staffing.png)"></span>
-    <span class="nav-label nav-label-2line">人材<br>派遣</span>
+    <span class="nav-label">人材派遣</span>
   </button>
   <button type="button" class="nav-biz" data-s="biz-detective">
     <span class="nav-photo" style="background-image:url(nav-detective.png)"></span>
-    <span class="nav-label nav-label-2line">探偵<br>事業</span>
+    <span class="nav-label">探偵事業</span>
   </button>
   <button type="button" class="nav-biz" data-s="cf-cases">
     <span class="nav-photo" style="background-image:url(nav-cases.png)"></span>
@@ -2012,19 +2019,19 @@ video.dc-card__image{
       </button>
       <button type="button" class="nav-biz nav-green" data-s="cf-bank" data-acct="1">
         <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
-        <span class="nav-label nav-label-2line">口座<br>CSV</span>
+        <span class="nav-label">口座・CSV</span>
       </button>
       <button type="button" class="nav-biz nav-green" data-s="cf-link" data-acct="1">
         <span class="nav-photo" style="background-image:url(nav-cf.png)"></span>
-        <span class="nav-label nav-label-2line">明細<br>突合</span>
+        <span class="nav-label">明細突合</span>
       </button>
       <button type="button" class="nav-biz nav-green" data-s="cf-inrou" data-acct="1">
         <span class="nav-photo" style="background-image:url(nav-detective.png)"></span>
-        <span class="nav-label nav-label-2line">印籠<br>レポート</span>
+        <span class="nav-label">印籠レポート</span>
       </button>
       <button type="button" class="nav-biz nav-green" data-s="cf-party" data-acct="1">
         <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
-        <span class="nav-label nav-label-2line">役員<br>貸付</span>
+        <span class="nav-label">役員貸付</span>
       </button>
       <button type="button" class="nav-biz nav-green" data-s="entry" data-acct="1">
         <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
@@ -2036,11 +2043,11 @@ video.dc-card__image{
       </button>
       <button type="button" class="nav-biz nav-green" data-s="tax" data-acct="1">
         <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
-        <span class="nav-label nav-label-2line">納税<br>タンク</span>
+        <span class="nav-label">納税タンク</span>
       </button>
       <button type="button" class="nav-biz nav-green" data-s="quest" data-acct="1">
         <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
-        <span class="nav-label nav-label-2line">精算<br>クエスト</span>
+        <span class="nav-label">精算クエスト</span>
       </button>
     </div>
   </div>
@@ -2051,20 +2058,20 @@ video.dc-card__image{
   </button>
   <button type="button" class="nav-biz nav-green" data-s="cf-legal">
     <span class="nav-photo" style="background-image:url(dash-legal.png)"></span>
-    <span class="nav-label nav-label-2line">契約<br>リーガル</span>
+    <span class="nav-label">契約リーガル</span>
   </button>
   <div class="nav-group nav-group-major">会議</div>
   <button type="button" class="nav-biz nav-green" data-s="mtg-finance">
     <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
-    <span class="nav-label nav-label-2line">経理<br>会議</span>
+    <span class="nav-label">経理会議</span>
   </button>
   <button type="button" class="nav-biz nav-green" data-s="mtg-sales">
     <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
-    <span class="nav-label nav-label-2line">営業<br>会議</span>
+    <span class="nav-label">営業会議</span>
   </button>
   <button type="button" class="nav-biz nav-green" data-s="mtg-other">
     <span class="nav-photo" style="background-image:url(dash-secretary.png)"></span>
-    <span class="nav-label nav-label-2line">その他<br>MT</span>
+    <span class="nav-label">その他MT</span>
   </button>
   <!-- タスク管理・タスク評価はサイドバー非表示（オフィスクエスト下ドックへ） -->
   <button type="button" class="nav-biz nav-green" data-s="tasks" hidden aria-hidden="true">
