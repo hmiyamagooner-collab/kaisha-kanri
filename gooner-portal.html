@@ -882,7 +882,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   min-height:100dvh;
   background:#000;
 }
-/* サイドバー：ボタンは通常サイズ。マトリクス枠は会社ロゴ下端まで伸ばす */
+/* サイドバー：ボタンは通常サイズ。マトリクス枠は画面下端まで */
 #portal-shell > .gamenav{
   position:sticky;
   top:0;
@@ -7934,21 +7934,11 @@ window.PortalAuth=(function(){
       nav.style.removeProperty('--nav-matrix-h');
       return;
     }
-    const cover=document.getElementById('mainBrandCover');
-    const logo=cover && !cover.hidden ? (cover.querySelector('img')||cover) : null;
-    const navTopDoc=nav.getBoundingClientRect().top+window.scrollY;
-    let bottomDoc;
-    if(logo){
-      bottomDoc=logo.getBoundingClientRect().bottom+window.scrollY;
-    }else{
-      const pane=document.getElementById('treasury-pane');
-      bottomDoc=pane
-        ? (pane.getBoundingClientRect().bottom+window.scrollY)
-        : (navTopDoc+window.innerHeight);
-    }
-    const h=Math.round(Math.max(bottomDoc-navTopDoc, nav.scrollHeight, window.innerHeight));
-    if(h>160) nav.style.setProperty('--nav-matrix-h', h+'px');
-    else nav.style.removeProperty('--nav-matrix-h');
+    // マトリクス枠＝画面下端まで（コンテンツが長いときはそれ以上）
+    const navTop=nav.getBoundingClientRect().top;
+    const viewportH=Math.round(window.innerHeight-navTop);
+    const h=Math.max(viewportH, nav.scrollHeight, 160);
+    nav.style.setProperty('--nav-matrix-h', h+'px');
   }
   function updateBrandCover(opts){
     opts=opts||{};
@@ -8103,14 +8093,6 @@ window.PortalAuth=(function(){
     if(shell && typeof MutationObserver!=='undefined'){
       new MutationObserver(function(){ requestAnimationFrame(syncNavMatrix); })
         .observe(shell,{attributes:true,attributeFilter:['hidden']});
-    }
-    const cover=document.getElementById('mainBrandCover');
-    if(cover && typeof ResizeObserver!=='undefined'){
-      new ResizeObserver(function(){ syncNavMatrix(); }).observe(cover);
-    }
-    const pane=document.getElementById('treasury-pane');
-    if(pane && typeof ResizeObserver!=='undefined'){
-      new ResizeObserver(function(){ syncNavMatrix(); }).observe(pane);
     }
     requestAnimationFrame(syncNavMatrix);
   });
