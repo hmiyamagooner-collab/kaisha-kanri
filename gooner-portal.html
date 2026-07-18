@@ -1315,17 +1315,24 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   background:rgba(255,255,255,.12);color:#fff;font-size:11px;line-height:1;
 }
 .entaku-chip-x:hover{background:rgba(231,154,154,.35)}
-.entaku-attach-btn,.entaku-mic-btn{
+.entaku-attach-btn,.entaku-mic-btn,.entaku-talk-btn{
   flex-shrink:0;width:36px;height:36px;border-radius:8px;cursor:pointer;
   border:1px solid var(--nav-green-soft);background:rgba(51,198,179,.06);color:var(--nav-green);
   font-size:16px;line-height:1;display:inline-flex;align-items:center;justify-content:center;
 }
-.entaku-attach-btn:hover,.entaku-mic-btn:hover{background:rgba(51,198,179,.12);border-color:var(--nav-green)}
+.entaku-attach-btn:hover,.entaku-mic-btn:hover,.entaku-talk-btn:hover{background:rgba(51,198,179,.12);border-color:var(--nav-green)}
 .entaku-mic-btn.is-rec{
   border-color:#ff6b6b;background:rgba(255,80,80,.22);color:#ffd0d0;
   animation:entakuMicPulse 1.1s ease-in-out infinite;
 }
 .entaku-mic-btn.is-busy{opacity:.55;cursor:wait}
+.entaku-talk-btn.is-on{
+  border-color:var(--nav-green);background:rgba(76,175,80,.22);color:var(--nav-label);
+}
+.entaku-talk-btn.is-listen{
+  border-color:#6ec8ff;background:rgba(80,160,255,.28);color:#d8efff;
+  animation:entakuMicPulse 1.1s ease-in-out infinite;
+}
 @keyframes entakuMicPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,80,80,.35)}50%{box-shadow:0 0 0 6px rgba(255,80,80,0)}}
 .entaku-rec-bar{
   width:100%;display:none;align-items:center;justify-content:space-between;gap:8px;
@@ -2177,9 +2184,10 @@ video.dc-card__image{
             <button type="button" id="entakuRecStop">停止して議事録化</button>
           </div>
           <button type="button" class="entaku-attach-btn" id="entakuAttachBtn" title="PDF・CSV・写真を添付 / PrtScn貼付可" aria-label="添付">＋</button>
+          <button type="button" class="entaku-talk-btn" id="entakuTalkBtn" title="音声会話ON：話す→AIが答える（もう一度押すとOFF）" aria-label="音声会話" aria-pressed="false">💬</button>
           <button type="button" class="entaku-mic-btn" id="entakuMicBtn" title="マイク録音→Whisper議事録" aria-label="マイク録音">🎙</button>
           <input type="file" id="entakuFile" accept="image/*,application/pdf,.pdf,.csv,text/csv" multiple hidden>
-          <textarea id="entakuText" rows="1" placeholder="相談・領収書・契約書… 画像/PDF・マイク議事録可　Enter送信"></textarea>
+          <textarea id="entakuText" rows="1" placeholder="相談・領収書・契約書… 💬会話 / 🎙議事録　Enter送信"></textarea>
           <button type="submit" id="entakuSend">送信</button>
         </form>
       </div>
@@ -4376,7 +4384,7 @@ window.PortalTTS=(function(){
       const piece=chunks[i++];
       try{
         const u=new SpeechSynthesisUtterance(piece);
-        u.lang='ja-JP';u.rate=1.05;u.volume=1;
+        u.lang='ja-JP';u.rate=1.28;u.volume=1; /* やや速め（既定1.0） */
         const v=pickVoice();if(v)u.voice=v;
         u.onend=function(){next();};
         u.onerror=function(ev){
@@ -8257,9 +8265,9 @@ window.EntakuDocIngest=(function(){
       };
       window.PortalTTS.speak(speech, go);
       // フェイルセーフ：日本語〜200ms/字想定。途中切断を避けるため余裕を持たせる
-      failId = setTimeout(go, Math.min(180000, 5000 + speech.length * 200));
+      failId = setTimeout(go, Math.min(180000, 4000 + speech.length * 155));
     }else{
-      setTimeout(done, Math.min(4200, Math.max(1500, plain.length * 70)));
+      setTimeout(done, Math.min(3600, Math.max(1200, plain.length * 55)));
     }
   }
   function playReplies(replies, actions, scrollY){
@@ -8275,6 +8283,7 @@ window.EntakuDocIngest=(function(){
         render();
         focusEntakuInput();
         if(scrollY!=null) requestAnimationFrame(function(){ window.scrollTo(0, scrollY); });
+        try{ window.EntakuTalk?.onAiDone?.(); }catch(e){}
         return;
       }
       const r = replies[i++];
@@ -8874,6 +8883,7 @@ window.EntakuDocIngest=(function(){
   window.sendEntaku = function(ev){
     if(ev) ev.preventDefault();
     if(S.busy || S.playing) return false;
+    try{ window.EntakuTalk?.stop?.(); }catch(e){}
     const ta = el('entakuText'); const q = (ta.value||'').trim();
     const atts = S.pendingAtt.slice();
     if(!q && !atts.length) return false;
@@ -9047,6 +9057,96 @@ window.EntakuDocIngest=(function(){
       });
     }
   })();
+  /* 音声会話：話す→文字起こし→円卓送信→AI回答→再び聞く */
+  (function wireEntakuTalk(){
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    const btn=el('entakuTalkBtn');
+    if(!btn) return;
+    const LS='entaku-talk-mode';
+    let modeOn=localStorage.getItem(LS)==='1';
+    let listening=false;
+    let rec=null;
+    let sending=false;
+    function syncBtn(){
+      btn.classList.toggle('is-on', modeOn);
+      btn.classList.toggle('is-listen', listening);
+      btn.setAttribute('aria-pressed', modeOn?'true':'false');
+      btn.title=listening?'聞いています…（クリックで停止）'
+        : modeOn?'音声会話ON：AIのあと自動で聞きます（クリックでOFF）'
+        :'音声会話：話す→AIが答える';
+    }
+    function stopListen(){
+      listening=false;
+      try{ if(rec) rec.stop(); }catch(e){}
+      syncBtn();
+    }
+    function startListen(){
+      if(!SR){
+        window.Treasury?.toast?.('このブラウザは音声会話に非対応です（Chrome推奨）');
+        return;
+      }
+      if(S.busy||S.playing||window.__entakuSpeaking||sending) return;
+      if(!S.open){ S.open=true; syncToggle(); }
+      try{ window.PortalTTS?.stop(); }catch(e){}
+      if(!rec){
+        rec=new SR();
+        rec.lang='ja-JP';
+        rec.continuous=false;
+        rec.interimResults=true;
+        rec.maxAlternatives=1;
+        rec.onstart=function(){ listening=true; syncBtn(); };
+        rec.onend=function(){ listening=false; syncBtn(); };
+        rec.onerror=function(ev){
+          listening=false; syncBtn();
+          if(ev&&ev.error==='not-allowed'){
+            window.Treasury?.toast?.('マイクを許可してください');
+            modeOn=false; localStorage.setItem(LS,'0'); syncBtn();
+          }
+        };
+        rec.onresult=function(ev){
+          let interim='', final='';
+          for(let i=ev.resultIndex;i<ev.results.length;i++){
+            const t=ev.results[i][0].transcript||'';
+            if(ev.results[i].isFinal) final+=t; else interim+=t;
+          }
+          const ta=el('entakuText');
+          if(ta) ta.value=(final||interim).trim();
+          if(!final.trim()||sending) return;
+          sending=true;
+          stopListen();
+          setTimeout(function(){
+            try{ window.sendEntaku(); }catch(e){}
+            sending=false;
+          }, 80);
+        };
+      }
+      try{ rec.start(); listening=true; syncBtn(); }
+      catch(e){ listening=false; syncBtn(); }
+    }
+    window.EntakuTalk={
+      isOn:function(){ return modeOn; },
+      stop:stopListen,
+      onAiDone:function(){
+        if(!modeOn) return;
+        setTimeout(function(){
+          if(modeOn&&!S.busy&&!S.playing&&!window.__entakuSpeaking) startListen();
+        }, 450);
+      }
+    };
+    btn.addEventListener('click', function(){
+      if(listening){ stopListen(); return; }
+      if(modeOn){
+        modeOn=false; localStorage.setItem(LS,'0'); stopListen(); syncBtn();
+        window.Treasury?.toast?.('音声会話をOFFにしました');
+        return;
+      }
+      modeOn=true; localStorage.setItem(LS,'1'); syncBtn();
+      window.Treasury?.toast?.('音声会話ON：話しかけてください');
+      if(!S.open) openEntaku();
+      startListen();
+    });
+    syncBtn();
+  })();
   (function wireEntakuMic(){
     const mic=el('entakuMicBtn'), stopBtn=el('entakuRecStop'), bar=el('entakuRecBar'), timerEl=el('entakuRecTimer');
     if(!mic) return;
@@ -9211,6 +9311,7 @@ window.EntakuDocIngest=(function(){
     window.__entakuBeginRecAfterPick=function(){ startRec(); };
     mic.addEventListener('click', function(){
       if(processing) return;
+      try{ window.EntakuTalk?.stop?.(); }catch(e){}
       if(mediaRec && mediaRec.state!=='inactive'){ stopRec(); return; }
       if(S.awaitingPick){
         window.Treasury?.toast?.('会議と参加者を選んでから録音開始を押してください');
