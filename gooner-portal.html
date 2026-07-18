@@ -946,12 +946,46 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   position:relative;z-index:4;
 }
 .office-task-head{
-  flex-shrink:0;display:flex;align-items:center;
+  flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:8px;
   padding:8px 10px 6px;
 }
 .office-task-head strong{
   font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--nav-green-bright);
   letter-spacing:.1em;text-transform:uppercase;
+}
+.office-tk-alert{
+  flex-shrink:0;margin:0 8px 8px;padding:8px 10px;border-radius:9px;
+  border:1px solid rgba(239,80,80,.65);background:rgba(160,24,24,.42);
+  box-shadow:0 0 0 1px rgba(255,80,80,.15),0 0 14px rgba(220,40,40,.28);
+  animation:officeTkAlertPulse 1.6s ease-in-out infinite;
+}
+.office-tk-alert[hidden]{display:none!important}
+@keyframes officeTkAlertPulse{
+  0%,100%{box-shadow:0 0 0 1px rgba(255,80,80,.15),0 0 10px rgba(220,40,40,.22)}
+  50%{box-shadow:0 0 0 1px rgba(255,120,120,.35),0 0 18px rgba(255,60,60,.4)}
+}
+.office-tk-alert-msg{
+  font-size:11.5px;font-weight:800;color:#ffd0d0;letter-spacing:.04em;margin-bottom:6px;
+}
+.office-tk-pending{display:flex;flex-direction:column;gap:6px}
+.office-tk-pend{
+  padding:7px 8px;border-radius:8px;background:rgba(0,0,0,.28);
+  border:1px solid rgba(255,120,120,.35);
+}
+.office-tk-pend-title{font-size:11.5px;font-weight:700;color:#fff;line-height:1.35}
+.office-tk-pend-meta{font-size:10px;color:#ffc4c4;margin-top:2px}
+.office-tk-pend-acts{display:flex;gap:6px;margin-top:6px}
+.office-tk-pend-acts button{
+  flex:1;border-radius:7px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid;
+}
+.office-tk-pend-acts .ok{
+  background:rgba(255,80,80,.35);border-color:rgba(255,140,140,.6);color:#fff;
+}
+.office-tk-pend-acts .ng{
+  background:transparent;border-color:rgba(255,255,255,.3);color:#ffd0d0;
+}
+.office-tk-dir-note{
+  font-size:10px;color:var(--muted);padding:0 10px 6px;line-height:1.4;
 }
 .office-tk-links{
   flex-shrink:0;display:grid;grid-template-columns:1fr;gap:6px;
@@ -1158,6 +1192,13 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .entaku-audio-btn:hover{filter:brightness(1.08)}
 .entaku-audio-btn.is-off{opacity:.72;border-color:rgba(143,152,166,.35);color:var(--muted)}
 .entaku-inline .entaku-audio-btn{width:36px;height:36px;font-size:15px}
+.entaku-voice-sel{
+  pointer-events:auto;flex:1;min-width:0;max-width:160px;height:28px;margin-left:auto;
+  padding:0 6px;border-radius:8px;font-size:10.5px;font-weight:600;letter-spacing:0;
+  color:var(--nav-label);background:rgba(0,0,0,.45);border:1px solid var(--nav-green-soft);
+  cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.35);
+}
+.entaku-voice-sel:focus{outline:none;border-color:var(--nav-green)}
 .entaku-bg-art{
   position:absolute;inset:0;z-index:0;pointer-events:none;
   display:flex;align-items:center;justify-content:center;
@@ -2156,6 +2197,7 @@ video.dc-card__image{
       <div class="entaku-inline collapsed" id="entaku-inline">
         <div class="entaku-cap">
           <span>AI円卓会議</span>
+          <select class="entaku-voice-sel" id="entakuVoiceSel" title="声の種類" aria-label="声の種類"></select>
           <button type="button" class="entaku-audio-btn" id="entakuAudioBtn" data-portal-audio-btn onclick="PortalTTS.toggle()" aria-pressed="true" title="音声をOFFにする" aria-label="音声ON"><span class="portal-audio-lbl" aria-hidden="true">🔊</span></button>
         </div>
         <div class="entaku-bg-art" aria-hidden="true"><img src="entaku.png" alt="" decoding="async" draggable="false"></div>
@@ -2200,13 +2242,19 @@ video.dc-card__image{
       <div class="office-task-dock">
         <div class="office-task-head">
           <strong>タスク</strong>
+          <span id="officeTkHeadHint" style="font-size:10px;color:var(--muted)"></span>
+        </div>
+        <div class="office-tk-alert" id="officeTkAlert" hidden>
+          <div class="office-tk-alert-msg">タスクが追加されています</div>
+          <div class="office-tk-pending" id="officeTkPending"></div>
         </div>
         <div class="office-tk-staffs" id="officeTkStaffs"></div>
+        <p class="office-tk-dir-note" id="officeTkDirNote" hidden>社長指示：担当を選ぶか「全員」へ送ると、相手の承認後にタスクが追加されます。</p>
         <form class="office-tk-form" id="officeTkForm">
           <select id="officeTkAssignee" aria-label="担当"></select>
           <div class="office-tk-form-row">
             <input id="officeTkTitle" placeholder="タスクを入力（Enterで追加）" required maxlength="120">
-            <button type="submit">追加</button>
+            <button type="submit" id="officeTkSubmit">追加</button>
           </div>
         </form>
         <div class="office-tk-list" id="officeTkList"></div>
@@ -2571,7 +2619,7 @@ video.dc-card__image{
 </style>
 <section class="screen" id="s-tasks">
   <h2 class="stitle">✔ タスク管理</h2>
-  <p class="sdesc">ログイン登録した実スタッフへタスクを割り当てます。社長モードは指示、社員モードは自己申告として記録。各スタッフ列をクリック／チップから、その人のタスク管理にジャンプできます。</p>
+  <p class="sdesc">社長は全員または個別に指示を送れます。指示を受けた社員は赤い通知から承認するとタスクが追加されます。自己申告タスクはそのまま登録できます。</p>
 
   <div class="tk-add">
     <div class="tk-add-row">
@@ -2581,6 +2629,11 @@ video.dc-card__image{
       <button type="button" id="tkAdd">＋ 追加</button>
     </div>
     <div class="tk-hint" id="tkHint">—</div>
+  </div>
+
+  <div class="office-tk-alert" id="tkAlert" hidden style="margin:0 0 14px;max-width:720px">
+    <div class="office-tk-alert-msg">タスクが追加されています（承認すると自分のタスクに入ります）</div>
+    <div class="office-tk-pending" id="tkPending"></div>
   </div>
 
   <div class="tk-filter">
@@ -4300,20 +4353,56 @@ $$(".gamenav button").forEach(b=>b.onclick=()=>{
   }catch(e){}
 });
 
-/* TTS（日本語読み上げ）＋ 音声ON/OFF */
+/* TTS（日本語読み上げ）＋ 音声ON/OFF ＋ 声の種類 */
 window.PortalTTS=(function(){
   const LS_KEY='portal-audio-on';
+  const LS_VOICE='portal-tts-voice';
   let enabled=localStorage.getItem(LS_KEY)!=='0';
+  let preferredURI=localStorage.getItem(LS_VOICE)||'';
   let jpVoice=null;
   let speaking=false;
   let intentionalStop=false;
   let queueGen=0;
   let resumeTimer=null;
+  function escAttr(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function listJaVoices(){
+    if(!window.speechSynthesis) return [];
+    return speechSynthesis.getVoices().filter(v=>/ja/i.test(v.lang||''));
+  }
+  function scoreVoice(v){
+    const n=String(v.name||'').toLowerCase();
+    let s=0;
+    if(/google/.test(n)) s+=60;
+    if(/nanami|haruka|ayumi|keita|ichiro/.test(n)) s+=45;
+    if(/kyoko|otoya|sayaka|o-ren|oren/.test(n)) s+=30;
+    if(/neural|natural|premium|enhanced/.test(n)) s+=20;
+    if(v.localService) s+=8;
+    return s;
+  }
   function pickVoice(){
-    if(jpVoice)return jpVoice;
-    const vs=window.speechSynthesis?speechSynthesis.getVoices():[];
-    jpVoice=vs.find(v=>/ja/i.test(v.lang))||null;
+    const vs=listJaVoices();
+    if(!vs.length){ jpVoice=null; return null; }
+    if(preferredURI){
+      const hit=vs.find(v=>v.voiceURI===preferredURI||v.name===preferredURI);
+      if(hit){ jpVoice=hit; return hit; }
+    }
+    vs.sort((a,b)=>scoreVoice(b)-scoreVoice(a)||String(a.name).localeCompare(String(b.name),'ja'));
+    jpVoice=vs[0];
     return jpVoice;
+  }
+  function fillVoiceSelect(){
+    const sel=document.getElementById('entakuVoiceSel');
+    if(!sel) return;
+    const vs=listJaVoices().slice().sort((a,b)=>scoreVoice(b)-scoreVoice(a)||String(a.name).localeCompare(String(b.name),'ja'));
+    const cur=pickVoice();
+    const label=function(v){
+      return String(v.name||'').replace(/^Microsoft\s+/i,'').replace(/\s*Online\s*\(Natural\)\s*-?\s*/i,' ').replace(/\s+/g,' ').trim();
+    };
+    sel.innerHTML=vs.length
+      ?vs.map(v=>'<option value="'+escAttr(v.voiceURI)+'">'+escAttr(label(v))+'</option>').join('')
+      :'<option value="">日本語ボイスなし</option>';
+    if(cur) sel.value=cur.voiceURI;
+    else if(preferredURI) sel.value=preferredURI;
   }
   function muteAllVideos(){
     document.querySelectorAll('.dc-card video').forEach(v=>{v.muted=true;});
@@ -4327,6 +4416,7 @@ window.PortalTTS=(function(){
       const lbl=btn.querySelector('.portal-audio-lbl');
       if(lbl)lbl.textContent=enabled?'🔊':'🔇';
     });
+    fillVoiceSelect();
   }
   function clearResume(){
     if(resumeTimer){clearInterval(resumeTimer);resumeTimer=null;}
@@ -4404,12 +4494,25 @@ window.PortalTTS=(function(){
     // cancel 直後に speak すると欠落することがあるため少し待つ
     setTimeout(function(){if(gen===queueGen)next();},50);
   }
-  if(window.speechSynthesis)speechSynthesis.addEventListener('voiceschanged',()=>{jpVoice=null;});
+  if(window.speechSynthesis)speechSynthesis.addEventListener('voiceschanged',()=>{jpVoice=null; fillVoiceSelect();});
   const api={
     isEnabled(){return enabled;},
     isSpeaking(){
       if(!window.speechSynthesis)return false;
       return speaking||speechSynthesis.speaking||speechSynthesis.pending;
+    },
+    listVoices(){return listJaVoices();},
+    getVoice(){return pickVoice();},
+    setVoiceURI(uri, preview){
+      preferredURI=uri||'';
+      localStorage.setItem(LS_VOICE, preferredURI);
+      jpVoice=null;
+      pickVoice();
+      fillVoiceSelect();
+      if(preview!==false&&enabled){
+        api.stop();
+        setTimeout(function(){ api.speak('こちらが選択した声です。'); }, 60);
+      }
     },
     setEnabled(on){
       enabled=!!on;
@@ -4433,8 +4536,17 @@ window.PortalTTS=(function(){
       if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}
     }
   };
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',syncUi);
-  else syncUi();
+  function wireVoiceSel(){
+    const sel=document.getElementById('entakuVoiceSel');
+    if(!sel||sel.dataset.wired) return;
+    sel.dataset.wired='1';
+    sel.addEventListener('change', function(){
+      api.setVoiceURI(sel.value, true);
+    });
+  }
+  function boot(){ syncUi(); wireVoiceSel(); }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);
+  else boot();
   return api;
 })();
 
@@ -6823,6 +6935,7 @@ window.Treasury={
 
   const S=T.S;
   if(!Array.isArray(S.tasks)){ S.tasks=[]; T.saveAll(); }
+  if(!Array.isArray(S.directives)){ S.directives=[]; T.saveAll(); }
   // AIエージェント向けサンプル／旧タスクは実スタッフ用に移行しない（除去）
   if(S.tasks.some(t=>AGENT_IDS.has(t.assignee))){
     S.tasks=S.tasks.filter(t=>!AGENT_IDS.has(t.assignee));
@@ -6843,23 +6956,87 @@ window.Treasury={
     if(!s)return '?';
     return (s.role?s.role+'　':'')+s.name;
   }
+  function currentStaffId(){
+    const me=window.PortalAuth?.getUser?.();
+    return me&&me.email?String(me.email).toLowerCase():'';
+  }
+  function isPresident(){
+    const me=window.PortalAuth?.getUser?.();
+    return (me&&me.role==='社長') || T.role==='boss';
+  }
+  function pendingForMe(){
+    const me=currentStaffId();
+    if(!me) return [];
+    return (S.directives||[]).filter(d=>d.status==='pending'&&d.assignee===me)
+      .sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));
+  }
+  function pendingHtml(list){
+    if(!list.length) return '';
+    return list.map(d=>{
+      const from=d.byName||'社長';
+      return `<div class="office-tk-pend" data-dir-id="${esc(d.id)}">
+        <div class="office-tk-pend-title">${esc(d.title)}</div>
+        ${d.detail?`<div class="office-tk-pend-meta">${esc(d.detail)}</div>`:''}
+        <div class="office-tk-pend-meta">指示：${esc(from)}　${esc(d.at||'')}</div>
+        <div class="office-tk-pend-acts">
+          <button type="button" class="ok" data-dir-approve="${esc(d.id)}">承認してタスク追加</button>
+          <button type="button" class="ng" data-dir-reject="${esc(d.id)}">却下</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  function renderPendingAlerts(){
+    const mine=pendingForMe();
+    const dockAlert=$("#officeTkAlert"), dockBox=$("#officeTkPending");
+    if(dockAlert&&dockBox){
+      if(mine.length){
+        dockAlert.hidden=false;
+        dockBox.innerHTML=pendingHtml(mine);
+      }else{
+        dockAlert.hidden=true;
+        dockBox.innerHTML='';
+      }
+    }
+    const tkAlert=$("#tkAlert"), tkBox=$("#tkPending");
+    if(tkAlert&&tkBox){
+      if(mine.length){
+        tkAlert.hidden=false;
+        tkBox.innerHTML=pendingHtml(mine);
+      }else{
+        tkAlert.hidden=true;
+        tkBox.innerHTML='';
+      }
+    }
+  }
 
   function fillAssigneeSelects(){
     const staff=staffList();
-    const opts=staff.length
-      ?staff.map(s=>`<option value="${esc(s.id)}">${esc(staffLabel(s))}</option>`).join('')
-      :`<option value="">（ログイン登録したスタッフがいません）</option>`;
+    const prez=isPresident();
+    const me=currentStaffId();
+    let opts='';
+    if(!staff.length){
+      opts=`<option value="">（ログイン登録したスタッフがいません）</option>`;
+    }else if(prez){
+      opts=`<option value="__all__">全員に指示</option>`+
+        staff.map(s=>`<option value="${esc(s.id)}">${esc(staffLabel(s))}</option>`).join('');
+    }else{
+      opts=staff.map(s=>`<option value="${esc(s.id)}">${esc(staffLabel(s))}</option>`).join('');
+    }
     ['#tkAssignee','#officeTkAssignee'].forEach(sel=>{
       const el=$(sel); if(!el)return;
       const prev=el.value;
       el.innerHTML=opts;
       if(prev&&[...el.options].some(o=>o.value===prev))el.value=prev;
-      else if(staff.length){
-        const me=window.PortalAuth?.getUser?.();
-        const mid=me&&me.email?String(me.email).toLowerCase():'';
-        if(mid&&[...el.options].some(o=>o.value===mid))el.value=mid;
-      }
+      else if(prez) el.value='__all__';
+      else if(me&&[...el.options].some(o=>o.value===me)) el.value=me;
+      else if(staff.length) el.value=staff[0].id;
     });
+    const note=$("#officeTkDirNote"), hint=$("#officeTkHeadHint"), sub=$("#officeTkSubmit");
+    if(note) note.hidden=!prez;
+    if(hint) hint.textContent=prez?'社長：指示を送れます':'承認待ちは赤字で表示';
+    if(sub) sub.textContent=prez?'指示':'追加';
+    const title=$("#officeTkTitle");
+    if(title) title.placeholder=prez?'指示内容（承認後にタスク化）':'タスクを入力（Enterで追加）';
   }
 
   function jumpToStaffTasks(staffId){
@@ -6882,11 +7059,17 @@ window.Treasury={
 
   function renderOfficeDock(){
     fillAssigneeSelects();
+    renderPendingAlerts();
     const chips=$("#officeTkStaffs");
     const staff=staffList();
+    const me=currentStaffId();
     if(chips){
       chips.innerHTML=staff.length
-        ?staff.map(s=>`<button type="button" data-staff-jump="${esc(s.id)}" title="${esc(s.email)}">${esc(s.name)}</button>`).join('')
+        ?staff.map(s=>{
+          const pend=(S.directives||[]).filter(d=>d.status==='pending'&&d.assignee===s.id).length;
+          const mark=pend?` <b style="color:#ff8a8a">+${pend}</b>`:'';
+          return `<button type="button" data-staff-jump="${esc(s.id)}" title="${esc(s.email)}" class="${s.id===me?'on':''}">${esc(s.name)}${mark}</button>`;
+        }).join('')
         :`<span class="office-tk-empty">ログインしたスタッフがここに表示されます</span>`;
     }
     const list=$("#officeTkList"); if(!list) return;
@@ -6916,9 +7099,12 @@ window.Treasury={
     renderStaffJump();
     const cols=$("#tkCols"); if(!cols) return;
     const hint=$("#tkHint");
-    if(hint) hint.textContent = T.role==='boss'
-      ? '社長モード：登録スタッフへ指示タスクを割り当てます（「社長指示」）。'
-      : '社員モード：自分のタスクを登録します（「自己申告」）。スタッフはログイン登録で追加されます。';
+    const prez=isPresident();
+    if(hint) hint.textContent = prez
+      ? '社長：担当または「全員に指示」で指示を送れます。相手が承認するとタスクに追加されます。'
+      : '社員：自分のタスクを登録できます。社長からの指示は赤い通知で承認してください。';
+    const addBtn=$("#tkAdd");
+    if(addBtn) addBtn.textContent=prez?'＋ 指示を送る':'＋ 追加';
     const staff=staffList();
     if(!staff.length){
       cols.innerHTML=`<div class="tk-empty" style="padding:16px">まだスタッフがいません。ポータルにログイン登録した人が担当プルダウンと列に表示されます。</div>`;
@@ -6928,6 +7114,7 @@ window.Treasury={
     cols.innerHTML=show.map(a=>{
       const all=S.tasks.filter(t=>t.assignee===a.id);
       const todo=all.filter(t=>t.status==='todo').length;
+      const pend=(S.directives||[]).filter(d=>d.status==='pending'&&d.assignee===a.id).length;
       const list=all.filter(t=>filter==='all'?true:t.status===filter)
         .sort((x,y)=>(x.status===y.status?0:x.status==='todo'?-1:1));
       const cards=list.length?list.map(t=>{
@@ -6944,21 +7131,83 @@ window.Treasury={
       }).join(''):`<div class="tk-empty">${filter==='done'?'完了タスクはありません。':filter==='todo'?'未完了タスクはありません。':'タスクはありません。'}</div>`;
       return `<div class="tk-col ${focusStaff===a.id?'is-focus':''}" data-staff="${esc(a.id)}">
         <div class="tk-col-head">
-          <div><span class="tk-col-name">${esc(a.name)}</span><span class="tk-col-role">${esc(a.role||'')}</span></div>
-          <span class="tk-col-cnt ${todo>0?'hot':''}">${todo}</span>
+          <div><span class="tk-col-name">${esc(a.name)}</span><span class="tk-col-role">${esc(a.role||'')}${pend?` <span style="color:#ff8a8a;font-weight:800">承認待 ${pend}</span>`:''}</span></div>
+          <span class="tk-col-cnt ${todo>0||pend>0?'hot':''}">${todo}</span>
         </div>
         <div class="tk-col-body">${cards}</div>
       </div>`;
     }).join('');
   }
 
-  function addTask(assignee, title, detail){
-    if(!assignee){ T.toast('担当スタッフを選んでください（ログイン登録が必要）'); return false; }
+  function addTask(assignee, title, detail, opts){
+    if(!assignee||assignee==='__all__'){ T.toast('担当スタッフを選んでください'); return false; }
     if(!title){ T.toast('タスク内容を入力してください'); return false; }
     const who=staffById(assignee);
-    S.tasks.push({ id:Date.now(), assignee, title, detail:detail||'', by:T.role==='boss'?'boss':'self', status:'todo', at:new Date().toISOString().slice(0,10) });
-    T.saveAll(); renderTasks(); T.toast((who?who.name:assignee)+'にタスクを追加しました');
+    const byBoss=!!(opts&&opts.byBoss) || T.role==='boss' || isPresident();
+    S.tasks.push({
+      id:Date.now()+Math.floor(Math.random()*1000),
+      assignee, title, detail:detail||'',
+      by:byBoss?'boss':'self',
+      status:'todo',
+      at:new Date().toISOString().slice(0,10)
+    });
+    T.saveAll(); renderTasks();
+    if(!(opts&&opts.silent)) T.toast((who?who.name:assignee)+'にタスクを追加しました');
     return true;
+  }
+
+  function sendDirective(assigneeKey, title, detail){
+    if(!isPresident()){ T.toast('指示を送れるのは社長のみです'); return false; }
+    if(!title){ T.toast('指示内容を入力してください'); return false; }
+    const me=window.PortalAuth?.getUser?.();
+    const byName=(me&&me.name)||'社長';
+    const byId=currentStaffId();
+    let targets=[];
+    if(assigneeKey==='__all__'){
+      targets=staffList().filter(s=>s.id&&s.id!==byId);
+      if(!targets.length) targets=staffList();
+    }else{
+      const one=staffById(assigneeKey);
+      if(!one){ T.toast('担当スタッフを選んでください'); return false; }
+      targets=[one];
+    }
+    if(!targets.length){ T.toast('指示先のスタッフがいません'); return false; }
+    const at=new Date().toISOString().slice(0,10);
+    targets.forEach((s,i)=>{
+      S.directives.push({
+        id:'dir'+Date.now().toString(36)+i+Math.random().toString(36).slice(2,5),
+        assignee:s.id, title, detail:detail||'',
+        status:'pending', byName, byId, at
+      });
+    });
+    T.saveAll(); renderTasks();
+    T.toast(targets.length===1
+      ? (targets[0].name+'へ指示を送りました（承認待ち）')
+      : ('全員（'+targets.length+'名）へ指示を送りました（承認待ち）'));
+    return true;
+  }
+
+  function approveDirective(id){
+    const d=(S.directives||[]).find(x=>String(x.id)===String(id));
+    if(!d||d.status!=='pending') return;
+    const me=currentStaffId();
+    if(d.assignee!==me&&!isPresident()){ T.toast('自分宛の指示のみ承認できます'); return; }
+    d.status='approved';
+    d.approvedAt=new Date().toISOString().slice(0,10);
+    d.approvedBy=me;
+    addTask(d.assignee, d.title, d.detail, {byBoss:true, silent:true});
+    T.saveAll(); renderTasks();
+    T.toast('承認しました。タスクに追加されました');
+  }
+  function rejectDirective(id){
+    const d=(S.directives||[]).find(x=>String(x.id)===String(id));
+    if(!d||d.status!=='pending') return;
+    const me=currentStaffId();
+    if(d.assignee!==me&&!isPresident()){ T.toast('自分宛の指示のみ却下できます'); return; }
+    d.status='rejected';
+    d.rejectedAt=new Date().toISOString().slice(0,10);
+    T.saveAll(); renderTasks();
+    T.toast('指示を却下しました');
   }
 
   function bindImeSafeEnter(inputEl, onSubmit){
@@ -6976,7 +7225,10 @@ window.Treasury={
 
   $("#tkAdd").onclick=()=>{
     const assignee=$("#tkAssignee").value, title=$("#tkTitle").value.trim(), detail=$("#tkDetail").value.trim();
-    if(addTask(assignee, title, detail)){ $("#tkTitle").value=''; $("#tkDetail").value=''; }
+    const ok=isPresident()
+      ? sendDirective(assignee, title, detail)
+      : addTask(assignee, title, detail);
+    if(ok){ $("#tkTitle").value=''; $("#tkDetail").value=''; }
   };
   bindImeSafeEnter($("#tkTitle"), ()=>$("#tkAdd").click());
 
@@ -6991,7 +7243,10 @@ window.Treasury={
     const submitOfficeTask=()=>{
       const assignee=$("#officeTkAssignee").value;
       const title=$("#officeTkTitle").value.trim();
-      if(addTask(assignee, title, '')){ $("#officeTkTitle").value=''; }
+      const ok=isPresident()
+        ? sendDirective(assignee, title, '')
+        : addTask(assignee, title, '');
+      if(ok){ $("#officeTkTitle").value=''; }
     };
     bindImeSafeEnter(officeTitle, submitOfficeTask);
     officeForm.addEventListener('submit',e=>{
@@ -7000,7 +7255,15 @@ window.Treasury={
       submitOfficeTask();
     });
   }
+  function handleDirClick(e){
+    const ap=e.target.closest('[data-dir-approve]');
+    if(ap){ approveDirective(ap.dataset.dirApprove); return true; }
+    const rj=e.target.closest('[data-dir-reject]');
+    if(rj){ rejectDirective(rj.dataset.dirReject); return true; }
+    return false;
+  }
   document.getElementById('office-pane')?.addEventListener('click', e=>{
+    if(handleDirClick(e)) return;
     const jump=e.target.closest('[data-staff-jump]');
     if(jump){ jumpToStaffTasks(jump.dataset.staffJump); return; }
     const done=e.target.closest('[data-office-tk-done]');
@@ -7016,6 +7279,7 @@ window.Treasury={
   });
 
   $("#s-tasks").addEventListener('click', e=>{
+    if(handleDirClick(e)) return;
     const sf=e.target.closest('[data-staff-focus]');
     if(sf){ focusStaff=sf.dataset.staffFocus||''; renderTasks(); return; }
     const f=e.target.closest('[data-tk-filter]');
@@ -8860,7 +9124,7 @@ window.EntakuDocIngest=(function(){
     box.setAttribute('aria-label','円卓会議を開始');
     function tryOpen(e){
       if(S.open) return;
-      if(e.target.closest('.entaku-audio-btn')) return;
+      if(e.target.closest('.entaku-audio-btn,.entaku-voice-sel')) return;
       e.preventDefault();
       openEntaku();
     }
