@@ -227,6 +227,10 @@ input,select,textarea{font-family:inherit}
   text-shadow:0 1px 2px rgba(0,0,0,.95),0 0 3px rgba(0,0,0,.7);
   display:flex;align-items:center;justify-content:center;text-align:center;
 }
+.gamenav button.nav-biz .nav-label.nav-label-2line{
+  flex-direction:column;white-space:normal;line-height:1.15;
+  font-size:10.5px;gap:1px;padding:2px 6px;
+}
 /* 事業ボタン＝薄い緑白字 / 事業以外＝緑塗り＋薄い緑白字 */
 .gamenav button.nav-biz:not(.nav-green) .nav-label{color:var(--nav-label)}
 .gamenav button.nav-green .nav-label{color:var(--nav-label)!important}
@@ -1805,6 +1809,7 @@ video.dc-card__image{
   }
   #portal-shell > .gamenav button.nav-biz .nav-photo::after{background:linear-gradient(180deg,rgba(6,9,14,.05),rgba(6,9,14,.5))}
   #portal-shell > .gamenav button.nav-biz .nav-label{padding:0;font-size:10px;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.9)}
+  #portal-shell > .gamenav button.nav-biz .nav-label.nav-label-2line{font-size:9px;line-height:1.12}
   #quests-row{
     height:auto;overflow:visible;
     grid-template-rows:minmax(220px,40vh) minmax(180px,1fr);
@@ -1975,11 +1980,11 @@ video.dc-card__image{
   </button>
   <button type="button" class="nav-biz" data-s="cf-cases">
     <span class="nav-photo" style="background-image:url(nav-cases.png)"></span>
-    <span class="nav-label">案件ボード</span>
+    <span class="nav-label nav-label-2line">イレギュラー<br>案件ボード</span>
   </button>
   <button type="button" class="nav-biz" data-s="cf-flow">
     <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
-    <span class="nav-label">案件フロー</span>
+    <span class="nav-label nav-label-2line">イレギュラー<br>案件フロー</span>
   </button>
   <div class="nav-acct-wrap" id="navAcctWrap" hidden>
     <div class="nav-group nav-group-major nav-acct-label" id="navAcctLabel">会計</div>
@@ -2312,10 +2317,10 @@ video.dc-card__image{
   </div>
 </section>
 
-<!-- ===== CF: 案件ボード ===== -->
+<!-- ===== CF: イレギュラー案件ボード ===== -->
 <section class="screen" id="s-cf-cases">
-  <h2 class="stitle">案件ボード</h2>
-  <p class="sdesc">売買・金消・個人会社貸借・税を案件単位で管理します。</p>
+  <h2 class="stitle">イレギュラー案件ボード</h2>
+  <p class="sdesc">売買・金消・個人会社貸借・税など、イレギュラー案件を単位で管理します。</p>
   <div class="cf-grid-2">
     <div>
       <div class="ledger-tools">
@@ -2380,11 +2385,11 @@ video.dc-card__image{
   </div>
 </section>
 
-<!-- ===== CF: 案件フロー ===== -->
+<!-- ===== CF: イレギュラー案件フロー ===== -->
 <section class="screen" id="s-cf-flow">
-  <h2 class="stitle">案件フロー（印籠の核）</h2>
-  <p class="sdesc">案件ボードから案件を選ぶと、ここに契約・予定・実績が並びます。</p>
-  <div class="card" id="cfFlowPanel"><div class="cf-empty">案件ボードで案件カードをクリックしてください。</div></div>
+  <h2 class="stitle">イレギュラー案件フロー（印籠の核）</h2>
+  <p class="sdesc">イレギュラー案件ボードから案件を選ぶと、ここに契約・予定・実績が並びます。</p>
+  <div class="card" id="cfFlowPanel"><div class="cf-empty">イレギュラー案件ボードで案件カードをクリックしてください。</div></div>
 </section>
 
 <!-- ===== CF: 役員貸付 ===== -->
@@ -2403,7 +2408,7 @@ video.dc-card__image{
         <div class="fgroup" style="grid-column:1/-1"><label>メモ</label><input id="cfPartyNote"></div>
       </div>
       <button class="save-btn" id="cfAddParty" style="margin-top:12px">追加</button>
-      <p class="note">貸借案件は案件ボードで種別「個人会社貸借」を選び、ここに登録した相手を紐づけてください。</p>
+      <p class="note">貸借案件はイレギュラー案件ボードで種別「個人会社貸借」を選び、ここに登録した相手を紐づけてください。</p>
     </div>
   </div>
 </section>
@@ -3070,7 +3075,7 @@ video.dc-card__image{
     </div>
     <div class="card" id="cfForecastBody" style="margin-top:14px"></div>
     <div class="biz-link-row" style="margin-top:14px">
-      <button type="button" data-jump="cf-cases">案件ボード</button>
+      <button type="button" data-jump="cf-cases">イレギュラー案件ボード</button>
       <button type="button" data-jump="cf-inrou">印籠レポート</button>
     </div>
   </div>
@@ -3473,6 +3478,18 @@ video.dc-card__image{
 #s-contracts .ct-slabel{font-size:10px;color:var(--muted);letter-spacing:.06em}
 #s-contracts .ct-sval{font-size:16px;font-weight:800;font-family:var(--font-num)}
 #s-contracts .ct-add{background:linear-gradient(180deg,#8ef0b3,var(--in));color:#062012;border:none;border-radius:9px;padding:10px 16px;font-size:13px;font-weight:800;cursor:pointer}
+#s-contracts .ct-bizfilter{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap}
+#s-contracts .ct-bizfilter button{
+  background:var(--panel2);border:1px solid var(--nav-green-line);color:var(--muted);
+  border-radius:8px;padding:7px 12px;font-size:11.5px;font-weight:700;cursor:pointer;
+}
+#s-contracts .ct-bizfilter button.on{
+  background:linear-gradient(180deg,var(--nav-green-fill-hi),var(--nav-green-fill));
+  border-color:var(--nav-green-soft);color:var(--nav-label);
+}
+#s-contracts .ct-bizfilter button .n{
+  margin-left:5px;font-size:10px;font-weight:800;font-family:var(--font-num);opacity:.85;
+}
 #s-contracts .ct-filter{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
 #s-contracts .ct-filter button{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer}
 #s-contracts .ct-filter button.on{
@@ -3525,7 +3542,7 @@ video.dc-card__image{
 </style>
 <section class="screen" id="s-contracts">
   <h2 class="stitle">📄 契約書台帳</h2>
-  <p class="sdesc">各事業の案件ごとに契約書を紐づけて一元管理します。案件画面からも契約を登録・紐づけできます。</p>
+  <p class="sdesc">事業グループごとに契約書を分けて表示します。各事業ボタンで絞り込み、契約年月日の新しい順に並びます。</p>
 
   <div class="ct-top">
     <div class="ct-sum">
@@ -3534,6 +3551,19 @@ video.dc-card__image{
       <div class="ct-scard"><div class="ct-slabel">未締結（要対応）</div><div class="ct-sval" id="ctUnsigned" style="color:var(--out)">0</div></div>
     </div>
     <button type="button" class="ct-add" id="ctAdd">＋ 契約書を登録</button>
+  </div>
+
+  <div class="ct-bizfilter" id="ctBizFilter">
+    <button type="button" class="on" data-ct-biz="all">すべて<span class="n" data-ct-biz-n="all">0</span></button>
+    <button type="button" data-ct-biz="不動産">不動産<span class="n" data-ct-biz-n="不動産">0</span></button>
+    <button type="button" data-ct-biz="パラダイス">パラダイス<span class="n" data-ct-biz-n="パラダイス">0</span></button>
+    <button type="button" data-ct-biz="稲毛">稲毛<span class="n" data-ct-biz-n="稲毛">0</span></button>
+    <button type="button" data-ct-biz="介護">介護<span class="n" data-ct-biz-n="介護">0</span></button>
+    <button type="button" data-ct-biz="IT">IT<span class="n" data-ct-biz-n="IT">0</span></button>
+    <button type="button" data-ct-biz="探偵">探偵<span class="n" data-ct-biz-n="探偵">0</span></button>
+    <button type="button" data-ct-biz="カンストWiFi">カンストWiFi<span class="n" data-ct-biz-n="カンストWiFi">0</span></button>
+    <button type="button" data-ct-biz="人材派遣">人材派遣<span class="n" data-ct-biz-n="人材派遣">0</span></button>
+    <button type="button" data-ct-biz="その他">その他<span class="n" data-ct-biz-n="その他">0</span></button>
   </div>
 
   <div class="ct-filter" id="ctFilter">
@@ -4825,7 +4855,7 @@ function renderBiz(){
   if($("#bstList"))$("#bstList").innerHTML=st.map(d=>`<div class="bp-deal" style="margin-bottom:8px"><div class="bp-deal-head"><span class="bp-artist">${esc(d.client)}</span><span class="bp-date">${esc(d.status)}</span></div><div class="bp-deal-sub">${esc(d.worker||"")} ／ ${yen(+d.fee||0)}</div><div class="bp-deal-ctr"><button class="btn-reject" data-bst-id="${esc(d.id)}">削除</button></div>${window.BizCaseLink?BizCaseLink.panelHtml('人材派遣', d.id):''}</div>`).join("")||`<div class="memo" style="color:var(--muted);padding:8px">派遣案件はまだありません。</div>`;
   const staff=["凛","紬","岡部","越石","さやか","丹治"];
   if($("#btScoreList"))$("#btScoreList").innerHTML=staff.map((n,i)=>`<div class="tx-row"><span class="who">${n}</span><span class="memo">納期 ${78+i*3}% ／ 速度 ${72+i*4}% ／ 総合 ${75+i*2}点</span></div>`).join("");
-  if($("#btDueList"))$("#btDueList").innerHTML=["案件ボード 予定日確認","印籠レポート 月末提出","デイサービス 実績報告"].map(s=>`<div class="tx-row"><span class="who">${s}</span><span class="memo">期日: ${viewMonthStr(view)}-25</span></div>`).join("");
+  if($("#btDueList"))$("#btDueList").innerHTML=["イレギュラー案件ボード 予定日確認","印籠レポート 月末提出","デイサービス 実績報告"].map(s=>`<div class="tx-row"><span class="who">${s}</span><span class="memo">期日: ${viewMonthStr(view)}-25</span></div>`).join("");
 }
 /* ---------- パラダイスシティ：案件（橋渡し仲介）ボード ---------- */
 const BP_EXP_LABEL={
@@ -6867,8 +6897,21 @@ window.BizCaseLink=(function(){
     T.saveAll();
   }
   (S.contracts||[]).forEach(c=>{ if(c.bizCaseId===undefined) c.bizCaseId=''; });
-  let filter='all', editId=null;
+  let filter='all', bizFilter='all', editId=null;
+  const CT_BIZ=['不動産','パラダイス','稲毛','介護','IT','探偵','カンストWiFi','人材派遣','その他'];
   const fmt=n=>n?'¥'+Math.abs(Math.round(n)).toLocaleString('ja-JP'):'—';
+  function dateKey(d){
+    const m=String(d||'').trim().match(/(\d{4})\D?(\d{1,2})\D?(\d{1,2})/);
+    if(!m) return 0;
+    return (+m[1])*10000+(+m[2])*100+(+m[3]);
+  }
+  function sortByContractDate(list){
+    return [...list].sort((a,b)=>{
+      const da=dateKey(a.date), db=dateKey(b.date);
+      if(da!==db) return db-da; /* 契約年月日の新しい順（日付なしは末尾） */
+      return String(a.party||'').localeCompare(String(b.party||''),'ja');
+    });
+  }
 
   function fillCaseSelect(biz, selected){
     const sel=$("#ctF-case"); if(!sel) return;
@@ -6879,11 +6922,23 @@ window.BizCaseLink=(function(){
 
   function render(){
     if(!$("#ctList")) return;
-    const all=S.contracts;
+    const all=S.contracts||[];
     $("#ctTotal").textContent=all.length;
     $("#ctSigned").textContent=all.filter(c=>c.status==='signed').length;
     $("#ctUnsigned").textContent=all.filter(c=>c.status!=='signed').length;
-    const list=all.filter(c=>filter==='all'?true:filter==='signed'?c.status==='signed':c.status!=='signed');
+    const nAll=$('[data-ct-biz-n="all"]'); if(nAll) nAll.textContent=all.length;
+    CT_BIZ.forEach(b=>{
+      const el=$(`[data-ct-biz-n="${b}"]`);
+      if(el) el.textContent=all.filter(c=>(c.biz||'その他')===b).length;
+    });
+    let list=all.filter(c=>{
+      const biz=c.biz||'その他';
+      if(bizFilter!=='all'&&biz!==bizFilter) return false;
+      if(filter==='signed') return c.status==='signed';
+      if(filter==='unsigned') return c.status!=='signed';
+      return true;
+    });
+    list=sortByContractDate(list);
     $("#ctList").innerHTML=list.length?list.map(c=>{
       const signed=c.status==='signed';
       const caseLbl=window.BizCaseLink?BizCaseLink.caseLabel(c.biz, c.bizCaseId):'';
@@ -6893,7 +6948,7 @@ window.BizCaseLink=(function(){
           <div class="ct-badges"><span class="ct-biz">${esc(c.biz||'—')}</span><span class="ct-status ${signed?'signed':'unsigned'}">${signed?'締結済':'未締結'}</span></div>
         </div>
         ${caseLbl?`<div class="ct-case">案件：${esc(caseLbl)}</div>`:''}
-        <div class="ct-meta">${c.amount?`<span>金額 <b>${fmt(c.amount)}</b></span>`:''}${c.date?`<span>契約日 <b>${esc(c.date)}</b></span>`:''}</div>
+        <div class="ct-meta">${c.date?`<span>契約日 <b>${esc(c.date)}</b></span>`:'<span>契約日 <b>—</b></span>'}${c.amount?`<span>金額 <b>${fmt(c.amount)}</b></span>`:''}</div>
         ${c.body?`<div class="ct-note">${esc(c.body)}</div>`:''}
         <div class="ct-acts">
           <button class="ct-toggle" data-ct-toggle="${esc(c.id)}">${signed?'未締結に戻す':'締結済にする'}</button>
@@ -6901,7 +6956,7 @@ window.BizCaseLink=(function(){
           <button class="ct-del" data-ct-del="${esc(c.id)}">削除</button>
         </div>
       </div>`;
-    }).join(''):'<div class="ct-empty">該当する契約書がありません。「＋ 契約書を登録」から追加してください。</div>';
+    }).join(''):'<div class="ct-empty">この事業グループに該当する契約書がありません。「＋ 契約書を登録」から追加してください。</div>';
   }
 
   function openModal(id, preset){
@@ -6935,6 +6990,12 @@ window.BizCaseLink=(function(){
   };
 
   $("#s-contracts").addEventListener('click', e=>{
+    const bz=e.target.closest('[data-ct-biz]');
+    if(bz){
+      bizFilter=bz.dataset.ctBiz||'all';
+      $$('#ctBizFilter button').forEach(b=>b.classList.toggle('on',b===bz));
+      render(); return;
+    }
     const f=e.target.closest('[data-ct-filter]');
     if(f){ filter=f.dataset.ctFilter; $$('#ctFilter button').forEach(b=>b.classList.toggle('on',b===f)); render(); return; }
     if(e.target.closest('#ctAdd')){ openModal(null); return; }
@@ -7523,7 +7584,7 @@ window.EntakuDocIngest=(function(){
     bank_csv:{ module:'cf-bank', label:'口座・CSV' },
     legal:{ module:'cf-legal', label:'契約リーガル' },
     contracts:{ module:'contracts', label:'契約書' },
-    cases:{ module:'cf-cases', label:'案件ボード' },
+    cases:{ module:'cf-cases', label:'イレギュラー案件ボード' },
     meeting_finance:{ module:'mtg-finance', label:'経理会議' },
     meeting_sales:{ module:'mtg-sales', label:'営業会議' },
     meeting_other:{ module:'mtg-other', label:'その他MT' },
@@ -8157,7 +8218,7 @@ window.EntakuDocIngest=(function(){
   const ROUTES = [
     { key:'口座', s:'cf-bank', label:'口座・CSVへ' },
     { key:'明細突合', s:'cf-link', label:'明細突合へ' },
-    { key:'案件', s:'cf-cases', label:'案件ボードへ' },
+    { key:'案件', s:'cf-cases', label:'イレギュラー案件ボードへ' },
     { key:'リーガル', s:'cf-legal', label:'契約リーガルへ' },
     { key:'役員貸付', s:'cf-party', label:'役員貸付へ' },
     { key:'関連者', s:'cf-party', label:'役員貸付へ' },
@@ -8301,7 +8362,7 @@ window.EntakuDocIngest=(function(){
     }
     const opts=[
       {r:'bank_csv',l:'口座・CSV'},{r:'cf',l:'CF'},{r:'legal',l:'契約リーガル'},{r:'contracts',l:'契約書'},
-      {r:'cases',l:'案件ボード'},{r:'meeting_finance',l:'経理会議'},{r:'meeting_sales',l:'営業会議'},
+      {r:'cases',l:'イレギュラー案件ボード'},{r:'meeting_finance',l:'経理会議'},{r:'meeting_sales',l:'営業会議'},
       {r:'meeting_other',l:'その他MT'},{r:'entry',l:'記録する'}
     ];
     const btns=opts.map(function(o){

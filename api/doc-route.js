@@ -45,7 +45,7 @@ function heuristic(fileName, text) {
     return { route: "entry", label: "記録する", summary: "領収・請求資料と判定", confidence: 0.5 };
   }
   if (/案件|発注|見積/i.test(b)) {
-    return { route: "cases", label: "案件ボード", summary: "案件関連資料と判定", confidence: 0.45 };
+    return { route: "cases", label: "イレギュラー案件ボード", summary: "案件関連資料と判定", confidence: 0.45 };
   }
   return { route: "other", label: "資料保管", summary: "一般資料として保管", confidence: 0.3 };
 }
@@ -59,7 +59,7 @@ function normalize(raw, fileName, text) {
     bank_csv: "口座・CSV",
     legal: "契約リーガル",
     contracts: "契約書",
-    cases: "案件ボード",
+    cases: "イレギュラー案件ボード",
     meeting_finance: "経理会議",
     meeting_sales: "営業会議",
     meeting_other: "その他MT",
