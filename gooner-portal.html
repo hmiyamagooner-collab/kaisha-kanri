@@ -10,7 +10,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
-/* Supabase（タスク共有・名簿）— 公開 publishable キーのみ */
+/* Supabase Auth＋名簿（anon / publishable キーのみ） */
 window.GoonerSB=(function(){
   const SB_URL='https://bckzazaghgomhyvdikmb.supabase.co';
   const SB_KEY='sb_publishable_Gd1GILds7uUe6wmnrANNaQ_Fpv7NW3a';
@@ -25,9 +25,36 @@ window.GoonerSB=(function(){
     client=window.supabase.createClient(SB_URL, SB_KEY);
     return client;
   }
-  function saveMe(m){ localStorage.setItem(MEM_KEY, JSON.stringify(m)); }
+  function saveMe(m){
+    if(!m) localStorage.removeItem(MEM_KEY);
+    else localStorage.setItem(MEM_KEY, JSON.stringify(m));
+  }
   function me(){ try{ return JSON.parse(localStorage.getItem(MEM_KEY)); }catch(e){ return null; } }
-  async function registerMember(name, role, email){
+  async function authToken(){
+    const c=sb(); if(!c) return '';
+    const { data }=await c.auth.getSession();
+    return (data&&data.session&&data.session.access_token)||'';
+  }
+  async function loadMemberForUser(user){
+    const c=sb(); if(!c||!user) return null;
+    let row=null;
+    const q1=await c.from('members').select('*').eq('auth_user_id', user.id).maybeSingle();
+    if(q1.data) row=q1.data;
+    if(!row && user.email){
+      const q2=await c.from('members').select('*').eq('email', String(user.email).toLowerCase()).maybeSingle();
+      if(q2.data){
+        row=q2.data;
+        if(!row.auth_user_id){
+          await c.from('members').update({ auth_user_id: user.id }).eq('id', row.id);
+          row.auth_user_id=user.id;
+        }
+      }
+    }
+    if(row) saveMe(row);
+    return row;
+  }
+  /** 既存タスク連携用：auth_user_id 紐付け対応の名簿登録 */
+  async function registerMember(name, role, email, authUserId){
     const c=sb(); if(!c) return null;
     email=String(email||'').trim().toLowerCase();
     name=String(name||'').trim();
@@ -35,8 +62,17 @@ window.GoonerSB=(function(){
     if(!email||!name||!role) return null;
     const { data: existing, error: e1 } = await c.from('members').select('*').eq('email', email).maybeSingle();
     if(e1){ console.warn('[GoonerSB] members select', e1); }
-    if(existing){ saveMe(existing); return existing; }
-    const { data, error } = await c.from('members').insert({ name, role, email }).select().single();
+    if(existing){
+      if(authUserId && !existing.auth_user_id){
+        const { data: upd }=await c.from('members').update({ auth_user_id: authUserId }).eq('id', existing.id).select().single();
+        const row=upd||Object.assign({}, existing, { auth_user_id: authUserId });
+        saveMe(row); return row;
+      }
+      saveMe(existing); return existing;
+    }
+    const payload={ name, role, email };
+    if(authUserId) payload.auth_user_id=authUserId;
+    const { data, error } = await c.from('members').insert(payload).select().single();
     if(error){
       alert('登録エラー: '+error.message);
       return null;
@@ -44,7 +80,40 @@ window.GoonerSB=(function(){
     saveMe(data);
     return data;
   }
-  return { sb, me, saveMe, registerMember, url:SB_URL };
+  async function signUp(name, role, email, password){
+    const c=sb(); if(!c) return { error:'no_client' };
+    email=String(email||'').trim().toLowerCase();
+    const { data, error }=await c.auth.signUp({ email, password });
+    if(error){ alert('登録エラー: '+error.message); return { error }; }
+    const uid=data&&data.user&&data.user.id;
+    if(!uid){ alert('登録は受け付けましたが、確認メールが必要な場合があります。'); return { data }; }
+    await registerMember(name, role, email, uid);
+    return { data };
+  }
+  async function signIn(email, password){
+    const c=sb(); if(!c) return { error:'no_client' };
+    const { data, error }=await c.auth.signInWithPassword({
+      email:String(email||'').trim().toLowerCase(),
+      password:password
+    });
+    if(error){ alert('ログインエラー: '+error.message); return { error }; }
+    if(data&&data.user) await loadMemberForUser(data.user);
+    return { data };
+  }
+  async function signOut(){
+    const c=sb();
+    if(c) await c.auth.signOut();
+    saveMe(null);
+  }
+  function canUseDropbox(){
+    const m=me();
+    return !!(m && (m.role==='社長' || m.dropbox_allowed===true));
+  }
+  return {
+    sb, me, saveMe, registerMember, loadMemberForUser,
+    signUp, signIn, signOut, authToken, canUseDropbox,
+    url:SB_URL, anonKey:SB_KEY
+  };
 })();
 </script>
 <style>
@@ -1982,21 +2051,66 @@ video.dc-card__image{
 @media(orientation:portrait) and (max-width:980px){
   #rotate-note{display:block;}
 }
-/* スマホ横画面：PCレイアウトを縮小してフィット */
-@media(orientation:landscape) and (max-height:520px){
+/* スマホ横画面：縮めずPC相当サイズを維持し、足りない分はスクロール */
+@media(orientation:landscape) and (max-width:980px){
+  #portal-shell{
+    min-height:100dvh;
+    height:100dvh;
+    overflow:hidden;
+  }
+  #portal-main{
+    min-height:0;
+    height:100%;
+    overflow-x:hidden;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  #portal-bar{position:sticky;top:0;z-index:20;background:#000}
+  #quests-row{
+    height:auto;
+    min-height:640px;
+    grid-template-rows:minmax(300px,340px) minmax(340px,1fr);
+    gap:8px;padding:6px;
+    overflow:visible;
+  }
+  .dash-split-row{
+    min-height:340px;
+    height:340px;
+    grid-template-columns:minmax(0,76fr) minmax(260px,24fr);
+  }
+  #dashboard-pane{
+    min-height:300px;height:100%;overflow:hidden;
+  }
+  .dash-cards-wrap{min-height:280px;overflow:hidden}
+  .dc-cards{
+    min-height:280px;height:100%;
+    grid-template-columns:repeat(3,minmax(140px,1fr));
+    grid-auto-rows:minmax(260px,1fr);
+  }
+  .dc-card,.dc-card .dc-photo,.dc-card .dc-avatar-wrap{
+    min-height:240px;
+  }
+  .dash-entaku-pane{
+    min-width:260px;min-height:340px;height:100%;overflow:hidden;
+  }
+  .dash-entaku-pane .entaku-inline,
+  .entaku-inline{
+    min-height:340px;height:100%;max-height:none;
+  }
+  #office-pane{min-height:340px}
+}
+/* 極短の横画面でもカード／円卓は縮めない（ナビだけ少しコンパクト） */
+@media(orientation:landscape) and (max-height:520px) and (max-width:980px){
   :root{--nav-w:148px;--nav-h:40px}
   #portal-bar{padding:4px 12px}
   #portal-bar .pt-logo{font-size:12px}
-  #quests-row{
-    height:calc(100dvh - 36px);min-height:0;
-    gap:4px;padding:2px 4px;
-  }
   .gamenav{padding:6px 6px 8px;gap:4px}
   .gamenav button.nav-biz .nav-label{font-size:10px;padding:4px 6px}
-  .dc-card-foot{padding:6px 8px}
-  .dc-name{font-size:13px}
 }
-.dc-cards,.dc-card,.dc-card .dc-photo,.dc-card .dc-avatar-wrap{min-height:0;}
+/* PCレイアウト用：グリッド内では縮みを許可 */
+@media(min-width:981px){
+  .dc-cards,.dc-card,.dc-card .dc-photo,.dc-card .dc-avatar-wrap{min-height:0;}
+}
 /* キャラカード動画枠：rin.mp4 / tumugi.mp4 / haruto.mp4 */
 .dc-avatar-wrap:has(> video[src="rin.mp4"]),
 .dc-avatar-wrap:has(> video[src="tumugi.mp4"]),
@@ -2054,6 +2168,20 @@ video.dc-card__image{
   border-color:var(--nav-green);
 }
 .portal-login-err{font-size:12px;color:var(--out);min-height:18px;margin-top:8px}
+.portal-login-tabs{display:flex;gap:6px;margin-bottom:14px}
+.portal-login-tabs button{
+  flex:1;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;
+  border:1px solid rgba(143,152,166,.35);background:transparent;color:var(--muted);
+}
+.portal-login-tabs button.on{
+  border-color:rgba(154,209,74,.5);background:rgba(56,142,60,.18);color:var(--nav-label);
+}
+.tk-dbx-tog{
+  font-size:10px;font-weight:700;margin-left:6px;padding:2px 7px;border-radius:99px;cursor:pointer;
+  border:1px solid rgba(76,175,80,.4);background:rgba(15,138,78,.1);color:var(--muted);
+}
+.tk-dbx-tog.on{border-color:rgba(154,209,74,.65);background:rgba(56,142,60,.22);color:var(--nav-label)}
+#portalDropboxBtn[hidden]{display:none!important}
 #portal-shell[hidden]{display:none!important}
 .pt-user{
   font-size:11px;color:var(--muted);padding:4px 10px;border-radius:99px;
@@ -2115,11 +2243,15 @@ video.dc-card__image{
 <div id="portal-login" role="dialog" aria-labelledby="portal-login-title">
   <div class="portal-login-card">
     <h1 id="portal-login-title">GOONER PORTAL</h1>
-    <p class="sub">利用者の役職・名前・メールを登録してからご利用ください。<br>円卓会議で誰が利用しているか把握します。</p>
+    <p class="sub" id="portalLoginSub">メールとパスワードでログインしてください。<br>初回のみ「新規登録」から役職・名前も登録します。</p>
+    <div class="portal-login-tabs" role="tablist">
+      <button type="button" class="on" id="loginTabSignIn" data-login-mode="signin">ログイン</button>
+      <button type="button" id="loginTabSignUp" data-login-mode="signup">新規登録</button>
+    </div>
     <form id="portalLoginForm" autocomplete="on">
-      <div class="portal-login-field">
+      <div class="portal-login-field" id="loginRoleField">
         <label for="loginRole">役職</label>
-        <select id="loginRole" required>
+        <select id="loginRole">
           <option value="">選択してください</option>
           <option value="社長">社長</option>
           <option value="役員">役員</option>
@@ -2136,15 +2268,19 @@ video.dc-card__image{
           <option value="その他">その他</option>
         </select>
       </div>
-      <div class="portal-login-field">
+      <div class="portal-login-field" id="loginNameField">
         <label for="loginName">お名前</label>
-        <input id="loginName" type="text" required maxlength="40" placeholder="例：深山 弘次" autocomplete="name">
+        <input id="loginName" type="text" maxlength="40" placeholder="例：深山 弘次" autocomplete="name">
       </div>
       <div class="portal-login-field">
         <label for="loginEmail">メールアドレス</label>
         <input id="loginEmail" type="email" required maxlength="120" placeholder="name@example.com" autocomplete="email">
       </div>
-      <button type="submit" class="portal-login-submit">ログインして開始</button>
+      <div class="portal-login-field">
+        <label for="loginPassword">パスワード</label>
+        <input id="loginPassword" type="password" required minlength="6" maxlength="72" placeholder="6文字以上" autocomplete="current-password">
+      </div>
+      <button type="submit" class="portal-login-submit" id="portalLoginSubmit">ログイン</button>
       <p class="portal-login-err" id="portalLoginErr" aria-live="polite"></p>
     </form>
   </div>
@@ -2316,7 +2452,7 @@ video.dc-card__image{
       <button type="button" id="dbxRefreshBtn">更新</button>
       <button type="button" id="dbxCloseBtn" aria-label="閉じる">閉じる</button>
     </div>
-    <div class="dbx-path" id="dbxPath">/GoonerPortal</div>
+    <div class="dbx-path" id="dbxPath">/（Dropboxルート）</div>
     <div class="dbx-list" id="dbxList"><div class="dbx-empty">読み込み中…</div></div>
     <div class="dbx-foot">
       <label class="dbx-up-label" style="margin-right:auto;font-size:11px;color:var(--muted);cursor:pointer">
@@ -7415,11 +7551,28 @@ window.Treasury={
     }).join(''):`<div class="office-tk-empty">未完了タスクはありません。下の欄から追加できます。</div>`;
   }
 
+  async function setDropboxAllowed(memberId, allowed){
+    const c=client(); if(!c) return;
+    const { error } = await c.from('members')
+      .update({ dropbox_allowed: !!allowed }).eq('id', memberId);
+    if(error){ alert('権限エラー: '+error.message); return; }
+    T.toast(allowed?'Dropboxを許可しました':'Dropbox許可を停止しました');
+    await loadMembers();
+  }
+
   function renderStaffJump(){
     const box=$("#tkStaffJump"); if(!box)return;
     const staff=staffList();
+    const prez=isPresident();
     box.innerHTML=`<button type="button" data-staff-focus="" class="${!focusStaff?'on':''}">全員</button>`+
-      staff.map(s=>`<button type="button" data-staff-focus="${esc(s.id)}" class="${focusStaff===s.id?'on':''}">${esc(s.name)}</button>`).join('');
+      staff.map(s=>{
+        const on=!!s.dropbox_allowed || s.role==='社長';
+        const tog=prez
+          ? `<button type="button" class="tk-dbx-tog ${on?'on':''}" data-dbx-allow="${esc(s.id)}" data-dbx-on="${on?'1':'0'}" title="Dropbox閲覧許可">📦 Dropbox:${on?'許可':'停止'}</button>`
+          : '';
+        return `<span style="display:inline-flex;align-items:center;gap:2px;flex-wrap:wrap">`+
+          `<button type="button" data-staff-focus="${esc(s.id)}" class="${focusStaff===s.id?'on':''}">${esc(s.name)}</button>${tog}</span>`;
+      }).join('');
   }
 
   function renderTasks(){
@@ -7480,6 +7633,15 @@ window.Treasury={
     const { data, error } = await c.from('members').select('*').order('created_at');
     if(error){ console.warn('[tasks] members', error); return; }
     members=data||[];
+    // 自分の dropbox_allowed 等を最新化（auth_user_id 紐付け以外のタスク処理は変更しない）
+    try{
+      const cur=me();
+      if(cur&&cur.id){
+        const fresh=members.find(function(x){ return String(x.id)===String(cur.id); });
+        if(fresh) window.GoonerSB?.saveMe?.(fresh);
+      }
+    }catch(e){}
+    try{ window.syncDropboxBtnVisibility?.(); }catch(e){}
     fillAssigneeSelects();
     renderTasks();
   }
@@ -7601,6 +7763,15 @@ window.Treasury={
 
   $("#s-tasks").addEventListener('click', e=>{
     if(handleTaskClick(e)) return;
+    const dbx=e.target.closest('[data-dbx-allow]');
+    if(dbx){
+      e.preventDefault(); e.stopPropagation();
+      if(!isPresident()){ T.toast('許可を変更できるのは社長のみです'); return; }
+      const id=dbx.dataset.dbxAllow;
+      const next=dbx.dataset.dbxOn!=='1';
+      setDropboxAllowed(id, next);
+      return;
+    }
     const sf=e.target.closest('[data-staff-focus]');
     if(sf){ focusStaff=sf.dataset.staffFocus||''; renderTasks(); return; }
     const f=e.target.closest('[data-tk-filter]');
@@ -7616,6 +7787,7 @@ window.Treasury={
     liveReady=true;
     c.channel('members-live')
       .on('postgres_changes', { event:'INSERT', schema:'public', table:'members' }, function(){ loadMembers(); })
+      .on('postgres_changes', { event:'UPDATE', schema:'public', table:'members' }, function(){ loadMembers(); })
       .subscribe();
     c.channel('tasks-live')
       .on('postgres_changes', { event:'*', schema:'public', table:'tasks' }, function(payload){
@@ -8226,7 +8398,6 @@ window.PortalAuth=(function(){
       if(chip){chip.hidden=false;chip.textContent=u.role+'　'+u.name;}
       if(logout)logout.hidden=false;
       if(badge)badge.textContent=u.name;
-      // セッション復元時もホームはロゴ
       document.querySelectorAll('.gamenav button.on').forEach(function(b){ b.classList.remove('on'); });
       document.querySelectorAll('.screen.on').forEach(function(x){ x.classList.remove('on'); });
     }else{
@@ -8237,24 +8408,34 @@ window.PortalAuth=(function(){
       if(badge)badge.textContent='利用者';
     }
     try{applyNavAcl();}catch(e){}
+    try{ window.syncDropboxBtnVisibility?.(); }catch(e){}
   }
-  async function login(user){
+  function applyMemberSession(m, email){
+    if(!m) return false;
+    const u={
+      role:String(m.role||'').trim(),
+      name:String(m.name||'').trim(),
+      email:String(email||m.email||'').trim().toLowerCase(),
+      memberId:m.id,
+      at:new Date().toISOString()
+    };
+    if(!u.role||!u.name||!u.email) return false;
+    localStorage.setItem(USER_KEY, JSON.stringify(u));
+    upsertStaff(u);
+    window.GoonerSB?.saveMe?.(m);
+    return true;
+  }
+  async function login(user){ /* 互換: セッション適用後に呼ぶ */ 
     const u={
       role:String(user.role||'').trim(),
       name:String(user.name||'').trim(),
       email:String(user.email||'').trim().toLowerCase(),
+      memberId:user.memberId||null,
       at:new Date().toISOString()
     };
     if(!u.role||!u.name||!u.email)return false;
     localStorage.setItem(USER_KEY,JSON.stringify(u));
     upsertStaff(u);
-    try{
-      const m=await window.GoonerSB?.registerMember?.(u.name, u.role, u.email);
-      if(m&&m.id){
-        u.memberId=m.id;
-        localStorage.setItem(USER_KEY,JSON.stringify(u));
-      }
-    }catch(e){ console.warn('[PortalAuth] registerMember', e); }
     const entry={...u,action:'login',ts:Date.now()};
     saveLog(entry);
     serverLog('login','portal-open');
@@ -8262,13 +8443,36 @@ window.PortalAuth=(function(){
     try{ window.dispatchEvent(new CustomEvent('portal-member-ready')); }catch(e){}
     return true;
   }
-  function logout(){
+  async function logout(){
     const u=getUser();
     if(u){saveLog({...u,action:'logout',ts:Date.now()});serverLog('logout','');}
+    try{ await window.GoonerSB?.signOut?.(); }catch(e){}
     localStorage.removeItem(USER_KEY);
     try{ localStorage.removeItem('gp_member'); }catch(e){}
     try{ sessionStorage.removeItem('gooner_acct_revealed'); }catch(e){}
     syncUi();
+  }
+  async function onAuthed(session){
+    if(!session||!session.user){
+      localStorage.removeItem(USER_KEY);
+      try{ window.GoonerSB?.saveMe?.(null); }catch(e){}
+      syncUi();
+      return;
+    }
+    const m=await window.GoonerSB?.loadMemberForUser?.(session.user);
+    if(!m){
+      const err=document.getElementById('portalLoginErr');
+      if(err) err.textContent='名簿に登録がありません。新規登録タブから登録してください。';
+      try{ await window.GoonerSB?.signOut?.(); }catch(e){}
+      localStorage.removeItem(USER_KEY);
+      syncUi();
+      return;
+    }
+    applyMemberSession(m, session.user.email);
+    saveLog({...getUser(),action:'login',ts:Date.now()});
+    serverLog('login','auth-session');
+    syncUi();
+    try{ window.dispatchEvent(new CustomEvent('portal-member-ready')); }catch(e){}
   }
   function userContext(){
     const u=getUser();
@@ -8276,23 +8480,73 @@ window.PortalAuth=(function(){
     return '利用者: '+u.name+'（'+u.role+'）<'+u.email+'>';
   }
   document.addEventListener('DOMContentLoaded',function(){
-    syncUi();
+    let mode='signin';
+    function setMode(next){
+      mode=next==='signup'?'signup':'signin';
+      const isUp=mode==='signup';
+      document.getElementById('loginTabSignIn')?.classList.toggle('on', !isUp);
+      document.getElementById('loginTabSignUp')?.classList.toggle('on', isUp);
+      const roleF=document.getElementById('loginRoleField');
+      const nameF=document.getElementById('loginNameField');
+      if(roleF) roleF.hidden=!isUp;
+      if(nameF) nameF.hidden=!isUp;
+      const role=document.getElementById('loginRole');
+      const name=document.getElementById('loginName');
+      if(role) role.required=isUp;
+      if(name) name.required=isUp;
+      const pw=document.getElementById('loginPassword');
+      if(pw) pw.autocomplete=isUp?'new-password':'current-password';
+      const sub=document.getElementById('portalLoginSubmit');
+      if(sub) sub.textContent=isUp?'新規登録':'ログイン';
+      const hint=document.getElementById('portalLoginSub');
+      if(hint) hint.innerHTML=isUp
+        ? '初回登録：役職・名前・メール・パスワードを入力してください。'
+        : 'メールとパスワードでログインしてください。<br>初回のみ「新規登録」から役職・名前も登録します。';
+    }
+    setMode('signin');
+    document.getElementById('loginTabSignIn')?.addEventListener('click', function(){ setMode('signin'); });
+    document.getElementById('loginTabSignUp')?.addEventListener('click', function(){ setMode('signup'); });
+
     const form=document.getElementById('portalLoginForm');
     const err=document.getElementById('portalLoginErr');
     if(form)form.addEventListener('submit',async function(ev){
       ev.preventDefault();
       if(err)err.textContent='';
-      const btn=form.querySelector('.portal-login-submit');
-      if(btn){ btn.disabled=true; btn.textContent='登録中…'; }
+      const btn=document.getElementById('portalLoginSubmit');
+      const email=document.getElementById('loginEmail')?.value;
+      const password=document.getElementById('loginPassword')?.value;
+      if(btn){ btn.disabled=true; btn.textContent=mode==='signup'?'登録中…':'ログイン中…'; }
       try{
-        const ok=await login({
-          role:document.getElementById('loginRole')?.value,
-          name:document.getElementById('loginName')?.value,
-          email:document.getElementById('loginEmail')?.value
-        });
-        if(!ok&&err)err.textContent='役職・名前・メールを入力してください。';
+        if(mode==='signup'){
+          const role=document.getElementById('loginRole')?.value;
+          const name=document.getElementById('loginName')?.value;
+          if(!role||!name||!email||!password){
+            if(err) err.textContent='役職・名前・メール・パスワードを入力してください。';
+            return;
+          }
+          const res=await window.GoonerSB.signUp(name, role, email, password);
+          if(res&&res.error) return;
+          // セッションが即時ある場合は onAuthStateChange が開く。無い場合はログインへ誘導
+          const c=window.GoonerSB.sb();
+          const sess=c?(await c.auth.getSession()).data.session:null;
+          if(sess) await onAuthed(sess);
+          else{
+            if(err) err.textContent='登録しました。確認メールがある場合は確認後、ログインしてください。';
+            setMode('signin');
+          }
+        }else{
+          if(!email||!password){
+            if(err) err.textContent='メールとパスワードを入力してください。';
+            return;
+          }
+          const res=await window.GoonerSB.signIn(email, password);
+          if(res&&res.error) return;
+          const c=window.GoonerSB.sb();
+          const sess=c?(await c.auth.getSession()).data.session:null;
+          await onAuthed(sess);
+        }
       }finally{
-        if(btn){ btn.disabled=false; btn.textContent='ログインして開始'; }
+        if(btn){ btn.disabled=false; btn.textContent=mode==='signup'?'新規登録':'ログイン'; }
       }
     });
     document.getElementById('portalLogoutBtn')?.addEventListener('click',logout);
@@ -8310,23 +8564,17 @@ window.PortalAuth=(function(){
         setDropOpen(drop, !!(panel&&panel.hidden));
       });
     });
-    const prev=getUser();
-    if(prev){
-      document.getElementById('loginRole').value=prev.role;
-      document.getElementById('loginName').value=prev.name;
-      document.getElementById('loginEmail').value=prev.email;
-      upsertStaff(prev);
-      // 既存セッションも members に載せる
-      window.GoonerSB?.registerMember?.(prev.name, prev.role, prev.email).then(function(m){
-        if(m&&m.id){
-          prev.memberId=m.id;
-          localStorage.setItem(USER_KEY, JSON.stringify(prev));
-          try{ window.dispatchEvent(new CustomEvent('portal-member-ready')); }catch(e){}
-        }
-      }).catch(function(){});
+
+    // Auth セッション監視（未ログイン＝ゲート）
+    const c=window.GoonerSB?.sb?.();
+    if(c){
+      c.auth.getSession().then(function(res){ onAuthed(res.data&&res.data.session); });
+      c.auth.onAuthStateChange(function(_ev, session){ onAuthed(session); });
     }else{
-      listStaff();
+      localStorage.removeItem(USER_KEY);
+      syncUi();
     }
+
     window.addEventListener('resize',syncNavMatrix,{passive:true});
     const shell=document.getElementById('portal-shell');
     if(shell && typeof MutationObserver!=='undefined'){
@@ -8335,15 +8583,14 @@ window.PortalAuth=(function(){
     }
     requestAnimationFrame(syncNavMatrix);
   });
-  return{getUser,login,logout,userContext,syncUi,serverLog,listStaff,upsertStaff,canAccessAccounting,isAccountingScreen,isAccountingRevealed,revealSecureNav,applyNavAcl,updateBrandCover,syncNavMatrix};
+  return{getUser,login,logout,userContext,syncUi,serverLog,listStaff,upsertStaff,canAccessAccounting,isAccountingScreen,isAccountingRevealed,revealSecureNav,applyNavAcl,updateBrandCover,syncNavMatrix,onAuthed};
 })();
 </script>
 
 <script>
-/* Dropbox同期 — /api/dropbox 経由のみ（キー・トークンはサーバー側） */
+/* Dropbox同期 — /api/dropbox 経由＋Authorization（検問はサーバー側） */
 (function(){
-  const ROOT='/GoonerPortal';
-  let relPath=''; // PORTAL_ROOT からの相対（例: "" または "/契約書"）
+  let curPath='';
   let busy=false;
 
   function toast(msg){ try{ window.Treasury?.toast?.(msg); }catch(e){} }
@@ -8357,15 +8604,9 @@ window.PortalAuth=(function(){
       return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
     });
   }
-  function toRel(full){
-    let p=String(full||'');
-    if(p.startsWith(ROOT)) p=p.slice(ROOT.length);
-    if(p && p[0]!=='/') p='/'+p;
-    return p||'';
-  }
-  function parentRel(p){
+  function parentPath(p){
     if(!p||p==='/') return '';
-    const i=p.lastIndexOf('/');
+    const i=String(p).lastIndexOf('/');
     if(i<=0) return '';
     return p.slice(0,i);
   }
@@ -8377,20 +8618,30 @@ window.PortalAuth=(function(){
     return (n/1024/1024).toFixed(1)+' MB';
   }
 
+  async function dbxFetch(url, options){
+    options=options||{};
+    const t=await window.GoonerSB.authToken();
+    options.headers=Object.assign({}, options.headers||{}, { Authorization: 'Bearer '+t });
+    const r=await fetch(url, options);
+    const j=await r.json().catch(function(){return {};});
+    if(r.status===403){
+      alert(j.error||'権限がありません');
+      throw new Error(j.reason||j.error||'forbidden');
+    }
+    if(!r.ok) throw new Error(typeof j.error==='string'?j.error:JSON.stringify(j.error||j));
+    return j;
+  }
+
   async function dbxList(path){
-    path = path==null ? '' : path;
-    const r=await fetch('/api/dropbox?action=list&path='+encodeURIComponent(path));
-    const data=await r.json().catch(function(){return {};});
-    if(!r.ok) throw new Error(typeof data.error==='string'?data.error:JSON.stringify(data.error||data));
-    return data.entries||[];
+    path=path==null?'':path;
+    const j=await dbxFetch('/api/dropbox?action=list&path='+encodeURIComponent(path));
+    return j.entries||[];
   }
   async function dbxDownload(path){
-    const r=await fetch('/api/dropbox?action=download&path='+encodeURIComponent(path));
-    const data=await r.json().catch(function(){return {};});
-    if(!r.ok) throw new Error(typeof data.error==='string'?data.error:JSON.stringify(data.error||data));
+    const j=await dbxFetch('/api/dropbox?action=download&path='+encodeURIComponent(path));
     const a=document.createElement('a');
-    a.href='data:application/octet-stream;base64,'+data.base64;
-    a.download=data.name||'download';
+    a.href='data:application/octet-stream;base64,'+j.base64;
+    a.download=j.name||'download';
     a.click();
   }
   async function dbxUpload(file, subdir){
@@ -8401,34 +8652,34 @@ window.PortalAuth=(function(){
       fr.onerror=ng;
       fr.readAsDataURL(file);
     });
-    const path=(subdir.replace(/\/$/,'')+'/'+file.name).replace(/\/+/g,'/');
-    const r=await fetch('/api/dropbox',{
+    const path=(String(subdir).replace(/\/$/,'')+'/'+file.name).replace(/\/+/g,'/');
+    return dbxFetch('/api/dropbox',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ action:'upload', path:path, base64:base64 })
     });
-    const data=await r.json().catch(function(){return {};});
-    if(!r.ok) throw new Error(typeof data.error==='string'?data.error:JSON.stringify(data.error||data));
-    return data;
   }
   window.dbxList=dbxList;
   window.dbxDownload=dbxDownload;
   window.dbxUpload=dbxUpload;
 
-  function updateUi(ok){
-    const s=statusEl(), b=btnEl();
-    if(s){ s.hidden=!ok; s.textContent=ok?'/GoonerPortal':''; }
+  function syncDropboxBtnVisibility(){
+    const b=btnEl(), s=statusEl();
+    const ok=!!window.GoonerSB?.canUseDropbox?.();
     if(b){
-      b.classList.toggle('is-on', !!ok);
+      b.hidden=!ok;
+      b.classList.toggle('is-on', ok);
       b.textContent='Dropbox同期';
-      b.title='クリック＝/GoonerPortal を開く';
+      b.title=ok?'クリック＝Dropboxを開く':'社長の許可が必要です';
     }
+    if(s){ s.hidden=!ok; s.textContent=ok?'許可済':''; }
   }
+  window.syncDropboxBtnVisibility=syncDropboxBtnVisibility;
 
   function renderEntries(entries){
-    if(pathEl()) pathEl().textContent=ROOT+(relPath||'');
+    if(pathEl()) pathEl().textContent=curPath||'/（Dropboxルート）';
     const up=document.getElementById('dbxUpBtn');
-    if(up) up.disabled=!relPath;
+    if(up) up.disabled=!curPath;
     const box=listEl(); if(!box) return;
     if(!entries.length){
       box.innerHTML='<div class="dbx-empty">このフォルダにはファイルがありません</div>';
@@ -8442,17 +8693,17 @@ window.PortalAuth=(function(){
       const folder=e.type==='folder';
       const ic=folder?'📁':'📄';
       const meta=folder?'フォルダ':fmtSize(e.size);
-      const rel=toRel(e.path);
-      return '<button type="button" class="dbx-item" data-dbx-type="'+esc(e.type)+'" data-dbx-rel="'+esc(rel)+'">'+
+      const p=e.path||'';
+      return '<button type="button" class="dbx-item" data-dbx-type="'+esc(e.type)+'" data-dbx-path="'+esc(p)+'">'+
         '<span class="dbx-ic">'+ic+'</span><span>'+esc(e.name)+'</span><span class="dbx-meta">'+esc(meta)+'</span></button>';
     }).join('');
     box.querySelectorAll('.dbx-item').forEach(function(btn){
       btn.addEventListener('click', async function(){
         const type=btn.getAttribute('data-dbx-type');
-        const rel=btn.getAttribute('data-dbx-rel')||'';
-        if(type==='folder') loadPath(rel);
+        const p=btn.getAttribute('data-dbx-path')||'';
+        if(type==='folder') loadPath(p);
         else{
-          try{ await dbxDownload(rel); toast('ダウンロードしました'); }
+          try{ await dbxDownload(p); toast('ダウンロードしました'); }
           catch(err){ toast('ダウンロード失敗: '+(err.message||err)); }
         }
       });
@@ -8462,25 +8713,27 @@ window.PortalAuth=(function(){
   async function loadPath(path){
     if(busy) return;
     busy=true;
-    relPath=path||'';
+    curPath=path||'';
     const box=listEl();
     if(box) box.innerHTML='<div class="dbx-empty">読み込み中…</div>';
     try{
-      const entries=await dbxList(relPath);
-      updateUi(true);
+      const entries=await dbxList(curPath);
       renderEntries(entries);
     }catch(e){
-      updateUi(false);
       if(box) box.innerHTML='<div class="dbx-err">読み込めませんでした<br>'+esc(e.message||e)+'</div>';
     }finally{ busy=false; }
   }
 
   function openBrowser(){
+    if(!window.GoonerSB?.canUseDropbox?.()){
+      toast('Dropbox閲覧の許可がありません。社長に許可を依頼してください');
+      return;
+    }
     const m=modal();
     if(!m) return;
     m.classList.add('open');
     m.setAttribute('aria-hidden','false');
-    loadPath(relPath||'');
+    loadPath(curPath||'');
   }
   function closeBrowser(){
     const m=modal();
@@ -8490,28 +8743,28 @@ window.PortalAuth=(function(){
   }
 
   function wire(){
+    syncDropboxBtnVisibility();
     const b=btnEl();
     if(b) b.addEventListener('click', openBrowser);
     document.getElementById('dbxCloseBtn')?.addEventListener('click', closeBrowser);
     document.getElementById('dbxCloseBtn2')?.addEventListener('click', closeBrowser);
-    document.getElementById('dbxRefreshBtn')?.addEventListener('click', function(){ loadPath(relPath); });
-    document.getElementById('dbxUpBtn')?.addEventListener('click', function(){ loadPath(parentRel(relPath)); });
+    document.getElementById('dbxRefreshBtn')?.addEventListener('click', function(){ loadPath(curPath); });
+    document.getElementById('dbxUpBtn')?.addEventListener('click', function(){ loadPath(parentPath(curPath)); });
     document.getElementById('dbxUploadInput')?.addEventListener('change', async function(ev){
       const files=Array.from(ev.target.files||[]);
       ev.target.value='';
       for(const file of files){
         try{
-          const res=await dbxUpload(file, relPath||'');
+          const res=await dbxUpload(file, curPath||'');
           toast('アップロードしました: '+(res.name||file.name));
         }catch(e){ toast('アップロード失敗: '+(e.message||e)); }
       }
-      loadPath(relPath);
+      loadPath(curPath);
     });
     modal()?.addEventListener('click', function(e){
       if(e.target===modal()) closeBrowser();
     });
-    // 疎通（ステータス表示用）
-    dbxList('').then(function(){ updateUi(true); }).catch(function(){ updateUi(false); });
+    window.addEventListener('portal-member-ready', syncDropboxBtnVisibility);
   }
 
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire);

@@ -1,8 +1,10 @@
-// /api/dropbox.js — GOONER PORTAL Dropbox連携窓口
-// 認証方式: PKCE (Secret不要)。必要な環境変数: DROPBOX_APP_KEY, DROPBOX_REFRESH_TOKEN
-// 安全設計: 操作範囲を PORTAL_ROOT 配下に限定（Dropbox全体には触れない）
+// /api/dropbox.js — GOONER PORTAL Dropbox連携窓口 v2（ログイン検問付き）
+// 必要な環境変数:
+//   DROPBOX_APP_KEY, DROPBOX_REFRESH_TOKEN  (設定済み)
+//   SUPABASE_URL, SUPABASE_ANON_KEY         (今回追加)
+// 検問: Supabaseログイン済み かつ members.dropbox_allowed=true (または役職=社長) のみ通す
 
-const PORTAL_ROOT = "/GoonerPortal"; // ←同期対象フォルダ。Dropbox内のフォルダ名に合わせて変更可
+const PORTAL_ROOT = ""; // ← 検問導入により全体公開へ変更。フォルダ限定に戻す場合は "/GoonerPortal"
 
 let cachedToken = null;
 let cachedUntil = 0;
@@ -21,41 +23,69 @@ async function getAccessToken() {
   const data = await res.json();
   if (!res.ok) throw new Error("token_refresh_failed: " + JSON.stringify(data));
   cachedToken = data.access_token;
-  cachedUntil = Date.now() + (data.expires_in - 60) * 1000; // 期限1分前まで再利用
+  cachedUntil = Date.now() + (data.expires_in - 60) * 1000;
   return cachedToken;
 }
 
-// パスを必ずPORTAL_ROOT配下に丸める（ディレクトリ遡り対策込み）
+// ===== 検問所: ログイン済みか？ Dropbox許可があるか？ =====
+async function checkPermission(req) {
+  const authHeader = req.headers.authorization || "";
+  const jwt = authHeader.replace(/^Bearer\s+/i, "");
+  if (!jwt) return { ok: false, reason: "not_logged_in" };
+
+  const SB = process.env.SUPABASE_URL;
+  const KEY = process.env.SUPABASE_ANON_KEY;
+
+  // 1) トークンが本物のログインか確認
+  const u = await fetch(SB + "/auth/v1/user", {
+    headers: { apikey: KEY, Authorization: "Bearer " + jwt },
+  });
+  if (!u.ok) return { ok: false, reason: "invalid_session" };
+  const user = await u.json();
+
+  // 2) 名簿で許可を確認
+  const m = await fetch(
+    SB + "/rest/v1/members?auth_user_id=eq." + user.id + "&select=role,dropbox_allowed",
+    { headers: { apikey: KEY, Authorization: "Bearer " + jwt } }
+  );
+  const rows = await m.json();
+  const me = rows && rows[0];
+  if (!me) return { ok: false, reason: "not_registered" };
+  if (me.role === "社長" || me.dropbox_allowed === true) return { ok: true };
+  return { ok: false, reason: "not_allowed" };
+}
+
 function safePath(p) {
   const clean = ("/" + String(p || "")).replace(/\.\./g, "").replace(/\/+/g, "/");
+  if (!PORTAL_ROOT) return clean === "/" ? "" : clean; // 全体モード(ルートは空文字)
   return clean === "/" ? PORTAL_ROOT : PORTAL_ROOT + clean;
 }
 
 export default async function handler(req, res) {
   try {
+    // ---- 検問 ----
+    const gate = await checkPermission(req);
+    if (!gate.ok) {
+      const msg = {
+        not_logged_in: "ログインが必要です",
+        invalid_session: "セッションが無効です。再ログインしてください",
+        not_registered: "名簿に登録がありません",
+        not_allowed: "Dropbox閲覧の許可がありません。社長に許可を依頼してください",
+      }[gate.reason] || "権限がありません";
+      return res.status(403).json({ error: msg, reason: gate.reason });
+    }
+
     const token = await getAccessToken();
     const action = (req.method === "GET" ? req.query.action : req.body?.action) || "list";
 
-    // ---- 一覧 ----
     if (action === "list") {
       const r = await fetch("https://api.dropboxapi.com/2/files/list_folder", {
         method: "POST",
         headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
-        body: JSON.stringify({ path: safePath(req.query.path) === PORTAL_ROOT && !req.query.path ? PORTAL_ROOT : safePath(req.query.path) }),
+        body: JSON.stringify({ path: safePath(req.query.path) }),
       });
       const data = await r.json();
-      if (!r.ok) {
-        // フォルダ未作成なら自動作成して空を返す
-        if (JSON.stringify(data).includes("not_found")) {
-          await fetch("https://api.dropboxapi.com/2/files/create_folder_v2", {
-            method: "POST",
-            headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
-            body: JSON.stringify({ path: PORTAL_ROOT }),
-          });
-          return res.status(200).json({ entries: [] });
-        }
-        return res.status(500).json({ error: data });
-      }
+      if (!r.ok) return res.status(500).json({ error: data });
       return res.status(200).json({
         entries: (data.entries || []).map(e => ({
           type: e[".tag"], name: e.name, path: e.path_display,
@@ -64,7 +94,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // ---- ダウンロード（base64で返す）----
     if (action === "download") {
       const r = await fetch("https://content.dropboxapi.com/2/files/download", {
         method: "POST",
@@ -78,7 +107,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ name: req.query.path.split("/").pop(), base64: buf.toString("base64") });
     }
 
-    // ---- アップロード（POST: { action:"upload", path, base64 }）----
     if (action === "upload" && req.method === "POST") {
       const { path, base64 } = req.body;
       if (!path || !base64) return res.status(400).json({ error: "path and base64 required" });
