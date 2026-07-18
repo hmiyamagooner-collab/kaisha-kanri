@@ -2155,6 +2155,16 @@ video.dc-card__image{
 .portal-login-field input:focus,.portal-login-field select:focus{
   outline:none;border-color:rgba(232,212,168,.4);box-shadow:0 0 0 2px rgba(196,166,106,.12);
 }
+.portal-login-pass-wrap{position:relative;display:block}
+.portal-login-pass-wrap input{width:100%;padding-right:44px;box-sizing:border-box}
+.portal-login-eye{
+  position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  width:32px;height:32px;padding:0;border:0;border-radius:8px;cursor:pointer;
+  background:transparent;color:var(--muted);font-size:16px;line-height:1;
+  display:inline-flex;align-items:center;justify-content:center;
+}
+.portal-login-eye:hover{color:var(--text);background:rgba(255,255,255,.04)}
+.portal-login-eye[aria-pressed="true"]{color:var(--nav-label)}
 .portal-login-submit{
   width:100%;margin-top:8px;padding:12px 16px;border:1px solid var(--nav-green-soft);border-radius:var(--radius-sm);cursor:pointer;
   font-family:var(--font-display);font-size:14px;font-weight:600;
@@ -2278,7 +2288,10 @@ video.dc-card__image{
       </div>
       <div class="portal-login-field">
         <label for="loginPassword">パスワード</label>
-        <input id="loginPassword" type="password" required minlength="6" maxlength="72" placeholder="6文字以上" autocomplete="current-password">
+        <div class="portal-login-pass-wrap">
+          <input id="loginPassword" type="password" required minlength="6" maxlength="72" placeholder="6文字以上" autocomplete="current-password">
+          <button type="button" class="portal-login-eye" id="loginPasswordToggle" aria-label="パスワードを表示" aria-pressed="false" title="パスワードを表示">👁</button>
+        </div>
       </div>
       <button type="submit" class="portal-login-submit" id="portalLoginSubmit">ログイン</button>
       <p class="portal-login-err" id="portalLoginErr" aria-live="polite"></p>
@@ -8506,6 +8519,17 @@ window.PortalAuth=(function(){
     setMode('signin');
     document.getElementById('loginTabSignIn')?.addEventListener('click', function(){ setMode('signin'); });
     document.getElementById('loginTabSignUp')?.addEventListener('click', function(){ setMode('signup'); });
+    document.getElementById('loginPasswordToggle')?.addEventListener('click', function(){
+      const pw=document.getElementById('loginPassword');
+      const btn=document.getElementById('loginPasswordToggle');
+      if(!pw||!btn) return;
+      const show=pw.type==='password';
+      pw.type=show?'text':'password';
+      btn.setAttribute('aria-pressed', show?'true':'false');
+      btn.setAttribute('aria-label', show?'パスワードを隠す':'パスワードを表示');
+      btn.title=show?'パスワードを隠す':'パスワードを表示';
+      btn.textContent=show?'🙈':'👁';
+    });
 
     const form=document.getElementById('portalLoginForm');
     const err=document.getElementById('portalLoginErr');
