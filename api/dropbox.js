@@ -146,13 +146,18 @@ export default async function handler(req, res) {
     }
 
     if (action === "upload" && req.method === "POST") {
-      const { path, base64 } = req.body;
+      const { path, base64, mode } = req.body;
       if (!path || !base64) return res.status(400).json({ error: "path and base64 required" });
+      const writeMode = mode === "overwrite" ? "overwrite" : "add";
       const r = await fetch("https://content.dropboxapi.com/2/files/upload", {
         method: "POST",
         headers: {
           Authorization: "Bearer " + token,
-          "Dropbox-API-Arg": JSON.stringify({ path: safePath(path), mode: "add", autorename: true }),
+          "Dropbox-API-Arg": JSON.stringify({
+            path: safePath(path),
+            mode: writeMode,
+            autorename: writeMode === "add",
+          }),
           "Content-Type": "application/octet-stream",
         },
         body: Buffer.from(base64, "base64"),
@@ -160,6 +165,42 @@ export default async function handler(req, res) {
       const data = await r.json();
       if (!r.ok) return res.status(500).json({ error: data });
       return res.status(200).json({ ok: true, path: data.path_display, name: data.name });
+    }
+
+    if (action === "search") {
+      const q = String(req.method === "GET" ? req.query?.q : req.body?.q || "").trim();
+      if (!q) return res.status(400).json({ error: "q required" });
+      const options = { max_results: 30, filename_only: false };
+      if (PORTAL_ROOT) options.path = PORTAL_ROOT;
+      const r = await fetch("https://api.dropboxapi.com/2/files/search_v2", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: q.slice(0, 1000),
+          options,
+        }),
+      });
+      const data = await r.json();
+      if (!r.ok) {
+        const summary = data?.error_summary || data?.error || data;
+        return res.status(500).json({
+          error: typeof summary === "string" ? summary : JSON.stringify(summary),
+          detail: data,
+        });
+      }
+      const matches = (data.matches || [])
+        .map((m) => {
+          const meta = m?.metadata?.metadata || m?.metadata || {};
+          return {
+            type: meta[".tag"] || "file",
+            name: meta.name || "",
+            path: meta.path_display || meta.path_lower || "",
+            size: meta.size || null,
+            modified: meta.server_modified || null,
+          };
+        })
+        .filter((e) => e.path);
+      return res.status(200).json({ matches, query: q });
     }
 
     return res.status(400).json({ error: "unknown action" });
