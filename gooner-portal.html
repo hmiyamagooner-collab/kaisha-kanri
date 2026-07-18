@@ -1874,7 +1874,8 @@ video.dc-card__image{
 .bp-chk b{color:var(--text);font-weight:600}
 .bp-chk input:checked ~ span{color:var(--text)}
 @media(max-width:560px){.bp-form,.bp-close-grid{grid-template-columns:1fr}}
-@media(max-width:980px){
+/* 縦画面のみモバイルUI。横画面はPCと同じ2カラム構成 */
+@media(max-width:980px) and (orientation:portrait){
   #portal-shell{grid-template-columns:1fr;min-height:0;}
   #portal-shell > .gamenav{
     position:sticky;top:0;height:auto;max-height:none;
@@ -1939,8 +1940,22 @@ video.dc-card__image{
   font-family:var(--font-body);
 }
 #rotate-note .ic{font-size:34px;display:block;margin-bottom:10px;}
-@media(max-width:820px) and (orientation:portrait){
+@media(orientation:portrait) and (max-width:980px){
   #rotate-note{display:block;}
+}
+/* スマホ横画面：PCレイアウトを縮小してフィット */
+@media(orientation:landscape) and (max-height:520px){
+  :root{--nav-w:148px;--nav-h:40px}
+  #portal-bar{padding:4px 12px}
+  #portal-bar .pt-logo{font-size:12px}
+  #quests-row{
+    height:calc(100dvh - 36px);min-height:0;
+    gap:4px;padding:2px 4px;
+  }
+  .gamenav{padding:6px 6px 8px;gap:4px}
+  .gamenav button.nav-biz .nav-label{font-size:10px;padding:4px 6px}
+  .dc-card-foot{padding:6px 8px}
+  .dc-name{font-size:13px}
 }
 .dc-cards,.dc-card,.dc-card .dc-photo,.dc-card .dc-avatar-wrap{min-height:0;}
 /* キャラカード動画枠：rin.mp4 / tumugi.mp4 / haruto.mp4 */
@@ -2002,7 +2017,7 @@ video.dc-card__image{
 .portal-login-err{font-size:12px;color:var(--out);min-height:18px;margin-top:8px}
 #portal-shell[hidden]{display:none!important}
 .pt-user{
-  margin-left:auto;font-size:11px;color:var(--muted);padding:4px 10px;border-radius:99px;
+  font-size:11px;color:var(--muted);padding:4px 10px;border-radius:99px;
   border:1px solid rgba(196,166,106,.2);background:rgba(255,255,255,.03);white-space:nowrap;
 }
 .pt-logout{
@@ -2010,6 +2025,13 @@ video.dc-card__image{
   border:1px solid rgba(143,152,166,.35);background:transparent;color:var(--muted);
 }
 .pt-logout:hover{color:var(--text);border-color:rgba(196,166,106,.35)}
+.pt-dropbox{
+  margin-left:auto;font-size:11px;padding:5px 10px;border-radius:8px;cursor:pointer;
+  border:1px solid rgba(76,175,80,.45);background:rgba(15,138,78,.12);color:var(--nav-label);
+}
+.pt-dropbox:hover{filter:brightness(1.08);border-color:var(--nav-green)}
+.pt-dropbox.is-on{border-color:rgba(154,209,74,.65);background:rgba(56,142,60,.22)}
+.pt-dropbox-status{font-size:10px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -2206,6 +2228,8 @@ video.dc-card__image{
 <div id="portal-main">
 <div id="portal-bar">
   <span class="pt-logo">GOONER PORTAL</span>
+  <button type="button" class="pt-dropbox" id="portalDropboxBtn" title="クリック＝同期／右クリック＝解除">Dropbox同期</button>
+  <span class="pt-dropbox-status" id="portalDropboxStatus" hidden></span>
   <span class="pt-user" id="portalUserChip" hidden></span>
   <button type="button" class="pt-logout" id="portalLogoutBtn" hidden>ログアウト</button>
 </div>
@@ -4370,7 +4394,10 @@ function loadAll(){
   try{const d=JSON.parse(localStorage.getItem(KEY)); if(d&&d.tx) return d;}catch(e){}
   return seed();
 }
-function saveAll(){ localStorage.setItem(KEY,JSON.stringify(S)); }
+function saveAll(){
+  localStorage.setItem(KEY,JSON.stringify(S));
+  try{ window.GoonerCloud?.schedulePush?.(); }catch(e){}
+}
 function seed(){
   const m=viewMonthStr(new Date());
   return {xp:0, lastEntryDay:"", streak:0, tx:[
@@ -6426,6 +6453,19 @@ window.Treasury={
   get S(){return S;},
   get role(){return role;},
   saveAll, renderAll, esc, yen, toast,
+  loadFromStorage(){
+    try{
+      const d=JSON.parse(localStorage.getItem(KEY)||'null');
+      if(!d||typeof d!=='object') return false;
+      // 参照を保ったまま更新（タスク画面などが const S=T.S で掴んでいるため）
+      Object.keys(S).forEach(function(k){ delete S[k]; });
+      Object.assign(S, d);
+      if(!Array.isArray(S.tasks)) S.tasks=[];
+      if(!Array.isArray(S.directives)) S.directives=[];
+      renderAll();
+      return true;
+    }catch(e){ return false; }
+  },
   onRender(fn){ if(typeof fn==="function") _cfRenderHooks.push(fn); }
 };
 
@@ -7859,6 +7899,7 @@ window.PortalAuth=(function(){
     list.sort((a,b)=>a.name.localeCompare(b.name,'ja'));
     try{localStorage.setItem(STAFF_KEY,JSON.stringify(list));}catch(e){}
     window.dispatchEvent(new CustomEvent('portal-staff-change'));
+    try{ window.GoonerCloud?.schedulePush?.(); }catch(e){}
     return list;
   }
   function saveLog(entry){
@@ -8097,6 +8138,295 @@ window.PortalAuth=(function(){
     requestAnimationFrame(syncNavMatrix);
   });
   return{getUser,login,logout,userContext,syncUi,serverLog,listStaff,upsertStaff,canAccessAccounting,isAccountingScreen,isAccountingRevealed,revealSecureNav,applyNavAcl,updateBrandCover,syncNavMatrix};
+})();
+</script>
+
+<script>
+/* Dropbox 共有同期：タスク・会計データ・スタッフ・円卓履歴 */
+window.GoonerCloud=(function(){
+  const LS_TOK='gooner_dropbox_tokens';
+  const LS_META='gooner_dropbox_meta';
+  const TREASURY_KEY='gooner_treasury_v1';
+  const STAFF_KEY='gooner_portal_staff';
+  const ENTAKU_KEY='gooner_entaku_v2';
+  let pushTimer=null;
+  let syncing=false;
+
+  function statusEl(){ return document.getElementById('portalDropboxStatus'); }
+  function btnEl(){ return document.getElementById('portalDropboxBtn'); }
+  function setStatus(msg, on){
+    const s=statusEl(), b=btnEl();
+    if(s){ s.hidden=!msg; s.textContent=msg||''; }
+    if(b){
+      b.classList.toggle('is-on', !!on);
+      b.textContent=on?'Dropbox同期中':'Dropbox同期';
+    }
+  }
+  function loadTokens(){
+    try{ return JSON.parse(localStorage.getItem(LS_TOK)||'null'); }catch(e){ return null; }
+  }
+  function saveTokens(t){
+    if(!t) localStorage.removeItem(LS_TOK);
+    else localStorage.setItem(LS_TOK, JSON.stringify(t));
+    updateUi();
+  }
+  function meta(){
+    try{ return JSON.parse(localStorage.getItem(LS_META)||'{}'); }catch(e){ return {}; }
+  }
+  function saveMeta(m){ localStorage.setItem(LS_META, JSON.stringify(m||{})); }
+  function isConnected(){ const t=loadTokens(); return !!(t&& (t.access||t.refresh)); }
+  function updateUi(){
+    if(!isConnected()){ setStatus('', false); return; }
+    const m=meta();
+    setStatus(m.updatedAt ? ('最終同期 '+String(m.updatedAt).slice(5,16).replace('T',' ')) : '接続済', true);
+  }
+
+  function captureHashTokens(){
+    const h=String(location.hash||'').replace(/^#/,'');
+    if(!h || h.indexOf('dbx_access=')<0) return;
+    const q=new URLSearchParams(h);
+    const access=q.get('dbx_access')||'';
+    const refresh=q.get('dbx_refresh')||'';
+    const expires=parseInt(q.get('dbx_expires')||'14400',10)||14400;
+    if(access){
+      saveTokens({
+        access:access,
+        refresh:refresh,
+        exp:Date.now()+expires*1000-60000
+      });
+      history.replaceState(null,'',location.pathname+location.search);
+      toast('Dropbox に接続しました');
+      pull().then(function(){ push(); });
+    }
+  }
+
+  function toast(msg){
+    try{ window.Treasury?.toast?.(msg); }catch(e){}
+  }
+
+  async function ensureAccess(){
+    let t=loadTokens();
+    if(!t) return null;
+    if(t.access && t.exp && Date.now()<t.exp) return t.access;
+    if(!t.refresh) return t.access||null;
+    const res=await fetch('/api/dropbox-sync',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'refresh', refreshToken:t.refresh})
+    });
+    const data=await res.json().catch(function(){return {};});
+    if(!res.ok || !data.accessToken){
+      saveTokens(null);
+      setStatus('再接続が必要です', false);
+      return null;
+    }
+    t.access=data.accessToken;
+    t.exp=Date.now()+(data.expiresIn||14400)*1000-60000;
+    saveTokens(t);
+    return t.access;
+  }
+
+  function mergeById(a, b, idKey, timeKeys){
+    const map=new Map();
+    function put(item){
+      if(!item||item[idKey]==null) return;
+      const id=String(item[idKey]);
+      const prev=map.get(id);
+      if(!prev){ map.set(id, item); return; }
+      const tOf=function(x){
+        for(let i=0;i<(timeKeys||[]).length;i++){
+          const v=Date.parse(x[timeKeys[i]]||'')||0;
+          if(v) return v;
+        }
+        return 0;
+      };
+      map.set(id, tOf(item)>=tOf(prev)?item:prev);
+    }
+    (a||[]).forEach(put);
+    (b||[]).forEach(put);
+    return Array.from(map.values());
+  }
+
+  function collectLocal(){
+    let treasury=null;
+    try{ treasury=JSON.parse(localStorage.getItem(TREASURY_KEY)||'null'); }catch(e){}
+    let staff=[];
+    try{ staff=JSON.parse(localStorage.getItem(STAFF_KEY)||'[]'); }catch(e){}
+    let entaku=null;
+    try{ entaku=JSON.parse(localStorage.getItem(ENTAKU_KEY)||'null'); }catch(e){}
+    const u=window.PortalAuth?.getUser?.();
+    return {
+      version:1,
+      updatedAt:new Date().toISOString(),
+      updatedBy:u?(u.name+'/'+u.email):'unknown',
+      treasury:treasury,
+      staff:Array.isArray(staff)?staff:[],
+      entaku:entaku
+    };
+  }
+
+  function applyRemote(remote){
+    if(!remote||typeof remote!=='object') return false;
+    let changed=false;
+    // treasury: タスク／指示はIDマージ、他は新しい方を採用
+    try{
+      const local=JSON.parse(localStorage.getItem(TREASURY_KEY)||'null')||{};
+      const rt=remote.treasury||{};
+      const localAt=Date.parse(meta().updatedAt||'')||0;
+      const remoteAt=Date.parse(remote.updatedAt||'')||0;
+      let next=Object.assign({}, local);
+      if(remoteAt>=localAt){
+        next=Object.assign({}, rt, {
+          tasks: mergeById(local.tasks||[], rt.tasks||[], 'id', ['at','updatedAt']),
+          directives: mergeById(local.directives||[], rt.directives||[], 'id', ['at','updatedAt'])
+        });
+      }else{
+        next.tasks=mergeById(local.tasks||[], rt.tasks||[], 'id', ['at','updatedAt']);
+        next.directives=mergeById(local.directives||[], rt.directives||[], 'id', ['at','updatedAt']);
+      }
+      localStorage.setItem(TREASURY_KEY, JSON.stringify(next));
+      changed=true;
+    }catch(e){}
+    try{
+      const localStaff=JSON.parse(localStorage.getItem(STAFF_KEY)||'[]');
+      const map=new Map();
+      (localStaff||[]).forEach(function(s){ if(s&&s.id) map.set(String(s.id), s); });
+      (remote.staff||[]).forEach(function(s){
+        if(!s||!s.id) return;
+        const id=String(s.id);
+        map.set(id, Object.assign({}, map.get(id)||{}, s));
+      });
+      localStorage.setItem(STAFF_KEY, JSON.stringify(Array.from(map.values())));
+      changed=true;
+    }catch(e){}
+    try{
+      if(remote.entaku){
+        const localE=JSON.parse(localStorage.getItem(ENTAKU_KEY)||'null')||{};
+        const remoteAt=Date.parse(remote.updatedAt||'')||0;
+        const localAt=Date.parse(meta().updatedAt||'')||0;
+        if(remoteAt>=localAt || !localE.history || !localE.history.length){
+          localStorage.setItem(ENTAKU_KEY, JSON.stringify(remote.entaku));
+          changed=true;
+        }
+      }
+    }catch(e){}
+    saveMeta({ updatedAt: remote.updatedAt||new Date().toISOString(), updatedBy: remote.updatedBy||'' });
+    return changed;
+  }
+
+  function reloadAppData(){
+    try{
+      if(window.Treasury && typeof Treasury.loadFromStorage==='function'){
+        Treasury.loadFromStorage();
+      }else{
+        location.reload();
+        return;
+      }
+    }catch(e){ location.reload(); return; }
+    try{ window.dispatchEvent(new CustomEvent('portal-staff-change')); }catch(e){}
+    try{ window.PortalAuth?.syncUi?.(); }catch(e){}
+    try{
+      const d=JSON.parse(localStorage.getItem(ENTAKU_KEY)||'null');
+      if(d && typeof window.__entakuReloadFromStorage==='function') window.__entakuReloadFromStorage(d);
+    }catch(e){}
+  }
+
+  async function api(action, extra){
+    const access=await ensureAccess();
+    const t=loadTokens()||{};
+    if(!access && !t.refresh) throw new Error('NOT_CONNECTED');
+    const res=await fetch('/api/dropbox-sync',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(Object.assign({
+        action:action,
+        accessToken:access||'',
+        refreshToken:t.refresh||''
+      }, extra||{}))
+    });
+    const data=await res.json().catch(function(){return {};});
+    if(!res.ok) throw new Error(data.error||('HTTP '+res.status));
+    return data;
+  }
+
+  async function pull(){
+    if(syncing) return;
+    if(!isConnected()) return;
+    syncing=true;
+    setStatus('受信中…', true);
+    try{
+      const data=await api('download');
+      if(data.missing){
+        setStatus('初回アップロード待ち', true);
+        await push();
+        return;
+      }
+      const changed=applyRemote(data.content);
+      updateUi();
+      if(changed){
+        toast('Dropboxから同期しました');
+        reloadAppData();
+      }else updateUi();
+    }catch(e){
+      setStatus('同期エラー', isConnected());
+      console.warn('[GoonerCloud] pull', e);
+    }finally{ syncing=false; }
+  }
+
+  async function push(){
+    if(!isConnected()) return;
+    syncing=true;
+    setStatus('送信中…', true);
+    try{
+      const content=collectLocal();
+      await api('upload',{ content:content });
+      saveMeta({ updatedAt: content.updatedAt, updatedBy: content.updatedBy });
+      updateUi();
+    }catch(e){
+      setStatus('送信エラー', isConnected());
+      console.warn('[GoonerCloud] push', e);
+    }finally{ syncing=false; }
+  }
+
+  function schedulePush(){
+    if(!isConnected()) return;
+    clearTimeout(pushTimer);
+    pushTimer=setTimeout(function(){ push(); }, 1200);
+  }
+
+  function connect(){ location.href='/api/dropbox-auth'; }
+  function disconnect(){
+    if(!confirm('Dropbox同期を解除しますか？（ローカルデータは残ります）')) return;
+    saveTokens(null);
+    setStatus('', false);
+    toast('Dropbox同期を解除しました');
+  }
+
+  function wire(){
+    captureHashTokens();
+    updateUi();
+    const b=btnEl();
+    if(b){
+      b.title='クリック＝同期／右クリック＝解除';
+      b.addEventListener('click', function(){
+        if(isConnected()) pull().then(function(){ return push(); });
+        else connect();
+      });
+      b.addEventListener('contextmenu', function(e){
+        e.preventDefault();
+        if(isConnected()) disconnect();
+      });
+    }
+    document.addEventListener('visibilitychange', function(){
+      if(document.visibilityState==='visible') pull();
+    });
+    if(isConnected()) setTimeout(function(){ pull(); }, 800);
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire);
+  else wire();
+
+  return { connect, disconnect, pull, push, schedulePush, isConnected, updateUi };
 })();
 </script>
 
@@ -8635,6 +8965,7 @@ window.EntakuDocIngest=(function(){
         actions: S.actions || [],
         minutes: (S.minutes || []).slice(-200)
       }));
+      try{ window.GoonerCloud?.schedulePush?.(); }catch(e){}
     }catch(e){}
   }
   function restoreEntaku(){
@@ -8647,6 +8978,22 @@ window.EntakuDocIngest=(function(){
       }
     }catch(e){}
   }
+  window.__entakuReloadFromStorage=function(d){
+    try{
+      if(!d || !Array.isArray(d.history)) return;
+      S.history = d.history;
+      S.actions = Array.isArray(d.actions) ? d.actions : [];
+      S.minutes = Array.isArray(d.minutes) ? d.minutes : [];
+      S.history.forEach(function(m){
+        if(!m) return;
+        if(m.kind==='meeting-pick' || m.kind==='doc-clarify') m.live=false;
+      });
+      S.awaitingPick=false; S.pickDraft=null; S.awaitingDocClarify=false;
+      S.busy=false;
+      render();
+      try{ window.MeetingArchive?.render?.(); }catch(e){}
+    }catch(e){}
+  };
   function commitActions(actions){
     if(!actions || !actions.length){ persistEntaku(); return; }
     S.actions = actions;

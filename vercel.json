@@ -4,7 +4,8 @@
   "functions": {
     "api/pdf-cf.js": { "maxDuration": 60 },
     "api/openai.js": { "maxDuration": 60 },
-    "api/whisper-minutes.js": { "maxDuration": 60 }
+    "api/whisper-minutes.js": { "maxDuration": 60 },
+    "api/dropbox-sync.js": { "maxDuration": 30 }
   },
   "headers": [
     {
