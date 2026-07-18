@@ -80,23 +80,34 @@ window.GoonerSB=(function(){
     saveMe(data);
     return data;
   }
-  async function signUp(name, role, email, password){
+  async function signUp(name, role, email, password, opts){
+    opts=opts||{};
     const c=sb(); if(!c) return { error:'no_client' };
     email=String(email||'').trim().toLowerCase();
     const { data, error }=await c.auth.signUp({ email, password });
-    if(error){ alert('登録エラー: '+error.message); return { error }; }
+    if(error){
+      if(!opts.quiet) alert('登録エラー: '+error.message);
+      return { error };
+    }
     const uid=data&&data.user&&data.user.id;
-    if(!uid){ alert('登録は受け付けましたが、確認メールが必要な場合があります。'); return { data }; }
+    if(!uid){
+      if(!opts.quiet) alert('登録は受け付けましたが、確認メールが必要な場合があります。');
+      return { data };
+    }
     await registerMember(name, role, email, uid);
     return { data };
   }
-  async function signIn(email, password){
+  async function signIn(email, password, opts){
+    opts=opts||{};
     const c=sb(); if(!c) return { error:'no_client' };
     const { data, error }=await c.auth.signInWithPassword({
       email:String(email||'').trim().toLowerCase(),
       password:password
     });
-    if(error){ alert('ログインエラー: '+error.message); return { error }; }
+    if(error){
+      if(!opts.quiet) alert('ログインエラー: '+error.message);
+      return { error };
+    }
     if(data&&data.user) await loadMemberForUser(data.user);
     return { data };
   }
@@ -2206,6 +2217,19 @@ video.dc-card__image{
   border-color:var(--nav-green);
 }
 .portal-login-err{font-size:12px;color:var(--out);min-height:18px;margin-top:8px}
+.portal-login-demo-link{
+  display:block;margin-top:14px;text-align:center;font-size:12px;
+  color:var(--nav-green);text-decoration:none;font-weight:700;letter-spacing:.04em;
+}
+.portal-login-demo-link:hover{text-decoration:underline;color:var(--nav-label)}
+#portalDemoBanner{
+  position:sticky;top:0;z-index:80;display:none;
+  padding:8px 14px;text-align:center;font-size:12px;font-weight:700;letter-spacing:.04em;
+  background:linear-gradient(90deg,rgba(210,173,99,.95),rgba(51,198,179,.9));
+  color:#061410;border-bottom:1px solid rgba(0,0,0,.25);
+}
+#portalDemoBanner.is-on{display:block}
+#portalDemoBanner a{color:#061410;margin-left:10px}
 .portal-login-tabs{display:flex;gap:6px;margin-bottom:14px}
 .portal-login-tabs button{
   flex:1;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;
@@ -2323,9 +2347,12 @@ video.dc-card__image{
       </div>
       <button type="submit" class="portal-login-submit" id="portalLoginSubmit">ログイン</button>
       <p class="portal-login-err" id="portalLoginErr" aria-live="polite"></p>
+      <a class="portal-login-demo-link" href="demo.html">営業デモはこちら →</a>
     </form>
   </div>
 </div>
+
+<div id="portalDemoBanner" role="status">営業デモモード（本番データとは切り離して案内してください） <a href="demo.html">デモ入口</a></div>
 
 <div id="portal-shell" hidden>
 <nav class="gamenav" aria-label="メインメニュー">
@@ -8262,6 +8289,23 @@ window.PortalAuth=(function(){
   const USER_KEY='gooner_portal_user';
   const LOG_KEY='gooner_portal_access_log';
   const STAFF_KEY='gooner_portal_staff';
+  const DEMO={
+    email:'demo@gooner-portal.sales',
+    password:'GoonerDemo2026',
+    name:'デモ営業',
+    role:'経理'
+  };
+  function isDemoQuery(){
+    try{
+      const p=new URLSearchParams(location.search);
+      return p.get('demo')==='1' || p.get('demo')==='true' || p.get('mode')==='demo';
+    }catch(e){ return false; }
+  }
+  function syncDemoBanner(){
+    const b=document.getElementById('portalDemoBanner');
+    const u=getUser();
+    if(b) b.classList.toggle('is-on', !!(u&&u.demo));
+  }
   function getUser(){
     try{
       const u=JSON.parse(localStorage.getItem(USER_KEY)||'null');
@@ -8459,9 +8503,9 @@ window.PortalAuth=(function(){
     if(u){
       if(login)login.hidden=true;
       if(shell)shell.hidden=false;
-      if(chip){chip.hidden=false;chip.textContent=u.role+'　'+u.name;}
+      if(chip){chip.hidden=false;chip.textContent=(u.demo?'DEMO・':'')+u.role+'　'+u.name;}
       if(logout)logout.hidden=false;
-      if(badge)badge.textContent=u.name;
+      if(badge)badge.textContent=u.demo?('デモ・'+u.name):u.name;
       document.querySelectorAll('.gamenav button.on').forEach(function(b){ b.classList.remove('on'); });
       document.querySelectorAll('.screen.on').forEach(function(x){ x.classList.remove('on'); });
     }else{
@@ -8471,8 +8515,87 @@ window.PortalAuth=(function(){
       if(logout)logout.hidden=true;
       if(badge)badge.textContent='利用者';
     }
+    syncDemoBanner();
     try{applyNavAcl();}catch(e){}
     try{ window.syncDropboxBtnVisibility?.(); }catch(e){}
+  }
+  async function enterDemoLocal(reason){
+    const u={
+      role:DEMO.role,
+      name:DEMO.name,
+      email:DEMO.email,
+      memberId:null,
+      demo:true,
+      demoLocal:true,
+      at:new Date().toISOString()
+    };
+    localStorage.setItem(USER_KEY, JSON.stringify(u));
+    window.GoonerSB?.saveMe?.({
+      id:'demo-local',
+      name:DEMO.name,
+      role:DEMO.role,
+      email:DEMO.email,
+      dropbox_allowed:false
+    });
+    upsertStaff(u);
+    saveLog({...u,action:'login',ts:Date.now(),detail:reason||'demo-local'});
+    serverLog('login','demo-local');
+    syncUi();
+    try{ window.dispatchEvent(new CustomEvent('portal-member-ready')); }catch(e){}
+    try{ window.Treasury?.toast?.('デモモードで入場しました（ローカル）'); }catch(e){}
+    return true;
+  }
+  async function enterDemo(){
+    const err=document.getElementById('portalLoginErr');
+    if(err) err.textContent='デモアカウントで入場しています…';
+    const cur=getUser();
+    if(cur && cur.demo && String(cur.email).toLowerCase()===DEMO.email){
+      syncUi();
+      return true;
+    }
+    try{
+      let res=await window.GoonerSB.signIn(DEMO.email, DEMO.password, {quiet:true});
+      if(res && res.error){
+        res=await window.GoonerSB.signUp(DEMO.name, DEMO.role, DEMO.email, DEMO.password, {quiet:true});
+        if(res && res.error){
+          return enterDemoLocal('signup-failed');
+        }
+        const c0=window.GoonerSB.sb();
+        const sess0=c0?(await c0.auth.getSession()).data.session:null;
+        if(!sess0){
+          res=await window.GoonerSB.signIn(DEMO.email, DEMO.password, {quiet:true});
+        }
+      }
+      const c=window.GoonerSB.sb();
+      const sess=c?(await c.auth.getSession()).data.session:null;
+      if(!sess || !sess.user){
+        return enterDemoLocal('no-session');
+      }
+      let m=await window.GoonerSB.loadMemberForUser(sess.user);
+      if(!m){
+        await window.GoonerSB.registerMember(DEMO.name, DEMO.role, DEMO.email, sess.user.id);
+        m=await window.GoonerSB.loadMemberForUser(sess.user);
+      }
+      if(!m){
+        return enterDemoLocal('no-member');
+      }
+      applyMemberSession(m, sess.user.email);
+      const u=getUser();
+      if(u){
+        u.demo=true;
+        localStorage.setItem(USER_KEY, JSON.stringify(u));
+      }
+      saveLog({...(getUser()||{}),action:'login',ts:Date.now(),detail:'demo-auth'});
+      serverLog('login','demo-auth');
+      syncUi();
+      try{ window.dispatchEvent(new CustomEvent('portal-member-ready')); }catch(e){}
+      try{ history.replaceState({}, '', location.pathname + (location.hash||'')); }catch(e){}
+      try{ window.Treasury?.toast?.('デモアカウントで入場しました'); }catch(e){}
+      if(err) err.textContent='';
+      return true;
+    }catch(e){
+      return enterDemoLocal(String(e&&e.message||e));
+    }
   }
   function applyMemberSession(m, email){
     if(!m) return false;
@@ -8518,6 +8641,9 @@ window.PortalAuth=(function(){
   }
   async function onAuthed(session){
     if(!session||!session.user){
+      const cur=getUser();
+      // デモのローカル入場は Auth 無しでも維持
+      if(cur && cur.demo && cur.demoLocal){ syncUi(); return; }
       localStorage.removeItem(USER_KEY);
       try{ window.GoonerSB?.saveMe?.(null); }catch(e){}
       syncUi();
@@ -8640,11 +8766,22 @@ window.PortalAuth=(function(){
       });
     });
 
+    // 営業デモ: ?demo=1 で自動入場
+    if(isDemoQuery()){
+      enterDemo().then(function(){ syncDemoBanner(); });
+    }
+
     // Auth セッション監視（未ログイン＝ゲート）
     const c=window.GoonerSB?.sb?.();
     if(c){
-      c.auth.getSession().then(function(res){ onAuthed(res.data&&res.data.session); });
-      c.auth.onAuthStateChange(function(_ev, session){ onAuthed(session); });
+      c.auth.getSession().then(function(res){
+        if(isDemoQuery() && !(res.data&&res.data.session)) return;
+        onAuthed(res.data&&res.data.session);
+      });
+      c.auth.onAuthStateChange(function(_ev, session){
+        if(isDemoQuery() && !session) return;
+        onAuthed(session);
+      });
     }else{
       localStorage.removeItem(USER_KEY);
       syncUi();
@@ -8658,7 +8795,7 @@ window.PortalAuth=(function(){
     }
     requestAnimationFrame(syncNavMatrix);
   });
-  return{getUser,login,logout,userContext,syncUi,serverLog,listStaff,upsertStaff,canAccessAccounting,isAccountingScreen,isAccountingRevealed,revealSecureNav,applyNavAcl,updateBrandCover,syncNavMatrix,onAuthed};
+  return{getUser,login,logout,userContext,syncUi,serverLog,listStaff,upsertStaff,canAccessAccounting,isAccountingScreen,isAccountingRevealed,revealSecureNav,applyNavAcl,updateBrandCover,syncNavMatrix,onAuthed,enterDemo,DEMO};
 })();
 </script>
 

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>営業デモ｜GOONER PORTAL</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg0:#070b0f;
+    --bg1:#0e1714;
+    --ink:#eef8f4;
+    --muted:#8fa39a;
+    --line:rgba(120,200,170,.22);
+    --accent:#33c6b3;
+    --accent2:#9fe8dc;
+    --gold:#d2ad63;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%;background:var(--bg0);color:var(--ink)}
+  body{
+    font-family:"Zen Kaku Gothic New",sans-serif;
+    background:
+      radial-gradient(ellipse 90% 70% at 15% -10%, rgba(51,198,179,.22), transparent 55%),
+      radial-gradient(ellipse 70% 50% at 100% 20%, rgba(210,173,99,.12), transparent 50%),
+      linear-gradient(180deg, var(--bg1), var(--bg0) 55%);
+  }
+  .hero{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding:48px 22px 64px;
+    max-width:760px;
+    margin:0 auto;
+  }
+  .brand{
+    font-family:Sora,sans-serif;
+    font-weight:800;
+    font-size:clamp(2rem,7vw,3.4rem);
+    letter-spacing:.06em;
+    line-height:1.05;
+    margin:0 0 14px;
+    background:linear-gradient(120deg, var(--accent2), var(--gold));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .lead{
+    margin:0 0 28px;
+    font-size:clamp(1rem,2.5vw,1.15rem);
+    color:var(--muted);
+    max-width:34em;
+    line-height:1.7;
+  }
+  .cta-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  .cta{
+    appearance:none;border:none;cursor:pointer;text-decoration:none;
+    display:inline-flex;align-items:center;justify-content:center;
+    padding:14px 22px;border-radius:10px;
+    font-family:Sora,sans-serif;font-weight:700;font-size:15px;letter-spacing:.04em;
+    background:linear-gradient(135deg, var(--accent), #1f9a8a);
+    color:#041612;
+    box-shadow:0 10px 30px rgba(51,198,179,.25);
+    transition:transform .18s ease, filter .18s ease;
+  }
+  .cta:hover{filter:brightness(1.06);transform:translateY(-1px)}
+  .cta.secondary{
+    background:transparent;color:var(--accent2);
+    border:1px solid var(--line);
+    box-shadow:none;
+  }
+  . cred{
+    margin-top:40px;
+    padding:18px 20px;
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:rgba(8,16,14,.55);
+    backdrop-filter:blur(8px);
+  }
+  .cred h2{
+    margin:0 0 10px;
+    font-size:13px;
+    letter-spacing:.12em;
+    color:var(--gold);
+    font-family:Sora,sans-serif;
+  }
+  .cred dl{margin:0;display:grid;gap:8px;font-size:14px}
+  .cred dt{color:var(--muted);font-size:11px;letter-spacing:.06em}
+  .cred dd{margin:0;font-family:Sora,monospace;font-size:14px;word-break:break-all}
+  .cred .copy{
+    margin-top:12px;font-size:12px;color:var(--muted);line-height:1.6
+  }
+  .note{
+    margin-top:22px;
+    font-size:12px;
+    color:var(--muted);
+    line-height:1.65;
+  }
+  .note a{color:var(--accent2)}
+</style>
+</head>
+<body>
+  <main class="hero">
+    <h1 class="brand">GOONER PORTAL</h1>
+    <p class="lead">営業デモ用の入口です。ワンクリックでデモアカウントに入り、タスク・会計・円卓などの画面を案内できます。</p>
+    <div class="cta-row">
+      <a class="cta" id="demoEnter" href="gooner-portal.html?demo=1">デモを開く</a>
+      <a class="cta secondary" href="gooner-portal.html">通常ログインへ</a>
+    </div>
+
+    <section class="cred" aria-label="デモアカウント">
+      <h2>DEMO ACCOUNT</h2>
+      <dl>
+        <div>
+          <dt>メール</dt>
+          <dd id="demoEmail">demo@gooner-portal.sales</dd>
+        </div>
+        <div>
+          <dt>パスワード</dt>
+          <dd id="demoPass">GoonerDemo2026</dd>
+        </div>
+        <div>
+          <dt>役職（デモ）</dt>
+          <dd>経理（会計メニュー閲覧可）</dd>
+        </div>
+      </dl>
+      <p class="copy">リンク共有だけで案内できます。手動ログインする場合は上記を入力してください。初回アクセス時にデモ用アカウントを自動作成します。</p>
+    </section>
+
+    <p class="note">
+      共有リンク（推奨）:<br>
+      <a id="shareLink" href="https://kaisha-kanri.vercel.app/demo">https://kaisha-kanri.vercel.app/demo</a><br>
+      直接入場:<br>
+      <a href="https://kaisha-kanri.vercel.app/gooner-portal?demo=1">https://kaisha-kanri.vercel.app/gooner-portal?demo=1</a>
+    </p>
+  </main>
+  <script>
+    (function(){
+      try{
+        if(location.hostname && location.hostname!=='kaisha-kanri.vercel.app'){
+          var a=document.getElementById('shareLink');
+          if(a){
+            a.href=location.origin+'/demo';
+            a.textContent=location.origin+'/demo';
+          }
+        }
+      }catch(e){}
+    })();
+  </script>
+</body>
+</html>
