@@ -126,6 +126,9 @@ window.GoonerSB=(function(){
     saveMe(null);
   }
   function canUseDropbox(){
+    try{
+      if(window.PortalAuth?.isDemoMode?.()) return false;
+    }catch(e){}
     const m=me();
     if(m && (m.role==='社長' || m.dropbox_allowed===true)) return true;
     // 名簿キャッシュが遅れても社長は開ける（本番検問はサーバー側）
@@ -4855,7 +4858,11 @@ function setRole(r){role=r;
 $$(".gamenav button[data-s]").forEach(b=>b.onclick=()=>{
   if(b.dataset.acct==="1"){
     if(!window.PortalAuth||!PortalAuth.canAccessAccounting()){
-      try{toast("会計・法務メニューは社長・経理・法務のみ利用できます");}catch(e){}
+      try{
+        toast(window.PortalAuth?.isDemoMode?.()
+          ?"営業デモでは会計・お金関連メニューは利用できません"
+          :"会計・法務メニューは社長・経理・法務のみ利用できます");
+      }catch(e){}
       return;
     }
   }
@@ -8302,7 +8309,7 @@ window.PortalAuth=(function(){
     email:'demo@gooner-portal.sales',
     password:'GoonerDemo2026',
     name:'デモ営業',
-    role:'経理'
+    role:'社員'
   };
   function isDemoQuery(){
     try{
@@ -8310,10 +8317,22 @@ window.PortalAuth=(function(){
       return p.get('demo')==='1' || p.get('demo')==='true' || p.get('mode')==='demo';
     }catch(e){ return false; }
   }
+  function isDemoMode(){
+    const u=getUser();
+    if(!u) return false;
+    if(u.demo) return true;
+    // デモ用メールで通常ログインした場合も制限を適用
+    return String(u.email||'').toLowerCase()===DEMO.email;
+  }
   function syncDemoBanner(){
     const b=document.getElementById('portalDemoBanner');
-    const u=getUser();
-    if(b) b.classList.toggle('is-on', !!(u&&u.demo));
+    const on=isDemoMode();
+    if(b){
+      b.classList.toggle('is-on', on);
+      if(on){
+        b.innerHTML='営業デモモード（会計・Dropboxは非表示） <a href="demo.html">デモ入口</a>';
+      }
+    }
   }
   function getUser(){
     try{
@@ -8384,7 +8403,9 @@ window.PortalAuth=(function(){
   const ACCT_ROLES=['社長','経理','法務'];
   function canAccessAccounting(){
     const u=getUser();
-    return !!(u&&ACCT_ROLES.includes(String(u.role||'').trim()));
+    // 営業デモでは会計・法務（お金関連）を見せない
+    if(!u || isDemoMode()) return false;
+    return ACCT_ROLES.includes(String(u.role||'').trim());
   }
   function isAccountingRevealed(){
     return !!document.querySelector('.nav-drop-panel[data-secure="1"]:not([hidden])');
@@ -8484,7 +8505,9 @@ window.PortalAuth=(function(){
       b.classList.toggle('nav-locked', !ok);
       b.setAttribute('aria-disabled', ok?'false':'true');
       if(ok) b.removeAttribute('title');
-      else b.title='会計・法務メニューは社長・経理・法務のみ利用できます';
+      else b.title=isDemoMode()
+        ? '営業デモでは会計・お金関連メニューは利用できません'
+        : '会計・法務メニューは社長・経理・法務のみ利用できます';
     });
     document.querySelectorAll('.nav-drop').forEach(function(drop){
       if(drop.hidden){ setDropOpen(drop, false); return; }
@@ -8512,9 +8535,9 @@ window.PortalAuth=(function(){
     if(u){
       if(login)login.hidden=true;
       if(shell)shell.hidden=false;
-      if(chip){chip.hidden=false;chip.textContent=(u.demo?'DEMO・':'')+u.role+'　'+u.name;}
+      if(chip){chip.hidden=false;chip.textContent=(isDemoMode()?'DEMO・':'')+u.role+'　'+u.name;}
       if(logout)logout.hidden=false;
-      if(badge)badge.textContent=u.demo?('デモ・'+u.name):u.name;
+      if(badge)badge.textContent=isDemoMode()?('デモ・'+u.name):u.name;
       document.querySelectorAll('.gamenav button.on').forEach(function(b){ b.classList.remove('on'); });
       document.querySelectorAll('.screen.on').forEach(function(x){ x.classList.remove('on'); });
     }else{
@@ -8608,13 +8631,17 @@ window.PortalAuth=(function(){
   }
   function applyMemberSession(m, email){
     if(!m) return false;
+    const em=String(email||m.email||'').trim().toLowerCase();
     const u={
       role:String(m.role||'').trim(),
       name:String(m.name||'').trim(),
-      email:String(email||m.email||'').trim().toLowerCase(),
+      email:em,
       memberId:m.id,
+      demo: em===DEMO.email,
       at:new Date().toISOString()
     };
+    // デモは見せる役職を社員に固定（名簿が経理でも会計は出さない）
+    if(u.demo) u.role='社員';
     if(!u.role||!u.name||!u.email) return false;
     localStorage.setItem(USER_KEY, JSON.stringify(u));
     upsertStaff(u);
@@ -8804,7 +8831,7 @@ window.PortalAuth=(function(){
     }
     requestAnimationFrame(syncNavMatrix);
   });
-  return{getUser,login,logout,userContext,syncUi,serverLog,listStaff,upsertStaff,canAccessAccounting,isAccountingScreen,isAccountingRevealed,revealSecureNav,applyNavAcl,updateBrandCover,syncNavMatrix,onAuthed,enterDemo,DEMO};
+  return{getUser,login,logout,userContext,syncUi,serverLog,listStaff,upsertStaff,canAccessAccounting,isAccountingScreen,isAccountingRevealed,revealSecureNav,applyNavAcl,updateBrandCover,syncNavMatrix,onAuthed,enterDemo,DEMO,isDemoMode};
 })();
 </script>
 
@@ -8912,15 +8939,26 @@ window.PortalAuth=(function(){
   function syncDropboxBtnVisibility(){
     const b=btnEl(), s=statusEl();
     const loggedIn=!!(window.PortalAuth?.getUser?.() || window.GoonerSB?.me?.());
-    const ok=!!window.GoonerSB?.canUseDropbox?.();
+    const demo=!!window.PortalAuth?.isDemoMode?.();
+    const ok=!demo && !!window.GoonerSB?.canUseDropbox?.();
     if(b){
-      // ログイン中はボタンを出し、未許可でも押せて理由が分かるようにする
-      b.hidden=!loggedIn;
+      // 営業デモでは Dropbox を出さない
+      b.hidden=!loggedIn || demo;
+      b.disabled=!!demo;
       b.classList.toggle('is-on', ok);
       b.textContent='Dropbox同期';
-      b.title=ok?'クリック＝Dropboxを開く':'クリックで状態確認（社長の許可が必要な場合があります）';
+      b.title=demo?'営業デモでは利用できません'
+        :(ok?'クリック＝Dropboxを開く':'クリックで状態確認（社長の許可が必要な場合があります）');
     }
-    if(s){ s.hidden=!loggedIn; s.textContent=ok?'許可済':'要許可'; }
+    if(s){ s.hidden=!loggedIn || demo; s.textContent=ok?'許可済':'要許可'; }
+    const edbx=document.getElementById('entakuDbxSearchBtn');
+    if(edbx){
+      edbx.hidden=!!demo;
+      edbx.disabled=!!demo;
+      if(demo) edbx.title='営業デモでは利用できません';
+    }
+    const edbxPanel=document.getElementById('entakuDbxPanel');
+    if(demo && edbxPanel) edbxPanel.hidden=true;
   }
   window.syncDropboxBtnVisibility=syncDropboxBtnVisibility;
 
@@ -8973,6 +9011,10 @@ window.PortalAuth=(function(){
   }
 
   function openBrowser(){
+    if(window.PortalAuth?.isDemoMode?.()){
+      try{ toast('営業デモではDropboxは利用できません'); }catch(e){}
+      return;
+    }
     const m=modal();
     if(!m) return;
     m.classList.add('open');

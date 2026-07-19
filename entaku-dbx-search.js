@@ -273,6 +273,10 @@
   }
 
   async function openPanel() {
+    if (window.PortalAuth?.isDemoMode?.()) {
+      toast("営業デモではDropbox検索は利用できません");
+      return;
+    }
     const panel = ensurePanel();
     if (!panel) return;
     panel.hidden = false;
