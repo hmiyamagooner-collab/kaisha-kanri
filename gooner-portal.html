@@ -93,6 +93,13 @@ window.GoonerSB=(function(){
     opts=opts||{};
     const c=sb(); if(!c) return { error:'no_client' };
     email=String(email||'').trim().toLowerCase();
+    // 社員登録は Gmail 必須（将来の Google カレンダー連携向け）。デモ用は除外。
+    const isDemoEmail=email==='demo@gooner-portal.sales';
+    if(!isDemoEmail && !/@gmail\.com$/.test(email) && !/@googlemail\.com$/.test(email)){
+      const msg='社員の新規登録は Gmail（@gmail.com）のみです。将来のGoogleカレンダー連携のためです。';
+      if(!opts.quiet) alert(msg);
+      return { error: { message: msg } };
+    }
     const { data, error }=await c.auth.signUp({ email, password });
     if(error){
       if(!opts.quiet) alert('登録エラー: '+error.message);
@@ -2229,6 +2236,9 @@ video.dc-card__image{
   border-color:var(--nav-green);
 }
 .portal-login-err{font-size:12px;color:var(--out);min-height:18px;margin-top:8px}
+.portal-login-hint{font-size:11px;color:var(--muted);line-height:1.55;margin:6px 0 0}
+.portal-login-hint[hidden]{display:none!important}
+.portal-login-hint b{color:var(--nav-label);font-weight:700}
 .portal-login-demo-link{
   display:block;margin-top:14px;text-align:center;font-size:12px;
   color:var(--nav-green);text-decoration:none;font-weight:700;letter-spacing:.04em;
@@ -2347,8 +2357,9 @@ video.dc-card__image{
         <input id="loginName" type="text" maxlength="40" placeholder="例：深山 弘次" autocomplete="name">
       </div>
       <div class="portal-login-field">
-        <label for="loginEmail">メールアドレス</label>
-        <input id="loginEmail" type="email" required maxlength="120" placeholder="name@example.com" autocomplete="email">
+        <label for="loginEmail">メールアドレス（社員登録はGmail）</label>
+        <input id="loginEmail" type="email" required maxlength="120" placeholder="name@gmail.com" autocomplete="email" inputmode="email">
+        <p class="portal-login-hint" id="loginEmailHint" hidden>将来のGoogleカレンダー連携のため、新規登録は <b>@gmail.com</b> のみ受け付けます。</p>
       </div>
       <div class="portal-login-field">
         <label for="loginPassword">パスワード</label>
@@ -8707,6 +8718,10 @@ window.PortalAuth=(function(){
   }
   document.addEventListener('DOMContentLoaded',function(){
     let mode='signin';
+    function isGmailAddress(email){
+      const e=String(email||'').trim().toLowerCase();
+      return /@gmail\.com$/.test(e) || /@googlemail\.com$/.test(e);
+    }
     function setMode(next){
       mode=next==='signup'?'signup':'signin';
       const isUp=mode==='signup';
@@ -8720,14 +8735,21 @@ window.PortalAuth=(function(){
       const name=document.getElementById('loginName');
       if(role) role.required=isUp;
       if(name) name.required=isUp;
+      const emailInput=document.getElementById('loginEmail');
+      const emailHint=document.getElementById('loginEmailHint');
+      if(emailInput){
+        emailInput.placeholder=isUp?'name@gmail.com':'name@gmail.com（登録済みメール）';
+        emailInput.setAttribute('aria-describedby', isUp?'loginEmailHint':'');
+      }
+      if(emailHint) emailHint.hidden=!isUp;
       const pw=document.getElementById('loginPassword');
       if(pw) pw.autocomplete=isUp?'new-password':'current-password';
       const sub=document.getElementById('portalLoginSubmit');
       if(sub) sub.textContent=isUp?'新規登録':'ログイン';
       const hint=document.getElementById('portalLoginSub');
       if(hint) hint.innerHTML=isUp
-        ? '初回登録：役職・名前・メール・パスワードを入力してください。'
-        : 'メールとパスワードでログインしてください。<br>初回のみ「新規登録」から役職・名前も登録します。';
+        ? '初回登録：役職・名前・<strong>Gmail</strong>・パスワードを入力してください。<br>※将来のGoogleカレンダー連携のため、社員登録は @gmail.com のみです。'
+        : 'メールとパスワードでログインしてください。<br>初回のみ「新規登録」から役職・名前も登録します（社員はGmail）。';
     }
     setMode('signin');
     document.getElementById('loginTabSignIn')?.addEventListener('click', function(){ setMode('signin'); });
@@ -8758,11 +8780,18 @@ window.PortalAuth=(function(){
           const role=document.getElementById('loginRole')?.value;
           const name=document.getElementById('loginName')?.value;
           if(!role||!name||!email||!password){
-            if(err) err.textContent='役職・名前・メール・パスワードを入力してください。';
+            if(err) err.textContent='役職・名前・Gmail・パスワードを入力してください。';
+            return;
+          }
+          if(!isGmailAddress(email)){
+            if(err) err.textContent='社員の新規登録は Gmail（@gmail.com）のみです。将来のGoogleカレンダー連携のためです。';
             return;
           }
           const res=await window.GoonerSB.signUp(name, role, email, password);
-          if(res&&res.error) return;
+          if(res&&res.error){
+            if(err && res.error.message) err.textContent=String(res.error.message);
+            return;
+          }
           // セッションが即時ある場合は onAuthStateChange が開く。無い場合はログインへ誘導
           const c=window.GoonerSB.sb();
           const sess=c?(await c.auth.getSession()).data.session:null;
