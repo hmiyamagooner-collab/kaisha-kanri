@@ -9,6 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="GOONER">
 <meta name="application-name" content="GOONER PORTAL">
+<script>try{if('scrollRestoration' in history)history.scrollRestoration='manual';}catch(e){}</script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png" sizes="180x180">
 <link rel="icon" type="image/png" href="favicon.png" sizes="32x32">
@@ -10579,16 +10580,11 @@ window.PortalAuth=(function(){
     // ナビ未選択＝ホーム：円卓直下のページ領域に Gooner ロゴ
     const on=document.querySelector('.gamenav button.on');
     const show=!on;
-    const wasHidden=cover.hidden;
     cover.hidden=!show;
     pane.classList.toggle('is-brand-cover', show);
-    if(show && (opts.scroll || wasHidden)){
-      try{
-        requestAnimationFrame(function(){
-          const top=pane.getBoundingClientRect().top+window.scrollY-56;
-          window.scrollTo({top:Math.max(0,top),behavior:opts.instant?'auto':'smooth'});
-        });
-      }catch(e){}
+    // 開いたとき／ホーム表示でロゴ位置へ飛ばさない（常にページ先頭を維持）
+    if(opts.scrollToTop){
+      try{ window.scrollTo({top:0,behavior:opts.instant?'auto':'smooth'}); }catch(e){}
     }
     const img=cover.querySelector('img');
     if(img && !img.dataset.matrixBound){
@@ -10627,10 +10623,10 @@ window.PortalAuth=(function(){
       const active=panel && panel.querySelector('button[data-s].on');
       if(active) setDropOpen(drop, true);
     });
-    // ログイン直後はロゴホーム（会計画面へ自動遷移しない）
+    // ログイン直後はロゴホーム（会計画面へ自動遷移しない）＋ページ先頭を表示
     if(!document.querySelector('.gamenav button.on')){
       document.querySelectorAll('.screen.on').forEach(function(x){ x.classList.remove('on'); });
-      updateBrandCover({scroll:true});
+      updateBrandCover({scrollToTop:true, instant:true});
     }else{
       updateBrandCover();
     }
@@ -10982,6 +10978,11 @@ window.PortalAuth=(function(){
         .observe(shell,{attributes:true,attributeFilter:['hidden']});
     }
     requestAnimationFrame(syncNavMatrix);
+    try{ window.scrollTo(0,0); }catch(e){}
+    requestAnimationFrame(function(){ try{ window.scrollTo(0,0); }catch(e){} });
+  });
+  window.addEventListener('pageshow', function(){
+    try{ window.scrollTo(0,0); }catch(e){}
   });
   return{getUser,login,logout,userContext,syncUi,serverLog,listStaff,upsertStaff,canAccessAccounting,canAccessQuest,isAccountingScreen,isAccountingRevealed,revealSecureNav,applyNavAcl,updateBrandCover,syncNavMatrix,onAuthed,enterDemo,DEMO,isDemoMode};
 })();
