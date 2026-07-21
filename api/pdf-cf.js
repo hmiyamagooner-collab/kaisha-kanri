@@ -1,7 +1,7 @@
 // Vercel Serverless Function: /api/pdf-cf
 // CF表PDFのテキスト（必要時のみ小さなページ画像）→ 入出金予定JSON
 
-import { getOpenAIKey } from "./getOpenAIKey.js";
+import { getOpenAIKey } from "./_lib/getOpenAIKey.js";
 
 export const config = { maxDuration: 60 };
 

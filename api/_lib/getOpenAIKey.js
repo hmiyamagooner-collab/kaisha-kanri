@@ -10,7 +10,7 @@ export async function getOpenAIKey() {
     return cached;
   }
   try {
-    const mod = await import("./secrets.local.js");
+    const mod = await import("../secrets.local.js");
     const key = mod.default?.OPENAI_API_KEY || mod.OPENAI_API_KEY || "";
     if (key) cached = key;
     return key;

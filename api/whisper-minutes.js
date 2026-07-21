@@ -1,7 +1,7 @@
 // Vercel Serverless Function: /api/whisper-minutes
 // 円卓会議: 音声 → Whisper文字起こし → GPTで議事録（要約・決定事項）
 
-import { getOpenAIKey } from "./getOpenAIKey.js";
+import { getOpenAIKey } from "./_lib/getOpenAIKey.js";
 
 export const config = {
   maxDuration: 60,

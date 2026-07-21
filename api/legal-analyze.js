@@ -1,7 +1,7 @@
 // Vercel Serverless Function: /api/legal-analyze
 // 法務部長・陽翔ペルソナで契約書を構造化チェック（円卓法務AIと同系統）
 
-import { getOpenAIKey } from "./getOpenAIKey.js";
+import { getOpenAIKey } from "./_lib/getOpenAIKey.js";
 
 export const config = { maxDuration: 60 };
 

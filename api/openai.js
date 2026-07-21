@@ -3,7 +3,7 @@
 // Claude版(/api/claude)と同じ振り分けルール。APIキーはサーバー側のみで保持。
 // キー設定: Vercelの OPENAI_API_KEY 環境変数、または api/secrets.local.js（example をコピー）
 
-import { getOpenAIKey } from "./getOpenAIKey.js";
+import { getOpenAIKey } from "./_lib/getOpenAIKey.js";
 
 export const config = { maxDuration: 60 };
 

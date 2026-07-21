@@ -1,7 +1,7 @@
 // Vercel Serverless Function: /api/doc-route
 // 円卓添付のPDF/資料テキストを分類し、保管先モジュールへ振り分ける
 
-import { getOpenAIKey } from "./getOpenAIKey.js";
+import { getOpenAIKey } from "./_lib/getOpenAIKey.js";
 
 export const config = { maxDuration: 45 };
 
