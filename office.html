@@ -498,8 +498,83 @@ const CHARS=[
 CHARS.forEach((c,i)=>{
   c.idx=i;c.px=c.seat.x;c.py=c.seat.y;c.path=[];c.curAct=null;c.hidden=false;
   c.wanderRoom=null;c.wanderAt=0;c.bubble=null;c.override=null;c.calId='';c.calEvent=null;c.calAct=null;c.pendingBubble=null;
+  c.score=0;c.linked=false;c.nightForced=false;
 });
 const SHINA=CHARS.find(c=>c.id==='shinagawa');
+
+/* ===== 昼 / サンセット / 夜（日没時刻ベース） ===== */
+let dayPhase='day'; // day | sunset | night
+let sunTimes={sunrise:6, sunset:18.5, loaded:false, dayKey:''};
+function hoursOfISO(iso){
+  const d=new Date(iso); if(isNaN(d.getTime())) return null;
+  return d.getHours()+d.getMinutes()/60+d.getSeconds()/3600;
+}
+async function refreshSunTimes(){
+  const key=new Date().toISOString().slice(0,10);
+  if(sunTimes.dayKey===key && sunTimes.loaded) return;
+  try{
+    const url='https://api.sunrise-sunset.org/json?lat=35.6812&lng=139.7671&formatted=0&date=today';
+    const res=await fetch(url);
+    const data=await res.json();
+    const rise=hoursOfISO(data?.results?.sunrise);
+    const set=hoursOfISO(data?.results?.sunset);
+    if(rise!=null && set!=null){
+      sunTimes={sunrise:rise, sunset:set, loaded:true, dayKey:key};
+      return;
+    }
+  }catch(e){}
+  // 東京の季節ざっくりフォールバック
+  const m=new Date().getMonth()+1;
+  const sunrise=m>=4&&m<=9?5:6.5;
+  const sunset=m>=5&&m<=8?18.8:(m===4||m===9?18:17);
+  sunTimes={sunrise:sunrise, sunset:sunset, loaded:true, dayKey:key};
+}
+function computeDayPhase(h){
+  const rise=sunTimes.sunrise, set=sunTimes.sunset;
+  if(h < rise || h >= set+0.4) return 'night';
+  if(h >= set-0.85) return 'sunset';
+  return 'day';
+}
+function applyDayPhase(){
+  const h=simHour();
+  dayPhase=computeDayPhase(h);
+  const night=dayPhase==='night';
+  CHARS.forEach(c=>{
+    if(night){ c.nightForced=true; c.hidden=true; c.path=[]; c.bubble=null; }
+    else if(c.nightForced){ c.nightForced=false; /* updateChar が再配置 */ }
+  });
+  if(night){
+    ELDERS.forEach(e=>{ e.hidden=true; e.path=[]; e.bubble=null; });
+    GUESTS.forEach(g=>{ g.hidden=true; g.path=[]; g.zone=null; g.bubble=null; });
+    if(typeof CARE_USERS!=='undefined') CARE_USERS.forEach(u=>{ u.hidden=true; u.path=[]; });
+  }
+}
+function drawDayOverlay(g){
+  if(dayPhase==='day') return;
+  g.save();
+  if(dayPhase==='sunset'){
+    const grd=g.createLinearGradient(0,0,0,MAP_H);
+    grd.addColorStop(0,'rgba(255,120,40,.18)');
+    grd.addColorStop(0.45,'rgba(180,60,90,.12)');
+    grd.addColorStop(1,'rgba(20,10,40,.28)');
+    g.fillStyle=grd; g.fillRect(0,0,MAP_W,MAP_H);
+  }else{
+    g.fillStyle='rgba(2,6,18,.55)';
+    g.fillRect(0,0,MAP_W,MAP_H);
+    // 窓あかりを少し強調
+    g.fillStyle='rgba(255,210,120,.06)';
+    g.fillRect(0,0,MAP_W,MAP_H);
+  }
+  g.restore();
+  // フェーズ表示
+  const label=dayPhase==='sunset'?'サンセット':'夜モード';
+  g.font='700 9px "Zen Kaku Gothic New",sans-serif';
+  const tw=Math.ceil(g.measureText(label).width)+10;
+  g.fillStyle='rgba(0,0,0,.55)';
+  g.fillRect(MAP_W-tw-6,6,tw,14);
+  g.fillStyle=dayPhase==='sunset'?'#ffc089':'#9ecbff';
+  g.fillText(label, MAP_W-tw-1, 16);
+}
 
 function elder(name,short,female,cloth,hair){
   return {name:name,short:short,female:female,cloth:cloth,hair:hair,px:pt('parking',0.5,0.5).x,py:pt('parking',0.5,0.5).y,path:[],hidden:true,spd:0.85,bubble:null,pendingBubble:null};
@@ -539,6 +614,10 @@ function guestPlan(){
 }
 let guestReassignAt=0;
 function assignGuests(){
+  if(dayPhase==='night'){
+    GUESTS.forEach(gst=>{gst.hidden=true;gst.zone=null;gst.path=[];});
+    return;
+  }
   const plan=guestPlan();
   GUESTS.forEach((gst,i)=>{
     const z=plan[i]||null;
@@ -758,6 +837,7 @@ function moveAlong(c,dt){
   }
 }
 function updateChar(c,dt){
+  if(dayPhase==='night' || c.nightForced){ c.hidden=true; c.path=[]; return; }
   /* 送迎シーケンス中の品川は escort 側で制御する */
   if(c===SHINA&&escort){moveAlong(c,dt);return;}
   const act=computeAct(c);
@@ -1363,6 +1443,18 @@ function drawPerson(g,c,walking,frame){
 }
 function drawCar(g){drawPixVan(g,CAR.x,CAR.y,CAR.facing||'n');}
 let selected=null,hovered=null;
+function refreshScoreBubbles(now){
+  if(dayPhase==='night') return;
+  CHARS.forEach(c=>{
+    if(c.hidden) return;
+    // 点数吹き出しを定期更新（他の吹き出しより優先しない quiet）
+    if(!c.bubble || c.bubble.score || now>c.bubble.until-400){
+      const pts=(c.score|0);
+      const sign=pts>0?'+':'';
+      c.bubble={text:(c.linked?'★':'')+sign+pts+'点', until:now+4000, quiet:true, score:true};
+    }
+  });
+}
 function draw(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.imageSmoothingEnabled=false;
@@ -1370,6 +1462,7 @@ function draw(){
   drawOceanWaves(ctx,performance.now());
   drawTraffic(ctx);
   const now=performance.now();
+  refreshScoreBubbles(now);
   const order=[...CHARS,...ELDERS,...GUESTS,...CARE_USERS].filter(c=>!c.hidden).sort((a,b)=>a.py-b.py);
   for(const c of order){
     const walking=c.path.length>0,frame=Math.floor(now/150)%2===0;
@@ -1379,7 +1472,7 @@ function draw(){
     }
     drawPerson(ctx,c,walking,frame);
     if(!c.guest&&(c===hovered||c===selected)){
-      const label=c.short;
+      const label=c.short+(c.score!=null?(' '+((c.score|0)>0?'+':'')+(c.score|0)+'点'):'');
       ctx.font=LABEL_FONT;
       const tw=Math.ceil(ctx.measureText(label).width),lw=tw+LABEL_PAD*2;
       const lx=Math.max(MAP_UI_MARGIN,Math.min((c.px-lw/2)|0,MAP_W-lw-MAP_UI_MARGIN));
@@ -1388,6 +1481,7 @@ function draw(){
     }
   }
   drawSpeechBubbles(ctx,order,now);
+  drawDayOverlay(ctx);
   drawWeatherFx(ctx,now);
   drawAllZoneLabels(ctx);
   drawStatusHud(ctx);
@@ -1414,9 +1508,10 @@ function renderMembers(){
     const row=document.createElement('div');
     row.className='member'+(selected===c?' sel':'');
     row.onclick=()=>{selectChar(c);};
+    const pts=(c.score|0);
     row.innerHTML='<span class="dot" style="background:'+(ACT_COLORS[act]||'#888')+'"></span>'
-      +'<span class="nm">'+esc(c.name)+'</span><span class="dp">'+esc(c.dept)+'</span>'
-      +'<span class="ac">'+esc(act)+(c.calSynced&&!demoMode?' <span class="cal">[カレンダー]</span>':'')+'</span>';
+      +'<span class="nm">'+esc(c.name)+' <b style="color:#33c6b3">'+(pts>0?'+':'')+pts+'点</b></span><span class="dp">'+esc(c.dept)+'</span>'
+      +'<span class="ac">'+(dayPhase==='night'?'退勤（夜）':esc(act))+(c.calSynced&&!demoMode?' <span class="cal">[カレンダー]</span>':'')+'</span>';
     host.appendChild(row);
   });
   const present=ELDERS.filter(e=>!e.hidden);
@@ -1696,30 +1791,57 @@ setInterval(syncCalendars,3*60*1000);
 
 /* ================= MAIN LOOP ================= */
 let lastT=performance.now();
+let _phaseTick=0;
 function loop(now){
   const dt=Math.min(50,now-lastT);lastT=now;
   if(demoMode){
     demoMin+=dt/1000;               /* 1秒 = 1分 */
     if(demoMin>=19*60){demoMin=8*60;weatherIdx++;resetDay();}
   }
-  CHARS.forEach(c=>updateChar(c,dt));
-  ELDERS.forEach(e=>{if(!e.hidden)moveAlong(e,dt);});
-  updateEscort(dt);
-  if(now>guestReassignAt){guestReassignAt=now+2500;assignGuests();renderMembers();}
-  GUESTS.forEach(g=>updateGuest(g,dt));
-  updateCare(dt);
+  if(now-_phaseTick>2000){ _phaseTick=now; applyDayPhase(); }
+  if(dayPhase!=='night'){
+    CHARS.forEach(c=>updateChar(c,dt));
+    ELDERS.forEach(e=>{if(!e.hidden)moveAlong(e,dt);});
+    updateEscort(dt);
+    if(now>guestReassignAt){guestReassignAt=now+2500;assignGuests();renderMembers();}
+    GUESTS.forEach(g=>updateGuest(g,dt));
+    updateCare(dt);
+  }else{
+    // 夜：人を出さない（既に hidden）
+  }
   updateTraffic(dt);
-  tickWork(now);
-  document.getElementById('clock').textContent=clockText();
+  if(dayPhase!=='night') tickWork(now);
+  document.getElementById('clock').textContent=clockText()+(dayPhase==='night'?' 夜':dayPhase==='sunset'?' 夕':'');
   draw();
   requestAnimationFrame(loop);
 }
+function applyPortalSync(msg){
+  if(!msg||typeof msg!=='object') return;
+  const scores=msg.scores||{};
+  CHARS.forEach(c=>{
+    c.score=Number(scores[c.id]||0)||0;
+    c.linked=Object.prototype.hasOwnProperty.call(scores,c.id);
+  });
+  renderMembers();
+}
+window.addEventListener('message',function(ev){
+  if(ev?.data?.type==='portal-office-sync') applyPortalSync(ev.data);
+});
+try{ window.parent.postMessage({type:'office-ready'},'*'); }catch(e){}
 loadSettings();
 updateModeBtn();
 refreshSyncStat();
 prerenderCity();
+refreshSunTimes().then(function(){ applyDayPhase(); renderMembers(); });
+setInterval(function(){ refreshSunTimes().then(applyDayPhase); }, 15*60*1000);
 renderMembers();
 log('オフィスクエストが はじまった！');
+if(window.parent!==window){
+  try{
+    const cached=window.parent.__portalOfficeSync;
+    if(cached) applyPortalSync(cached);
+  }catch(e){}
+}
 function fitCanvas(){
   const wrap=document.querySelector('.stage-game');
   const cv=document.getElementById('game');

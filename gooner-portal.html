@@ -1221,7 +1221,36 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   border:1px solid var(--nav-green-line);background:rgba(0,0,0,.28);
 }
 .office-tk-form select:focus,.office-tk-form input:focus{outline:none;border-color:rgba(232,212,168,.5)}
-.office-tk-form-row{display:grid;grid-template-columns:1fr auto;gap:5px}
+.office-tk-form-row{display:grid;grid-template-columns:1fr minmax(7.5em,auto) auto;gap:5px}
+.office-tk-form-row input[type="date"]{min-width:0;font-size:11px;padding:6px 4px}
+.task-arrive-modal{
+  position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.62);padding:20px;backdrop-filter:blur(3px);
+}
+.task-arrive-modal[hidden]{display:none!important}
+.task-arrive-card{
+  width:min(420px,100%);background:linear-gradient(180deg,#121a18,#0a100e);
+  border:1px solid rgba(51,198,179,.45);border-radius:16px;padding:22px 22px 18px;
+  box-shadow:0 20px 50px rgba(0,0,0,.55);text-align:center;color:var(--text);
+  animation:taskArriveIn .28s ease;
+}
+@keyframes taskArriveIn{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+.task-arrive-badge{
+  display:inline-block;font-size:10px;font-weight:800;letter-spacing:.14em;
+  color:#062012;background:var(--nav-green);border-radius:999px;padding:4px 10px;margin-bottom:10px;
+}
+.task-arrive-card h2{margin:0 0 10px;font-size:18px}
+.task-arrive-body{margin:0;font-size:15px;font-weight:700;line-height:1.5;word-break:break-word}
+.task-arrive-meta{margin:10px 0 16px;font-size:12px;color:var(--muted);line-height:1.55}
+.task-arrive-ok{
+  width:100%;border:none;border-radius:10px;padding:12px 16px;font-size:14px;font-weight:800;
+  cursor:pointer;background:var(--nav-green);color:#062012;
+}
+.task-arrive-ok:hover{filter:brightness(1.06)}
+.tk-due{color:#9fe8dc;font-weight:700}
+.tk-due.late{color:#ff8a8a}
+.tk-score-chip{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;font-size:10px;font-weight:800;background:rgba(51,198,179,.18);color:#9fe8dc}
+.tk-char-link{font-size:10px;margin-left:4px;max-width:7.5em}
 .office-tk-form button[type=submit]{
   padding:6px 10px;border:1px solid var(--nav-green-soft);border-radius:7px;cursor:pointer;font-size:11px;font-weight:700;
   background:linear-gradient(180deg,var(--nav-green-fill-hi) 0%,var(--nav-green-fill) 45%,var(--nav-green-fill-dim) 100%);
@@ -2677,6 +2706,7 @@ video.dc-card__image{
           <select id="officeTkAssignee" aria-label="担当"></select>
           <div class="office-tk-form-row">
             <input id="officeTkTitle" placeholder="タスクを入力（Enterで追加）" required maxlength="120">
+            <input id="officeTkDue" type="date" aria-label="期日" title="期日" required>
             <button type="submit" id="officeTkSubmit">追加</button>
           </div>
         </form>
@@ -2695,6 +2725,17 @@ video.dc-card__image{
     </section>
   </div>
 </div><!-- /#quests-row -->
+
+<!-- タスク着信モーダル（中央・音付き） -->
+<div id="taskArriveModal" class="task-arrive-modal" hidden aria-hidden="true">
+  <div class="task-arrive-card" role="dialog" aria-modal="true" aria-labelledby="taskArriveTitle">
+    <div class="task-arrive-badge">NEW TASK</div>
+    <h2 id="taskArriveTitle">新しいタスクが届きました</h2>
+    <p class="task-arrive-body" id="taskArriveBody"></p>
+    <p class="task-arrive-meta" id="taskArriveMeta"></p>
+    <button type="button" class="task-arrive-ok" id="taskArriveOk">OK（タスクに追加）</button>
+  </div>
+</div>
 
 <div id="officeQuestModal" hidden>
   <div class="oqm-panel" role="dialog" aria-modal="true" aria-label="オフィスクエスト拡大">
@@ -3056,13 +3097,14 @@ video.dc-card__image{
 </style>
 <section class="screen" id="s-tasks">
   <h2 class="stitle">✔ タスク管理</h2>
-  <p class="sdesc">タスクは全員で共有されます（リアルタイム）。社長は全員／個別に指示、社員は自己申告。届いた指示は赤い通知から承認→完了してください（削除はできません）。</p>
+  <p class="sdesc">タスクは全員で共有（リアルタイム）。期日必須。届いた指示は画面中央のOKでタスク追加→完了。期日厳守+1点／遅延または超過-2点。点数はクエストキャラの吹き出しに表示（社長がキャラ紐づけ可）。削除はできません。</p>
 
   <div class="tk-add">
     <div class="tk-add-row">
       <select id="tkAssignee"></select>
       <input id="tkTitle" placeholder="タスク内容（例：契約書ドラフト作成）">
-      <input id="tkDetail" placeholder="補足・期日など（任意）">
+      <input id="tkDue" type="date" aria-label="期日" title="期日（必須）" required>
+      <input id="tkDetail" placeholder="補足（任意）">
       <button type="button" id="tkAdd">＋ 追加</button>
     </div>
     <div class="tk-hint" id="tkHint">—</div>
@@ -7485,12 +7527,22 @@ window.Treasury={
 (function(){
   const T=window.Treasury; if(!T) return;
   const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)], esc=T.esc;
+  const SCORE_KEY='gp_task_scores_v1';
+  const LINK_KEY='gp_char_links_v1';
+  const OFFICE_CHARS=[
+    {id:'shacho',name:'社長'},{id:'koshiishi',name:'越石'},{id:'sayaka',name:'さやか'},
+    {id:'yuzuru',name:'譲'},{id:'tanji',name:'丹治'},{id:'okabe',name:'岡部'},
+    {id:'tokita',name:'鴇田施設長'},{id:'takahashi',name:'高橋さん'},{id:'shinagawa',name:'品川さん'}
+  ];
 
   let members=[];
   let tasks=[];
   let filter='todo';
   let focusStaff='';
   let liveReady=false;
+  let arriveQueue=[];
+  let arriveCurrent=null;
+  let arriveBusy=false;
 
   function client(){ return window.GoonerSB?.sb?.() || null; }
   function me(){ return window.GoonerSB?.me?.() || null; }
@@ -7508,6 +7560,80 @@ window.Treasury={
     if(st==='done') return '完了';
     return st||'';
   }
+  function todayISO(){
+    const d=new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function encodeDue(detail, due){
+    const clean=String(detail||'').replace(/\[DUE:\d{4}-\d{2}-\d{2}\]\s*/g,'').trim();
+    if(!due) return clean||null;
+    return '[DUE:'+due+']'+(clean?(' '+clean):'');
+  }
+  function parseDue(t){
+    if(!t) return '';
+    if(t.due_date) return String(t.due_date).slice(0,10);
+    const m=String(t.detail||'').match(/\[DUE:(\d{4}-\d{2}-\d{2})\]/);
+    return m?m[1]:'';
+  }
+  function displayDetail(t){
+    return String(t.detail||'').replace(/\[DUE:\d{4}-\d{2}-\d{2}\]\s*/g,'').trim();
+  }
+  function loadScores(){
+    try{ return JSON.parse(localStorage.getItem(SCORE_KEY)||'{"byMember":{},"scored":{}}'); }
+    catch(e){ return {byMember:{},scored:{}}; }
+  }
+  function saveScores(data){ localStorage.setItem(SCORE_KEY, JSON.stringify(data)); }
+  function memberScore(id){
+    const d=loadScores();
+    return (d.byMember && d.byMember[String(id)] && d.byMember[String(id)].score)||0;
+  }
+  function applyScore(memberId, delta, taskId, reason){
+    if(!memberId || !taskId) return;
+    const d=loadScores();
+    const key=String(taskId)+':'+reason;
+    if(d.scored[key]) return;
+    d.scored[key]=true;
+    const mid=String(memberId);
+    if(!d.byMember[mid]) d.byMember[mid]={score:0,log:[]};
+    d.byMember[mid].score=(d.byMember[mid].score||0)+delta;
+    d.byMember[mid].log=(d.byMember[mid].log||[]).slice(-40);
+    d.byMember[mid].log.push({at:new Date().toISOString(),delta:delta,taskId:taskId,reason:reason});
+    saveScores(d);
+    syncOfficeQuestState();
+  }
+  function loadLinks(){
+    try{ return JSON.parse(localStorage.getItem(LINK_KEY)||'{}'); }
+    catch(e){ return {}; }
+  }
+  function saveLinks(map){ localStorage.setItem(LINK_KEY, JSON.stringify(map||{})); }
+  function autoLinkGuess(member){
+    if(!member) return '';
+    const n=String(member.name||'');
+    const r=String(member.role||'');
+    if(r==='社長' || /社長|ヒロ|深山/.test(n)) return 'shacho';
+    for(const c of OFFICE_CHARS){
+      if(c.id==='shacho') continue;
+      const base=c.name.replace(/さん|施設長/g,'');
+      if(n.includes(base) || base.includes(n.replace(/さん|様/g,''))) return c.id;
+    }
+    return '';
+  }
+  function syncOfficeQuestState(){
+    const links=loadLinks();
+    const scoresByChar={};
+    members.forEach(function(m){
+      const cid=links[String(m.id)] || autoLinkGuess(m);
+      if(!cid) return;
+      scoresByChar[cid]=(scoresByChar[cid]||0)+memberScore(m.id);
+    });
+    const payload={type:'portal-office-sync', scores:scoresByChar, links:links, at:Date.now()};
+    try{
+      document.querySelectorAll('#office-pane iframe, #officeQuestModal iframe').forEach(function(fr){
+        fr.contentWindow?.postMessage(payload,'*');
+      });
+    }catch(e){}
+    window.__portalOfficeSync=payload;
+  }
   function isMine(t, m){
     if(!t||!m) return false;
     return !!(t.assigned_all || String(t.assigned_to)===String(m.id));
@@ -7521,11 +7647,60 @@ window.Treasury={
     try{
       const Ctx=window.AudioContext||window.webkitAudioContext; if(!Ctx) return;
       const ctx=new Ctx();
-      const o=ctx.createOscillator(), g=ctx.createGain();
-      o.type='sine'; o.frequency.value=880;
-      g.gain.value=0.04; o.connect(g); g.connect(ctx.destination);
-      o.start(); setTimeout(function(){ o.stop(); ctx.close(); }, 180);
+      const now=ctx.currentTime;
+      [[880,0],[1108,0.12],[1320,0.24]].forEach(function(pair){
+        const o=ctx.createOscillator(), g=ctx.createGain();
+        o.type='sine'; o.frequency.value=pair[0];
+        g.gain.setValueAtTime(0.0001, now+pair[1]);
+        g.gain.exponentialRampToValueAtTime(0.06, now+pair[1]+0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, now+pair[1]+0.18);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(now+pair[1]); o.stop(now+pair[1]+0.2);
+      });
+      setTimeout(function(){ try{ctx.close();}catch(e){} }, 700);
     }catch(e){}
+  }
+  function showArriveModal(task){
+    if(!task||!task.id) return;
+    if(arriveCurrent && String(arriveCurrent.id)===String(task.id)) return;
+    if(arriveQueue.some(function(t){ return String(t.id)===String(task.id); })) return;
+    arriveQueue.push(task);
+    flushArriveQueue();
+  }
+  function flushArriveQueue(){
+    if(arriveBusy || arriveCurrent) return;
+    const next=arriveQueue.shift();
+    if(!next) return;
+    arriveCurrent=next;
+    arriveBusy=true;
+    playNotifySound();
+    const modal=$('#taskArriveModal');
+    const body=$('#taskArriveBody');
+    const meta=$('#taskArriveMeta');
+    const due=parseDue(next);
+    if(body) body.textContent=next.title||'（無題）';
+    if(meta){
+      meta.innerHTML='指示：'+esc(next.created_by_name||'指示者')+
+        (next.assigned_all?'　／　全員宛':'')+
+        (due?'<br><span class="tk-due">期日：'+esc(due)+'</span>':'')+
+        (displayDetail(next)?'<br>'+esc(displayDetail(next)):'');
+    }
+    if(modal){ modal.hidden=false; modal.setAttribute('aria-hidden','false'); }
+    showTaskBadge();
+  }
+  function closeArriveModal(){
+    const modal=$('#taskArriveModal');
+    if(modal){ modal.hidden=true; modal.setAttribute('aria-hidden','true'); }
+    arriveCurrent=null;
+    arriveBusy=false;
+    flushArriveQueue();
+  }
+  async function confirmArriveOk(){
+    const t=arriveCurrent;
+    if(!t){ closeArriveModal(); return; }
+    await acceptTask(t.id);
+    T.toast('タスクに追加しました');
+    closeArriveModal();
   }
   function showTaskBadge(){
     renderPendingAlerts();
@@ -7539,12 +7714,13 @@ window.Treasury={
     return list.map(d=>{
       const from=d.created_by_name||'指示者';
       const when=String(d.created_at||'').slice(0,16).replace('T',' ');
+      const due=parseDue(d);
       return `<div class="office-tk-pend" data-task-id="${esc(d.id)}">
         <div class="office-tk-pend-title">${esc(d.title)}</div>
-        ${d.detail?`<div class="office-tk-pend-meta">${esc(d.detail)}</div>`:''}
-        <div class="office-tk-pend-meta">指示：${esc(from)}　${esc(when)}${d.assigned_all?'　（全員宛）':''}</div>
+        ${displayDetail(d)?`<div class="office-tk-pend-meta">${esc(displayDetail(d))}</div>`:''}
+        <div class="office-tk-pend-meta">指示：${esc(from)}　${esc(when)}${d.assigned_all?'　（全員宛）':''}${due?`　<span class="tk-due">期日 ${esc(due)}</span>`:''}</div>
         <div class="office-tk-pend-acts">
-          <button type="button" class="ok" data-task-accept="${esc(d.id)}">承認する</button>
+          <button type="button" class="ok" data-task-arrive="${esc(d.id)}">確認して追加</button>
         </div>
       </div>`;
     }).join('');
@@ -7624,10 +7800,13 @@ window.Treasury={
       :'<span class="tk-src boss">指示</span>';
     const when=String(t.created_at||'').slice(0,10);
     const doneAt=t.completed_at?String(t.completed_at).slice(0,16).replace('T',' '):'';
+    const due=parseDue(t);
+    const late=due && t.status!=='done' && due<todayISO();
+    const det=displayDetail(t);
     return `<div class="tk-card ${t.status==='done'?'done':''}">
       <div class="tk-card-top"><div class="tk-card-title">${esc(t.title)}</div></div>
-      ${t.detail?`<div class="tk-card-detail">${esc(t.detail)}</div>`:''}
-      <div class="tk-card-meta">${src}<span class="tk-date">${esc(statusLabel(t.status))}　宛先:${esc(dest)}　${esc(t.created_by_name||'')}${doneAt?'　完了 '+esc(doneAt):''}　${esc(when)}</span></div>
+      ${det?`<div class="tk-card-detail">${esc(det)}</div>`:''}
+      <div class="tk-card-meta">${src}<span class="tk-date">${esc(statusLabel(t.status))}　宛先:${esc(dest)}　${esc(t.created_by_name||'')}${due?`　<span class="tk-due${late?' late':''}">期日 ${esc(due)}</span>`:''}${doneAt?'　完了 '+esc(doneAt):''}　${esc(when)}</span></div>
       <div class="tk-card-acts">${cardActs(t)}</div>
     </div>`;
   }
@@ -7660,11 +7839,13 @@ window.Treasury={
     list.innerHTML=open.length?open.map(t=>{
       const name=t.assigned_all?'全員':(t.assignee?.name||staffById(t.assigned_to)?.name||'?');
       const aid=t.assigned_all?'':(t.assigned_to||'');
+      const due=parseDue(t);
+      const late=due && due<todayISO();
       return `<div class="office-tk-item" data-id="${t.id}">
         <button type="button" class="office-tk-who" data-staff-jump="${esc(aid)}">${esc(name)}</button>
-        <span class="office-tk-title">${esc(t.title)} <small style="color:var(--muted)">${esc(statusLabel(t.status))}</small></span>
+        <span class="office-tk-title">${esc(t.title)} <small style="color:var(--muted)">${esc(statusLabel(t.status))}${due?` · <span class="tk-due${late?' late':''}">期日 ${esc(due)}</span>`:''}</small></span>
         ${t.status==='accepted'&&isMine(t,me())?`<button type="button" data-task-done="${esc(t.id)}">完了</button>`:
-          t.status==='pending'&&isMine(t,me())?`<button type="button" data-task-accept="${esc(t.id)}">承認</button>`:''}
+          t.status==='pending'&&isMine(t,me())?`<button type="button" data-task-arrive="${esc(t.id)}">確認</button>`:''}
       </div>`;
     }).join(''):`<div class="office-tk-empty">未完了タスクはありません。下の欄から追加できます。</div>`;
   }
@@ -7682,14 +7863,23 @@ window.Treasury={
     const box=$("#tkStaffJump"); if(!box)return;
     const staff=staffList();
     const prez=isPresident();
+    const links=loadLinks();
     box.innerHTML=`<button type="button" data-staff-focus="" class="${!focusStaff?'on':''}">全員</button>`+
       staff.map(s=>{
         const on=!!s.dropbox_allowed || s.role==='社長';
+        const score=memberScore(s.id);
+        const linked=links[String(s.id)]||autoLinkGuess(s)||'';
         const tog=prez
           ? `<button type="button" class="tk-dbx-tog ${on?'on':''}" data-dbx-allow="${esc(s.id)}" data-dbx-on="${on?'1':'0'}" title="Dropbox閲覧許可">📦 Dropbox:${on?'許可':'停止'}</button>`
           : '';
+        const linkSel=prez
+          ? `<select class="tk-char-link" data-char-link="${esc(s.id)}" title="クエストキャラ紐づけ">`+
+            `<option value="">キャラ未設定</option>`+
+            OFFICE_CHARS.map(c=>`<option value="${esc(c.id)}"${linked===c.id?' selected':''}>${esc(c.name)}</option>`).join('')+
+            `</select>`
+          : (linked?`<span class="tk-score-chip" title="紐づけキャラ">${esc((OFFICE_CHARS.find(c=>c.id===linked)||{}).name||linked)}</span>`:'');
         return `<span style="display:inline-flex;align-items:center;gap:2px;flex-wrap:wrap">`+
-          `<button type="button" data-staff-focus="${esc(s.id)}" class="${focusStaff===s.id?'on':''}">${esc(s.name)}</button>${tog}</span>`;
+          `<button type="button" data-staff-focus="${esc(s.id)}" class="${focusStaff===s.id?'on':''}">${esc(s.name)}<span class="tk-score-chip">${score}点</span></button>${linkSel}${tog}</span>`;
       }).join('');
   }
 
@@ -7700,8 +7890,8 @@ window.Treasury={
     const hint=$("#tkHint");
     const prez=isPresident();
     if(hint) hint.textContent = prez
-      ? '社長：全員または個人へ指示。相手の画面に即時で赤い通知が点灯します。'
-      : '社員：自己申告を登録できます。届いた指示は赤い通知から承認→完了。';
+      ? '社長：期日付きで指示。相手は中央ダイアログのOKでタスク追加。期日厳守+1／遅延-2。キャラ紐づけでクエスト吹き出しに点数表示。'
+      : '社員：期日付きで自己申告可。届いた指示は中央のOKで追加→完了。期日厳守+1／遅延-2点。';
     const addBtn=$("#tkAdd");
     if(addBtn) addBtn.textContent=prez?'＋ 指示を送る':'＋ 追加';
     const staff=staffList();
@@ -7774,17 +7964,19 @@ window.Treasury={
     renderTasks();
   }
 
-  async function createTask({ title, detail, target }){
+  async function createTask({ title, detail, target, due }){
     const c=client(); const m=me();
     if(!c){ T.toast('Supabase未接続'); return false; }
     if(!m){ T.toast('先にログインしてください'); return false; }
     if(!title){ T.toast('タスク内容を入力してください'); return false; }
+    if(!due){ T.toast('期日を指定してください'); return false; }
     if(!isPresident() && target!=='all' && String(target)!==String(m.id)){
       T.toast('自分宛のみ登録できます'); return false;
     }
-    const payload={
+    const detailEnc=encodeDue(detail, due);
+    const base={
       title,
-      detail: detail || null,
+      detail: detailEnc,
       assigned_all: target==='all',
       assigned_to: target==='all' ? null : target,
       created_by: m.id || null,
@@ -7792,7 +7984,10 @@ window.Treasury={
       self_reported: m.role!=='社長' && String(target)===String(m.id),
       status: 'pending'
     };
-    const { error } = await c.from('tasks').insert(payload);
+    let { error } = await c.from('tasks').insert(Object.assign({}, base, { due_date: due }));
+    if(error && /due_date|schema|column/i.test(String(error.message||''))){
+      ({ error } = await c.from('tasks').insert(base));
+    }
     if(error){ alert('タスク作成エラー: '+error.message); return false; }
     T.toast(target==='all'?'全員へ指示を送りました':'タスクを登録しました');
     await refreshTaskBoard();
@@ -7805,17 +8000,46 @@ window.Treasury={
       .update({ status:'accepted', accepted_at:new Date().toISOString() })
       .eq('id', id);
     if(error){ alert('承認エラー: '+error.message); return; }
-    T.toast('承認しました');
+    T.toast('タスクに追加しました');
     await refreshTaskBoard();
   }
   async function completeTask(id){
     const c=client(); if(!c) return;
+    const t=tasks.find(function(x){ return String(x.id)===String(id); });
+    const completedAt=new Date().toISOString();
     const { error } = await c.from('tasks')
-      .update({ status:'done', completed_at:new Date().toISOString() })
+      .update({ status:'done', completed_at: completedAt })
       .eq('id', id);
     if(error){ alert('完了エラー: '+error.message); return; }
-    T.toast('タスク完了 ✔');
+    if(t){
+      const due=parseDue(t);
+      const doneDay=String(completedAt).slice(0,10);
+      const owner=t.assigned_all?null:(t.assigned_to||null);
+      const targets=t.assigned_all
+        ? members.map(function(m){ return m.id; })
+        : (owner?[owner]:[]);
+      targets.forEach(function(mid){
+        if(!due){ applyScore(mid, 1, id, 'done-nodue'); return; }
+        if(doneDay<=due) applyScore(mid, 1, id, 'ontime');
+        else applyScore(mid, -2, id, 'overdue'); // 自動減点と同じキーで二重減点しない
+      });
+      const dueLbl=due?(doneDay<=due?'期日クリア +1点':'期日超過 -2点'):'+1点';
+      T.toast('タスク完了 ✔（'+dueLbl+'）');
+    }else T.toast('タスク完了 ✔');
     await refreshTaskBoard();
+    syncOfficeQuestState();
+  }
+  function checkOverduePenalties(){
+    const today=todayISO();
+    tasks.forEach(function(t){
+      if(!t || t.status==='done') return;
+      const due=parseDue(t);
+      if(!due || due>=today) return;
+      const targets=t.assigned_all
+        ? members.map(function(m){ return m.id; })
+        : (t.assigned_to?[t.assigned_to]:[]);
+      targets.forEach(function(mid){ applyScore(mid, -2, t.id, 'overdue'); });
+    });
   }
 
   function bindImeSafeEnter(inputEl, onSubmit){
@@ -7831,19 +8055,27 @@ window.Treasury={
     });
   }
 
-  async function submitFromForm(assigneeSel, titleSel, detailSel){
+  async function submitFromForm(assigneeSel, titleSel, detailSel, dueSel){
     const target=$(assigneeSel)?.value;
     const title=$(titleSel)?.value.trim();
     const detail=detailSel?($(detailSel)?.value.trim()||''):'';
+    const due=$(dueSel)?.value||'';
     if(!target){ T.toast('宛先を選んでください'); return; }
-    const ok=await createTask({ title, detail, target });
+    if(!due){ T.toast('期日を指定してください'); return; }
+    const ok=await createTask({ title, detail, target, due });
     if(ok){
       if($(titleSel)) $(titleSel).value='';
       if(detailSel && $(detailSel)) $(detailSel).value='';
+      if($(dueSel)) $(dueSel).value='';
     }
   }
 
-  $("#tkAdd").onclick=()=>submitFromForm('#tkAssignee','#tkTitle','#tkDetail');
+  (function initDueDefaults(){
+    const d=todayISO();
+    ['#tkDue','#officeTkDue'].forEach(function(sel){ const el=$(sel); if(el && !el.value) el.value=d; });
+  })();
+
+  $("#tkAdd").onclick=()=>submitFromForm('#tkAssignee','#tkTitle','#tkDetail','#tkDue');
   bindImeSafeEnter($("#tkTitle"), ()=>$("#tkAdd").click());
 
   const officeForm=$("#officeTkForm");
@@ -7854,7 +8086,7 @@ window.Treasury={
       officeTitle.addEventListener('compositionstart',()=>{officeComposing=true;});
       officeTitle.addEventListener('compositionend',()=>{officeComposing=false;});
     }
-    const submitOfficeTask=()=>submitFromForm('#officeTkAssignee','#officeTkTitle',null);
+    const submitOfficeTask=()=>submitFromForm('#officeTkAssignee','#officeTkTitle',null,'#officeTkDue');
     bindImeSafeEnter(officeTitle, submitOfficeTask);
     officeForm.addEventListener('submit',e=>{
       e.preventDefault();
@@ -7863,7 +8095,16 @@ window.Treasury={
     });
   }
 
+  document.getElementById('taskArriveOk')?.addEventListener('click', function(){ confirmArriveOk(); });
+
   function handleTaskClick(e){
+    const ar=e.target.closest('[data-task-arrive]');
+    if(ar){
+      const id=ar.dataset.taskArrive;
+      const t=tasks.find(function(x){ return String(x.id)===String(id); });
+      if(t) showArriveModal(t);
+      return true;
+    }
     const ac=e.target.closest('[data-task-accept]');
     if(ac){ acceptTask(ac.dataset.taskAccept); return true; }
     const dn=e.target.closest('[data-task-done]');
@@ -7899,6 +8140,19 @@ window.Treasury={
       renderTasks();
     }
   });
+  $("#s-tasks").addEventListener('change', e=>{
+    const sel=e.target.closest('[data-char-link]');
+    if(!sel) return;
+    if(!isPresident()){ T.toast('キャラ紐づけは社長のみ変更できます'); return; }
+    const map=loadLinks();
+    const mid=sel.getAttribute('data-char-link');
+    const cid=sel.value||'';
+    if(cid) map[mid]=cid; else delete map[mid];
+    saveLinks(map);
+    T.toast('クエストキャラを紐づけました');
+    syncOfficeQuestState();
+    renderStaffJump();
+  });
 
   function subscribeLive(){
     const c=client(); if(!c||liveReady) return;
@@ -7912,11 +8166,9 @@ window.Treasury={
         const t=payload.new; const m=me();
         const mine=t && isMine(t,m);
         if(payload.eventType==='INSERT' && mine && t && String(t.created_by)!==String(m?.id)){
-          showTaskBadge();
-          playNotifySound();
-          T.toast('新しいタスクが届きました');
+          showArriveModal(t);
         }
-        refreshTaskBoard();
+        refreshTaskBoard().then(function(){ checkOverduePenalties(); syncOfficeQuestState(); });
       })
       .subscribe();
   }
@@ -7925,7 +8177,14 @@ window.Treasury={
     subscribeLive();
     await loadMembers();
     await refreshTaskBoard();
+    checkOverduePenalties();
+    syncOfficeQuestState();
+    setInterval(function(){ checkOverduePenalties(); syncOfficeQuestState(); }, 60000);
   }
+  window.addEventListener('portal-member-ready', function(){ syncOfficeQuestState(); });
+  window.addEventListener('message', function(ev){
+    if(ev?.data?.type==='office-ready') syncOfficeQuestState();
+  });
 
   window.addEventListener('portal-member-ready', boot);
   T.onRender(function(){ renderTasks(); });
