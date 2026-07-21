@@ -7,6 +7,12 @@
     "api/whisper-minutes.js": { "maxDuration": 60 },
     "api/dropbox-sync.js": { "maxDuration": 30 }
   },
+  "crons": [
+    {
+      "path": "/api/attendance-remind",
+      "schedule": "30 0 * * 1-5"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*\\.html)",

@@ -1301,6 +1301,49 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   cursor:pointer;background:var(--nav-green);color:#062012;
 }
 .task-arrive-ok:hover{filter:brightness(1.06)}
+/* 出勤・タスク確認デイリーモーダル */
+.daily-duty-modal{
+  position:fixed;inset:0;z-index:210;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.68);padding:20px;backdrop-filter:blur(4px);
+}
+.daily-duty-modal[hidden]{display:none!important}
+.daily-duty-card{
+  width:min(480px,100%);background:linear-gradient(180deg,#141c1a,#0a100e);
+  border:1px solid rgba(196,166,106,.45);border-radius:16px;padding:24px 22px 18px;
+  box-shadow:0 22px 56px rgba(0,0,0,.6);color:var(--text);
+  animation:taskArriveIn .28s ease;
+}
+.daily-duty-badge{
+  display:inline-block;font-size:10px;font-weight:800;letter-spacing:.14em;
+  color:#1a1408;background:linear-gradient(180deg,#f5e6b8,#e0c57a);border-radius:999px;padding:4px 10px;margin-bottom:10px;
+}
+.daily-duty-card h2{margin:0 0 10px;font-size:19px;line-height:1.35}
+.daily-duty-lead{margin:0 0 12px;font-size:14px;line-height:1.55;color:var(--muted)}
+.daily-duty-alert{
+  margin:0 0 14px;padding:12px 12px;border-radius:12px;text-align:left;
+  background:rgba(239,127,140,.1);border:1px solid rgba(239,127,140,.4);
+  font-size:13px;line-height:1.55;color:#ffd4d4;white-space:pre-wrap;
+}
+.daily-duty-alert.warn-acct{
+  background:rgba(255,157,60,.1);border-color:rgba(255,157,60,.45);color:#ffe0b8;
+}
+.daily-duty-list{
+  text-align:left;max-height:180px;overflow:auto;margin:0 0 14px;padding:0;list-style:none;
+  border:1px solid rgba(255,255,255,.08);border-radius:10px;
+}
+.daily-duty-list li{
+  padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.06);font-size:12.5px;line-height:1.4;
+}
+.daily-duty-list li:last-child{border-bottom:0}
+.daily-duty-list .late{color:#ff8a8a;font-weight:700}
+.daily-duty-actions{display:flex;flex-direction:column;gap:8px}
+.daily-duty-actions button{
+  width:100%;border:none;border-radius:10px;padding:13px 16px;font-size:14px;font-weight:800;cursor:pointer;
+}
+.daily-duty-primary{background:var(--nav-green);color:#062012}
+.daily-duty-primary:hover{filter:brightness(1.06)}
+.daily-duty-danger{background:rgba(239,127,140,.2);color:#ffc9cf;border:1px solid rgba(239,127,140,.45)!important}
+.daily-duty-ghost{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,.18)!important;font-weight:600!important}
 .tk-due{color:#9fe8dc;font-weight:700}
 .tk-due.late{color:#ff8a8a}
 .tk-score-chip{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;font-size:10px;font-weight:800;background:rgba(51,198,179,.18);color:#9fe8dc}
@@ -2771,6 +2814,7 @@ video.dc-card__image{
   <button type="button" class="pt-dropbox" id="portalDropboxBtn" title="/GoonerPortal を一覧・ダウンロード">Dropbox同期</button>
   <span class="pt-dropbox-status" id="portalDropboxStatus" hidden></span>
   <span class="pt-user" id="portalUserChip" hidden></span>
+  <button type="button" class="pt-logout" id="portalDutyEndBtn" hidden title="本日の業務終了を記録">業務終了</button>
   <button type="button" class="pt-logout" id="portalLogoutBtn" hidden>ログアウト</button>
   <button type="button" class="pt-focus-btn" id="portalFocusBtn" title="サイドメニューを隠して円卓を大きく表示" aria-pressed="false">円卓集中</button>
   <span class="entaku-focus-hint" id="portalFocusHint" hidden>ナビ非表示・円卓拡大</span>
@@ -2943,6 +2987,18 @@ video.dc-card__image{
     <p class="task-arrive-body" id="taskArriveBody"></p>
     <p class="task-arrive-meta" id="taskArriveMeta"></p>
     <button type="button" class="task-arrive-ok" id="taskArriveOk">OK（タスクに追加）</button>
+  </div>
+</div>
+
+<!-- 出勤・タスク確認（毎日必須） -->
+<div id="dailyDutyModal" class="daily-duty-modal" hidden aria-hidden="true">
+  <div class="daily-duty-card" role="dialog" aria-modal="true" aria-labelledby="dailyDutyTitle">
+    <div class="daily-duty-badge" id="dailyDutyBadge">MORNING CHECK</div>
+    <h2 id="dailyDutyTitle">出勤しましたか？</h2>
+    <p class="daily-duty-lead" id="dailyDutyLead">業務を始める前に、出勤を記録してください。</p>
+    <div class="daily-duty-alert" id="dailyDutyAlert" hidden></div>
+    <ul class="daily-duty-list" id="dailyDutyList" hidden></ul>
+    <div class="daily-duty-actions" id="dailyDutyActions"></div>
   </div>
 </div>
 
@@ -7820,6 +7876,7 @@ window.Treasury={
     const n=String(member.name||'');
     const r=String(member.role||'');
     if(r==='社長' || /社長|ヒロ|深山/.test(n)) return 'shacho';
+    if(/中谷|紗耶香|さやか/.test(n)) return 'sayaka';
     for(const c of OFFICE_CHARS){
       if(c.id==='shacho') continue;
       const base=c.name.replace(/さん|施設長/g,'');
@@ -8436,7 +8493,10 @@ window.Treasury={
     summaryForAi:taskSummaryForAi,
     parseDue:parseDue,
     todayISO:todayISO,
-    refresh:refreshTaskBoard
+    refresh:refreshTaskBoard,
+    applyScore:applyScore,
+    memberScore:memberScore,
+    me:me
   };
 
   window.addEventListener('portal-member-ready', boot);
@@ -9086,6 +9146,356 @@ window.BizCaseLink=(function(){
 })();
 </script>
 
+<script>
+/* ===== 毎日の出勤・タスク確認・漏れ減点・紗耶香帰宅アラート ===== */
+(function(){
+  const LS='gp_daily_duty_v1';
+  let step='idle';
+  let leaveResolve=null;
+
+  function esc(s){
+    return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+      return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);
+    });
+  }
+  function today(){
+    return window.PortalTasks?.todayISO?.() || new Date().toISOString().slice(0,10);
+  }
+  function loadAll(){
+    try{ return JSON.parse(localStorage.getItem(LS)||'{}'); }catch(e){ return {}; }
+  }
+  function saveAll(d){ try{ localStorage.setItem(LS, JSON.stringify(d)); }catch(e){} }
+  function dayState(){
+    const all=loadAll();
+    const t=today();
+    if(!all[t]) all[t]={ started:false, tasksChecked:false, workEnded:false, missApplied:false };
+    return { all:all, st:all[t], date:t };
+  }
+  function patchDay(mut){
+    const {all, st, date}=dayState();
+    mut(st);
+    all[date]=st;
+    saveAll(all);
+    return st;
+  }
+  function user(){ return window.PortalAuth?.getUser?.() || null; }
+  function member(){ return window.GoonerSB?.me?.() || window.PortalTasks?.me?.() || null; }
+  function memberId(){
+    const m=member();
+    const u=user();
+    return (m&&m.id) || (u&&u.memberId) || (u&&u.email) || '';
+  }
+  function isSayaka(u){
+    u=u||user();
+    const n=String((u&&u.name)||(member()&&member().name)||'');
+    return /中谷|紗耶香|さやか/i.test(n);
+  }
+  function isAccounting(u){
+    u=u||user();
+    return String((u&&u.role)||'')==='経理' || /経理|紬/.test(String((u&&u.name)||''));
+  }
+  function isDemo(){ return !!(window.PortalAuth?.isDemoMode?.()); }
+  function modal(){ return document.getElementById('dailyDutyModal'); }
+  function setHidden(on){
+    const el=modal();
+    if(!el) return;
+    el.hidden=!!on;
+    el.setAttribute('aria-hidden', on?'true':'false');
+  }
+  function playBeep(){
+    try{
+      const Ctx=window.AudioContext||window.webkitAudioContext;
+      if(!Ctx) return;
+      const ctx=new Ctx();
+      const o=ctx.createOscillator();
+      const g=ctx.createGain();
+      o.type='sine'; o.frequency.value=880;
+      g.gain.value=0.04;
+      o.connect(g); g.connect(ctx.destination);
+      o.start();
+      setTimeout(function(){ try{ o.stop(); ctx.close(); }catch(e){} }, 180);
+    }catch(e){}
+  }
+  function myOpenTasks(){
+    const mid=String(memberId());
+    const open=window.PortalTasks?.open?.()||[];
+    if(!mid) return open;
+    return open.filter(function(t){
+      return !!(t.assigned_all || String(t.assigned_to)===mid);
+    });
+  }
+  function leakTasks(){
+    const todayIso=today();
+    return myOpenTasks().filter(function(t){
+      const due=window.PortalTasks?.parseDue?.(t)||'';
+      if(due && due<todayIso) return true; // 期限超過＝漏れ
+      if(due && due===todayIso && t.status==='pending') return true;
+      return false;
+    });
+  }
+  function renderActions(buttons){
+    const box=document.getElementById('dailyDutyActions');
+    if(!box) return;
+    box.innerHTML='';
+    buttons.forEach(function(b){
+      const btn=document.createElement('button');
+      btn.type='button';
+      btn.className=b.cls||'daily-duty-primary';
+      btn.textContent=b.label;
+      btn.addEventListener('click', b.onClick);
+      box.appendChild(btn);
+    });
+  }
+  function showAttend(){
+    step='attend';
+    playBeep();
+    const title=document.getElementById('dailyDutyTitle');
+    const lead=document.getElementById('dailyDutyLead');
+    const alert=document.getElementById('dailyDutyAlert');
+    const list=document.getElementById('dailyDutyList');
+    const badge=document.getElementById('dailyDutyBadge');
+    if(badge) badge.textContent='ATTENDANCE';
+    if(title) title.textContent='出勤しましたか？';
+    if(lead) lead.textContent='おはようございます。業務開始ボタンを押して出勤を記録してください。続けてタスク確認があります。';
+    if(alert){ alert.hidden=true; alert.textContent=''; }
+    if(list){ list.hidden=true; list.innerHTML=''; }
+    renderActions([
+      { label:'業務開始', cls:'daily-duty-primary', onClick:function(){ startWork(); } }
+    ]);
+    setHidden(false);
+  }
+  function postCheckin(){
+    const u=user()||{};
+    const m=member()||{};
+    fetch('/api/attendance',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        action:'checkin',
+        name:u.name||m.name||'',
+        email:u.email||m.email||'',
+        role:u.role||m.role||'',
+        memberId:m.id||u.memberId||'',
+        date:today()
+      })
+    }).catch(function(){});
+    try{ window.PortalAuth?.serverLog?.('duty-start','attendance'); }catch(e){}
+  }
+  function startWork(){
+    patchDay(function(st){ st.started=true; st.startedAt=new Date().toISOString(); });
+    postCheckin();
+    try{ window.PortalRisk?.refresh?.(); }catch(e){}
+    showTaskCheck();
+  }
+  function buildMissAlert(leaks){
+    const lines=[];
+    lines.push('【AIアラート｜タスク漏れ発券】');
+    if(!leaks.length){
+      lines.push('いま検知した期限超過・当日未着手の漏れはありません。');
+    }else{
+      lines.push('漏れ '+leaks.length+' 件を検知しました。各 −1 点で注意喚起します。');
+      leaks.slice(0,8).forEach(function(t){
+        const due=window.PortalTasks?.parseDue?.(t)||'期日なし';
+        lines.push('・'+String(t.title||'（無題）')+'（'+due+'） −1点');
+      });
+    }
+    if(isAccounting()){
+      lines.push('');
+      lines.push('【経理・要注意】入出金の漏れと危険予知（資金ショート・未突合・要説明明細）を必ず確認してください。紬（経理）の吹き出しも見てください。');
+    }
+    return lines.join('\n');
+  }
+  function applyMissPenalties(leaks){
+    const mid=memberId();
+    if(!mid || !window.PortalTasks?.applyScore) return 0;
+    let n=0;
+    const day=today();
+    leaks.forEach(function(t){
+      const before=window.PortalTasks.memberScore?.(mid);
+      window.PortalTasks.applyScore(mid, -1, String(t.id||t.title||Math.random()), 'duty-miss-'+day);
+      const after=window.PortalTasks.memberScore?.(mid);
+      if(after!==before) n++;
+    });
+    return n;
+  }
+  function showTaskCheck(){
+    step='tasks';
+    playBeep();
+    const title=document.getElementById('dailyDutyTitle');
+    const lead=document.getElementById('dailyDutyLead');
+    const alert=document.getElementById('dailyDutyAlert');
+    const list=document.getElementById('dailyDutyList');
+    const badge=document.getElementById('dailyDutyBadge');
+    if(badge) badge.textContent='TASK CHECK';
+    if(title) title.textContent='タスクの確認しましたか？';
+    const open=myOpenTasks();
+    const leaks=leakTasks();
+    if(lead){
+      lead.textContent=open.length
+        ?('未完了タスクが '+open.length+' 件あります。内容を確認し、OKを押してください。')
+        :'本日の担当タスクはいまありません。確認のうえ OK を押してください。';
+    }
+    if(list){
+      if(open.length){
+        list.hidden=false;
+        list.innerHTML=open.slice(0,12).map(function(t){
+          const due=window.PortalTasks?.parseDue?.(t)||'';
+          const late=due && due<today();
+          return '<li>'+esc(t.title||'（無題）')
+            +(due?(' <span class="'+(late?'late':'')+'">期日 '+esc(due)+(late?'・超過':'')+'</span>'):'')
+            +'</li>';
+        }).join('');
+      }else{
+        list.hidden=true; list.innerHTML='';
+      }
+    }
+    if(alert){
+      alert.hidden=false;
+      alert.className='daily-duty-alert'+(isAccounting()?' warn-acct':'');
+      alert.textContent=buildMissAlert(leaks);
+    }
+    try{
+      window.DashTalk?.warn?.('secretary', leaks.length
+        ?('タスク漏れ '+leaks.length+'件 −1点×件数')
+        :'タスク確認をお願いします', 20000);
+      if(isAccounting()){
+        window.DashTalk?.warn?.('finance', '入出金漏れ・危険予知を確認してください', 20000);
+      }
+    }catch(e){}
+    renderActions([
+      { label:'OK（タスク確認済み）', cls:'daily-duty-primary', onClick:function(){ confirmTasks(leaks); } }
+    ]);
+    setHidden(false);
+  }
+  function confirmTasks(leaks){
+    leaks=leaks||leakTasks();
+    const applied=applyMissPenalties(leaks);
+    patchDay(function(st){
+      st.tasksChecked=true;
+      st.tasksCheckedAt=new Date().toISOString();
+      st.missApplied=true;
+      st.missCount=applied;
+    });
+    try{ window.PortalRisk?.refresh?.(); }catch(e){}
+    try{
+      window.dispatchEvent(new CustomEvent('entaku-system-message',{
+        detail:{
+          agent:'secretary',
+          text: applied
+            ?('【凛】タスク漏れ '+applied+' 件を発券し、各 −1 点としました。放置せず片付けるようお願いします。'+(isAccounting()?' 経理は入出金と危険予知も優先です。':''))
+            :('【凛】本日のタスク確認を受け付けました。漏れ発券はありません。')
+        }
+      });
+    }catch(e){}
+    setHidden(true);
+    step='done';
+    try{ window.Treasury?.toast?.(applied?('タスク漏れ '+applied+'件：各−1点'):'タスク確認完了'); }catch(e){}
+  }
+  function showLeaveAlert(){
+    return new Promise(function(resolve){
+      leaveResolve=resolve;
+      step='leave';
+      playBeep();
+      const title=document.getElementById('dailyDutyTitle');
+      const lead=document.getElementById('dailyDutyLead');
+      const alert=document.getElementById('dailyDutyAlert');
+      const list=document.getElementById('dailyDutyList');
+      const badge=document.getElementById('dailyDutyBadge');
+      const open=myOpenTasks();
+      if(badge) badge.textContent='LEAVE ALERT';
+      if(title) title.textContent='業務終了していませんが、御帰宅されますか？';
+      if(lead) lead.textContent='中谷紗耶香さん：未完了の業務が残っています。帰宅する場合は −1 点となります。';
+      if(alert){
+        alert.hidden=false;
+        alert.className='daily-duty-alert';
+        alert.textContent='未完了タスク '+open.length+' 件が残っています。帰宅を選ぶと減点（−1点）します。';
+      }
+      if(list){
+        list.hidden=!open.length;
+        list.innerHTML=open.slice(0,8).map(function(t){
+          return '<li>'+esc(t.title||'（無題）')+'</li>';
+        }).join('');
+      }
+      renderActions([
+        { label:'業務に戻る', cls:'daily-duty-ghost', onClick:function(){
+          setHidden(true); step='done';
+          if(leaveResolve){ leaveResolve(false); leaveResolve=null; }
+        }},
+        { label:'帰宅する（−1点）', cls:'daily-duty-danger', onClick:function(){
+          const mid=memberId();
+          if(mid && window.PortalTasks?.applyScore){
+            window.PortalTasks.applyScore(mid, -1, 'leave-'+today(), 'leave-early');
+          }
+          patchDay(function(st){ st.leftEarly=true; st.leftAt=new Date().toISOString(); });
+          try{ window.DashTalk?.warn?.('secretary', '紗耶香さん 退勤処理：−1点', 15000); }catch(e){}
+          setHidden(true); step='done';
+          if(leaveResolve){ leaveResolve(true); leaveResolve=null; }
+        }}
+      ]);
+      setHidden(false);
+    });
+  }
+  async function maybeStart(){
+    if(isDemo()) return;
+    const u=user();
+    if(!u) return;
+    const st=dayState().st;
+    if(st.started && st.tasksChecked) return;
+    // タスク読込を少し待つ
+    try{ await window.PortalTasks?.refresh?.(); }catch(e){}
+    setTimeout(function(){
+      const cur=dayState().st;
+      if(!cur.started) showAttend();
+      else if(!cur.tasksChecked) showTaskCheck();
+    }, 600);
+  }
+  function markWorkEnded(){
+    patchDay(function(st){ st.workEnded=true; st.endedAt=new Date().toISOString(); });
+    try{ window.Treasury?.toast?.('業務終了を記録しました'); }catch(e){}
+  }
+
+  // ログアウト前ガード（紗耶香）
+  function wrapLogout(){
+    const PA=window.PortalAuth;
+    if(!PA || PA.__dutyLogoutWrapped) return;
+    const orig=PA.logout;
+    if(typeof orig!=='function') return;
+    PA.__dutyLogoutWrapped=true;
+    PA.logout=async function(){
+      if(isDemo()) return orig.apply(PA, arguments);
+      const st=dayState().st;
+      const open=myOpenTasks();
+      if(isSayaka() && open.length && !st.workEnded){
+        const go=await showLeaveAlert();
+        if(!go) return; // 業務に戻る
+      }
+      return orig.apply(PA, arguments);
+    };
+  }
+
+  window.PortalDailyDuty={
+    start:maybeStart,
+    markWorkEnded:markWorkEnded,
+    showAttend:showAttend,
+    showTaskCheck:showTaskCheck,
+    isSayaka:isSayaka,
+    dayState:function(){ return dayState().st; }
+  };
+
+  window.addEventListener('portal-member-ready', function(){
+    wrapLogout();
+    maybeStart();
+  });
+  window.addEventListener('portal-duty-wire', function(){ wrapLogout(); });
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', function(){ wrapLogout(); maybeStart(); });
+  }else{
+    wrapLogout();
+    maybeStart();
+  }
+})();
+</script>
+
 <!-- 利用者ログイン・セッション -->
 <script>
 window.PortalAuth=(function(){
@@ -9318,12 +9728,14 @@ window.PortalAuth=(function(){
     const shell=document.getElementById('portal-shell');
     const chip=document.getElementById('portalUserChip');
     const logout=document.getElementById('portalLogoutBtn');
+    const dutyEnd=document.getElementById('portalDutyEndBtn');
     const badge=document.getElementById('entakuUserBadge');
     if(u){
       if(login)login.hidden=true;
       if(shell)shell.hidden=false;
       if(chip){chip.hidden=false;chip.textContent=(isDemoMode()?'DEMO・':'')+u.role+'　'+u.name;}
       if(logout)logout.hidden=false;
+      if(dutyEnd)dutyEnd.hidden=!!isDemoMode();
       if(badge)badge.textContent=isDemoMode()?('デモ・'+u.name):u.name;
       document.querySelectorAll('.gamenav button.on').forEach(function(b){ b.classList.remove('on'); });
       document.querySelectorAll('.screen.on').forEach(function(x){ x.classList.remove('on'); });
@@ -9332,6 +9744,7 @@ window.PortalAuth=(function(){
       if(shell)shell.hidden=true;
       if(chip)chip.hidden=true;
       if(logout)logout.hidden=true;
+      if(dutyEnd)dutyEnd.hidden=true;
       if(badge)badge.textContent='利用者';
     }
     syncDemoBanner();
@@ -9592,6 +10005,11 @@ window.PortalAuth=(function(){
       }
     });
     document.getElementById('portalLogoutBtn')?.addEventListener('click',logout);
+    document.getElementById('portalDutyEndBtn')?.addEventListener('click', function(){
+      try{ window.PortalDailyDuty?.markWorkEnded?.(); }catch(e){}
+    });
+    // デイリー出勤ガードをログアウトに接続
+    try{ window.PortalDailyDuty && window.dispatchEvent(new Event('portal-duty-wire')); }catch(e){}
     document.querySelectorAll('.nav-drop-toggle').forEach(function(toggle){
       toggle.addEventListener('click',function(e){
         e.preventDefault();
