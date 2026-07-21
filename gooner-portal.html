@@ -5508,68 +5508,67 @@ $$(".gamenav button[data-s]").forEach(b=>b.onclick=()=>{
   }catch(e){}
 });
 
-/* TTS（日本語読み上げ）＋ 音声ON/OFF ＋ 声の種類 */
+/* TTS：OpenAI音声（優先）＋ブラウザ読み上げ（予備） */
 window.PortalTTS=(function(){
   const LS_KEY='portal-audio-on';
   const LS_VOICE='portal-tts-voice';
+  const LS_ENGINE='portal-tts-engine'; // cloud | browser
+  const TTS_PROD='https://kaisha-kanri.vercel.app/api/tts';
+  const CLOUD_VOICES=[
+    {id:'nova', label:'凛（nova）', agent:'secretary'},
+    {id:'shimmer', label:'紬（shimmer）', agent:'finance'},
+    {id:'onyx', label:'陽翔（onyx）', agent:'legal'},
+    {id:'alloy', label:'alloy'},
+    {id:'echo', label:'echo'},
+    {id:'fable', label:'fable'}
+  ];
   let enabled=localStorage.getItem(LS_KEY)!=='0';
-  let preferredURI=localStorage.getItem(LS_VOICE)||'';
-  let jpVoice=null;
+  let preferredURI=localStorage.getItem(LS_VOICE)||'nova';
+  let engine=localStorage.getItem(LS_ENGINE)||'cloud';
   let speaking=false;
   let intentionalStop=false;
   let queueGen=0;
-  let resumeTimer=null;
-  let unlocked=false;
-  let warnedNoVoice=false;
+  let audioEl=null;
+  let objectUrl=null;
   let warnedOff=false;
-  function escAttr(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  let unlocked=false;
+
   function toast(msg){
     try{ if(window.Treasury?.toast){ window.Treasury.toast(msg); return; } }catch(e){}
   }
-  function listJaVoices(){
-    if(!window.speechSynthesis) return [];
-    return speechSynthesis.getVoices().filter(v=>/ja/i.test(v.lang||'')||/日本|Japanese|Haruka|Nanami|Ayumi|Ichiro|Kyoko|Otoya/i.test(v.name||''));
+  function escAttr(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function ttsEndpoint(){
+    try{
+      if(typeof resolveAiEndpoint==='function'){
+        return String(resolveAiEndpoint()).replace(/\/api\/openai$/,'/api/tts');
+      }
+      const h=String(location.hostname||'');
+      if(/vercel\.app$/i.test(h)) return '/api/tts';
+    }catch(e){}
+    return TTS_PROD;
   }
-  function scoreVoice(v){
-    const n=String(v.name||'').toLowerCase();
-    let s=0;
-    if(/google/.test(n)) s+=60;
-    if(/nanami|haruka|ayumi|keita|ichiro/.test(n)) s+=45;
-    if(/kyoko|otoya|sayaka|o-ren|oren/.test(n)) s+=30;
-    if(/neural|natural|premium|enhanced/.test(n)) s+=20;
-    if(v.localService) s+=8;
-    return s;
-  }
-  function pickVoice(){
-    const vs=listJaVoices();
-    if(!vs.length){ jpVoice=null; return null; }
-    if(preferredURI){
-      const hit=vs.find(v=>v.voiceURI===preferredURI||v.name===preferredURI);
-      if(hit){ jpVoice=hit; return hit; }
-    }
-    vs.sort((a,b)=>scoreVoice(b)-scoreVoice(a)||String(a.name).localeCompare(String(b.name),'ja'));
-    jpVoice=vs[0];
-    return jpVoice;
+  function agentToVoice(agent){
+    if(agent==='finance') return 'shimmer';
+    if(agent==='legal') return 'onyx';
+    if(agent==='secretary') return 'nova';
+    if(CLOUD_VOICES.some(function(v){return v.id===preferredURI;})) return preferredURI;
+    return 'nova';
   }
   function fillVoiceSelect(){
     const sel=document.getElementById('entakuVoiceSel');
     if(!sel) return;
-    const vs=listJaVoices().slice().sort((a,b)=>scoreVoice(b)-scoreVoice(a)||String(a.name).localeCompare(String(b.name),'ja'));
-    const cur=pickVoice();
-    const label=function(v){
-      return String(v.name||'').replace(/^Microsoft\s+/i,'').replace(/\s*Online\s*\(Natural\)\s*-?\s*/i,' ').replace(/\s+/g,' ').trim();
-    };
-    sel.innerHTML=vs.length
-      ?vs.map(v=>'<option value="'+escAttr(v.voiceURI)+'">'+escAttr(label(v))+'</option>').join('')
-      :'<option value="">日本語ボイスなし（端末の音声設定を確認）</option>';
-    if(cur) sel.value=cur.voiceURI;
-    else if(preferredURI && vs.some(v=>v.voiceURI===preferredURI)) sel.value=preferredURI;
+    // クラウド優先の固定リスト（端末依存のブラウザ音声は使わない）
+    sel.innerHTML=CLOUD_VOICES.map(function(v){
+      return '<option value="'+escAttr(v.id)+'">'+escAttr(v.label)+'</option>';
+    }).join('');
+    if(CLOUD_VOICES.some(function(v){return v.id===preferredURI;})) sel.value=preferredURI;
+    else sel.value='nova';
   }
   function muteAllVideos(){
-    document.querySelectorAll('.dc-card video').forEach(v=>{v.muted=true;});
+    document.querySelectorAll('.dc-card video').forEach(function(v){v.muted=true;});
   }
   function syncUi(){
-    document.querySelectorAll('[data-portal-audio-btn]').forEach(btn=>{
+    document.querySelectorAll('[data-portal-audio-btn]').forEach(function(btn){
       btn.classList.toggle('is-off', !enabled);
       btn.classList.toggle('is-speaking', !!(speaking && enabled));
       btn.setAttribute('aria-pressed', enabled?'true':'false');
@@ -5580,206 +5579,189 @@ window.PortalTTS=(function(){
     });
     fillVoiceSelect();
   }
-  function clearResume(){
-    if(resumeTimer){clearInterval(resumeTimer);resumeTimer=null;}
+  function cleanupAudio(){
+    try{ if(audioEl){ audioEl.onended=null; audioEl.onerror=null; audioEl.pause(); audioEl.removeAttribute('src'); audioEl.load(); } }catch(e){}
+    audioEl=null;
+    if(objectUrl){ try{ URL.revokeObjectURL(objectUrl); }catch(e){} objectUrl=null; }
   }
-  function startResumeKeepalive(){
-    clearResume();
-    // Chrome は長文発話を途中で pause／停止することがある
-    resumeTimer=setInterval(function(){
-      if(!window.speechSynthesis||!speaking)return;
-      try{
-        if(speechSynthesis.paused){
-          speechSynthesis.resume();
-        }else if(speechSynthesis.speaking){
-          // 無音スタック対策：一瞬 pause→resume
-          speechSynthesis.pause();
-          speechSynthesis.resume();
-        }
-      }catch(e){}
-    }, 8000);
+  function finish(onend){
+    speaking=false;
+    cleanupAudio();
+    syncUi();
+    if(typeof onend==='function') try{ onend(); }catch(e){}
   }
-  /** ブラウザの自動再生制限を解除（ユーザー操作後に呼ぶ） */
   function unlock(){
-    if(unlocked||!window.speechSynthesis) return unlocked;
     unlocked=true;
     try{
-      const warm=new SpeechSynthesisUtterance('あ');
-      warm.volume=0.01; warm.rate=2; warm.lang='ja-JP';
-      const v=pickVoice(); if(v) warm.voice=v;
-      warm.onend=function(){};
-      warm.onerror=function(){};
-      speechSynthesis.speak(warm);
-      setTimeout(function(){ try{ speechSynthesis.cancel(); }catch(e){} }, 40);
+      if(!audioEl) audioEl=new Audio();
+      audioEl.muted=true;
+      const p=audioEl.play();
+      if(p&&p.catch) p.catch(function(){});
+      audioEl.pause();
+      audioEl.muted=false;
     }catch(e){}
     return true;
   }
-  function splitChunks(text){
+  function splitText(text){
     const s=String(text||'').replace(/\s+/g,' ').trim();
-    if(!s)return [];
+    if(!s) return [];
+    if(s.length<=900) return [s];
     const parts=s.split(/([。！？!?]+)/);
     const sentences=[];
     for(let i=0;i<parts.length;i+=2){
       const body=(parts[i]||'')+(parts[i+1]||'');
-      if(body.trim())sentences.push(body.trim());
+      if(body.trim()) sentences.push(body.trim());
     }
-    if(!sentences.length)sentences.push(s);
-    const chunks=[];
-    let buf='';
-    for(let i=0;i<sentences.length;i++){
-      const next=sentences[i];
-      if((buf+next).length>160&&buf){chunks.push(buf);buf=next;}
-      else buf+=next;
-    }
-    if(buf)chunks.push(buf);
-    const out=[];
-    for(let i=0;i<chunks.length;i++){
-      const c=chunks[i];
-      if(c.length<=200){out.push(c);continue;}
-      for(let j=0;j<c.length;j+=180)out.push(c.slice(j,j+180));
-    }
+    if(!sentences.length) return [s.slice(0,900)];
+    const out=[]; let buf='';
+    sentences.forEach(function(x){
+      if((buf+x).length>900 && buf){ out.push(buf); buf=x; }
+      else buf+=x;
+    });
+    if(buf) out.push(buf);
     return out;
   }
-  function finish(onend){
-    speaking=false;
-    clearResume();
-    syncUi();
-    if(typeof onend==='function')try{onend();}catch(e){}
+  function playBlob(blob, gen, onend){
+    return new Promise(function(resolve){
+      if(gen!==queueGen || intentionalStop){ resolve(false); return; }
+      cleanupAudio();
+      objectUrl=URL.createObjectURL(blob);
+      audioEl=new Audio(objectUrl);
+      audioEl.preload='auto';
+      audioEl.volume=1;
+      audioEl.onended=function(){ resolve(true); };
+      audioEl.onerror=function(){ resolve(false); };
+      const p=audioEl.play();
+      if(p&&p.then) p.then(function(){}).catch(function(){ resolve(false); });
+    }).then(function(ok){
+      if(gen!==queueGen) return;
+      if(!ok && typeof onend==='function'){ /* fallthrough handled by caller */ }
+      return ok;
+    });
   }
-  function speakChunks(chunks,onend){
+  async function speakCloud(text, agent, onend){
     const gen=++queueGen;
     speaking=true;
     intentionalStop=false;
     unlock();
-    startResumeKeepalive();
     syncUi();
-    let i=0;
-    function next(){
-      if(gen!==queueGen)return;
-      if(i>=chunks.length){finish(onend);return;}
-      const piece=chunks[i++];
-      try{
-        const u=new SpeechSynthesisUtterance(piece);
-        u.lang='ja-JP';
-        u.rate=1.15;
-        u.pitch=1;
-        u.volume=1;
-        const v=pickVoice(); if(v) u.voice=v;
-        u.onend=function(){ if(gen===queueGen) next(); };
-        u.onerror=function(ev){
-          if(gen!==queueGen)return;
-          const err=ev&&ev.error;
-          if(intentionalStop||err==='interrupted'||err==='canceled'){
-            speaking=false; clearResume(); syncUi();
-            return;
-          }
-          if(err==='not-allowed'){
-            toast('ブラウザが音声をブロックしました。🔊ボタンを一度押してから再試行してください');
-            finish(onend);
-            return;
-          }
-          next();
-        };
-        try{ speechSynthesis.resume(); }catch(e){}
-        speechSynthesis.speak(u);
-        // 即 pause される環境向け
-        setTimeout(function(){
-          if(gen!==queueGen) return;
-          try{ if(speechSynthesis.paused) speechSynthesis.resume(); }catch(e){}
-        }, 120);
-      }catch(e){finish(onend);}
+    const chunks=splitText(text);
+    const voice=agentToVoice(agent);
+    try{
+      for(let i=0;i<chunks.length;i++){
+        if(gen!==queueGen || intentionalStop){ finish(onend); return; }
+        const res=await fetch(ttsEndpoint(),{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ text:chunks[i], voice:voice, agent:agent||'' })
+        });
+        const data=await res.json().catch(function(){ return {}; });
+        if(!res.ok || !data.audioBase64){
+          throw new Error(data.error||('HTTP '+res.status));
+        }
+        const bin=atob(data.audioBase64);
+        const arr=new Uint8Array(bin.length);
+        for(let j=0;j<bin.length;j++) arr[j]=bin.charCodeAt(j);
+        const blob=new Blob([arr],{type:data.mime||'audio/mpeg'});
+        const ok=await playBlob(blob, gen, onend);
+        if(!ok) throw new Error('AUDIO_PLAY_FAIL');
+      }
+      if(gen===queueGen) finish(onend);
+    }catch(err){
+      if(gen!==queueGen) return;
+      console.warn('[PortalTTS] cloud failed, fallback browser', err);
+      // ブラウザ予備へ
+      speakBrowser(text, onend, gen);
     }
-    try{ speechSynthesis.cancel(); }catch(e){}
-    try{ speechSynthesis.resume(); }catch(e){}
-    // cancel 直後の欠落対策
-    setTimeout(function(){ if(gen===queueGen) next(); }, 120);
   }
-  if(window.speechSynthesis){
-    speechSynthesis.addEventListener('voiceschanged', function(){ jpVoice=null; fillVoiceSelect(); });
-    // 遅延ロードのボイス取得
-    setTimeout(function(){ try{ speechSynthesis.getVoices(); fillVoiceSelect(); }catch(e){} }, 300);
-    setTimeout(function(){ try{ speechSynthesis.getVoices(); fillVoiceSelect(); }catch(e){} }, 1500);
+  function speakBrowser(text, onend, existingGen){
+    if(!window.speechSynthesis){
+      toast('音声を再生できませんでした');
+      finish(onend);
+      return;
+    }
+    const gen=existingGen || (++queueGen);
+    speaking=true;
+    intentionalStop=false;
+    syncUi();
+    try{ speechSynthesis.cancel(); }catch(e){}
+    const u=new SpeechSynthesisUtterance(String(text||'').slice(0,800));
+    u.lang='ja-JP';
+    u.rate=1.1;
+    u.volume=1;
+    const vs=speechSynthesis.getVoices().filter(function(v){ return /ja/i.test(v.lang||''); });
+    if(vs[0]) u.voice=vs[0];
+    u.onend=function(){ if(gen===queueGen) finish(onend); };
+    u.onerror=function(){ if(gen===queueGen) finish(onend); };
+    setTimeout(function(){
+      if(gen!==queueGen) return;
+      try{ speechSynthesis.speak(u); }catch(e){ finish(onend); }
+    }, 60);
   }
   const api={
-    isEnabled(){return enabled;},
-    isSpeaking(){
-      if(!window.speechSynthesis)return false;
-      return speaking||speechSynthesis.speaking||speechSynthesis.pending;
+    isEnabled:function(){ return enabled; },
+    isSpeaking:function(){
+      return speaking || !!(audioEl && !audioEl.paused) || !!(window.speechSynthesis && (speechSynthesis.speaking||speechSynthesis.pending));
     },
     unlock:unlock,
-    listVoices(){return listJaVoices();},
-    getVoice(){return pickVoice();},
-    setVoiceURI(uri, preview){
-      preferredURI=uri||'';
+    listVoices:function(){ return CLOUD_VOICES.slice(); },
+    getVoice:function(){ return preferredURI; },
+    setVoiceURI:function(uri, preview){
+      preferredURI=uri||'nova';
       localStorage.setItem(LS_VOICE, preferredURI);
-      jpVoice=null;
-      pickVoice();
       fillVoiceSelect();
-      if(preview!==false&&enabled){
+      if(preview!==false && enabled){
         api.stop();
-        setTimeout(function(){ api.speak('こちらが選択した声です。'); }, 80);
+        setTimeout(function(){ api.speak('こちらが選択した声です。', null, {agent: agentFromVoice(preferredURI)}); }, 80);
       }
     },
-    setEnabled(on){
+    setEnabled:function(on){
       enabled=!!on;
       localStorage.setItem(LS_KEY, enabled?'1':'0');
-      if(!enabled){api.stop();muteAllVideos();}
-      else{
-        unlock();
-        warnedOff=false;
-      }
+      if(!enabled){ api.stop(); muteAllVideos(); }
+      else { unlock(); warnedOff=false; }
       syncUi();
-      window.dispatchEvent(new CustomEvent('portal-audio-change',{detail:{enabled}}));
+      window.dispatchEvent(new CustomEvent('portal-audio-change',{detail:{enabled:enabled}}));
     },
-    toggle(){
+    toggle:function(){
       const next=!enabled;
       api.setEnabled(next);
       if(next){
         unlock();
         setTimeout(function(){ api.speak('音声をオンにしました。'); }, 80);
-      }else{
-        toast('音声をOFFにしました');
-      }
+      }else toast('音声をOFFにしました');
     },
-    speak(text,onend){
-      if(!window.speechSynthesis){
-        toast('このブラウザは読み上げ非対応です（Chrome推奨）');
-        if(typeof onend==='function')try{onend();}catch(e){}
-        return;
-      }
+    speak:function(text, onend, opts){
+      opts=opts||{};
       if(!enabled){
-        if(!warnedOff){
-          warnedOff=true;
-          toast('AIの声がOFFです。円卓右上の 🔊 を押してください');
-        }
-        if(typeof onend==='function')try{onend();}catch(e){}
+        if(!warnedOff){ warnedOff=true; toast('AIの声がOFFです。円卓右上の 🔊 を押してください'); }
+        if(typeof onend==='function') try{ onend(); }catch(e){}
         return;
       }
-      if(!text){ if(typeof onend==='function')try{onend();}catch(e){} return; }
-      if(!listJaVoices().length && !warnedNoVoice){
-        warnedNoVoice=true;
-        toast('日本語ボイスが見つかりません。Windowsの音声設定で日本語を追加してください');
-      }
-      const chunks=splitChunks(text);
-      if(!chunks.length){if(typeof onend==='function')try{onend();}catch(e){}return;}
-      speakChunks(chunks,onend);
+      const t=String(text||'').trim();
+      if(!t){ if(typeof onend==='function') try{ onend(); }catch(e){} return; }
+      unlock();
+      if(engine==='browser') speakBrowser(t, onend);
+      else speakCloud(t, opts.agent||'', onend);
     },
-    stop(){
+    stop:function(){
       intentionalStop=true;
       queueGen++;
       speaking=false;
-      clearResume();
-      if(window.speechSynthesis)try{speechSynthesis.cancel();}catch(e){}
+      cleanupAudio();
+      try{ if(window.speechSynthesis) speechSynthesis.cancel(); }catch(e){}
       syncUi();
     }
   };
+  function agentFromVoice(id){
+    const hit=CLOUD_VOICES.find(function(v){ return v.id===id; });
+    return (hit&&hit.agent)||'secretary';
+  }
   function wireVoiceSel(){
     const sel=document.getElementById('entakuVoiceSel');
     if(!sel||sel.dataset.wired) return;
     sel.dataset.wired='1';
-    sel.addEventListener('change', function(){
-      api.setVoiceURI(sel.value, true);
-    });
+    sel.addEventListener('change', function(){ api.setVoiceURI(sel.value, true); });
   }
   function wireUnlock(){
     const once=function(){ unlock(); };
@@ -5788,11 +5770,10 @@ window.PortalTTS=(function(){
     });
   }
   function boot(){ syncUi(); wireVoiceSel(); wireUnlock(); }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
   return api;
 })();
-
 /* オフィスクエスト（iframe）でキャラをホバー／クリック → 音声・円卓 */
 (function(){
   const OFFICE_ENTAKU_NAME={
@@ -12334,9 +12315,9 @@ window.EntakuDocIngest=(function(){
         if(failId) clearTimeout(failId);
         setTimeout(done, 220);
       };
-      window.PortalTTS.speak(speech, go);
-      // フェイルセーフ：日本語〜200ms/字想定。途中切断を避けるため余裕を持たせる
-      failId = setTimeout(go, Math.min(180000, 4000 + speech.length * 155));
+      window.PortalTTS.speak(speech, go, {agent: agent});
+      // フェイルセーフ：クラウド音声の遅延を見込む
+      failId = setTimeout(go, Math.min(240000, 8000 + speech.length * 90));
     }else{
       if(window.PortalTTS && !window.PortalTTS.isEnabled()){
         try{ window.Treasury?.toast?.('AIの声がOFFです。円卓の 🔊 をONにしてください'); }catch(e){}
