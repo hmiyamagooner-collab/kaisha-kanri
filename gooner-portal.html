@@ -1025,7 +1025,61 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   align-items:start;
   min-height:100dvh;
   background:#000;
+  transition:grid-template-columns .28s ease;
 }
+/* 円卓集中モード：サイドナビを隠し、円卓・本体を大きく */
+#portal-shell.entaku-focus{
+  grid-template-columns:minmax(0,1fr);
+}
+#portal-shell.entaku-focus > .gamenav{
+  display:none!important;
+}
+#portal-shell.entaku-focus #quests-row{
+  grid-template-rows:minmax(0,34fr) minmax(0,66fr);
+}
+#portal-shell.entaku-focus .dash-split-row{
+  grid-template-columns:minmax(0,84fr) minmax(0,16fr);
+}
+#portal-shell.entaku-focus .dash-entaku-pane{
+  min-width:0;
+}
+#portal-shell.entaku-focus #treasury-pane{
+  max-width:none;
+}
+.pt-focus-btn{
+  margin-left:auto;
+  flex-shrink:0;
+  font-family:var(--font-body);font-size:11px;font-weight:700;letter-spacing:.04em;
+  padding:7px 12px;border-radius:9px;cursor:pointer;
+  color:var(--nav-label);
+  background:rgba(15,138,78,.16);
+  border:1px solid var(--nav-green-soft);
+  box-shadow:0 2px 8px rgba(0,0,0,.28);
+  transition:filter .15s ease,background .15s ease;
+}
+.pt-focus-btn:hover{filter:brightness(1.08)}
+#portal-shell.entaku-focus .pt-focus-btn{
+  background:rgba(196,166,106,.18);
+  border-color:rgba(196,166,106,.45);
+  color:#f5e6b8;
+}
+.entaku-nav-fab{
+  position:fixed;left:10px;top:50%;transform:translateY(-50%);
+  z-index:500;display:none;
+  writing-mode:vertical-rl;text-orientation:mixed;
+  font-family:var(--font-body);font-size:12px;font-weight:700;letter-spacing:.14em;
+  padding:16px 8px;border-radius:12px;cursor:pointer;
+  color:#1a1408;background:linear-gradient(180deg,#f5e6b8,#e0c57a);
+  border:1px solid rgba(196,166,106,.7);
+  box-shadow:0 8px 24px rgba(0,0,0,.45);
+}
+#portal-shell.entaku-focus .entaku-nav-fab{display:block}
+.entaku-nav-fab:hover{filter:brightness(1.05)}
+.entaku-focus-hint{
+  font-size:10px;color:var(--muted);margin-left:8px;letter-spacing:.04em;
+  white-space:nowrap;
+}
+#portal-shell.entaku-focus .entaku-focus-hint{color:rgba(245,214,122,.75)}
 /* サイドバー：ボタンは通常サイズ。マトリクス枠は画面下端まで */
 #portal-shell > .gamenav{
   position:sticky;
@@ -2698,7 +2752,10 @@ video.dc-card__image{
   <span class="pt-dropbox-status" id="portalDropboxStatus" hidden></span>
   <span class="pt-user" id="portalUserChip" hidden></span>
   <button type="button" class="pt-logout" id="portalLogoutBtn" hidden>ログアウト</button>
+  <button type="button" class="pt-focus-btn" id="portalFocusBtn" title="サイドメニューを隠して円卓を大きく表示" aria-pressed="false">円卓集中</button>
+  <span class="entaku-focus-hint" id="portalFocusHint" hidden>ナビ非表示・円卓拡大</span>
 </div>
+<button type="button" class="entaku-nav-fab" id="entakuNavFab" title="サイドメニューを再表示">メニュー</button>
 
 <div id="dbx-modal" aria-hidden="true">
   <div class="dbx-card" role="dialog" aria-labelledby="dbxTitle">
@@ -9754,6 +9811,57 @@ window.PortalAuth=(function(){
 })();
 </script>
 
+<script>
+/* ===== 円卓集中モード（サイドナビ非表示・本体拡大） ===== */
+(function(){
+  const KEY='gp_entaku_focus_v1';
+  function shell(){ return document.getElementById('portal-shell'); }
+  function isOn(){ return !!shell()?.classList.contains('entaku-focus'); }
+  function syncUi(on){
+    const btn=document.getElementById('portalFocusBtn');
+    const hint=document.getElementById('portalFocusHint');
+    const fab=document.getElementById('entakuNavFab');
+    if(btn){
+      btn.setAttribute('aria-pressed', on?'true':'false');
+      btn.textContent=on?'メニュー表示':'円卓集中';
+      btn.title=on?'サイドメニューを再表示':'サイドメニューを隠して円卓を大きく表示';
+    }
+    if(hint) hint.hidden=!on;
+    if(fab) fab.style.display=on?'block':'none';
+  }
+  function setFocus(on, opts){
+    opts=opts||{};
+    const sh=shell();
+    if(!sh) return false;
+    sh.classList.toggle('entaku-focus', !!on);
+    try{ localStorage.setItem(KEY, on?'1':'0'); }catch(e){}
+    syncUi(!!on);
+    if(on && opts.openEntaku!==false){
+      try{ window.openEntaku?.(); }catch(e){}
+    }
+    try{ window.dispatchEvent(new CustomEvent('portal-focus-change',{detail:{on:!!on}})); }catch(e){}
+    return !!on;
+  }
+  function toggle(){ return setFocus(!isOn()); }
+  function wire(){
+    const saved=localStorage.getItem(KEY)==='1';
+    if(saved) setFocus(true,{openEntaku:false});
+    else syncUi(false);
+    document.getElementById('portalFocusBtn')?.addEventListener('click', function(){ toggle(); });
+    document.getElementById('entakuNavFab')?.addEventListener('click', function(){ setFocus(false); });
+  }
+  window.PortalFocus={
+    isOn:isOn,
+    set:setFocus,
+    toggle:toggle,
+    enable:function(){ return setFocus(true); },
+    disable:function(){ return setFocus(false); }
+  };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire);
+  else wire();
+})();
+</script>
+
 <!-- 円卓AI：3エージェント会話 API ブリッジ -->
 <script>
 window.EntakuAI=(function(){
@@ -11866,7 +11974,11 @@ window.EntakuDocIngest=(function(){
     execute: executeEntakuAction,
     runAll: executeEntakuActions,
     risk: function(){ return window.PortalRisk?.snapshot?.(); },
-    tasks: function(){ return window.PortalTasks?.open?.()||[]; }
+    tasks: function(){ return window.PortalTasks?.open?.()||[]; },
+    focusMode: function(on){
+      if(on===undefined) return window.PortalFocus?.toggle?.();
+      return on ? window.PortalFocus?.enable?.() : window.PortalFocus?.disable?.();
+    }
   };
   restoreEntaku();      // 前回の会議・議事録を復元
   // 復元時は未完了の会議選択・資料確認を無効化
