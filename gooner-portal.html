@@ -1170,21 +1170,25 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   flex-shrink:0;
   font-family:var(--font-body);font-size:11px;font-weight:700;letter-spacing:.04em;
   padding:7px 12px;border-radius:9px;cursor:pointer;
-  color:var(--nav-label);
-  background:rgba(15,138,78,.16);
-  border:1px solid var(--nav-green-soft);
+  color:#fff;
+  background:#0f8a4e;
+  border:1px solid #0c7341;
   box-shadow:0 2px 8px rgba(0,0,0,.28);
   transition:filter .15s ease,background .15s ease;
 }
 .pt-nav-btn{margin-left:auto}
-.pt-focus-btn{margin-left:8px}
+.pt-focus-btn{margin-left:8px;color:var(--nav-label);background:rgba(15,138,78,.16);border-color:var(--nav-green-soft)}
 .pt-focus-btn:hover,
 .pt-nav-btn:hover{filter:brightness(1.08)}
-#portal-shell.entaku-focus .pt-focus-btn,
-#portal-shell.nav-collapsed .pt-nav-btn{
+#portal-shell.entaku-focus .pt-focus-btn{
   background:rgba(196,166,106,.18);
   border-color:rgba(196,166,106,.45);
   color:#f5e6b8;
+}
+#portal-shell.nav-collapsed .pt-nav-btn{
+  color:#1a1408;
+  background:#e0c57a;
+  border-color:#c4a66a;
 }
 .entaku-nav-fab{
   position:fixed;left:10px;top:50%;transform:translateY(-50%);
@@ -1210,14 +1214,14 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   width:100%;min-height:34px;margin:0 0 8px;padding:6px 8px;
   border-radius:9px;cursor:pointer;
   font-family:var(--font-body);font-size:11px;font-weight:700;letter-spacing:.06em;
-  color:var(--nav-label);
-  background:rgba(15,138,78,.14);
-  border:1px solid var(--nav-green-soft);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+  color:#fff;
+  background:#0f8a4e;
+  border:1px solid #0c7341;
+  box-shadow:0 2px 8px rgba(0,0,0,.28);
   transition:filter .15s ease,background .15s ease;
 }
-.nav-rail-toggle:hover{filter:brightness(1.08);background:rgba(15,138,78,.22)}
-.nav-rail-toggle .nav-rail-ico{margin-right:4px;opacity:.9}
+.nav-rail-toggle:hover{filter:brightness(1.1)}
+.nav-rail-toggle .nav-rail-ico{margin-right:4px}
 /* サイドバー：ボタンは通常サイズ。マトリクス枠は画面下端まで */
 #portal-shell > .gamenav{
   position:sticky;
