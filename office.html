@@ -633,24 +633,24 @@ function drawDayOverlay(g){
     grd.addColorStop(1,'rgba(20,10,40,.28)');
     g.fillStyle=grd; g.fillRect(0,0,MAP_W,MAP_H);
   }else{
-    // ドラクエ風よる：藍に寄せつつマップは読める明るさ
+    // 参考画像風：全体を青〜シアンに寄せ、マップは読めるまま
     g.globalCompositeOperation='multiply';
-    g.fillStyle='#5a6ab0'; // 明るめの藍（暗すぎ防止）
+    g.fillStyle='#6a7cc0'; // ミッドナイトブルー（潰しすぎない）
     g.fillRect(0,0,MAP_W,MAP_H);
     g.globalCompositeOperation='source-over';
-    g.fillStyle='rgba(12,22,64,.32)';
+    // 冷たい月光のウォッシュ（透明度低め）
+    g.fillStyle='rgba(36,64,140,.22)';
     g.fillRect(0,0,MAP_W,MAP_H);
-    // 端だけ少し落とす
-    const vig=g.createRadialGradient(MAP_W*0.5,MAP_H*0.45,50,MAP_W*0.5,MAP_H*0.5,MAP_W*0.72);
+    // ごく弱い周辺落ちのみ
+    const vig=g.createRadialGradient(MAP_W*0.5,MAP_H*0.48,80,MAP_W*0.5,MAP_H*0.5,MAP_W*0.85);
     vig.addColorStop(0,'rgba(0,0,0,0)');
-    vig.addColorStop(1,'rgba(0,4,24,.28)');
+    vig.addColorStop(1,'rgba(0,8,28,.18)');
     g.fillStyle=vig;
     g.fillRect(0,0,MAP_W,MAP_H);
-    // 海側は少し深く（全体は暗くしすぎない）
-    g.fillStyle='rgba(8,18,56,.18)';
+    // 海は少しだけ深く
+    g.fillStyle='rgba(20,48,120,.14)';
     g.fillRect(COAST_X,0,MAP_W-COAST_X,MAP_H);
-    drawDqNightStars(g);
-    drawDqNightMoon(g);
+    // 窓あかりは控えめに（暖色のコントラスト）
     drawDqWindowLights(g);
   }
   g.restore();
@@ -739,15 +739,13 @@ function paintDqLamp(g,x,y,w,h,glow){
   if(glow){
     g.save();
     g.globalCompositeOperation='lighter';
-    g.fillStyle='rgba(255,180,70,.28)';
-    g.fillRect(x-3,y-3,w+6,h+6);
-    g.fillStyle='rgba(255,220,120,.4)';
-    g.fillRect(x-1,y-1,w+2,h+2);
+    g.fillStyle='rgba(255,190,90,.18)';
+    g.fillRect(x-2,y-2,w+4,h+4);
     g.restore();
   }
-  g.fillStyle='#ffe89a';
+  g.fillStyle='#e8d078';
   g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));
-  g.fillStyle='#fff8d8';
+  g.fillStyle='#f5ecc0';
   g.fillRect(x|0,y|0,Math.max(1,w|0),1);
 }
 
