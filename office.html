@@ -654,17 +654,18 @@ function drawDayOverlay(g){
     drawDqWindowLights(g);
   }
   g.restore();
-  // フェーズ表示（ドット感のあるラベル）
+  // フェーズ表示（左上）
   const label=dayPhase==='sunset'?'ゆうがた':'よる';
   g.font='700 9px "DotGothic16","Zen Kaku Gothic New",monospace';
   const tw=Math.ceil(g.measureText(label).width)+10;
+  const lx=6, ly=6;
   g.fillStyle='rgba(0,0,0,.7)';
-  g.fillRect(MAP_W-tw-6,6,tw,14);
+  g.fillRect(lx,ly,tw,14);
   g.strokeStyle=dayPhase==='sunset'?'#ffc089':'#6a9cff';
   g.lineWidth=1;
-  g.strokeRect(MAP_W-tw-6.5,5.5,tw+1,15);
+  g.strokeRect(lx-0.5,ly-0.5,tw+1,15);
   g.fillStyle=dayPhase==='sunset'?'#ffc089':'#c8dcff';
-  g.fillText(label, MAP_W-tw-1, 16);
+  g.fillText(label, lx+5, ly+10);
 }
 function drawDqNightStars(g){
   // 固定配置の星（キラつきは時間で点滅）
