@@ -1140,19 +1140,20 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   border-color:#7cff3a;
   background:rgba(10,40,0,.92);
 }
-/* Matrix風・角ばった画面隅トグル */
+/* Matrix風・角ばった画面隅トグル（細身） */
 .mx-corner{
   position:fixed;z-index:520;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
   border-radius:0;cursor:pointer;user-select:none;
   writing-mode:vertical-rl;text-orientation:mixed;
   font-family:"Share Tech Mono","Courier New",ui-monospace,monospace;
-  font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
+  font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
   color:#39ff14;
-  background:rgba(0,8,0,.94);
+  background:rgba(0,8,0,.9);
   border:1px solid #39ff14;
-  padding:18px 9px;
-  box-shadow:inset 0 0 24px rgba(57,255,20,.14),0 0 16px rgba(57,255,20,.22);
+  padding:10px 3px;
+  min-width:0;width:18px;box-sizing:border-box;
+  box-shadow:inset 0 0 12px rgba(57,255,20,.1),0 0 8px rgba(57,255,20,.15);
   transition:color .15s ease,background .15s ease,box-shadow .15s ease,border-color .15s ease;
 }
 .mx-corner::before{
@@ -1160,15 +1161,15 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   background:repeating-linear-gradient(
     0deg,
     transparent 0 2px,
-    rgba(57,255,20,.045) 2px 4px
+    rgba(57,255,20,.035) 2px 4px
   );
 }
 .mx-corner .mx-corner-mark{
-  font-size:13px;letter-spacing:0;line-height:1;opacity:.9;
+  font-size:10px;letter-spacing:0;line-height:1;opacity:.85;
 }
 .mx-corner:hover{
   color:#b8ff8a;background:rgba(0,28,0,.96);border-color:#7cff3a;
-  box-shadow:inset 0 0 28px rgba(57,255,20,.22),0 0 20px rgba(57,255,20,.35);
+  box-shadow:inset 0 0 16px rgba(57,255,20,.18),0 0 12px rgba(57,255,20,.28);
 }
 .mx-corner.is-on{
   color:#cfff9e;border-color:#7cff3a;
@@ -1176,8 +1177,8 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   animation:mxCornerPulse 1.8s ease-in-out infinite;
 }
 @keyframes mxCornerPulse{
-  0%,100%{box-shadow:inset 0 0 24px rgba(57,255,20,.14),0 0 12px rgba(57,255,20,.2)}
-  50%{box-shadow:inset 0 0 28px rgba(57,255,20,.28),0 0 22px rgba(57,255,20,.4)}
+  0%,100%{box-shadow:inset 0 0 12px rgba(57,255,20,.1),0 0 6px rgba(57,255,20,.15)}
+  50%{box-shadow:inset 0 0 16px rgba(57,255,20,.22),0 0 12px rgba(57,255,20,.3)}
 }
 .mx-corner-nav{left:0;top:42%;transform:translateY(-50%);border-left:0}
 .mx-corner-quest{right:0;top:58%;transform:translateY(-50%);border-right:0}
