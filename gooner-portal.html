@@ -1039,6 +1039,35 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   background:#000;
   transition:grid-template-columns .28s ease;
 }
+/* サイドバー左格納 */
+#portal-shell.nav-collapsed{
+  grid-template-columns:0 minmax(0,1fr);
+}
+#portal-shell.nav-collapsed > .gamenav{
+  width:0!important;min-width:0!important;max-width:0!important;
+  padding:0!important;margin:0!important;border:0!important;
+  opacity:0;pointer-events:none;overflow:hidden;
+}
+#portal-shell.nav-collapsed #quests-row{
+  padding:8px 14px 10px;
+  gap:10px;
+  grid-template-rows:minmax(0,42fr) minmax(0,58fr);
+}
+#portal-shell.nav-collapsed .dash-split-row{
+  gap:12px;
+  grid-template-columns:minmax(0,78fr) minmax(0,22fr);
+}
+#portal-shell.nav-collapsed .dash-cards-wrap{
+  padding:8px 12px 10px;
+}
+#portal-shell.nav-collapsed .dc-cards{
+  gap:clamp(8px,1.5vw,16px);
+  max-width:min(1120px,100%);
+}
+#portal-shell.nav-collapsed .dc-name{font-size:14px}
+#portal-shell.nav-collapsed .dc-dept{font-size:12px}
+#portal-shell.nav-collapsed .dc-name-en{font-size:9px}
+#portal-shell.nav-collapsed .office-tk-links{padding:10px 12px 12px;gap:8px}
 /* 円卓集中モード：サイドナビを隠し、円卓・本体を大きく */
 #portal-shell.entaku-focus{
   grid-template-columns:minmax(0,1fr);
@@ -1058,8 +1087,8 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 #portal-shell.entaku-focus #treasury-pane{
   max-width:none;
 }
-.pt-focus-btn{
-  margin-left:auto;
+.pt-focus-btn,
+.pt-nav-btn{
   flex-shrink:0;
   font-family:var(--font-body);font-size:11px;font-weight:700;letter-spacing:.04em;
   padding:7px 12px;border-radius:9px;cursor:pointer;
@@ -1069,8 +1098,12 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   box-shadow:0 2px 8px rgba(0,0,0,.28);
   transition:filter .15s ease,background .15s ease;
 }
-.pt-focus-btn:hover{filter:brightness(1.08)}
-#portal-shell.entaku-focus .pt-focus-btn{
+.pt-nav-btn{margin-left:auto}
+.pt-focus-btn{margin-left:8px}
+.pt-focus-btn:hover,
+.pt-nav-btn:hover{filter:brightness(1.08)}
+#portal-shell.entaku-focus .pt-focus-btn,
+#portal-shell.nav-collapsed .pt-nav-btn{
   background:rgba(196,166,106,.18);
   border-color:rgba(196,166,106,.45);
   color:#f5e6b8;
@@ -1085,13 +1118,28 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   border:1px solid rgba(196,166,106,.7);
   box-shadow:0 8px 24px rgba(0,0,0,.45);
 }
-#portal-shell.entaku-focus .entaku-nav-fab{display:block}
+#portal-shell.entaku-focus .entaku-nav-fab,
+#portal-shell.nav-collapsed .entaku-nav-fab{display:block}
 .entaku-nav-fab:hover{filter:brightness(1.05)}
 .entaku-focus-hint{
   font-size:10px;color:var(--muted);margin-left:8px;letter-spacing:.04em;
   white-space:nowrap;
 }
 #portal-shell.entaku-focus .entaku-focus-hint{color:rgba(245,214,122,.75)}
+.nav-rail-toggle{
+  flex-shrink:0;align-self:stretch;
+  display:flex;align-items:center;justify-content:center;
+  width:100%;min-height:34px;margin:0 0 8px;padding:6px 8px;
+  border-radius:9px;cursor:pointer;
+  font-family:var(--font-body);font-size:11px;font-weight:700;letter-spacing:.06em;
+  color:var(--nav-label);
+  background:rgba(15,138,78,.14);
+  border:1px solid var(--nav-green-soft);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+  transition:filter .15s ease,background .15s ease;
+}
+.nav-rail-toggle:hover{filter:brightness(1.08);background:rgba(15,138,78,.22)}
+.nav-rail-toggle .nav-rail-ico{margin-right:4px;opacity:.9}
 /* サイドバー：ボタンは通常サイズ。マトリクス枠は画面下端まで */
 #portal-shell > .gamenav{
   position:sticky;
@@ -1504,15 +1552,16 @@ body.quest-expanded .dc-card video{
 #dashboard-pane #root{display:none!important;}
 .dash-cards-wrap{
   flex:1;min-height:0;min-width:0;overflow:hidden;
-  display:flex;flex-direction:column;
+  display:flex;flex-direction:column;align-items:center;justify-content:stretch;
   width:100%;
-  padding:2px 4px 4px;
+  padding:4px 8px 6px;
   background:#000;
 }
 .dc-cards{
-  flex:1;min-height:0;min-width:0;width:100%;overflow:hidden;
+  flex:1;min-height:0;min-width:0;width:100%;max-width:min(1080px,100%);
+  margin:0 auto;overflow:hidden;
   display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);
-  gap:6px;align-items:stretch;
+  gap:clamp(6px,1.1vw,12px);align-items:stretch;
 }
 /* ===== 円卓会議（Dashboard内インライン） ===== */
 .entaku-inline{
@@ -1947,12 +1996,18 @@ body.quest-expanded .dc-card video{
 .dc-cards .dc-card:nth-child(3){--dc-in-delay:.16s}
 .dc-card[data-dept="secretary"]{
   --dc-bg-image:url('dash-secretary.png');
+  --dc-img-pos:center 22%;
+  --dc-img-scale:1.03;
 }
 .dc-card[data-dept="finance"]{
   --dc-bg-image:url('dash-finance.png');
+  --dc-img-pos:center 24%;
+  --dc-img-scale:1.01;
 }
 .dc-card[data-dept="legal"]{
   --dc-bg-image:url('dash-legal.png');
+  --dc-img-pos:center 20%;
+  --dc-img-scale:1.02;
 }
 @keyframes dcCardIn{
   from{opacity:0;transform:translate3d(-10px,12px,0)}
@@ -2078,9 +2133,9 @@ video.dc-card__image{
   flex-shrink:0;min-width:0;width:100%;
   height:auto;min-height:0;max-height:none;
   display:flex;flex-direction:row;justify-content:center;align-items:baseline;gap:8px;flex-wrap:wrap;
-  padding:20px 8px 8px;pointer-events:none;
+  padding:16px 10px 10px;pointer-events:none;
   border-top:none;
-  background:linear-gradient(180deg,transparent,rgba(0,0,0,.35) 40%,rgba(0,0,0,.78));
+  background:linear-gradient(180deg,transparent,rgba(0,0,0,.28) 35%,rgba(0,0,0,.72));
 }
 .dc-name{
   flex:0 1 auto;min-height:0;max-height:none;
@@ -2198,61 +2253,61 @@ video.dc-card__image{
 /* クリックできるキャラカード（反応は .dc-photo 枠内のみ） */
 .dc-card.dc-clickable .dc-photo{cursor:pointer}
 .dc-card.dc-clickable .dc-photo:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
-/* 経理・紬：本日/今週ショート吹き出し（大きめ） */
+/* 経理・紬：本日/今週ショート吹き出し（コンパクト） */
 .dc-short-bubble{
-  position:absolute;z-index:7;top:10px;left:8px;right:8px;
+  position:absolute;z-index:7;top:6px;left:6px;right:6px;
   pointer-events:none;
-  padding:12px 14px 14px;
-  border-radius:16px;
+  padding:5px 8px 6px;
+  border-radius:10px;
   background:rgba(255,252,246,.96);
-  border:1.5px solid rgba(40,36,30,.78);
-  box-shadow:0 8px 22px rgba(0,0,0,.45),0 2px 0 rgba(255,255,255,.55) inset;
+  border:1px solid rgba(40,36,30,.78);
+  box-shadow:0 4px 12px rgba(0,0,0,.4),0 1px 0 rgba(255,255,255,.55) inset;
   font-family:'Zen Kaku Gothic New',var(--font-body),sans-serif;
   color:#1f1b16;
-  line-height:1.25;
+  line-height:1.15;
 }
 .dc-short-bubble::after{
-  content:"";position:absolute;left:28px;bottom:-9px;
-  border:9px solid transparent;border-top-color:rgba(255,252,246,.96);
+  content:"";position:absolute;left:20px;bottom:-6px;
+  border:6px solid transparent;border-top-color:rgba(255,252,246,.96);
   filter:drop-shadow(0 1px 0 rgba(40,36,30,.55));
 }
 .dc-short-bubble .dc-short-title{
-  font-size:11px;font-weight:700;letter-spacing:.08em;
-  color:#5a5044;margin-bottom:8px;
+  font-size:9px;font-weight:700;letter-spacing:.06em;
+  color:#5a5044;margin-bottom:3px;
 }
 .dc-short-bubble .dc-short-row{
-  display:flex;align-items:baseline;justify-content:space-between;gap:10px;
-  margin-top:5px;
+  display:flex;align-items:baseline;justify-content:space-between;gap:6px;
+  margin-top:2px;
 }
 .dc-short-bubble .dc-short-label{
-  font-size:13px;font-weight:700;color:#2a241c;white-space:nowrap;
+  font-size:10px;font-weight:700;color:#2a241c;white-space:nowrap;
 }
 .dc-short-bubble .dc-short-amt{
   font-family:var(--font-num),ui-monospace,monospace;
-  font-size:18px;font-weight:800;letter-spacing:.01em;
+  font-size:12px;font-weight:800;letter-spacing:.01em;
   color:#c42828;text-align:right;
 }
 .dc-short-bubble .dc-short-amt.ok{color:#1f7a4c}
 .dc-short-bubble .dc-short-hint{
-  margin-top:8px;font-size:10px;color:#7a7064;line-height:1.4;
+  margin-top:3px;font-size:8px;color:#7a7064;line-height:1.25;
 }
 @media(max-width:980px){
-  .dc-short-bubble{padding:10px 11px 12px;border-radius:14px}
-  .dc-short-bubble .dc-short-label{font-size:12px}
-  .dc-short-bubble .dc-short-amt{font-size:15px}
+  .dc-short-bubble{padding:4px 6px 5px;border-radius:8px}
+  .dc-short-bubble .dc-short-label{font-size:9px}
+  .dc-short-bubble .dc-short-amt{font-size:11px}
 }
-/* 社員リスク忠告吹き出し（大きめ） */
+/* 社員リスク忠告吹き出し（コンパクト） */
 .dc-risk-bubble{
-  position:absolute;z-index:8;top:8px;left:6px;right:6px;
+  position:absolute;z-index:8;top:4px;left:4px;right:4px;
   pointer-events:none;
-  padding:14px 14px 16px;
-  border-radius:18px;
+  padding:5px 8px 6px;
+  border-radius:10px;
   background:linear-gradient(180deg,rgba(255,248,240,.98),rgba(255,236,220,.96));
-  border:2px solid rgba(180,48,36,.78);
-  box-shadow:0 10px 28px rgba(0,0,0,.5),0 2px 0 rgba(255,255,255,.5) inset;
+  border:1.5px solid rgba(180,48,36,.78);
+  box-shadow:0 4px 14px rgba(0,0,0,.42),0 1px 0 rgba(255,255,255,.5) inset;
   font-family:'Zen Kaku Gothic New',var(--font-body),sans-serif;
   color:#2a1814;
-  line-height:1.3;
+  line-height:1.15;
   animation:dcRiskIn .35s ease-out;
 }
 .dc-risk-bubble.is-ok{
@@ -2260,35 +2315,35 @@ video.dc-card__image{
   background:linear-gradient(180deg,rgba(244,255,248,.98),rgba(220,245,230,.95));
 }
 .dc-risk-bubble::after{
-  content:"";position:absolute;left:32px;bottom:-11px;
-  border:11px solid transparent;border-top-color:rgba(255,236,220,.96);
+  content:"";position:absolute;left:22px;bottom:-6px;
+  border:6px solid transparent;border-top-color:rgba(255,236,220,.96);
   filter:drop-shadow(0 1px 0 rgba(180,48,36,.45));
 }
 .dc-risk-bubble.is-ok::after{border-top-color:rgba(220,245,230,.95)}
 .dc-risk-bubble .dc-risk-cap{
-  font-size:13px;font-weight:800;letter-spacing:.06em;
-  color:#a02818;margin-bottom:8px;
+  font-size:10px;font-weight:800;letter-spacing:.04em;
+  color:#a02818;margin-bottom:2px;
 }
 .dc-risk-bubble.is-ok .dc-risk-cap{color:#176b3e}
 .dc-risk-bubble .dc-risk-line{
-  font-size:15px;font-weight:700;margin:4px 0;color:#1f1410;
+  font-size:11px;font-weight:700;margin:1px 0;color:#1f1410;
 }
 .dc-risk-bubble .dc-risk-line em{
-  font-style:normal;color:#c42828;font-size:17px;font-weight:800;
+  font-style:normal;color:#c42828;font-size:12px;font-weight:800;
   font-family:var(--font-num),ui-monospace,monospace;
 }
 .dc-risk-bubble .dc-risk-sub{
-  margin-top:8px;font-size:11px;font-weight:600;color:#6a5048;line-height:1.4;
+  margin-top:2px;font-size:9px;font-weight:600;color:#6a5048;line-height:1.25;
 }
 @keyframes dcRiskIn{
   from{opacity:0;transform:translateY(-8px) scale(.96)}
   to{opacity:1;transform:translateY(0) scale(1)}
 }
 @media(max-width:980px){
-  .dc-risk-bubble{padding:11px 12px 13px;border-radius:14px}
-  .dc-risk-bubble .dc-risk-cap{font-size:12px}
-  .dc-risk-bubble .dc-risk-line{font-size:13px}
-  .dc-risk-bubble .dc-risk-line em{font-size:15px}
+  .dc-risk-bubble{padding:4px 6px 5px;border-radius:8px}
+  .dc-risk-bubble .dc-risk-cap{font-size:9px}
+  .dc-risk-bubble .dc-risk-line{font-size:10px}
+  .dc-risk-bubble .dc-risk-line em{font-size:11px}
 }
 /* パラダイスシティ：案件ボード */
 .bp-form{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -2677,6 +2732,9 @@ video.dc-card__image{
 <div id="portal-shell" hidden>
 <nav class="gamenav" aria-label="メインメニュー">
   <canvas class="gamenav-matrix" id="gamenavMatrix" aria-hidden="true"></canvas>
+  <button type="button" class="nav-rail-toggle" id="navCollapseBtn" title="サイドメニューを左に格納" aria-expanded="true">
+    <span class="nav-rail-ico" aria-hidden="true">◀</span>メニュー格納
+  </button>
   <div class="nav-align-zone" id="navAlignZone">
   <div class="nav-main-stack">
   <div class="nav-group nav-group-major">事業</div>
@@ -2839,6 +2897,7 @@ video.dc-card__image{
   <span class="pt-user" id="portalUserChip" hidden></span>
   <button type="button" class="pt-logout" id="portalDutyEndBtn" hidden title="本日の業務終了を記録">業務終了</button>
   <button type="button" class="pt-logout" id="portalLogoutBtn" hidden>ログアウト</button>
+  <button type="button" class="pt-nav-btn" id="portalNavToggleBtn" title="サイドメニューを左に格納／展開" aria-pressed="false">メニュー格納</button>
   <button type="button" class="pt-focus-btn" id="portalFocusBtn" title="サイドメニューを隠して円卓を大きく表示" aria-pressed="false">円卓集中</button>
   <span class="entaku-focus-hint" id="portalFocusHint" hidden>ナビ非表示・円卓拡大</span>
 </div>
@@ -10514,6 +10573,61 @@ window.PortalAuth=(function(){
 </script>
 
 <script>
+/* ===== サイドバー左格納 ===== */
+(function(){
+  const KEY='gp_nav_collapsed_v1';
+  function shell(){ return document.getElementById('portal-shell'); }
+  function isOn(){ return !!shell()?.classList.contains('nav-collapsed'); }
+  function syncUi(on){
+    const barBtn=document.getElementById('portalNavToggleBtn');
+    const railBtn=document.getElementById('navCollapseBtn');
+    const fab=document.getElementById('entakuNavFab');
+    if(barBtn){
+      barBtn.setAttribute('aria-pressed', on?'true':'false');
+      barBtn.textContent=on?'メニュー展開':'メニュー格納';
+      barBtn.title=on?'サイドメニューを再表示':'サイドメニューを左に格納';
+    }
+    if(railBtn){
+      railBtn.setAttribute('aria-expanded', on?'false':'true');
+      railBtn.innerHTML=on
+        ?'<span class="nav-rail-ico" aria-hidden="true">▶</span>メニュー展開'
+        :'<span class="nav-rail-ico" aria-hidden="true">◀</span>メニュー格納';
+    }
+    if(fab){
+      const focusOn=!!shell()?.classList.contains('entaku-focus');
+      fab.style.display=(on||focusOn)?'block':'';
+      fab.title=focusOn?'サイドメニューを再表示（円卓集中解除）':'サイドメニューを再表示';
+    }
+  }
+  function setCollapsed(on){
+    const sh=shell();
+    if(!sh) return false;
+    sh.classList.toggle('nav-collapsed', !!on);
+    try{ localStorage.setItem(KEY, on?'1':'0'); }catch(e){}
+    syncUi(!!on);
+    try{ window.dispatchEvent(new CustomEvent('portal-nav-collapse',{detail:{on:!!on}})); }catch(e){}
+    return !!on;
+  }
+  function toggle(){ return setCollapsed(!isOn()); }
+  function wire(){
+    const saved=localStorage.getItem(KEY)==='1';
+    if(saved) setCollapsed(true);
+    else syncUi(false);
+    document.getElementById('portalNavToggleBtn')?.addEventListener('click', function(){ toggle(); });
+    document.getElementById('navCollapseBtn')?.addEventListener('click', function(){ toggle(); });
+  }
+  window.PortalNavCollapse={
+    isOn:isOn,
+    set:setCollapsed,
+    toggle:toggle,
+    syncUi:syncUi
+  };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire);
+  else wire();
+})();
+</script>
+
+<script>
 /* ===== 円卓集中モード（サイドナビ非表示・本体拡大） ===== */
 (function(){
   const KEY='gp_entaku_focus_v1';
@@ -10529,7 +10643,11 @@ window.PortalAuth=(function(){
       btn.title=on?'サイドメニューを再表示':'サイドメニューを隠して円卓を大きく表示';
     }
     if(hint) hint.hidden=!on;
-    if(fab) fab.style.display=on?'block':'none';
+    if(fab){
+      const navOn=!!shell()?.classList.contains('nav-collapsed');
+      fab.style.display=(on||navOn)?'block':'';
+    }
+    try{ window.PortalNavCollapse?.syncUi?.(window.PortalNavCollapse.isOn?.()); }catch(e){}
   }
   function setFocus(on, opts){
     opts=opts||{};
@@ -10550,7 +10668,11 @@ window.PortalAuth=(function(){
     if(saved) setFocus(true,{openEntaku:false});
     else syncUi(false);
     document.getElementById('portalFocusBtn')?.addEventListener('click', function(){ toggle(); });
-    document.getElementById('entakuNavFab')?.addEventListener('click', function(){ setFocus(false); });
+    document.getElementById('entakuNavFab')?.addEventListener('click', function(){
+      if(isOn()) setFocus(false);
+      else if(window.PortalNavCollapse?.isOn?.()) window.PortalNavCollapse.set(false);
+      else setFocus(false);
+    });
   }
   window.PortalFocus={
     isOn:isOn,
