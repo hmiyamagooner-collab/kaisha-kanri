@@ -2100,6 +2100,55 @@ video.dc-card__image{
   .dc-short-bubble .dc-short-label{font-size:12px}
   .dc-short-bubble .dc-short-amt{font-size:15px}
 }
+/* 社員リスク忠告吹き出し（大きめ） */
+.dc-risk-bubble{
+  position:absolute;z-index:8;top:8px;left:6px;right:6px;
+  pointer-events:none;
+  padding:14px 14px 16px;
+  border-radius:18px;
+  background:linear-gradient(180deg,rgba(255,248,240,.98),rgba(255,236,220,.96));
+  border:2px solid rgba(180,48,36,.78);
+  box-shadow:0 10px 28px rgba(0,0,0,.5),0 2px 0 rgba(255,255,255,.5) inset;
+  font-family:'Zen Kaku Gothic New',var(--font-body),sans-serif;
+  color:#2a1814;
+  line-height:1.3;
+  animation:dcRiskIn .35s ease-out;
+}
+.dc-risk-bubble.is-ok{
+  border-color:rgba(30,120,70,.55);
+  background:linear-gradient(180deg,rgba(244,255,248,.98),rgba(220,245,230,.95));
+}
+.dc-risk-bubble::after{
+  content:"";position:absolute;left:32px;bottom:-11px;
+  border:11px solid transparent;border-top-color:rgba(255,236,220,.96);
+  filter:drop-shadow(0 1px 0 rgba(180,48,36,.45));
+}
+.dc-risk-bubble.is-ok::after{border-top-color:rgba(220,245,230,.95)}
+.dc-risk-bubble .dc-risk-cap{
+  font-size:13px;font-weight:800;letter-spacing:.06em;
+  color:#a02818;margin-bottom:8px;
+}
+.dc-risk-bubble.is-ok .dc-risk-cap{color:#176b3e}
+.dc-risk-bubble .dc-risk-line{
+  font-size:15px;font-weight:700;margin:4px 0;color:#1f1410;
+}
+.dc-risk-bubble .dc-risk-line em{
+  font-style:normal;color:#c42828;font-size:17px;font-weight:800;
+  font-family:var(--font-num),ui-monospace,monospace;
+}
+.dc-risk-bubble .dc-risk-sub{
+  margin-top:8px;font-size:11px;font-weight:600;color:#6a5048;line-height:1.4;
+}
+@keyframes dcRiskIn{
+  from{opacity:0;transform:translateY(-8px) scale(.96)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+@media(max-width:980px){
+  .dc-risk-bubble{padding:11px 12px 13px;border-radius:14px}
+  .dc-risk-bubble .dc-risk-cap{font-size:12px}
+  .dc-risk-bubble .dc-risk-line{font-size:13px}
+  .dc-risk-bubble .dc-risk-line em{font-size:15px}
+}
 /* パラダイスシティ：案件ボード */
 .bp-form{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .bp-form input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--text);font-size:13px}
@@ -2678,6 +2727,7 @@ video.dc-card__image{
         <div class="dc-card" data-dept="secretary">
           <div class="dc-photo dc-card__media" data-initial="凛">
             <div class="dc-card__shine" aria-hidden="true"></div>
+            <div class="dc-risk-bubble" data-risk-bubble="secretary" hidden></div>
             <span class="dc-photo-fallback" aria-hidden="true">凛</span>
             <div class="dc-avatar-wrap">
               <video class="dc-card__image" src="rin.mp4" poster="dash-secretary.png" data-has-audio="1" muted loop playsinline autoplay preload="metadata" aria-label="凛"></video>
@@ -2692,6 +2742,7 @@ video.dc-card__image{
         <div class="dc-card" data-dept="finance">
           <div class="dc-photo dc-card__media" data-initial="紬">
             <div class="dc-card__shine" aria-hidden="true"></div>
+            <div class="dc-risk-bubble" data-risk-bubble="finance" hidden></div>
             <span class="dc-photo-fallback" aria-hidden="true">紬</span>
             <div class="dc-avatar-wrap">
               <video class="dc-card__image" src="tumugi.mp4" poster="dash-finance.png" data-has-audio="1" muted loop playsinline autoplay preload="metadata" aria-label="紬"></video>
@@ -2706,6 +2757,7 @@ video.dc-card__image{
         <div class="dc-card" data-dept="legal">
           <div class="dc-photo dc-card__media" data-initial="陽">
             <div class="dc-card__shine" aria-hidden="true"></div>
+            <div class="dc-risk-bubble" data-risk-bubble="legal" hidden></div>
             <span class="dc-photo-fallback" aria-hidden="true">陽</span>
             <div class="dc-avatar-wrap">
               <video class="dc-card__image" src="haruto.mp4" poster="dash-legal.png" data-has-audio="1" muted loop playsinline autoplay preload="metadata" aria-label="陽翔"></video>
@@ -8248,7 +8300,10 @@ window.Treasury={
         if(payload.eventType==='INSERT' && mine && t && String(t.created_by)!==String(m?.id)){
           showArriveModal(t);
         }
-        refreshTaskBoard().then(function(){ checkOverduePenalties(); syncOfficeQuestState(); });
+        refreshTaskBoard().then(function(){
+          checkOverduePenalties(); syncOfficeQuestState();
+          try{ window.PortalRisk?.refresh?.(); }catch(e){}
+        });
       })
       .subscribe();
   }
@@ -8259,15 +8314,56 @@ window.Treasury={
     await refreshTaskBoard();
     checkOverduePenalties();
     syncOfficeQuestState();
-    setInterval(function(){ checkOverduePenalties(); syncOfficeQuestState(); }, 60000);
+    try{ window.PortalRisk?.refresh?.(); }catch(e){}
+    setInterval(function(){
+      checkOverduePenalties(); syncOfficeQuestState();
+      try{ window.PortalRisk?.refresh?.(); }catch(e){}
+    }, 60000);
   }
   window.addEventListener('portal-member-ready', function(){ syncOfficeQuestState(); });
   window.addEventListener('message', function(ev){
     if(ev?.data?.type==='office-ready') syncOfficeQuestState();
   });
 
+  function openTasks(){ return tasks.filter(function(t){ return t && t.status!=='done'; }); }
+  function overdueTasks(){
+    const today=todayISO();
+    return openTasks().filter(function(t){
+      const d=parseDue(t);
+      return d && d<today;
+    });
+  }
+  function taskSummaryForAi(){
+    const open=openTasks();
+    const overdue=overdueTasks();
+    const pending=open.filter(function(t){ return t.status==='pending'; });
+    const accepted=open.filter(function(t){ return t.status==='accepted'; });
+    const lines=['未完了タスク '+open.length+'件（未承認 '+pending.length+'／進行中 '+accepted.length+'／期限超過 '+overdue.length+'）'];
+    open.slice(0,12).forEach(function(t){
+      const who=t.assigned_all?'全員':(t.assignee&&t.assignee.name)||staffById(t.assigned_to)?.name||'未割当';
+      const due=parseDue(t);
+      const late=due && due<todayISO();
+      lines.push('・['+statusLabel(t.status)+'] '+String(t.title||'').slice(0,60)
+        +' ／担当:'+who
+        +(due?(' ／期日:'+due+(late?'【超過】':'')):' ／期日なし'));
+    });
+    if(open.length>12) lines.push('・…他 '+(open.length-12)+'件');
+    return lines.join('\n');
+  }
+
+  window.PortalTasks={
+    list:function(){ return tasks.slice(); },
+    members:function(){ return members.slice(); },
+    open:openTasks,
+    overdue:overdueTasks,
+    summaryForAi:taskSummaryForAi,
+    parseDue:parseDue,
+    todayISO:todayISO,
+    refresh:refreshTaskBoard
+  };
+
   window.addEventListener('portal-member-ready', boot);
-  T.onRender(function(){ renderTasks(); });
+  T.onRender(function(){ renderTasks(); try{ window.PortalRisk?.refresh?.(); }catch(e){} });
   boot();
 })();
 </script>
@@ -8635,17 +8731,249 @@ window.BizCaseLink=(function(){
 </script>
 
 <script>
-/* Dashboard キャラ吹き出しは廃止。呼び出し互換のため stub のみ残す */
+/* ===== リスク監視＋キャラ大きめ忠告吹き出し ===== */
 (function(){
-  function stopAll(opts){
-    const keepTts = !!(opts&&opts.keepTts) || !!window.__entakuSpeaking;
-    if(!keepTts) window.PortalTTS?.stop();
+  const timers={};
+  function esc(s){
+    return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+      return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);
+    });
   }
-  window.DashTalk = {
-    speak: function(){},
-    stop: stopAll,
-    reactToText: function(){}
+  function todayISO(){
+    if(window.PortalTasks?.todayISO) return window.PortalTasks.todayISO();
+    const d=new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function loadJson(key, fallback){
+    try{ return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback)); }
+    catch(e){ return fallback; }
+  }
+  function yen(n){
+    try{ return window.Treasury?.yen?.(n) || ('¥'+Math.round(Number(n)||0).toLocaleString('ja-JP')); }
+    catch(e){ return '¥'+Math.round(Number(n)||0).toLocaleString('ja-JP'); }
+  }
+
+  function snapshot(){
+    const today=todayISO();
+    const S=window.Treasury?.S||{};
+    const openTasks=window.PortalTasks?.open?.()||[];
+    const overdueTasks=window.PortalTasks?.overdue?.()||[];
+    const pendingApps=(S.tx||[]).filter(function(t){ return t && t.status==='pending'; });
+    const invoices=loadJson('gp_billing_invoices_v1',[]);
+    const receipts=loadJson('gp_billing_receipts_v1',[]);
+    const invDraft=invoices.filter(function(x){ return x && !x.localSaved && !x.dropboxSaved; });
+    const invDueUnpaid=invoices.filter(function(x){
+      if(!x || !x.due) return false;
+      if(String(x.due).slice(0,10)>=today) return false;
+      // 同クライアントの領収が後日付なら入金済みとみなす
+      const paid=receipts.some(function(r){
+        return r && String(r.client||'')===String(x.client||'') && String(r.at||r.date||'')>=String(x.at||'');
+      });
+      return !paid;
+    });
+    const contracts=Array.isArray(S.contracts)?S.contracts:[];
+    const unsigned=contracts.filter(function(c){ return c && c.status!=='signed'; });
+    const bankTx=Array.isArray(S.bankTx)?S.bankTx:[];
+    const bankExplain=bankTx.filter(function(t){ return t && t.needsExplain; });
+    const cases=Array.isArray(S.cases)?S.cases:[];
+    const casePending=cases.filter(function(c){ return c && c.apStatus==='pending'; });
+    const careIncome=((S.biz&&S.biz.care&&S.biz.care.income)||[]).filter(function(x){ return x && !x.received; });
+    const careSub=((S.biz&&S.biz.care&&S.biz.care.subsidy)||[]).filter(function(x){ return x && x.applied && !x.received; });
+    const schedIn=(S.schedules||[]).filter(function(s){
+      return s && (s.kind==='in'||s.kind==='interest_in') && String(s.date||'')<=today && !s.linkedBankTxId;
+    });
+
+    const byDept={
+      secretary:{
+        title:'凛・リスク確認',
+        items:[
+          {key:'tasks', label:'未完了タスク', count:openTasks.length, detail:overdueTasks.length?'うち期限超過 '+overdueTasks.length+'件':''},
+          {key:'apps', label:'申請(未承認)', count:pendingApps.length, detail:''},
+          {key:'cases', label:'案件申請待ち', count:casePending.length, detail:''}
+        ]
+      },
+      finance:{
+        title:'紬・経理リスク',
+        items:[
+          {key:'invoice', label:'請求書未確定', count:invDraft.length, detail:''},
+          {key:'unpaid', label:'期日超過・入金未確認', count:invDueUnpaid.length, detail:''},
+          {key:'sched', label:'予定入金の未突合', count:schedIn.length, detail:''},
+          {key:'bank', label:'大口・要説明明細', count:bankExplain.length, detail:''},
+          {key:'care', label:'介護入金未受領', count:careIncome.length+careSub.length, detail:''}
+        ]
+      },
+      legal:{
+        title:'陽翔・契約リスク',
+        items:[
+          {key:'contracts', label:'未署名契約', count:unsigned.length, detail:''},
+          {key:'cases', label:'案件申請待ち', count:casePending.length, detail:''}
+        ]
+      }
+    };
+
+    const alerts=[];
+    if(overdueTasks.length) alerts.push({sev:2, dept:'secretary', text:'期限超過タスク '+overdueTasks.length+'件'});
+    if(openTasks.length) alerts.push({sev:1, dept:'secretary', text:'未完了タスク '+openTasks.length+'件'});
+    if(pendingApps.length) alerts.push({sev:2, dept:'secretary', text:'申請未承認 '+pendingApps.length+'件'});
+    if(invDraft.length) alerts.push({sev:1, dept:'finance', text:'請求書作成が未完了 '+invDraft.length+'件'});
+    if(invDueUnpaid.length) alerts.push({sev:2, dept:'finance', text:'入金未確認（請求期日超過） '+invDueUnpaid.length+'件'});
+    if(schedIn.length) alerts.push({sev:1, dept:'finance', text:'予定入金の突合なし '+schedIn.length+'件'});
+    if(bankExplain.length) alerts.push({sev:1, dept:'finance', text:'要説明の銀行明細 '+bankExplain.length+'件'});
+    if(unsigned.length) alerts.push({sev:2, dept:'legal', text:'契約書未署名 '+unsigned.length+'件'});
+    if(casePending.length) alerts.push({sev:1, dept:'legal', text:'案件承認待ち '+casePending.length+'件'});
+    if(careIncome.length||careSub.length) alerts.push({sev:1, dept:'finance', text:'介護の入金/補助金未受領'});
+
+    return {
+      today, openTasks, overdueTasks, pendingApps, invDraft, invDueUnpaid,
+      unsigned, bankExplain, casePending, careIncome, careSub, schedIn,
+      byDept, alerts, invoices, contracts
+    };
+  }
+
+  function aiContext(snap){
+    snap=snap||snapshot();
+    const lines=['【社員タスク・リスク管理（本日 '+snap.today+'）】'];
+    lines.push(window.PortalTasks?.summaryForAi?.() || ('未完了タスク '+(snap.openTasks||[]).length+'件'));
+    lines.push('申請(精算)未承認: '+(snap.pendingApps||[]).length+'件');
+    lines.push('請求書: 作成未確定 '+(snap.invDraft||[]).length+'件 / 期日超過・入金未確認 '+(snap.invDueUnpaid||[]).length+'件');
+    lines.push('契約書: 未署名 '+(snap.unsigned||[]).length+'件');
+    lines.push('予定入金の未突合: '+(snap.schedIn||[]).length+'件 / 要説明明細: '+(snap.bankExplain||[]).length+'件');
+    lines.push('案件申請待ち: '+(snap.casePending||[]).length+'件');
+    if((snap.invDueUnpaid||[]).length){
+      lines.push('入金未確認の請求（抜粋）:');
+      snap.invDueUnpaid.slice(0,5).forEach(function(x){
+        lines.push('・'+(x.client||'取引先')+' 期日'+String(x.due||'').slice(0,10)+' '+(x.no||'')+' '+(x.sell!=null?yen(x.sell):''));
+      });
+    }
+    if((snap.unsigned||[]).length){
+      lines.push('未署名契約（抜粋）:');
+      snap.unsigned.slice(0,5).forEach(function(c){
+        lines.push('・'+(c.title||c.party||'契約')+' / '+(c.party||'')+(c.amount!=null?(' / '+yen(c.amount)):''));
+      });
+    }
+    lines.push('凛はタスク確認の質問に未完了・期限超過を優先して答える。紬は請求・入金、陽翔は契約の未完了を忠告する。');
+    return lines.join('\n');
+  }
+
+  function bubbleHtml(dept, snap){
+    snap=snap||snapshot();
+    const pack=snap.byDept[dept];
+    if(!pack) return '';
+    const hot=pack.items.filter(function(it){ return it.count>0; }).slice(0,4);
+    const ok=!hot.length;
+    const lines=ok
+      ? '<div class="dc-risk-line">現時点で大きな未処理はありません</div>'
+      : hot.map(function(it){
+          return '<div class="dc-risk-line">'+esc(it.label)+' <em>'+it.count+'</em>'
+            +(it.detail?' <span class="dc-risk-sub" style="display:inline;margin:0">'+esc(it.detail)+'</span>':'')
+            +'</div>';
+        }).join('');
+    const sub=ok?'引き続き監視します。':'円卓で確認・指示できます。';
+    return '<div class="dc-risk-cap">'+(ok?'✓ ':'⚠ ')+esc(pack.title)+'</div>'+lines
+      +'<div class="dc-risk-sub">'+esc(sub)+'</div>';
+  }
+
+  function paintBubbles(snap){
+    snap=snap||snapshot();
+    ['secretary','finance','legal'].forEach(function(dept){
+      const el=document.querySelector('[data-risk-bubble="'+dept+'"]');
+      if(!el) return;
+      const pack=snap.byDept[dept];
+      const hot=(pack?.items||[]).some(function(it){ return it.count>0; });
+      // 常時表示（忠告を見落とさない）
+      el.hidden=false;
+      el.classList.toggle('is-ok', !hot);
+      el.innerHTML=bubbleHtml(dept, snap);
+    });
+  }
+
+  function reportForDept(dept){
+    const snap=snapshot();
+    const pack=snap.byDept[dept]||snap.byDept.secretary;
+    const name={secretary:'凛',finance:'紬',legal:'陽翔'}[dept]||'凛';
+    const lines=[name+'です。リスクと未完了を確認しました。'];
+    (pack.items||[]).forEach(function(it){
+      if(it.count>0) lines.push('・'+it.label+'：'+it.count+'件'+(it.detail?('（'+it.detail+'）'):''));
+    });
+    if(dept==='secretary'){
+      const open=snap.openTasks||[];
+      if(!open.length) lines.push('社員タスクはすべて完了しています。');
+      else{
+        lines.push('—— 終わっていない仕事 ——');
+        open.slice(0,10).forEach(function(t){
+          const due=window.PortalTasks?.parseDue?.(t)||'';
+          const late=due && due<snap.today;
+          const who=t.assigned_all?'全員':(t.assignee&&t.assignee.name)||'未割当';
+          lines.push('・'+String(t.title||'（無題）')+'（'+who+(due?'／'+due:'')+(late?'・超過':'')+'）');
+        });
+      }
+      if((snap.pendingApps||[]).length) lines.push('申請の未承認が '+(snap.pendingApps.length)+'件あります。精算クエストを確認してください。');
+    }
+    if(dept==='finance'){
+      if((snap.invDraft||[]).length) lines.push('請求書の作成が終わっていないものが '+snap.invDraft.length+'件あります。');
+      if((snap.invDueUnpaid||[]).length) lines.push('入金確認ができていない請求（期日超過）が '+snap.invDueUnpaid.length+'件あります。');
+      if((snap.schedIn||[]).length) lines.push('予定入金の突合が残っています（'+snap.schedIn.length+'件）。');
+    }
+    if(dept==='legal'){
+      if((snap.unsigned||[]).length) lines.push('契約書の署名が終わっていないものが '+snap.unsigned.length+'件あります。');
+    }
+    if(lines.length===1) lines.push('現時点で大きな未処理はありません。');
+    else lines.push('放置すると資金・信用リスクになります。優先して片付けましょう。');
+    return { snap:snap, text:lines.join('\n'), html:bubbleHtml(dept, snap) };
+  }
+
+  function refresh(){ paintBubbles(snapshot()); }
+
+  window.PortalRisk={
+    snapshot:snapshot,
+    aiContext:aiContext,
+    reportForDept:reportForDept,
+    refresh:refresh,
+    paint:paintBubbles
   };
+
+  function stopAll(opts){
+    const keepTts=!!(opts&&opts.keepTts)||!!window.__entakuSpeaking;
+    if(!keepTts) window.PortalTTS?.stop();
+    if(!(opts&&opts.keepBubbles)){
+      // 一時セリフ用タイマーのみ解除（リスク常駐吹き出しは残す）
+      Object.keys(timers).forEach(function(k){
+        if(k.indexOf('tmp:')===0){ clearTimeout(timers[k]); delete timers[k]; }
+      });
+    }
+  }
+  function speak(dept, text, ms, opts){
+    opts=opts||{};
+    // 互換: 旧DashTalk呼び出しはリスク吹き出しを上書きしない（TTSのみ想定の呼び出しが多い）
+    if(opts.warn || opts.large){
+      const el=document.querySelector('[data-risk-bubble="'+dept+'"]');
+      if(el){
+        el.hidden=false;
+        el.classList.remove('is-ok');
+        el.innerHTML='<div class="dc-risk-cap">⚠ 忠告</div><div class="dc-risk-line">'+esc(String(text||'')).replace(/\n/g,'</div><div class="dc-risk-line">')+'</div>';
+        const key='tmp:'+dept;
+        if(timers[key]) clearTimeout(timers[key]);
+        if(ms && ms<90000){
+          timers[key]=setTimeout(function(){ refresh(); }, ms);
+        }
+      }
+    }
+  }
+  window.DashTalk={
+    speak:speak,
+    stop:stopAll,
+    reactToText:function(){},
+    warn:function(dept, text, ms){ speak(dept, text, ms||12000, {warn:true, large:true}); },
+    refreshRisk:refresh
+  };
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ refresh(); });
+  else refresh();
+  setInterval(refresh, 45000);
+  window.addEventListener('storage', function(e){
+    if(!e.key) return;
+    if(/gooner_treasury|gp_billing_|gooner_entaku|gp_task_/.test(e.key)) refresh();
+  });
 })();
 </script>
 
@@ -9459,8 +9787,22 @@ window.EntakuAI=(function(){
           var replies=normalizeReplies(data);
           if(!replies.length)throw new Error('EMPTY_REPLY');
           var actions=Array.isArray(data.actions)
-            ?data.actions.filter(function(a){return a&&String(a.title||'').trim();})
-              .map(function(a){return{title:String(a.title).trim(),owner:String(a.owner||'').trim(),due:String(a.due||'').trim(),module:String(a.module||'').trim(),done:false};})
+            ?data.actions.filter(function(a){return a&&(String(a.title||'').trim()||String(a.op||'').trim());})
+              .map(function(a){
+                return{
+                  title:String(a.title||'').trim()||'次の一手',
+                  owner:String(a.owner||'').trim(),
+                  due:String(a.due||'').trim(),
+                  module:String(a.module||'').trim(),
+                  op:String(a.op||'').trim(),
+                  query:String(a.query||'').trim(),
+                  scope:String(a.scope||'').trim(),
+                  label:String(a.label||'').trim(),
+                  field:String(a.field||'').trim(),
+                  value:String(a.value||'').trim(),
+                  done:false
+                };
+              })
             :[];
           return {replies:replies, actions:actions};
         });
@@ -10586,6 +10928,15 @@ window.EntakuDocIngest=(function(){
       }else{
         postToolResult('⚠ #'+field+' は入力欄ではありません。');
       }
+      return;
+    }
+    if(op==='tasks' || op==='risk'){
+      const dept=['secretary','finance','legal'].includes(mod)?mod:(op==='tasks'?'secretary':'secretary');
+      const focusDept=op==='tasks'?'secretary':(a.owner==='紬'?'finance':a.owner==='陽翔'?'legal':dept);
+      const rep=window.PortalRisk?.reportForDept?.(focusDept)||{text:'リスクデータを取得できませんでした。'};
+      try{ window.PortalRisk?.refresh?.(); }catch(e){}
+      try{ window.DashTalk?.warn?.(focusDept, (rep.text||'').split('\n').slice(0,3).join('\n'), 20000); }catch(e){}
+      postToolResult(rep.text||'', focusDept==='finance'?'finance':focusDept==='legal'?'legal':'secretary');
     }
   }
   function executeEntakuActions(actions){
@@ -10932,6 +11283,10 @@ window.EntakuDocIngest=(function(){
       parts.push('【これまでの決定事項（議事録）】\n'+recent);
     }
     parts.push('編集可能な入力欄id: '+Array.from(FILLABLE_FIELDS).join(', '));
+    try{
+      const riskCtx=window.PortalRisk?.aiContext?.();
+      if(riskCtx) parts.push(riskCtx);
+    }catch(e){}
     return parts.join('\n');
   }
   function updateEntakuStatus(){
@@ -11113,15 +11468,25 @@ window.EntakuDocIngest=(function(){
     S.open = true;
     syncToggle();
     const a = agentOf(dept);
+    let report=null;
+    try{ report=window.PortalRisk?.reportForDept?.(dept); }catch(e){}
+    try{ window.PortalRisk?.refresh?.(); }catch(e){}
     const greet = {
-      secretary:'ご用件をどうぞ。会議の段取りも、優先順位付けも、私が整えます。',
-      finance:'数字のこと、何でもどうぞ。資金繰りも採算も、私が正直にお見せします。',
-      legal:'契約・コンプラのこと、私が会社を守ります。気になる点をどうぞ。'
+      secretary:'タスクと全体リスクを確認します。終わっていない仕事があれば先にお伝えします。',
+      finance:'請求書・入金・資金まわりのリスクを確認します。',
+      legal:'契約書と法務リスクを確認します。'
     }[dept];
-    S.history.push({ role:'assistant', agent:dept, content:a.name+'です。'+greet });
+    const body = report && report.text
+      ? (a.name+'です。'+greet+'\n\n'+report.text)
+      : (a.name+'です。'+greet);
+    S.history.push({ role:'assistant', agent:dept, content:body });
     persistEntaku();
     render();
-    window.DashTalk?.speak(dept, a.name+'です。どうぞ。', 4000);
+    try{
+      const warnLine=(report&&report.text||'').split('\n').filter(Boolean).slice(1,4).join('\n');
+      if(warnLine) window.DashTalk?.warn?.(dept, warnLine, 22000);
+      else window.DashTalk?.speak?.(dept, a.name+'です。どうぞ。', 4000, {warn:true, large:true});
+    }catch(e){}
     setTimeout(focusEntakuInput, 60);
   };
   /** 契約リーガル → 円卓・法務（陽翔）連携 */
@@ -11499,7 +11864,9 @@ window.EntakuDocIngest=(function(){
     unpin: removeEntakuPin,
     snapshot: screenSnapshot,
     execute: executeEntakuAction,
-    runAll: executeEntakuActions
+    runAll: executeEntakuActions,
+    risk: function(){ return window.PortalRisk?.snapshot?.(); },
+    tasks: function(){ return window.PortalTasks?.open?.()||[]; }
   };
   restoreEntaku();      // 前回の会議・議事録を復元
   // 復元時は未完了の会議選択・資料確認を無効化

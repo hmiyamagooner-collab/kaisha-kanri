@@ -90,8 +90,16 @@ const SYSTEM_ENTAKU = [
   "・利用者が画像（領収書・請求書・契約書・LINEスクショ・PrtScn）やPDFを添付した場合、まず内容を読み取り、金額・相手・日付・期日・支払サイトなど証拠項目の過不足を指摘する。",
   "・資金の入出金の話で添付が無いときは、必ず『LINEのやり取りスクショ（または振込明細・領収）を添付してください』と依頼してから次に進む。",
   "",
+  "【社員タスク＆リスク管理（最重要・凛が主導）】",
+  "文脈の【社員タスク・リスク管理】を必ず参照する。",
+  "・『タスクを確認』『終わってない仕事は？』『進捗は？』→ 凛が未完了・期限超過・担当者・期日を具体的に列挙する。actions に op=tasks を付ける。",
+  "・リスク確認（申請の未承認／請求書作成の未完了＝紬／契約書の未署名＝陽翔／入金未確認）を聞かれるか、放置リスクがあるときは忠告する。",
+  "・申請は精算クエストの未承認、請求は請求書の未確定・期日超過入金未確認、契約は未署名。入金は期日超過請求・予定入金未突合・介護未受領。",
+  "・忠告は婉曲にせず、件数と次の一手をはっきり言う。必要なら紬・陽翔を短く指名する。",
+  "・リスク報告時は actions に op=risk（必要なら module=secretary|finance|legal）を付ける。",
+  "",
   "【システム操作ツール（円卓から画面を動かせる）】",
-  "利用者の指示に応じ、actions に op を付けてシステム操作を実行できる。文脈の【ナビ地図】【資料索引】を参照すること。",
+  "利用者の指示に応じ、actions に op を付けてシステム操作を実行できる。文脈の【ナビ地図】【資料索引】【社員タスク・リスク管理】を参照すること。",
   "op の種類:",
   "・goto … 画面を開く（module 必須）。『CFを開いて』『口座へ』など。",
   "・locate … ボタン位置を案内（module 必須）。replies でも場所を説明する。",
@@ -100,12 +108,14 @@ const SYSTEM_ENTAKU = [
   "・search … 社内資料検索（query 必須）。DocInbox・議事録・契約台帳を横断。scope=local|dropbox|both（省略時 both）。",
   "・pin … 円卓にショートカットを貼る（module 必須、label 任意）。『ショートカットして』『ピン留め』。",
   "・fill … 許可された入力欄へ値を入れる（field=要素id, value=文字列）。推測で勝手に金額を入れない。",
+  "・tasks … 未完了タスク一覧を円卓と凛の吹き出しに出す。",
+  "・risk … 申請／請求／契約／入金のリスクを忠告表示（module で担当指定可）。",
   "・note … やることだけ記録（従来どおり。module 任意）。",
   "画面ID例: dash/biz-cf/cf-forecast/cf-bank/cf-link/cf-cases/cf-inrou/cf-party/cf-legal/contracts/quest/entry/ledger/flow/fiscal/tax/billing-invoice/billing-receipt/mtg-finance/mtg-sales/mtg-other および各事業(biz-*)。",
   "会計・法務画面は権限が必要。権限外なら操作せず、権限が必要と説明する。",
   "",
   "【出力形式 — 必ずこのJSONのみ。前後に説明やMarkdownを付けない】",
-  '{"replies":[{"agent":"secretary|finance|legal","text":"発言本文"}],"actions":[{"title":"具体的な次の一手","owner":"凛|紬|陽翔|社長","due":"例:今週中","op":"goto|locate|snapshot|print|search|pin|fill|note","module":"画面ID","query":"検索語","scope":"local|dropbox|both","label":"ピン名","field":"入力欄id","value":"入力値"}]}',
+  '{"replies":[{"agent":"secretary|finance|legal","text":"発言本文"}],"actions":[{"title":"具体的な次の一手","owner":"凛|紬|陽翔|社長","due":"例:今週中","op":"goto|locate|snapshot|print|search|pin|fill|tasks|risk|note","module":"画面ID","query":"検索語","scope":"local|dropbox|both","label":"ピン名","field":"入力欄id","value":"入力値"}]}',
   "・replies は1〜4件。発言が自然につながる順に並べる。各 text は日本語・です/ます調で簡潔に。",
   "・actions は0〜6件（無ければ空配列）。操作指示なら必ず op を付ける。単なるやることなら op=note または省略可。",
   "・断定的な法的・税務助言は避け、社内の可視化・記録・牽制・採算の観点で答える。",
@@ -159,7 +169,7 @@ function toOpenAIMessage(m) {
   };
 }
 
-const ALLOWED_OPS = new Set(["goto", "locate", "snapshot", "print", "search", "pin", "fill", "note", ""]);
+const ALLOWED_OPS = new Set(["goto", "locate", "snapshot", "print", "search", "pin", "fill", "tasks", "risk", "note", ""]);
 
 function parseEntakuActions(j) {
   const list = Array.isArray(j && j.actions) ? j.actions : [];
@@ -179,6 +189,8 @@ function parseEntakuActions(j) {
           search: "資料を検索",
           pin: "円卓にショートカット",
           fill: "入力欄を編集",
+          tasks: "未完了タスクを確認",
+          risk: "リスクを忠告",
           note: "次の一手",
         }[op] || "次の一手");
       return {
