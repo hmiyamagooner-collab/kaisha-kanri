@@ -375,20 +375,21 @@ else if(!EMBEDDED){const f=document.getElementById('cardframe');if(f&&f.dataset.
     refreshDock();
   };
   window._ovRefreshDock=refreshDock;
-  // 埋め込み(ポータル)では画面が狭くステータス窓がマップに被って邪魔なので、
-  // 初期状態はドックに格納してマップをスッキリ見せる（チップ▸から復帰できる）。単体フル画面では従来どおり表示。
+  // 埋め込み(ポータル)：時計は常時表示（ビーチ確認用の時間軸）。他はドックへ。
   if(typeof EMBEDDED!=='undefined'&&EMBEDDED){
-    ['clock','members','log'].forEach(k=>{
+    ['members','log'].forEach(k=>{
       const w=document.querySelector('.win.ov[data-panel="'+k+'"]');
       if(w){w.classList.add('closed');w.classList.remove('minimized');}
     });
+    const clock=document.querySelector('.win.ov[data-panel="clock"]');
+    if(clock){clock.classList.remove('closed','minimized');}
   }
   refreshDock();
 })();
 /* ================= MAP（横長・ドット／町：社長室独立・オフィス+会議併設・デイ独立・右端に海） ================= */
 const MAP_W=480, MAP_H=320, DPR=2;
 /* 埋め込み表示：道路・建物エリアだけ見せる（上下の芝生マージンをカット） */
-const EMBED_VIEW_Y0=28, EMBED_VIEW_Y1=280, EMBED_VIEW_H=EMBED_VIEW_Y1-EMBED_VIEW_Y0;
+const EMBED_VIEW_Y0=12, EMBED_VIEW_Y1=300, EMBED_VIEW_H=EMBED_VIEW_Y1-EMBED_VIEW_Y0;
 let _embedFit=null;
 const PAD=6;
 /* 道路：横のメイン通り＋縦のメイン(十字路)＋右のT字 */
@@ -2007,10 +2008,35 @@ function fitCanvas(){
       return;
     }
     const vy0=EMBED_VIEW_Y0,vh=EMBED_VIEW_H;
-    const scale=Math.max(availW/MAP_W,availH/vh);
+    // ビーチ（右端）が切れないよう contain 優先。狭い時だけ cover＋右寄せ。
+    const scaleContain=Math.min(availW/MAP_W,availH/vh);
+    const scaleCover=Math.max(availW/MAP_W,availH/vh);
+    let scale=scaleContain;
+    let offX,offY;
     const dispW=MAP_W*scale,dispFullH=MAP_H*scale,viewDispH=vh*scale;
-    const offX=Math.max(0,(availW-dispW)/2);
-    const offY=(availH-viewDispH)/2-vy0*scale;
+    if(scaleContain>=scaleCover*0.82){
+      offX=Math.max(0,(availW-dispW)/2);
+      offY=(availH-viewDispH)/2-vy0*scale;
+    }else{
+      scale=scaleCover;
+      const dw=MAP_W*scale,vdh=vh*scale;
+      // 右端（ビーチ／海）を必ずフレーム内へ
+      offX=availW-dw;
+      if(offX>0) offX=offX/2;
+      offY=(availH-vdh)/2-vy0*scale;
+      cv.style.width=Math.max(1,Math.floor(dw))+'px';
+      cv.style.height=Math.max(1,Math.floor(MAP_H*scale))+'px';
+      cv.style.position='absolute';
+      cv.style.left=Math.round(offX)+'px';
+      cv.style.top=Math.round(offY)+'px';
+      cv.style.transform='none';
+      cv.style.maxWidth='none';
+      cv.style.maxHeight='none';
+      wrap.style.alignItems='stretch';
+      wrap.style.justifyContent='stretch';
+      _embedFit={scale,offX,offY,vy0,vh};
+      return;
+    }
     cv.style.width=Math.max(1,Math.floor(dispW))+'px';
     cv.style.height=Math.max(1,Math.floor(dispFullH))+'px';
     cv.style.position='absolute';

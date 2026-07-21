@@ -1048,28 +1048,15 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   padding:0!important;margin:0!important;border:0!important;
   opacity:0;pointer-events:none;overflow:hidden;
 }
-/* サイドバー左格納：優先度 円卓 > キャラ > クエスト */
-#portal-shell.nav-collapsed{
-  grid-template-columns:0 minmax(0,1fr);
-}
-#portal-shell.nav-collapsed > .gamenav{
-  width:0!important;min-width:0!important;max-width:0!important;
-  padding:0!important;margin:0!important;border:0!important;
-  opacity:0;pointer-events:none;overflow:hidden;
-}
+/* サイドバー左格納 */
 #portal-shell.nav-collapsed #quests-row{
   padding:4px 6px 6px;
-  gap:6px;
-  /* 上段キャラをしっかり確保、下段は円卓メイン */
-  grid-template-rows:minmax(260px,40fr) minmax(0,60fr);
   height:calc(100dvh - 44px);
   max-height:calc(100dvh - 44px);
   overflow:hidden;
 }
 #portal-shell.nav-collapsed .dash-split-row{
   gap:6px;
-  /* 円卓を広く、クエストは右の細パネル */
-  grid-template-columns:minmax(0,76fr) minmax(180px,24fr);
   min-height:0;
   height:100%;
   overflow:hidden;
@@ -1081,25 +1068,8 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 #portal-shell.nav-collapsed #office-pane{
   min-width:0;
   min-height:0;
-  max-width:320px;
+  max-width:none;
 }
-#portal-shell.nav-collapsed .office-frame{
-  flex:1 1 auto;
-  min-height:80px;
-  max-height:100%;
-}
-#portal-shell.nav-collapsed .office-task-dock{
-  flex:0 0 auto;
-}
-#portal-shell.nav-collapsed .office-tk-links{
-  padding:6px;gap:4px;
-  grid-template-columns:1fr;
-}
-#portal-shell.nav-collapsed .office-tk-open{
-  min-height:32px;padding:0 8px;border-radius:6px;
-}
-#portal-shell.nav-collapsed .office-tk-open .nav-label{font-size:11px}
-/* キャラ：余白なし・全幅・吹き出しが読めるサイズ */
 #portal-shell.nav-collapsed #dashboard-pane,
 #portal-shell.nav-collapsed .dash-cards-wrap{
   padding:0;
@@ -1113,34 +1083,13 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   width:100%;
   height:100%;
 }
-#portal-shell.nav-collapsed .dc-card{
-  border-radius:0;
+#portal-shell.nav-collapsed .dc-card{border-radius:0}
+/* クエスト格納：円卓を全幅に */
+#portal-shell.quest-collapsed .dash-split-row{
+  grid-template-columns:minmax(0,1fr);
 }
-#portal-shell.nav-collapsed .dc-name{font-size:14px}
-#portal-shell.nav-collapsed .dc-dept{font-size:12px}
-#portal-shell.nav-collapsed .dc-name-en{font-size:9px}
-#portal-shell.nav-collapsed .dc-risk-bubble,
-#portal-shell.nav-collapsed .dc-short-bubble{
-  top:8px;left:8px;right:8px;
-  padding:9px 11px 10px;
-  border-radius:12px;
-  line-height:1.25;
-}
-#portal-shell.nav-collapsed .dc-risk-bubble .dc-risk-cap,
-#portal-shell.nav-collapsed .dc-short-bubble .dc-short-title{
-  font-size:12px;margin-bottom:4px;
-}
-#portal-shell.nav-collapsed .dc-risk-bubble .dc-risk-line,
-#portal-shell.nav-collapsed .dc-short-bubble .dc-short-label{
-  font-size:13px;
-}
-#portal-shell.nav-collapsed .dc-risk-bubble .dc-risk-line em,
-#portal-shell.nav-collapsed .dc-short-bubble .dc-short-amt{
-  font-size:15px;
-}
-#portal-shell.nav-collapsed .dc-risk-bubble .dc-risk-sub,
-#portal-shell.nav-collapsed .dc-short-bubble .dc-short-hint{
-  font-size:10px;margin-top:4px;
+#portal-shell.quest-collapsed #office-pane{
+  display:none!important;
 }
 /* 円卓集中モード：サイドナビを隠し、円卓・本体を大きく */
 #portal-shell.entaku-focus{
@@ -1149,79 +1098,108 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 #portal-shell.entaku-focus > .gamenav{
   display:none!important;
 }
-#portal-shell.entaku-focus #quests-row{
-  grid-template-rows:minmax(0,34fr) minmax(0,66fr);
-}
 #portal-shell.entaku-focus .dash-split-row{
-  grid-template-columns:minmax(0,82fr) minmax(160px,18fr);
+  grid-template-columns:minmax(0,60fr) minmax(0,40fr);
+}
+#portal-shell.entaku-focus.quest-collapsed .dash-split-row{
+  grid-template-columns:minmax(0,1fr);
 }
 #portal-shell.entaku-focus .dash-entaku-pane{
   min-width:0;
   max-width:none;
 }
 #portal-shell.entaku-focus #office-pane{
-  max-width:280px;
+  max-width:none;
 }
 #portal-shell.entaku-focus #treasury-pane{
   max-width:none;
 }
-.pt-focus-btn,
-.pt-nav-btn{
-  flex-shrink:0;
-  font-family:var(--font-body);font-size:11px;font-weight:700;letter-spacing:.04em;
-  padding:7px 12px;border-radius:9px;cursor:pointer;
-  color:#fff;
-  background:#0f8a4e;
-  border:1px solid #0c7341;
-  box-shadow:0 2px 8px rgba(0,0,0,.28);
-  transition:filter .15s ease,background .15s ease;
+/* 旧バーボタンは非表示（隅のMatrixボタンへ移行） */
+.pt-nav-btn,
+.nav-rail-toggle,
+.entaku-nav-fab{display:none!important}
+.pt-focus-btn{
+  flex-shrink:0;margin-left:auto;
+  font-family:"Share Tech Mono","Courier New",monospace;
+  font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  padding:8px 12px;border-radius:0;cursor:pointer;
+  color:#39ff14;background:rgba(0,12,0,.88);
+  border:1px solid #39ff14;
+  box-shadow:inset 0 0 18px rgba(57,255,20,.1),0 0 10px rgba(57,255,20,.18);
+  transition:color .15s ease,background .15s ease,box-shadow .15s ease;
 }
-.pt-nav-btn{margin-left:auto}
-.pt-focus-btn{margin-left:8px;color:var(--nav-label);background:rgba(15,138,78,.16);border-color:var(--nav-green-soft)}
-.pt-focus-btn:hover,
-.pt-nav-btn:hover{filter:brightness(1.08)}
+.pt-focus-btn:hover{
+  color:#9aff7a;background:rgba(0,36,0,.95);
+  box-shadow:inset 0 0 22px rgba(57,255,20,.18),0 0 14px rgba(57,255,20,.28);
+}
 #portal-shell.entaku-focus .pt-focus-btn{
-  background:rgba(196,166,106,.18);
-  border-color:rgba(196,166,106,.45);
-  color:#f5e6b8;
+  color:#c8ff9a;
+  border-color:#7cff3a;
+  background:rgba(10,40,0,.92);
 }
-#portal-shell.nav-collapsed .pt-nav-btn{
-  color:#1a1408;
-  background:#e0c57a;
-  border-color:#c4a66a;
-}
-.entaku-nav-fab{
-  position:fixed;left:10px;top:50%;transform:translateY(-50%);
-  z-index:500;display:none;
+/* Matrix風・角ばった画面隅トグル */
+.mx-corner{
+  position:fixed;z-index:520;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  border-radius:0;cursor:pointer;user-select:none;
   writing-mode:vertical-rl;text-orientation:mixed;
-  font-family:var(--font-body);font-size:12px;font-weight:700;letter-spacing:.14em;
-  padding:16px 8px;border-radius:12px;cursor:pointer;
-  color:#1a1408;background:linear-gradient(180deg,#f5e6b8,#e0c57a);
-  border:1px solid rgba(196,166,106,.7);
-  box-shadow:0 8px 24px rgba(0,0,0,.45);
+  font-family:"Share Tech Mono","Courier New",ui-monospace,monospace;
+  font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;
+  color:#39ff14;
+  background:rgba(0,8,0,.94);
+  border:1px solid #39ff14;
+  padding:18px 9px;
+  box-shadow:inset 0 0 24px rgba(57,255,20,.14),0 0 16px rgba(57,255,20,.22);
+  transition:color .15s ease,background .15s ease,box-shadow .15s ease,border-color .15s ease;
 }
-#portal-shell.entaku-focus .entaku-nav-fab,
-#portal-shell.nav-collapsed .entaku-nav-fab{display:block}
-.entaku-nav-fab:hover{filter:brightness(1.05)}
+.mx-corner::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent 0 2px,
+    rgba(57,255,20,.045) 2px 4px
+  );
+}
+.mx-corner .mx-corner-mark{
+  font-size:13px;letter-spacing:0;line-height:1;opacity:.9;
+}
+.mx-corner:hover{
+  color:#b8ff8a;background:rgba(0,28,0,.96);border-color:#7cff3a;
+  box-shadow:inset 0 0 28px rgba(57,255,20,.22),0 0 20px rgba(57,255,20,.35);
+}
+.mx-corner.is-on{
+  color:#cfff9e;border-color:#7cff3a;
+  background:rgba(0,32,0,.96);
+  animation:mxCornerPulse 1.8s ease-in-out infinite;
+}
+@keyframes mxCornerPulse{
+  0%,100%{box-shadow:inset 0 0 24px rgba(57,255,20,.14),0 0 12px rgba(57,255,20,.2)}
+  50%{box-shadow:inset 0 0 28px rgba(57,255,20,.28),0 0 22px rgba(57,255,20,.4)}
+}
+.mx-corner-nav{left:0;top:42%;transform:translateY(-50%);border-left:0}
+.mx-corner-quest{right:0;top:58%;transform:translateY(-50%);border-right:0}
+.mx-corner[hidden]{display:none!important}
 .entaku-focus-hint{
   font-size:10px;color:var(--muted);margin-left:8px;letter-spacing:.04em;
   white-space:nowrap;
 }
-#portal-shell.entaku-focus .entaku-focus-hint{color:rgba(245,214,122,.75)}
-.nav-rail-toggle{
-  flex-shrink:0;align-self:stretch;
-  display:flex;align-items:center;justify-content:center;
-  width:100%;min-height:34px;margin:0 0 8px;padding:6px 8px;
-  border-radius:9px;cursor:pointer;
-  font-family:var(--font-body);font-size:11px;font-weight:700;letter-spacing:.06em;
-  color:#fff;
-  background:#0f8a4e;
-  border:1px solid #0c7341;
-  box-shadow:0 2px 8px rgba(0,0,0,.28);
-  transition:filter .15s ease,background .15s ease;
+#portal-shell.entaku-focus .entaku-focus-hint{color:rgba(57,255,20,.7)}
+/* 円卓を上へ伸ばす縦スプリッタ */
+.quests-row-split{
+  height:7px;margin:0;padding:0;border:0;border-radius:0;cursor:ns-resize;
+  background:linear-gradient(90deg,transparent,#123012 8%,#1a4a1a 50%,#123012 92%,transparent);
+  position:relative;z-index:6;
 }
-.nav-rail-toggle:hover{filter:brightness(1.1)}
-.nav-rail-toggle .nav-rail-ico{margin-right:4px}
+.quests-row-split::after{
+  content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:42px;height:2px;background:#39ff14;
+  box-shadow:0 0 8px rgba(57,255,20,.55);
+}
+.quests-row-split:hover,
+.quests-row-split.is-drag{
+  background:linear-gradient(90deg,transparent,#0a2a0a 8%,#246024 50%,#0a2a0a 92%,transparent);
+}
+body.is-vsplit-drag{cursor:ns-resize;user-select:none}
 /* サイドバー：ボタンは通常サイズ。マトリクス枠は画面下端まで */
 #portal-shell > .gamenav{
   position:sticky;
@@ -1284,10 +1262,10 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   height:calc(100dvh - 44px);
   min-height:420px;
   display:grid;
-  /* 上段キャラ / 下段（円卓＋クエスト） */
-  grid-template-rows:minmax(0,42fr) minmax(0,58fr);
+  /* 上段キャラ / スプリッタ / 下段（円卓＋クエスト） — 比率は JS が上書き可 */
+  grid-template-rows:minmax(110px,36fr) 7px minmax(0,64fr);
   grid-template-columns:1fr;
-  gap:6px;
+  gap:0;
   padding:4px 6px 4px;
   overflow:hidden;
   background:#000;
@@ -1295,8 +1273,8 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .dash-split-row{
   min-height:0;height:100%;overflow:hidden;
   display:grid;
-  /* 優先：円卓を広く、クエストは右にコンパクト */
-  grid-template-columns:minmax(0,72fr) minmax(0,28fr);
+  /* 通常：円卓 60% / クエスト 40% */
+  grid-template-columns:minmax(0,60fr) minmax(0,40fr);
   gap:8px;
 }
 #office-pane .office-frame{
@@ -2530,7 +2508,7 @@ video.dc-card__image{
   #portal-shell > .gamenav button.nav-green{min-width:96px;padding:8px 10px}
   #quests-row{
     height:auto;overflow:visible;
-    grid-template-rows:minmax(220px,40vh) minmax(180px,1fr);
+    grid-template-rows:minmax(220px,40vh) 7px minmax(180px,1fr);
   }
   .dash-split-row{
     grid-template-columns:1fr;
@@ -2569,14 +2547,14 @@ video.dc-card__image{
   #quests-row{
     height:auto;
     min-height:640px;
-    grid-template-rows:minmax(300px,340px) minmax(340px,1fr);
-    gap:8px;padding:6px;
+    grid-template-rows:minmax(300px,340px) 7px minmax(340px,1fr);
+    gap:0;padding:6px;
     overflow:visible;
   }
   .dash-split-row{
     min-height:340px;
     height:340px;
-    grid-template-columns:minmax(0,70fr) minmax(220px,30fr);
+    grid-template-columns:minmax(0,60fr) minmax(0,40fr);
   }
   #dashboard-pane{
     min-height:300px;height:100%;overflow:hidden;
@@ -2821,7 +2799,7 @@ video.dc-card__image{
 <div id="portal-shell" hidden>
 <nav class="gamenav" aria-label="メインメニュー">
   <canvas class="gamenav-matrix" id="gamenavMatrix" aria-hidden="true"></canvas>
-  <button type="button" class="nav-rail-toggle" id="navCollapseBtn" title="サイドメニューを左に格納" aria-expanded="true">
+  <button type="button" class="nav-rail-toggle" id="navCollapseBtn" title="サイドメニューを左に格納" aria-expanded="true" hidden>
     <span class="nav-rail-ico" aria-hidden="true">◀</span>メニュー格納
   </button>
   <div class="nav-align-zone" id="navAlignZone">
@@ -2986,11 +2964,19 @@ video.dc-card__image{
   <span class="pt-user" id="portalUserChip" hidden></span>
   <button type="button" class="pt-logout" id="portalDutyEndBtn" hidden title="本日の業務終了を記録">業務終了</button>
   <button type="button" class="pt-logout" id="portalLogoutBtn" hidden>ログアウト</button>
-  <button type="button" class="pt-nav-btn" id="portalNavToggleBtn" title="サイドメニューを左に格納／展開" aria-pressed="false">メニュー格納</button>
+  <button type="button" class="pt-nav-btn" id="portalNavToggleBtn" title="サイドメニューを左に格納／展開" aria-pressed="false" hidden>メニュー格納</button>
   <button type="button" class="pt-focus-btn" id="portalFocusBtn" title="サイドメニューを隠して円卓を大きく表示" aria-pressed="false">円卓集中</button>
   <span class="entaku-focus-hint" id="portalFocusHint" hidden>ナビ非表示・円卓拡大</span>
 </div>
-<button type="button" class="entaku-nav-fab" id="entakuNavFab" title="サイドメニューを再表示">メニュー</button>
+<button type="button" class="mx-corner mx-corner-nav" id="mxCornerNav" title="サイドメニューを格納／展開" aria-pressed="false">
+  <span class="mx-corner-mark" aria-hidden="true">«</span>
+  <span class="mx-corner-label">MENU</span>
+</button>
+<button type="button" class="mx-corner mx-corner-quest" id="mxCornerQuest" title="クエスト画面を格納／展開" aria-pressed="false">
+  <span class="mx-corner-mark" aria-hidden="true">»</span>
+  <span class="mx-corner-label">QUEST</span>
+</button>
+<button type="button" class="entaku-nav-fab" id="entakuNavFab" title="サイドメニューを再表示" hidden>メニュー</button>
 
 <div id="dbx-modal" aria-hidden="true">
   <div class="dbx-card" role="dialog" aria-labelledby="dbxTitle">
@@ -3065,6 +3051,7 @@ video.dc-card__image{
     </div>
     <div id="root" hidden></div>
   </section>
+  <button type="button" class="quests-row-split" id="questsRowSplit" title="ドラッグで円卓枠を上下に伸縮" aria-label="円卓の高さを調整"></button>
   <div class="dash-split-row">
     <section class="quest-pane dash-entaku-pane">
       <div class="entaku-inline collapsed" id="entaku-inline">
@@ -10750,7 +10737,7 @@ window.PortalAuth=(function(){
 </script>
 
 <script>
-/* ===== サイドバー左格納 ===== */
+/* ===== サイドバー左格納（Matrix隅ボタン） ===== */
 (function(){
   const KEY='gp_nav_collapsed_v1';
   function shell(){ return document.getElementById('portal-shell'); }
@@ -10758,32 +10745,25 @@ window.PortalAuth=(function(){
   function syncUi(on){
     const barBtn=document.getElementById('portalNavToggleBtn');
     const railBtn=document.getElementById('navCollapseBtn');
-    const fab=document.getElementById('entakuNavFab');
+    const mx=document.getElementById('mxCornerNav');
     if(barBtn){
       barBtn.setAttribute('aria-pressed', on?'true':'false');
       barBtn.textContent=on?'メニュー展開':'メニュー格納';
-      barBtn.title=on?'サイドメニューを再表示':'サイドメニューを左に格納';
     }
     if(railBtn){
       railBtn.setAttribute('aria-expanded', on?'false':'true');
-      railBtn.innerHTML=on
-        ?'<span class="nav-rail-ico" aria-hidden="true">▶</span>メニュー展開'
-        :'<span class="nav-rail-ico" aria-hidden="true">◀</span>メニュー格納';
     }
-    if(fab){
-      const focusOn=!!shell()?.classList.contains('entaku-focus');
-      fab.style.display=(on||focusOn)?'block':'';
-      fab.title=focusOn?'サイドメニューを再表示（円卓集中解除）':'サイドメニューを再表示';
+    if(mx){
+      mx.setAttribute('aria-pressed', on?'true':'false');
+      mx.classList.toggle('is-on', !!on);
+      mx.title=on?'サイドメニューを再表示':'サイドメニューを左に格納';
+      const mark=mx.querySelector('.mx-corner-mark');
+      const label=mx.querySelector('.mx-corner-label');
+      if(mark) mark.textContent=on?'»':'«';
+      if(label) label.textContent=on?'MENU':'MENU';
     }
   }
-  function setCollapsed(on){
-    const sh=shell();
-    if(!sh) return false;
-    sh.classList.toggle('nav-collapsed', !!on);
-    try{ localStorage.setItem(KEY, on?'1':'0'); }catch(e){}
-    syncUi(!!on);
-    try{ window.dispatchEvent(new CustomEvent('portal-nav-collapse',{detail:{on:!!on}})); }catch(e){}
-    // クエストiframeのフィットを再計算
+  function kickOfficeFit(){
     requestAnimationFrame(function(){
       try{ window.dispatchEvent(new Event('resize')); }catch(e){}
       try{
@@ -10792,6 +10772,15 @@ window.PortalAuth=(function(){
         });
       }catch(e){}
     });
+  }
+  function setCollapsed(on){
+    const sh=shell();
+    if(!sh) return false;
+    sh.classList.toggle('nav-collapsed', !!on);
+    try{ localStorage.setItem(KEY, on?'1':'0'); }catch(e){}
+    syncUi(!!on);
+    try{ window.dispatchEvent(new CustomEvent('portal-nav-collapse',{detail:{on:!!on}})); }catch(e){}
+    kickOfficeFit();
     return !!on;
   }
   function toggle(){ return setCollapsed(!isOn()); }
@@ -10801,13 +10790,126 @@ window.PortalAuth=(function(){
     else syncUi(false);
     document.getElementById('portalNavToggleBtn')?.addEventListener('click', function(){ toggle(); });
     document.getElementById('navCollapseBtn')?.addEventListener('click', function(){ toggle(); });
+    document.getElementById('mxCornerNav')?.addEventListener('click', function(){
+      if(window.PortalFocus?.isOn?.()){ window.PortalFocus.set(false); return; }
+      toggle();
+    });
   }
   window.PortalNavCollapse={
     isOn:isOn,
     set:setCollapsed,
     toggle:toggle,
-    syncUi:syncUi
+    syncUi:syncUi,
+    kickOfficeFit:kickOfficeFit
   };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire);
+  else wire();
+})();
+</script>
+
+<script>
+/* ===== クエスト格納（右隅 Matrix ボタン） ===== */
+(function(){
+  const KEY='gp_quest_collapsed_v1';
+  function shell(){ return document.getElementById('portal-shell'); }
+  function isOn(){ return !!shell()?.classList.contains('quest-collapsed'); }
+  function syncUi(on){
+    const mx=document.getElementById('mxCornerQuest');
+    if(!mx) return;
+    mx.setAttribute('aria-pressed', on?'true':'false');
+    mx.classList.toggle('is-on', !!on);
+    mx.title=on?'クエスト画面を再表示':'クエスト画面を右に格納';
+    const mark=mx.querySelector('.mx-corner-mark');
+    const label=mx.querySelector('.mx-corner-label');
+    if(mark) mark.textContent=on?'«':'»';
+    if(label) label.textContent=on?'QUEST':'QUEST';
+  }
+  function setCollapsed(on){
+    const sh=shell();
+    if(!sh) return false;
+    sh.classList.toggle('quest-collapsed', !!on);
+    try{ localStorage.setItem(KEY, on?'1':'0'); }catch(e){}
+    syncUi(!!on);
+    try{ window.dispatchEvent(new CustomEvent('portal-quest-collapse',{detail:{on:!!on}})); }catch(e){}
+    try{ window.PortalNavCollapse?.kickOfficeFit?.(); }catch(e){}
+    return !!on;
+  }
+  function toggle(){ return setCollapsed(!isOn()); }
+  function wire(){
+    const saved=localStorage.getItem(KEY)==='1';
+    if(saved) setCollapsed(true);
+    else syncUi(false);
+    document.getElementById('mxCornerQuest')?.addEventListener('click', function(){ toggle(); });
+  }
+  window.PortalQuestCollapse={ isOn:isOn, set:setCollapsed, toggle:toggle, syncUi:syncUi };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire);
+  else wire();
+})();
+</script>
+
+<script>
+/* ===== 円卓枠の上下伸縮（上方向へ伸ばせる） ===== */
+(function(){
+  const KEY='gp_quests_v_split_v1';
+  const SPLIT_H=7;
+  let topFr=36; // キャラ側（残りが円卓＋クエスト）
+  function row(){ return document.getElementById('quests-row'); }
+  function apply(){
+    const el=row();
+    if(!el) return;
+    const bot=Math.max(20, 100-topFr);
+    el.style.gridTemplateRows='minmax(96px,'+topFr+'fr) '+SPLIT_H+'px minmax(160px,'+bot+'fr)';
+  }
+  function load(){
+    try{
+      const v=parseFloat(localStorage.getItem(KEY)||'');
+      if(Number.isFinite(v)&&v>=18&&v<=68) topFr=v;
+    }catch(e){}
+    apply();
+  }
+  function save(){
+    try{ localStorage.setItem(KEY, String(Math.round(topFr*10)/10)); }catch(e){}
+  }
+  function wire(){
+    load();
+    const handle=document.getElementById('questsRowSplit');
+    if(!handle) return;
+    let dragging=false;
+    handle.addEventListener('pointerdown', function(e){
+      if(e.button!=null&&e.button!==0) return;
+      const el=row();
+      if(!el) return;
+      dragging=true;
+      handle.classList.add('is-drag');
+      document.body.classList.add('is-vsplit-drag');
+      try{ handle.setPointerCapture(e.pointerId); }catch(err){}
+      e.preventDefault();
+    });
+    handle.addEventListener('pointermove', function(e){
+      if(!dragging) return;
+      const el=row();
+      if(!el) return;
+      const r=el.getBoundingClientRect();
+      const usable=Math.max(1, r.height-SPLIT_H);
+      const y=e.clientY-r.top;
+      let pct=(y/usable)*100;
+      if(pct<18) pct=18;
+      if(pct>68) pct=68;
+      topFr=pct;
+      apply();
+    });
+    function endDrag(e){
+      if(!dragging) return;
+      dragging=false;
+      handle.classList.remove('is-drag');
+      document.body.classList.remove('is-vsplit-drag');
+      save();
+      try{ window.PortalNavCollapse?.kickOfficeFit?.(); }catch(err){}
+    }
+    handle.addEventListener('pointerup', endDrag);
+    handle.addEventListener('pointercancel', endDrag);
+  }
+  window.PortalQuestsVSplit={ apply:apply, load:load };
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire);
   else wire();
 })();
@@ -10822,16 +10924,16 @@ window.PortalAuth=(function(){
   function syncUi(on){
     const btn=document.getElementById('portalFocusBtn');
     const hint=document.getElementById('portalFocusHint');
-    const fab=document.getElementById('entakuNavFab');
+    const mx=document.getElementById('mxCornerNav');
     if(btn){
       btn.setAttribute('aria-pressed', on?'true':'false');
       btn.textContent=on?'メニュー表示':'円卓集中';
       btn.title=on?'サイドメニューを再表示':'サイドメニューを隠して円卓を大きく表示';
     }
     if(hint) hint.hidden=!on;
-    if(fab){
-      const navOn=!!shell()?.classList.contains('nav-collapsed');
-      fab.style.display=(on||navOn)?'block':'';
+    if(mx){
+      mx.classList.toggle('is-on', !!(on||window.PortalNavCollapse?.isOn?.()));
+      mx.title=on?'サイドメニューを再表示（円卓集中解除）':'サイドメニューを格納／展開';
     }
     try{ window.PortalNavCollapse?.syncUi?.(window.PortalNavCollapse.isOn?.()); }catch(e){}
   }
@@ -10846,6 +10948,7 @@ window.PortalAuth=(function(){
       try{ window.openEntaku?.(); }catch(e){}
     }
     try{ window.dispatchEvent(new CustomEvent('portal-focus-change',{detail:{on:!!on}})); }catch(e){}
+    try{ window.PortalNavCollapse?.kickOfficeFit?.(); }catch(e){}
     return !!on;
   }
   function toggle(){ return setFocus(!isOn()); }
@@ -10864,8 +10967,7 @@ window.PortalAuth=(function(){
     isOn:isOn,
     set:setFocus,
     toggle:toggle,
-    enable:function(){ return setFocus(true); },
-    disable:function(){ return setFocus(false); }
+    syncUi:syncUi
   };
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire);
   else wire();
