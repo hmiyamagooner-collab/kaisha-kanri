@@ -1361,6 +1361,63 @@ body.is-hsplit-drag{cursor:ew-resize;user-select:none}
 .office-tk-alert-msg{
   font-size:11.5px;font-weight:800;color:#ffd0d0;letter-spacing:.04em;margin-bottom:6px;
 }
+.office-tk-alert.is-open{
+  border-color:rgba(255,180,60,.7);background:rgba(120,70,10,.42);
+  box-shadow:0 0 0 1px rgba(255,180,60,.2),0 0 12px rgba(255,160,40,.25);
+  animation:none;
+}
+.office-tk-alert.is-open .office-tk-alert-msg{color:#ffe7b0}
+.office-tk-alert.is-open .office-tk-pend{
+  border-color:rgba(255,180,60,.4);background:rgba(0,0,0,.28);
+}
+.office-tk-alert.is-open .office-tk-pend-meta{color:#ffd9a0}
+.office-tk-msg{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) auto;gap:6px;
+  margin:0 8px 8px;padding:8px;border:1px solid var(--nav-green-line);background:rgba(0,20,0,.35);
+}
+.office-tk-msg select,.office-tk-msg input{
+  background:#0a0a0a;border:1px solid rgba(255,255,255,.28);color:#fff;
+  border-radius:4px;padding:6px 8px;font-size:11px;font-family:var(--font-body);min-width:0;
+}
+.office-tk-msg button{
+  border:1px solid var(--nav-green-soft);background:rgba(15,138,78,.35);color:var(--nav-label);
+  border-radius:4px;padding:6px 10px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;
+}
+.office-tk-msg button:hover{filter:brightness(1.08)}
+.tk-msg-box{
+  margin:0 0 14px;max-width:720px;padding:12px;border:1px solid var(--nav-green-line);
+  background:rgba(0,16,0,.4);
+}
+.tk-msg-box h3{
+  margin:0 0 8px;font-size:12px;color:var(--nav-green-bright);letter-spacing:.06em;
+}
+.tk-msg-row{display:grid;grid-template-columns:150px 1fr auto;gap:8px;margin-bottom:10px}
+@media (max-width:720px){
+  .office-tk-msg{grid-template-columns:1fr; }
+  .tk-msg-row{grid-template-columns:1fr; }
+}
+.tk-msg-row select,.tk-msg-row input{
+  background:var(--panel2,#0f0f0f);border:1px solid var(--line,#444);border-radius:8px;
+  padding:9px 11px;color:var(--text,#fff);font-size:13px;font-family:var(--font-body);
+}
+.tk-msg-row button{
+  background:var(--in,#4ade80);color:#062012;border:none;border-radius:8px;
+  padding:9px 14px;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap;
+}
+.tk-msg-inbox{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow:auto}
+.tk-msg-item{
+  padding:8px 10px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.28);border-radius:8px;
+}
+.tk-msg-item.is-unread{border-color:rgba(76,175,80,.55);background:rgba(20,60,30,.35)}
+.tk-msg-item-meta{font-size:10px;color:var(--muted,#aaa);margin-bottom:3px}
+.tk-msg-item-body{font-size:12.5px;color:#fff;line-height:1.4;white-space:pre-wrap}
+.pt-task-badge{
+  display:none;margin-left:6px;padding:2px 8px;border-radius:0;
+  font-size:10px;font-weight:800;letter-spacing:.04em;
+  color:#1a1408;background:#e0c57a;border:1px solid #c4a66a;
+}
+.pt-task-badge.is-on{display:inline-block}
+.pt-task-badge.is-late{background:#ff8a8a;border-color:#ff5a5a;color:#2a0000}
 .office-tk-pending{display:flex;flex-direction:column;gap:6px}
 .office-tk-pend{
   padding:7px 8px;border-radius:8px;background:rgba(0,0,0,.28);
@@ -2937,6 +2994,7 @@ video.dc-card__image{
   <button type="button" class="pt-dropbox" id="portalDropboxBtn" title="/GoonerPortal を一覧・ダウンロード">Dropbox同期</button>
   <span class="pt-dropbox-status" id="portalDropboxStatus" hidden></span>
   <span class="pt-user" id="portalUserChip" hidden></span>
+  <span class="pt-task-badge" id="portalTaskBadge" hidden title="未完了タスク">TASK 0</span>
   <button type="button" class="pt-logout" id="portalDutyEndBtn" hidden title="本日の業務終了を記録">業務終了</button>
   <button type="button" class="pt-logout" id="portalLogoutBtn" hidden>ログアウト</button>
   <button type="button" class="pt-nav-btn" id="portalNavToggleBtn" title="サイドメニューを左に格納／展開" aria-pressed="false" hidden>メニュー格納</button>
@@ -3082,6 +3140,15 @@ video.dc-card__image{
           <div class="office-tk-alert-msg">新しいタスクが届いています</div>
           <div class="office-tk-pending" id="officeTkPending"></div>
         </div>
+        <div class="office-tk-alert is-open" id="officeTkOpenAlert" hidden>
+          <div class="office-tk-alert-msg" id="officeTkOpenMsg">未完了タスクがあります</div>
+          <div class="office-tk-pending" id="officeTkOpenList"></div>
+        </div>
+        <div class="office-tk-msg" title="簡単なメッセージを送る">
+          <select id="officeMsgTo" aria-label="宛先"></select>
+          <input id="officeMsgBody" maxlength="200" placeholder="短いメッセージ（200字まで）">
+          <button type="button" id="officeMsgSend">送信</button>
+        </div>
         <div class="office-tk-links" role="navigation" aria-label="タスク画面">
           <button type="button" class="office-tk-open" data-jump="tasks" title="タスク管理を開く">
             <span class="nav-photo" style="background-image:url(nav-task.png)" aria-hidden="true"></span>
@@ -3105,6 +3172,17 @@ video.dc-card__image{
     <p class="task-arrive-body" id="taskArriveBody"></p>
     <p class="task-arrive-meta" id="taskArriveMeta"></p>
     <button type="button" class="task-arrive-ok" id="taskArriveOk">OK（タスクに追加）</button>
+  </div>
+</div>
+
+<!-- メッセージ着信モーダル -->
+<div id="staffMsgModal" class="task-arrive-modal" hidden aria-hidden="true">
+  <div class="task-arrive-card" role="dialog" aria-modal="true" aria-labelledby="staffMsgTitle">
+    <div class="task-arrive-badge">MESSAGE</div>
+    <h2 id="staffMsgTitle">メッセージが届きました</h2>
+    <p class="task-arrive-body" id="staffMsgBody"></p>
+    <p class="task-arrive-meta" id="staffMsgMeta"></p>
+    <button type="button" class="task-arrive-ok" id="staffMsgOk">OK</button>
   </div>
 </div>
 
@@ -3550,6 +3628,22 @@ video.dc-card__image{
   <div class="office-tk-alert" id="tkAlert" hidden style="margin:0 0 14px;max-width:720px">
     <div class="office-tk-alert-msg">新しいタスクが届いています（承認すると着手できます）</div>
     <div class="office-tk-pending" id="tkPending"></div>
+  </div>
+
+  <div class="office-tk-alert is-open" id="tkOpenAlert" hidden style="margin:0 0 14px;max-width:720px">
+    <div class="office-tk-alert-msg" id="tkOpenMsg">未完了タスクがあります</div>
+    <div class="office-tk-pending" id="tkOpenList"></div>
+  </div>
+
+  <div class="tk-msg-box" id="tkMsgBox">
+    <h3>メッセージ送信</h3>
+    <div class="tk-msg-row">
+      <select id="tkMsgTo" aria-label="宛先"></select>
+      <input id="tkMsgBody" maxlength="200" placeholder="簡単なメッセージ（200字まで）">
+      <button type="button" id="tkMsgSend">送信</button>
+    </div>
+    <h3>受信箱 <span id="tkMsgUnread" style="color:#ffb15c;font-weight:800"></span></h3>
+    <div class="tk-msg-inbox" id="tkMsgInbox"><div class="tk-msg-item-meta">メッセージはまだありません</div></div>
   </div>
 
   <div class="tk-filter">
@@ -5164,7 +5258,16 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
 // 既存のAIバックエンド（messages配列をPOSTすると {text} を返すエンドポイント）のURLを入れると
 // 円卓会議・謁見チャットが動きます。空のままならAIは無効（画面だけ動作）。
 // セキュリティのため、APIキーはこのファイルに直接書かず、必ずサーバー側で保持してください。
-const AI_ENDPOINT="/api/openai";// ▲▲▲ AI接続設定 ▲▲▲
+const AI_PROD="https://kaisha-kanri.vercel.app/api/openai";
+function resolveAiEndpoint(){
+  try{
+    const h=String(location.hostname||"");
+    if(/vercel\.app$/i.test(h)) return "/api/openai";
+  }catch(e){}
+  // GitHub Pages / ローカル静的配信では /api が無いので本番APIへ
+  return AI_PROD;
+}
+const AI_ENDPOINT=resolveAiEndpoint();// ▲▲▲ AI接続設定 ▲▲▲
 async function callClaudeMessages(messages){if(!AI_ENDPOINT)throw new Error("AI_NOT_CONNECTED");const res=await fetch(AI_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages})});const data=await res.json();return data.text||(data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n").trim();}const callClaude=content=>callClaudeMessages([{role:"user",content}]);function agentSystem(dept){return`あなたは株式会社Goonerの「${dept.name}」を司る住人「${dept.char}」です。人物像: ${dept.persona}
 専門領域: ${dept.expertise}
 ${dept.data?`あなたの管轄データ:\n${dept.data}`:`※あなたの部署はまだ社内データが接続されていません。一般的な助言はできますが、具体的な社内数値は「（データ未接続）」と正直に断ってください。`}
@@ -8284,6 +8387,16 @@ window.Treasury={
     return tasks.filter(t=>t.status==='pending' && isMine(t,m) && String(t.created_by)!==String(m.id))
       .sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')));
   }
+  function openForMe(){
+    const m=me(); if(!m) return [];
+    return tasks.filter(function(t){ return t && t.status!=='done' && isMine(t,m); })
+      .sort(function(a,b){
+        const da=parseDue(a)||'9999-99-99', db=parseDue(b)||'9999-99-99';
+        if(da!==db) return da.localeCompare(db);
+        return String(b.created_at||'').localeCompare(String(a.created_at||''));
+      });
+  }
+  let openAlertToastKey='';
   function playNotifySound(){
     try{
       const Ctx=window.AudioContext||window.webkitAudioContext; if(!Ctx) return;
@@ -8345,9 +8458,7 @@ window.Treasury={
   }
   function showTaskBadge(){
     renderPendingAlerts();
-    const a=$("#tkAlert"), b=$("#officeTkAlert");
-    if(a) a.hidden=false;
-    if(b) b.hidden=false;
+    renderOpenAlerts();
   }
 
   function pendingHtml(list){
@@ -8366,6 +8477,50 @@ window.Treasury={
       </div>`;
     }).join('');
   }
+  function openAlertHtml(list){
+    if(!list.length) return '';
+    const today=todayISO();
+    return list.slice(0,8).map(function(d){
+      const due=parseDue(d);
+      const late=due && due<today;
+      const st=statusLabel(d.status);
+      return `<div class="office-tk-pend" data-open-task="${esc(d.id)}">
+        <div class="office-tk-pend-title">${late?'⚠ ':''}${esc(d.title||'（無題）')}</div>
+        <div class="office-tk-pend-meta">${esc(st)}${due?`　<span class="tk-due${late?' late':''}">期日 ${esc(due)}${late?'（超過）':''}</span>`:'　期日なし'}</div>
+        <div class="office-tk-pend-acts">
+          <button type="button" class="ok" data-jump-tasks="1">タスク画面へ</button>
+        </div>
+      </div>`;
+    }).join('')+(list.length>8?`<div class="office-tk-pend-meta">…他 ${list.length-8}件</div>`:'');
+  }
+  function updatePortalTaskBadge(open, late){
+    const badge=$('#portalTaskBadge');
+    if(!badge) return;
+    if(!open){
+      badge.hidden=true; badge.classList.remove('is-on','is-late');
+      badge.textContent='TASK 0';
+      return;
+    }
+    badge.hidden=false;
+    badge.classList.add('is-on');
+    badge.classList.toggle('is-late', late>0);
+    badge.textContent=late>0?('超過 '+late+'／未完了 '+open):('未完了 '+open);
+    badge.title=late>0
+      ?('未完了タスク '+open+'件（うち期限超過 '+late+'件）')
+      :('未完了タスク '+open+'件');
+  }
+  function maybeToastOpenTasks(openList, lateList){
+    if(!lateList.length) return;
+    const key=lateList.map(function(t){ return t.id; }).sort().join(',')+'@'+todayISO();
+    if(key===openAlertToastKey) return;
+    try{
+      if(sessionStorage.getItem('gp_open_toast_'+key)) return;
+      sessionStorage.setItem('gp_open_toast_'+key,'1');
+    }catch(e){}
+    openAlertToastKey=key;
+    try{ playNotifySound(); }catch(e){}
+    T.toast('期限超過の未完了タスクが '+lateList.length+'件あります');
+  }
   function renderPendingAlerts(){
     const mine=pendingForMe();
     [['#officeTkAlert','#officeTkPending'],['#tkAlert','#tkPending']].forEach(function(pair){
@@ -8374,6 +8529,28 @@ window.Treasury={
       if(mine.length){ alert.hidden=false; box.innerHTML=pendingHtml(mine); }
       else{ alert.hidden=true; box.innerHTML=''; }
     });
+  }
+  function renderOpenAlerts(){
+    const open=openForMe();
+    const today=todayISO();
+    const late=open.filter(function(t){ const d=parseDue(t); return d && d<today; });
+    updatePortalTaskBadge(open.length, late.length);
+    const msg=late.length
+      ?('未完了 '+open.length+'件（うち期限超過 '+late.length+'件）')
+      :(open.length?('未完了タスクが '+open.length+'件あります'):'');
+    [['#officeTkOpenAlert','#officeTkOpenList','#officeTkOpenMsg'],['#tkOpenAlert','#tkOpenList','#tkOpenMsg']].forEach(function(pair){
+      const alert=$(pair[0]), box=$(pair[1]), label=$(pair[2]);
+      if(!alert||!box) return;
+      if(open.length){
+        alert.hidden=false;
+        if(label) label.textContent=msg;
+        box.innerHTML=openAlertHtml(open);
+      }else{
+        alert.hidden=true;
+        box.innerHTML='';
+      }
+    });
+    maybeToastOpenTasks(open, late);
   }
 
   function fillAssigneeSelects(){
@@ -8455,6 +8632,8 @@ window.Treasury={
   function renderOfficeDock(){
     fillAssigneeSelects();
     renderPendingAlerts();
+    renderOpenAlerts();
+    try{ window.PortalStaffMsg?.refresh?.(); }catch(e){}
   }
 
   async function setDropboxAllowed(memberId, allowed){
@@ -8760,6 +8939,14 @@ window.Treasury={
     return false;
   }
 
+  function jumpTasksScreen(){
+    document.querySelector('.gamenav button[data-s="tasks"]')?.click();
+  }
+  document.getElementById('portalTaskBadge')?.addEventListener('click', function(){ jumpTasksScreen(); });
+  document.addEventListener('click', function(e){
+    if(e.target.closest('[data-jump-tasks]')){ jumpTasksScreen(); return; }
+  });
+
   document.getElementById('office-pane')?.addEventListener('click', e=>{
     if(handleTaskClick(e)) return;
     const jump=e.target.closest('[data-staff-jump]');
@@ -8900,6 +9087,7 @@ window.Treasury={
     list:function(){ return tasks.slice(); },
     members:function(){ return members.slice(); },
     open:openTasks,
+    openForMe:openForMe,
     overdue:overdueTasks,
     summaryForAi:taskSummaryForAi,
     parseDue:parseDue,
@@ -8916,6 +9104,307 @@ window.Treasury={
   window.addEventListener('portal-member-ready', boot);
   T.onRender(function(){ renderTasks(); try{ window.PortalRisk?.refresh?.(); }catch(e){} });
   boot();
+})();
+</script>
+
+<script>
+/* ===== 社員間メッセージ（簡単送信） ===== */
+(function(){
+  const STORE_KEY='gp_staff_messages_v1';
+  const READ_KEY='gp_staff_msg_read_v1';
+  const $ = function(s){ return document.querySelector(s); };
+  const esc = function(s){
+    return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);
+    });
+  };
+  let messages=[];
+  let seenIds={};
+  let channel=null;
+  let channelReady=false;
+  let modalBusy=false;
+  let modalQueue=[];
+  let lastShownId='';
+  let booted=false;
+  let allowNotify=false;
+
+  function client(){ return window.GoonerSB?.sb?.() || null; }
+  function me(){ return window.GoonerSB?.me?.() || window.PortalTasks?.me?.() || null; }
+  function members(){
+    const list=window.PortalTasks?.members?.();
+    return Array.isArray(list)?list:[];
+  }
+  function toast(msg){
+    try{ if(window.T?.toast){ window.T.toast(msg); return; } }catch(e){}
+    try{ if(window.Treasury?.toast){ window.Treasury.toast(msg); return; } }catch(e2){}
+  }
+  function loadLocal(){
+    try{ messages=JSON.parse(localStorage.getItem(STORE_KEY)||'[]'); }
+    catch(e){ messages=[]; }
+    if(!Array.isArray(messages)) messages=[];
+  }
+  function saveLocal(){
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify(messages.slice(-200))); }catch(e){}
+  }
+  function loadSeen(){
+    try{ seenIds=JSON.parse(localStorage.getItem(READ_KEY)||'{}'); }
+    catch(e){ seenIds={}; }
+  }
+  function saveSeen(){
+    try{ localStorage.setItem(READ_KEY, JSON.stringify(seenIds)); }catch(e){}
+  }
+  function uid(){
+    return 'm'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+  }
+  function playPing(){
+    try{
+      const Ctx=window.AudioContext||window.webkitAudioContext; if(!Ctx) return;
+      const ctx=new Ctx();
+      const now=ctx.currentTime;
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.type='triangle'; o.frequency.value=740;
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(0.05, now+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, now+0.25);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(now); o.stop(now+0.28);
+      setTimeout(function(){ try{ctx.close();}catch(e){} }, 400);
+    }catch(e){}
+  }
+  function isForMe(msg){
+    const m=me(); if(!m||!msg) return false;
+    if(msg.to_all) return String(msg.from_id)!==String(m.id);
+    return String(msg.to_id)===String(m.id);
+  }
+  function upsertMessage(msg, opts){
+    if(!msg||!msg.id) return false;
+    const exists=messages.some(function(x){ return String(x.id)===String(msg.id); });
+    if(exists) return false;
+    messages.unshift(msg);
+    if(messages.length>200) messages=messages.slice(0,200);
+    saveLocal();
+    if(opts&&opts.notify&&allowNotify) maybeNotify(msg);
+    renderInbox();
+    return true;
+  }
+  function maybeNotify(msg){
+    if(!isForMe(msg)) return;
+    if(seenIds[String(msg.id)]) return;
+    if(modalQueue.some(function(x){ return String(x.id)===String(msg.id); })) return;
+    if(lastShownId && String(lastShownId)===String(msg.id)) return;
+    modalQueue.push(msg);
+    flushModal();
+  }
+  function flushModal(){
+    if(modalBusy) return;
+    const next=modalQueue.shift();
+    if(!next) return;
+    modalBusy=true;
+    lastShownId=String(next.id);
+    playPing();
+    const modal=$('#staffMsgModal');
+    const body=$('#staffMsgBody');
+    const meta=$('#staffMsgMeta');
+    if(body) body.textContent=next.body||'';
+    if(meta){
+      meta.innerHTML='差出人：'+esc(next.from_name||'不明')+
+        (next.to_all?'　／　全員宛':'')+
+        '<br>'+esc(String(next.created_at||'').slice(0,16).replace('T',' '));
+    }
+    if(modal){ modal.hidden=false; modal.setAttribute('aria-hidden','false'); }
+  }
+  function closeModal(){
+    const modal=$('#staffMsgModal');
+    if(modal){ modal.hidden=true; modal.setAttribute('aria-hidden','true'); }
+    if(lastShownId){ seenIds[lastShownId]=1; saveSeen(); lastShownId=''; }
+    modalBusy=false;
+    flushModal();
+    renderInbox();
+  }
+  function fillToSelects(){
+    const staff=members().filter(function(m){ return m && m.id; });
+    const cur=me();
+    const others=staff.filter(function(m){ return !cur || String(m.id)!==String(cur.id); });
+    const opts=['<option value="">宛先を選択</option>','<option value="all">全員</option>']
+      .concat(others.map(function(s){
+        return '<option value="'+esc(s.id)+'">'+esc(s.name||'社員')+(s.role?'（'+esc(s.role)+'）':'')+'</option>';
+      }));
+    ['#officeMsgTo','#tkMsgTo'].forEach(function(sel){
+      const el=$(sel); if(!el) return;
+      const keep=el.value;
+      el.innerHTML=opts.join('');
+      if(keep && Array.from(el.options).some(function(o){ return o.value===keep; })) el.value=keep;
+    });
+  }
+  function unreadForMe(){
+    return messages.filter(function(m){ return isForMe(m) && !seenIds[String(m.id)]; });
+  }
+  function inboxForMe(){
+    return messages.filter(isForMe).slice(0,40);
+  }
+  function renderInbox(){
+    fillToSelects();
+    const box=$('#tkMsgInbox');
+    const unreadEl=$('#tkMsgUnread');
+    const unread=unreadForMe();
+    if(unreadEl) unreadEl.textContent=unread.length?('未読 '+unread.length):'';
+    if(!box) return;
+    const list=inboxForMe();
+    if(!list.length){
+      box.innerHTML='<div class="tk-msg-item-meta">メッセージはまだありません</div>';
+      return;
+    }
+    box.innerHTML=list.map(function(m){
+      const unread=!seenIds[String(m.id)];
+      const when=String(m.created_at||'').slice(0,16).replace('T',' ');
+      return '<div class="tk-msg-item'+(unread?' is-unread':'')+'" data-msg-id="'+esc(m.id)+'">'+
+        '<div class="tk-msg-item-meta">'+esc(m.from_name||'不明')+(m.to_all?' → 全員':'')+'　'+esc(when)+(unread?'　未読':'')+'</div>'+
+        '<div class="tk-msg-item-body">'+esc(m.body||'')+'</div>'+
+      '</div>';
+    }).join('');
+  }
+  async function tryInsertRemote(msg){
+    const c=client(); if(!c) return false;
+    try{
+      const { error }=await c.from('staff_messages').insert({
+        id:msg.id,
+        from_id:msg.from_id||null,
+        from_name:msg.from_name||'',
+        to_id:msg.to_all?null:msg.to_id,
+        to_all:!!msg.to_all,
+        body:msg.body,
+        created_at:msg.created_at
+      });
+      return !error;
+    }catch(e){ return false; }
+  }
+  async function pullRemote(){
+    const c=client(); const m=me(); if(!c||!m) return;
+    try{
+      const { data, error }=await c.from('staff_messages')
+        .select('*')
+        .or('to_all.eq.true,to_id.eq.'+m.id)
+        .order('created_at',{ascending:false})
+        .limit(80);
+      if(error||!data) return;
+      data.forEach(function(row){
+        upsertMessage({
+          id:row.id, from_id:row.from_id, from_name:row.from_name,
+          to_id:row.to_id, to_all:!!row.to_all, body:row.body, created_at:row.created_at
+        }, {notify:true});
+      });
+    }catch(e){}
+  }
+  function broadcast(msg){
+    try{
+      if(channel && channelReady){
+        channel.send({ type:'broadcast', event:'staff-msg', payload:msg });
+      }
+    }catch(e){}
+    try{
+      if(typeof BroadcastChannel!=='undefined'){
+        const bc=new BroadcastChannel('gp-staff-msg');
+        bc.postMessage({type:'staff-msg', msg:msg});
+        bc.close();
+      }
+    }catch(e){}
+  }
+  async function sendMessage(toSel, bodySel){
+    const m=me();
+    if(!m){ toast('先にログインしてください'); return false; }
+    const toEl=$(toSel), bodyEl=$(bodySel);
+    const to=toEl?.value||'';
+    const body=String(bodyEl?.value||'').trim();
+    if(!to){ toast('宛先を選んでください'); return false; }
+    if(!body){ toast('メッセージを入力してください'); return false; }
+    if(body.length>200){ toast('200字以内で入力してください'); return false; }
+    const msg={
+      id:uid(),
+      from_id:m.id,
+      from_name:m.name||'不明',
+      to_id:to==='all'?null:to,
+      to_all:to==='all',
+      body:body,
+      created_at:new Date().toISOString()
+    };
+    upsertMessage(msg, {notify:false});
+    seenIds[String(msg.id)]=1; saveSeen();
+    await tryInsertRemote(msg);
+    broadcast(msg);
+    if(bodyEl) bodyEl.value='';
+    toast(to==='all'?'全員に送信しました':'メッセージを送信しました');
+    renderInbox();
+    return true;
+  }
+  function subscribe(){
+    if(channel) return;
+    const c=client();
+    if(c){
+      try{
+        channel=c.channel('staff-msg-live', { config:{ broadcast:{ self:false } } });
+        channel.on('broadcast', { event:'staff-msg' }, function(ev){
+          const msg=ev?.payload; if(msg) upsertMessage(msg, {notify:true});
+        });
+        channel.on('postgres_changes', { event:'INSERT', schema:'public', table:'staff_messages' }, function(payload){
+          const row=payload.new; if(!row) return;
+          upsertMessage({
+            id:row.id, from_id:row.from_id, from_name:row.from_name,
+            to_id:row.to_id, to_all:!!row.to_all, body:row.body, created_at:row.created_at
+          }, {notify:true});
+        });
+        channel.subscribe(function(status){
+          channelReady = status==='SUBSCRIBED';
+        });
+      }catch(e){ channel=null; channelReady=false; }
+    }
+    try{
+      if(typeof BroadcastChannel!=='undefined'){
+        const bc=new BroadcastChannel('gp-staff-msg');
+        bc.addEventListener('message', function(ev){
+          if(ev?.data?.type==='staff-msg' && ev.data.msg) upsertMessage(ev.data.msg, {notify:true});
+        });
+      }
+    }catch(e){}
+  }
+  function boot(){
+    if(booted){ fillToSelects(); renderInbox(); pullRemote(); return; }
+    booted=true;
+    loadLocal(); loadSeen();
+    fillToSelects();
+    renderInbox();
+    subscribe();
+    pullRemote().then(function(){ allowNotify=true; });
+    setTimeout(function(){ allowNotify=true; }, 1500);
+    setInterval(function(){ fillToSelects(); pullRemote(); }, 45000);
+  }
+
+  $('#officeMsgSend')?.addEventListener('click', function(){ sendMessage('#officeMsgTo','#officeMsgBody'); });
+  $('#tkMsgSend')?.addEventListener('click', function(){ sendMessage('#tkMsgTo','#tkMsgBody'); });
+  ['#officeMsgBody','#tkMsgBody'].forEach(function(sel){
+    const el=$(sel); if(!el) return;
+    let composing=false;
+    el.addEventListener('compositionstart', function(){ composing=true; });
+    el.addEventListener('compositionend', function(){ composing=false; });
+    el.addEventListener('keydown', function(e){
+      if(e.key!=='Enter'||e.shiftKey) return;
+      if(composing||e.isComposing||e.keyCode===229) return;
+      e.preventDefault();
+      if(sel==='#officeMsgBody') sendMessage('#officeMsgTo','#officeMsgBody');
+      else sendMessage('#tkMsgTo','#tkMsgBody');
+    });
+  });
+  $('#staffMsgOk')?.addEventListener('click', function(){ closeModal(); });
+  $('#tkMsgInbox')?.addEventListener('click', function(e){
+    const item=e.target.closest('[data-msg-id]');
+    if(!item) return;
+    seenIds[String(item.dataset.msgId)]=1; saveSeen(); renderInbox();
+  });
+  window.addEventListener('portal-member-ready', boot);
+  window.addEventListener('portal-members-changed', function(){ fillToSelects(); });
+  if(me()) boot();
+  else setTimeout(boot, 800);
+
+  window.PortalStaffMsg={ refresh:renderInbox, send:sendMessage, list:function(){ return messages.slice(); } };
 })();
 </script>
 
@@ -11039,8 +11528,14 @@ window.PortalAuth=(function(){
 <!-- 円卓AI：3エージェント会話 API ブリッジ -->
 <script>
 window.EntakuAI=(function(){
+  var AI_PROD='https://kaisha-kanri.vercel.app/api/openai';
   function endpoint(){
-    return (typeof AI_ENDPOINT!=='undefined'&&AI_ENDPOINT)||'/api/openai';
+    if(typeof resolveAiEndpoint==='function') return resolveAiEndpoint();
+    if(typeof AI_ENDPOINT!=='undefined'&&AI_ENDPOINT) return AI_ENDPOINT;
+    try{
+      if(/vercel\.app$/i.test(String(location.hostname||''))) return '/api/openai';
+    }catch(e){}
+    return AI_PROD;
   }
   function normalizeReplies(data){
     if(Array.isArray(data.replies)&&data.replies.length){
@@ -11071,7 +11566,11 @@ window.EntakuAI=(function(){
           if(!r.ok){
             var detail=String(data.detail||data.hint||'').trim();
             var err=String(data.error||('HTTP '+r.status)).trim();
-            if(detail && detail.length<280) err+=' — '+detail;
+            if(r.status===404||r.status===405){
+              err='API未配置 (HTTP '+r.status+') — '+AI_PROD+' 経由で再試行するか、https://kaisha-kanri.vercel.app/gooner-portal を開いてください';
+            }else if(detail && detail.length<280){
+              err+=' — '+detail;
+            }
             throw new Error(err);
           }
           var replies=normalizeReplies(data);

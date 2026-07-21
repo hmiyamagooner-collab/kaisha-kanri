@@ -227,7 +227,26 @@ function parseEntakuReplies(raw) {
   return { replies: [{ agent: "secretary", text: text.slice(0, 6000) }], actions: [] };
 }
 
+function applyCors(req, res) {
+  const origin = String(req.headers.origin || "");
+  const allowed =
+    !origin ||
+    /vercel\.app$/i.test(origin) ||
+    origin === "https://hmiyamagooner-collab.github.io" ||
+    /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+  if (allowed) {
+    res.setHeader("Access-Control-Allow-Origin", origin || "*");
+    res.setHeader("Vary", "Origin");
+  }
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+}
+
 export default async function handler(req, res) {
+  applyCors(req, res);
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
