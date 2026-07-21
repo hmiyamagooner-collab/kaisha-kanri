@@ -1186,23 +1186,65 @@ function drawSpeechBubbles(g,chars,now){
     if(c.bubble&&now>=c.bubble.until)c.bubble=null;
   }
 }
-function drawPixCar(g,cx,cy,dir,col){
+function drawPixCar(g,cx,cy,dir,col,lights){
   cx=cx|0;cy=cy|0;col=col||'#d0d6e0';
+  const night=dayPhase==='night';
   if(dir==='e'||dir==='w'){        /* 横向き 18x10 */
     px(g,cx-9,cy-5,18,10,col);
     px(g,cx-9,cy-5,1,10,shade(col,-45));px(g,cx+8,cy-5,1,10,shade(col,-45));
     px(g,cx-6,cy-3,4,6,'#bfe6ff');px(g,cx+1,cy-3,5,6,'#9fc8e8');   /* 窓 */
     px(g,cx-7,cy-6,4,1,'#20242a');px(g,cx+3,cy-6,4,1,'#20242a');   /* タイヤ */
     px(g,cx-7,cy+5,4,1,'#20242a');px(g,cx+3,cy+5,4,1,'#20242a');
-    px(g,cx+(dir==='e'?8:-9),cy-2,1,4,'#ffe37a');                  /* ライト */
+    px(g,cx+(dir==='e'?8:-9),cy-2,1,4,night?'#fff6c0':'#ffe37a');  /* ライト */
   }else{                            /* 縦向き 10x18 */
     px(g,cx-5,cy-9,10,18,col);
     px(g,cx-5,cy-9,10,1,shade(col,-45));px(g,cx-5,cy+8,10,1,shade(col,-45));
     px(g,cx-3,cy-6,6,4,'#bfe6ff');px(g,cx-3,cy+2,6,5,'#9fc8e8');
     px(g,cx-6,cy-7,1,4,'#20242a');px(g,cx+5,cy-7,1,4,'#20242a');
     px(g,cx-6,cy+3,1,4,'#20242a');px(g,cx+5,cy+3,1,4,'#20242a');
-    px(g,cx-4,cy+(dir==='s'?8:-9),8,1,'#ffe37a');
+    px(g,cx-4,cy+(dir==='s'?8:-9),8,1,night?'#fff6c0':'#ffe37a');
   }
+  if(lights && night) drawCarHeadlights(g,cx,cy,dir||'n');
+}
+function drawCarHeadlights(g,cx,cy,dir){
+  // 夜：進行方向へ短いビーム（ドット感のある円錐）
+  g.save();
+  g.globalCompositeOperation='lighter';
+  const beam=[
+    'rgba(255,230,140,.55)',
+    'rgba(255,210,90,.28)',
+    'rgba(255,190,70,.12)'
+  ];
+  if(dir==='e'){
+    px(g,cx+8,cy-2,2,4,'#fff8d0');
+    px(g,cx+8,cy-1,2,2,'#ffffff');
+    for(let i=0;i<3;i++){
+      g.fillStyle=beam[i];
+      g.fillRect(cx+10+i*5,(cy-3-i)|0,5,6+i*2);
+    }
+  }else if(dir==='w'){
+    px(g,cx-10,cy-2,2,4,'#fff8d0');
+    px(g,cx-10,cy-1,2,2,'#ffffff');
+    for(let i=0;i<3;i++){
+      g.fillStyle=beam[i];
+      g.fillRect(cx-15-i*5,(cy-3-i)|0,5,6+i*2);
+    }
+  }else if(dir==='s'){
+    px(g,cx-4,cy+8,8,2,'#fff8d0');
+    px(g,cx-2,cy+8,4,2,'#ffffff');
+    for(let i=0;i<3;i++){
+      g.fillStyle=beam[i];
+      g.fillRect((cx-3-i)|0,cy+10+i*5,6+i*2,5);
+    }
+  }else{ // n
+    px(g,cx-4,cy-10,8,2,'#fff8d0');
+    px(g,cx-2,cy-10,4,2,'#ffffff');
+    for(let i=0;i<3;i++){
+      g.fillStyle=beam[i];
+      g.fillRect((cx-3-i)|0,cy-15-i*5,6+i*2,5);
+    }
+  }
+  g.restore();
 }
 function drawPixVan(g,cx,cy,dir){
   cx=cx|0;cy=cy|0;
@@ -1223,6 +1265,19 @@ function drawPixVan(g,cx,cy,dir){
     px(g,cx-1,y+2,3,bh-4,'#e8631e');
     px(g,x+3,y-1,4,1,'#181c22');px(g,x+bw-7,y-1,4,1,'#181c22');
     px(g,x+3,y+bh,4,1,'#181c22');px(g,x+bw-7,y+bh,4,1,'#181c22');
+  }
+}
+function drawTrafficLights(g){
+  if(dayPhase!=='night') return;
+  TRAFFIC.forEach(c=>drawCarHeadlights(g,c.x|0,c.y|0,c.face||'n'));
+  // 送迎バン
+  if(typeof CAR!=='undefined' && CAR) drawCarHeadlights(g,CAR.x|0,CAR.y|0,CAR.facing||'n');
+  // 駐車場の駐車車両もライト点灯
+  const z=ZONES.parking;
+  if(z){
+    [0.13,0.32,0.55,0.78].forEach(function(nx){
+      drawCarHeadlights(g,(z.x+z.w*nx)|0,(z.y+z.h*0.5)|0,'n');
+    });
   }
 }
 function drawRoad(g,x,y,w,h,horiz){
@@ -1597,6 +1652,7 @@ function draw(){
   }
   drawSpeechBubbles(ctx,order,now);
   drawDayOverlay(ctx);
+  drawTrafficLights(ctx);
   drawWeatherFx(ctx,now);
   drawAllZoneLabels(ctx);
   drawStatusHud(ctx);
