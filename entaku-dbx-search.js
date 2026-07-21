@@ -272,7 +272,7 @@
     });
   }
 
-  async function openPanel() {
+  async function openPanel(prefillQuery) {
     if (window.PortalAuth?.isDemoMode?.()) {
       toast("営業デモではDropbox検索は利用できません");
       return;
@@ -283,6 +283,46 @@
     const data = await pullRemote();
     syncBtn(data);
     renderPanel(data);
+    const q = String(prefillQuery || "").trim();
+    if (q) {
+      const inp = panel.querySelector("#edbxQ");
+      if (inp) inp.value = q;
+    }
+  }
+
+  /** 円卓AIから呼ぶ: 社長は即検索、社員は承認依頼 */
+  async function searchFromAi(query) {
+    const q = String(query || "").trim();
+    if (!q) throw new Error("検索語が空です");
+    if (window.PortalAuth?.isDemoMode?.()) {
+      throw new Error("営業デモではDropbox検索は利用できません");
+    }
+    if (isPresident()) {
+      toast("Dropbox検索中…");
+      return await runSearch(q);
+    }
+    const w = who();
+    const cur = await pullRemote();
+    const req = {
+      id: uid(),
+      query: q,
+      byName: w.name,
+      byEmail: w.email,
+      byId: w.id,
+      status: "pending",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      source: "entaku-ai",
+    };
+    cur.requests = cur.requests || [];
+    cur.requests.unshift(req);
+    saveLocal(cur);
+    await pushRemote(cur);
+    syncBtn(cur);
+    postToEntaku(
+      "【Dropbox検索】「" + q + "」の承認を社長へ依頼しました。承認後に結果が円卓へ届きます。"
+    );
+    return [];
   }
 
   function wire() {
@@ -311,5 +351,10 @@
     syncBtn(loadLocal());
   });
 
-  window.EntakuDbxSearch = { open: openPanel, pullRemote: pullRemote };
+  window.EntakuDbxSearch = {
+    open: openPanel,
+    pullRemote: pullRemote,
+    search: searchFromAi,
+    runSearch: runSearch,
+  };
 })();

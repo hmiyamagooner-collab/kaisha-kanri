@@ -1408,6 +1408,42 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   color:#F5D67A;letter-spacing:.14em;
   text-shadow:0 1px 10px rgba(0,0,0,.85);
 }
+.entaku-pins{
+  position:absolute;top:40px;left:8px;right:8px;z-index:5;
+  display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+  pointer-events:auto;max-height:72px;overflow:auto;
+  padding:4px 2px;
+}
+.entaku-pins[hidden]{display:none!important}
+.entaku-pin{
+  display:inline-flex;align-items:center;gap:4px;max-width:100%;
+  padding:5px 9px;border-radius:999px;cursor:pointer;
+  font-family:var(--font-body);font-size:11px;font-weight:600;letter-spacing:.02em;
+  color:#1a1a1a;background:linear-gradient(180deg,#fff8e6,#f0e0b0);
+  border:1px solid rgba(196,166,106,.65);
+  box-shadow:0 2px 8px rgba(0,0,0,.35);
+  transition:filter .15s ease,transform .15s ease;
+}
+.entaku-pin:hover{filter:brightness(1.05);transform:translateY(-1px)}
+.entaku-pin-x{
+  border:0;background:transparent;color:#6b5a2e;cursor:pointer;
+  font-size:12px;line-height:1;padding:0 0 0 2px;opacity:.75;
+}
+.entaku-pin-x:hover{opacity:1;color:#3a2e12}
+.entaku-inline:has(#entakuPins:not([hidden])) .entaku-inline-body{
+  padding-top:78px;
+}
+.ent-tool-result{
+  margin-top:8px;padding:8px 10px;border-radius:10px;
+  background:rgba(15,138,78,.1);border:1px solid rgba(15,138,78,.28);
+  font-size:11.5px;line-height:1.5;color:var(--text);white-space:pre-wrap;
+}
+.ent-act-op{
+  display:inline-block;margin-right:4px;padding:1px 6px;border-radius:999px;
+  font-size:9.5px;font-weight:700;letter-spacing:.04em;
+  color:var(--nav-label);background:rgba(15,138,78,.22);border:1px solid rgba(15,138,78,.35);
+  vertical-align:middle;
+}
 .entaku-audio-btn{
   pointer-events:auto;flex-shrink:0;
   font-family:var(--font-body);font-size:14px;line-height:1;
@@ -2021,6 +2057,49 @@ video.dc-card__image{
 /* クリックできるキャラカード */
 .dc-card.dc-clickable{cursor:pointer}
 .dc-card.dc-clickable:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+/* 経理・紬：本日/今週ショート吹き出し（大きめ） */
+.dc-short-bubble{
+  position:absolute;z-index:7;top:10px;left:8px;right:8px;
+  pointer-events:none;
+  padding:12px 14px 14px;
+  border-radius:16px;
+  background:rgba(255,252,246,.96);
+  border:1.5px solid rgba(40,36,30,.78);
+  box-shadow:0 8px 22px rgba(0,0,0,.45),0 2px 0 rgba(255,255,255,.55) inset;
+  font-family:'Zen Kaku Gothic New',var(--font-body),sans-serif;
+  color:#1f1b16;
+  line-height:1.25;
+}
+.dc-short-bubble::after{
+  content:"";position:absolute;left:28px;bottom:-9px;
+  border:9px solid transparent;border-top-color:rgba(255,252,246,.96);
+  filter:drop-shadow(0 1px 0 rgba(40,36,30,.55));
+}
+.dc-short-bubble .dc-short-title{
+  font-size:11px;font-weight:700;letter-spacing:.08em;
+  color:#5a5044;margin-bottom:8px;
+}
+.dc-short-bubble .dc-short-row{
+  display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  margin-top:5px;
+}
+.dc-short-bubble .dc-short-label{
+  font-size:13px;font-weight:700;color:#2a241c;white-space:nowrap;
+}
+.dc-short-bubble .dc-short-amt{
+  font-family:var(--font-num),ui-monospace,monospace;
+  font-size:18px;font-weight:800;letter-spacing:.01em;
+  color:#c42828;text-align:right;
+}
+.dc-short-bubble .dc-short-amt.ok{color:#1f7a4c}
+.dc-short-bubble .dc-short-hint{
+  margin-top:8px;font-size:10px;color:#7a7064;line-height:1.4;
+}
+@media(max-width:980px){
+  .dc-short-bubble{padding:10px 11px 12px;border-radius:14px}
+  .dc-short-bubble .dc-short-label{font-size:12px}
+  .dc-short-bubble .dc-short-amt{font-size:15px}
+}
 /* パラダイスシティ：案件ボード */
 .bp-form{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .bp-form input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--text);font-size:13px}
@@ -2651,6 +2730,7 @@ video.dc-card__image{
           <select class="entaku-voice-sel" id="entakuVoiceSel" title="声の種類" aria-label="声の種類"></select>
           <button type="button" class="entaku-audio-btn" id="entakuAudioBtn" data-portal-audio-btn onclick="PortalTTS.toggle()" aria-pressed="true" title="音声をOFFにする" aria-label="音声ON"><span class="portal-audio-lbl" aria-hidden="true">🔊</span></button>
         </div>
+        <div class="entaku-pins" id="entakuPins" hidden aria-label="円卓ショートカット"></div>
         <div class="entaku-bg-art" aria-hidden="true"><img src="entaku.png" alt="" decoding="async" draggable="false"></div>
         <div class="entaku-empty" id="entakuEmpty" onclick="openEntaku()" role="button" tabindex="0">現在進行中の会議はありません</div>
         <div class="entaku-status-panel" id="entakuStatusPanel" hidden>
@@ -9844,7 +9924,44 @@ window.EntakuDocIngest=(function(){
     { id:'sales', label:'営業会議' },
     { id:'other', label:'その他MT' }
   ];
-  const S = { history: [], busy: false, playing: false, open: false, tour: null, lastScreen: 'dash', focus: null, actions: [], minutes: [], pendingAtt: [], recMeta: null, pickDraft: null, awaitingPick: false, awaitingDocClarify: false };
+  const S = { history: [], busy: false, playing: false, open: false, tour: null, lastScreen: 'dash', focus: null, actions: [], minutes: [], pins: [], pendingAtt: [], recMeta: null, pickDraft: null, awaitingPick: false, awaitingDocClarify: false };
+  const NAV_CATALOG = [
+    { id:'dash', label:'金庫室ダッシュボード', where:'左サイドバー「会計・法務」内の先頭', acct:true },
+    { id:'biz-cf', label:'キャッシュフロー(CF)', where:'左サイドバー「会計・法務」→ CF', acct:true },
+    { id:'cf-forecast', label:'CF予測', where:'CF画面内の「予測」タブ（左ナビ直下ではない）', acct:true },
+    { id:'cf-bank', label:'口座・CSV取込', where:'左サイドバー「会計・法務」→ 口座', acct:true },
+    { id:'cf-link', label:'明細突合', where:'左サイドバー「会計・法務」→ 明細突合', acct:true },
+    { id:'cf-inrou', label:'印籠レポート', where:'左サイドバー「会計・法務」→ 印籠', acct:true },
+    { id:'cf-party', label:'役員貸付', where:'左サイドバー「会計・法務」→ 役員貸付', acct:true },
+    { id:'cf-cases', label:'イレギュラー案件ボード', where:'左サイドバー事業エリア（緑枠外）→ イレギュラー案件', acct:false },
+    { id:'cf-flow', label:'CFフロー', where:'左サイドバー事業エリア → CFフロー', acct:false },
+    { id:'cf-legal', label:'契約リーガル', where:'左サイドバー「会計・法務」→ 契約リーガル', acct:true },
+    { id:'contracts', label:'契約台帳', where:'左サイドバー「会計・法務」→ 契約台帳', acct:true },
+    { id:'quest', label:'精算クエスト', where:'左サイドバー「会計・法務」→ 精算', acct:true },
+    { id:'entry', label:'記録する', where:'左サイドバー「会計・法務」→ 記録', acct:true },
+    { id:'ledger', label:'元帳', where:'左サイドバー「会計・法務」→ 元帳', acct:true },
+    { id:'flow', label:'フロー', where:'左サイドバー「会計・法務」→ フロー', acct:true },
+    { id:'fiscal', label:'会計年度', where:'左サイドバー「会計・法務」→ 会計年度', acct:true },
+    { id:'tax', label:'税', where:'左サイドバー「会計・法務」→ 税', acct:true },
+    { id:'billing-invoice', label:'請求・見積書', where:'左サイドバー「会計・法務」→ 請求・見積書', acct:true },
+    { id:'billing-receipt', label:'領収書', where:'左サイドバー「会計・法務」→ 領収書', acct:true },
+    { id:'mtg-finance', label:'経理会議', where:'左サイドバー「会議」ドロップダウン → 経理会議', acct:false },
+    { id:'mtg-sales', label:'営業会議', where:'左サイドバー「会議」ドロップダウン → 営業会議', acct:false },
+    { id:'mtg-other', label:'その他MT', where:'左サイドバー「会議」ドロップダウン → その他MT', acct:false },
+    { id:'biz-paradise', label:'パラダイスシティ', where:'左サイドバー事業ボタン最上段付近', acct:false },
+    { id:'biz-inage', label:'稲毛海浜公園', where:'左サイドバー事業ボタン', acct:false },
+    { id:'biz-realestate', label:'不動産', where:'左サイドバー事業ボタン', acct:false },
+    { id:'biz-care', label:'介護デイ', where:'左サイドバー事業ボタン', acct:false },
+    { id:'biz-it', label:'IT', where:'左サイドバー事業ボタン', acct:false },
+    { id:'biz-kanstwifi', label:'カンストWiFi', where:'左サイドバー事業ボタン', acct:false },
+    { id:'biz-staffing', label:'人材派遣', where:'左サイドバー事業ボタン', acct:false },
+    { id:'biz-detective', label:'探偵', where:'左サイドバー事業ボタン', acct:false },
+    { id:'tasks', label:'タスク', where:'オフィス画面／タスク（ナビは非表示の場合あり）', acct:false }
+  ];
+  const FILLABLE_FIELDS = new Set([
+    'entakuText','cfForecastDays','cfCaseTitle','cfCaseDate','cfCaseSchedDate',
+    'edbxQ','officeTkTitle','officeTkDue','tkTitle','tkDue'
+  ]);
   let lastSpokenIdx = -1;
   let lastDashIdx = -1;
   const LS_ENTAKU = 'gooner_entaku_v2';
@@ -9879,7 +9996,8 @@ window.EntakuDocIngest=(function(){
       localStorage.setItem(LS_ENTAKU, JSON.stringify({
         history: slimHist,
         actions: S.actions || [],
-        minutes: (S.minutes || []).slice(-200)
+        minutes: (S.minutes || []).slice(-200),
+        pins: (S.pins || []).slice(0, 12)
       }));
     }catch(e){}
   }
@@ -9890,6 +10008,7 @@ window.EntakuDocIngest=(function(){
         S.history = d.history;
         S.actions = Array.isArray(d.actions) ? d.actions : [];
         S.minutes = Array.isArray(d.minutes) ? d.minutes : [];
+        S.pins = Array.isArray(d.pins) ? d.pins : [];
       }
     }catch(e){}
   }
@@ -9899,6 +10018,7 @@ window.EntakuDocIngest=(function(){
       S.history = d.history;
       S.actions = Array.isArray(d.actions) ? d.actions : [];
       S.minutes = Array.isArray(d.minutes) ? d.minutes : [];
+      if(Array.isArray(d.pins)) S.pins = d.pins;
       S.history.forEach(function(m){
         if(!m) return;
         if(m.kind==='meeting-pick' || m.kind==='doc-clarify') m.live=false;
@@ -9906,6 +10026,7 @@ window.EntakuDocIngest=(function(){
       S.awaitingPick=false; S.pickDraft=null; S.awaitingDocClarify=false;
       S.busy=false;
       render();
+      renderPins();
       try{ window.MeetingArchive?.render?.(); }catch(e){}
     }catch(e){}
   };
@@ -9914,10 +10035,14 @@ window.EntakuDocIngest=(function(){
     S.actions = actions;
     S.minutes = S.minutes || [];
     actions.forEach(function(a){
-      S.minutes.push({ title:a.title, owner:a.owner, due:a.due, module:a.module, done:!!a.done });
+      S.minutes.push({
+        title:a.title, owner:a.owner, due:a.due, module:a.module,
+        op:a.op||'', done:!!a.done
+      });
     });
     if(S.minutes.length > 200) S.minutes = S.minutes.slice(-200);
     persistEntaku();
+    try{ executeEntakuActions(actions); }catch(e){ console.error(e); }
   }
   function agentOf(id){ return AGENTS[id] || AGENTS.secretary; }
   function agentLabel(m){
@@ -9996,15 +10121,17 @@ window.EntakuDocIngest=(function(){
   function actionsHtml(){
     if(!S.actions || !S.actions.length) return '';
     const items = S.actions.map(function(a, idx){
-      const meta = [a.owner, a.due].filter(Boolean).join(' ・ ');
+      const meta = [a.owner, a.due, a.op?('操作:'+a.op):''].filter(Boolean).join(' ・ ');
+      const opBadge = a.op ? '<span class="ent-act-op">'+esc(a.op)+'</span>' : '';
       const jump = a.module ? '<button type="button" class="ent-act-jump" data-s="'+esc(a.module)+'">開く</button>' : '';
+      const run = a.op && a.op!=='note' ? '<button type="button" class="ent-act-jump" data-ent-run="'+idx+'">実行</button>' : '';
       return '<label class="ent-act-item'+(a.done?' is-done':'')+'">'
         + '<input type="checkbox" class="ent-act-chk" data-idx="'+idx+'"'+(a.done?' checked':'')+'>'
-        + '<span class="ent-act-body"><span class="ent-act-title">'+esc(a.title)+'</span>'
+        + '<span class="ent-act-body"><span class="ent-act-title">'+opBadge+esc(a.title)+'</span>'
         + (meta?'<span class="ent-act-meta">'+esc(meta)+'</span>':'') + '</span>'
-        + jump + '</label>';
+        + run + jump + '</label>';
     }).join('');
-    return '<div class="ent-actions"><div class="ent-actions-cap">📋 決定事項・次の一手</div>'+items+'</div>';
+    return '<div class="ent-actions"><div class="ent-actions-cap">📋 決定事項・次の一手（操作付き）</div>'+items+'</div>';
   }
   function highlightLatestAgents(){
     if(S.busy)return;
@@ -10227,8 +10354,245 @@ window.EntakuDocIngest=(function(){
     { key:'経理会議', s:'mtg-finance', label:'経理会議へ' },
     { key:'営業会議', s:'mtg-sales', label:'営業会議へ' },
     { key:'その他MT', s:'mtg-other', label:'その他MTへ' },
+    { key:'請求', s:'billing-invoice', label:'請求・見積書へ' },
+    { key:'領収', s:'billing-receipt', label:'領収書へ' },
+    { key:'ショートカット', s:'dash', label:'円卓ピンへ' },
   ];
   const AI_TOUR = ['cf-bank','cf-cases','cf-link','cf-flow','biz-cf','cf-inrou'];
+  function navOf(sid){
+    return NAV_CATALOG.find(function(n){ return n.id===sid; }) || null;
+  }
+  function postToolResult(text, agent){
+    const t=String(text||'').trim();
+    if(!t) return;
+    S.history.push({
+      role:'assistant',
+      agent: agent||'secretary',
+      content: t,
+      kind: 'tool-result'
+    });
+    persistEntaku();
+    render();
+  }
+  function screenSnapshot(sid){
+    const target = sid==='cf-forecast'
+      ? (document.getElementById('cfForecastBody') || document.getElementById('s-biz-cf'))
+      : (document.getElementById('s-'+sid) || document.querySelector('.screen.on'));
+    if(!target) return '（画面が見つかりません）';
+    const txt = (target.innerText || target.textContent || '')
+      .replace(/[ \t]+\n/g,'\n')
+      .replace(/\n{3,}/g,'\n\n')
+      .trim()
+      .slice(0, 3500);
+    return txt || '（表示テキストが空です）';
+  }
+  function searchLocalMaterials(query){
+    const q=String(query||'').trim().toLowerCase();
+    if(!q) return [];
+    const hits=[];
+    try{
+      const inbox=window.DocInbox?.load?.()||{};
+      Object.keys(inbox).forEach(function(mod){
+        (inbox[mod]||[]).forEach(function(r){
+          const blob=((r.title||'')+' '+(r.name||'')+' '+(r.summary||'')+' '+(r.text||'')+' '+(r.label||'')).toLowerCase();
+          if(blob.includes(q)){
+            hits.push({
+              source:'DocInbox/'+mod,
+              title:r.title||r.name||'資料',
+              snippet:String(r.summary||r.text||'').replace(/\s+/g,' ').slice(0,140),
+              module: mod==='biz-cf'?'biz-cf':(mod.indexOf('mtg-')===0?mod:(mod==='contracts'?'contracts':mod))
+            });
+          }
+        });
+      });
+    }catch(e){}
+    try{
+      const mtg=window.MeetingArchive?.load?.()||{};
+      Object.keys(mtg).forEach(function(type){
+        (mtg[type]||[]).forEach(function(r){
+          const blob=((r.label||'')+' '+(r.summary||'')+' '+(r.transcript||'')+' '+(r.report||'')).toLowerCase();
+          if(blob.includes(q)){
+            hits.push({
+              source:'会議/'+(window.MeetingArchive?.labelOf?.(type)||type),
+              title:(r.label||'議事録')+' '+(r.at||'').slice(0,10),
+              snippet:String(r.summary||r.transcript||'').replace(/\s+/g,' ').slice(0,140),
+              module: window.MeetingArchive?.screenOf?.(type)||'mtg-other'
+            });
+          }
+        });
+      });
+    }catch(e){}
+    try{
+      const contracts=(window.Treasury?.S?.contracts)||[];
+      contracts.forEach(function(c){
+        const blob=((c.title||'')+' '+(c.party||'')+' '+(c.note||'')+' '+(c.text||'')).toLowerCase();
+        if(blob.includes(q)){
+          hits.push({
+            source:'契約台帳',
+            title:c.title||c.party||'契約',
+            snippet:String(c.note||c.party||'').replace(/\s+/g,' ').slice(0,140),
+            module:'contracts'
+          });
+        }
+      });
+    }catch(e){}
+    try{
+      const cases=(window.Treasury?.S?.cases)||[];
+      cases.forEach(function(c){
+        const blob=((c.title||'')+' '+(c.memo||'')+' '+(c.party||'')).toLowerCase();
+        if(blob.includes(q)){
+          hits.push({
+            source:'イレギュラー案件',
+            title:c.title||'案件',
+            snippet:String(c.memo||c.party||'').replace(/\s+/g,' ').slice(0,140),
+            module:'cf-cases'
+          });
+        }
+      });
+    }catch(e){}
+    return hits.slice(0, 20);
+  }
+  function addEntakuPin(module, label){
+    const nav=navOf(module);
+    const lab=String(label||(nav&&nav.label)||module).trim().slice(0,40);
+    if(!module) return false;
+    S.pins = (S.pins||[]).filter(function(p){ return p.module!==module; });
+    S.pins.unshift({ module:module, label:lab, at:new Date().toISOString() });
+    if(S.pins.length>12) S.pins=S.pins.slice(0,12);
+    persistEntaku();
+    renderPins();
+    return true;
+  }
+  function removeEntakuPin(module){
+    S.pins=(S.pins||[]).filter(function(p){ return p.module!==module; });
+    persistEntaku();
+    renderPins();
+  }
+  function renderPins(){
+    const box=el('entakuPins');
+    if(!box) return;
+    const pins=S.pins||[];
+    if(!pins.length){ box.hidden=true; box.innerHTML=''; return; }
+    box.hidden=false;
+    box.innerHTML=pins.map(function(p){
+      return '<button type="button" class="entaku-pin" data-pin-s="'+esc(p.module)+'" title="'+esc(p.label)+'">'
+        +'<span>'+esc(p.label)+'</span>'
+        +'<span class="entaku-pin-x" data-pin-x="'+esc(p.module)+'" title="ピンを外す" aria-label="ピンを外す">×</span>'
+        +'</button>';
+    }).join('');
+    box.querySelectorAll('[data-pin-s]').forEach(function(b){
+      b.onclick=function(e){
+        if(e.target && e.target.closest('[data-pin-x]')) return;
+        gotoScreen(b.dataset.pinS,{noScroll:true});
+      };
+    });
+    box.querySelectorAll('[data-pin-x]').forEach(function(b){
+      b.onclick=function(e){
+        e.preventDefault(); e.stopPropagation();
+        removeEntakuPin(b.dataset.pinX);
+      };
+    });
+  }
+  function executeEntakuAction(a){
+    if(!a) return;
+    const op=String(a.op||'').toLowerCase();
+    if(!op || op==='note') return;
+    const mod=String(a.module||'').trim();
+    if(op==='goto'){
+      if(!mod){ postToolResult('⚠ 開く画面が指定されていません。'); return; }
+      gotoScreen(mod,{noScroll:true});
+      const n=navOf(mod);
+      postToolResult('【操作】『'+(n?n.label:mod)+'』を開きました。'+(n?'\n場所: '+n.where:''));
+      return;
+    }
+    if(op==='locate'){
+      const n=navOf(mod);
+      if(!n){ postToolResult('⚠ 画面ID「'+(mod||'？')+'」はナビ地図にありません。'); return; }
+      postToolResult('【場所案内】'+n.label+'\n・画面ID: '+n.id+'\n・位置: '+n.where+(n.acct?'\n・会計権限が必要です':'')+'\n円卓から「開く」またはショートカットで移動できます。');
+      return;
+    }
+    if(op==='snapshot'){
+      const sid=mod||activeScreen()||'dash';
+      if(mod) gotoScreen(mod,{noScroll:true});
+      setTimeout(function(){
+        const n=navOf(sid);
+        const body=screenSnapshot(sid);
+        postToolResult('【画面プリント】'+(n?n.label:sid)+'\n----\n'+body);
+      }, 280);
+      return;
+    }
+    if(op==='print'){
+      const sid=mod||activeScreen();
+      if(sid) gotoScreen(sid,{noScroll:true});
+      setTimeout(function(){
+        try{ window.print(); }catch(e){}
+        postToolResult('【印刷】印刷ダイアログを開きました（'+sid+'）。ブラウザの印刷設定で出力してください。');
+      }, 320);
+      return;
+    }
+    if(op==='search'){
+      const q=String(a.query||a.title||'').trim();
+      if(!q){ postToolResult('⚠ 検索語が空です。'); return; }
+      const scope=String(a.scope||'both').toLowerCase();
+      const local = (scope==='dropbox') ? [] : searchLocalMaterials(q);
+      let text='【資料検索】「'+q+'」\n';
+      if(scope!=='dropbox'){
+        text += local.length
+          ? local.map(function(h,i){
+              return (i+1)+'. ['+h.source+'] '+h.title+(h.snippet?'\n   '+h.snippet:'')+(h.module?'\n   → 画面 '+h.module:'');
+            }).join('\n')
+          : '社内保管（DocInbox・議事録・契約・案件）に一致はありません。';
+        text += '\n（ヒットを円卓に貼る場合は「○○をショートカットして」と指示してください）\n';
+      }
+      postToolResult(text.trim());
+      if(scope==='local') return;
+      if(window.PortalAuth?.isDemoMode?.()){
+        postToolResult('（デモモードのため Dropbox 検索はスキップしました）');
+        return;
+      }
+      if(window.EntakuDbxSearch?.search){
+        window.EntakuDbxSearch.search(q).catch(function(e){
+          postToolResult('⚠ Dropbox検索: '+(e&&e.message||e));
+        });
+      }else{
+        try{ window.EntakuDbxSearch?.open?.(q); }catch(e){}
+        postToolResult('Dropbox検索パネルを開きました。検索語「'+q+'」を入力して実行してください。');
+      }
+      return;
+    }
+    if(op==='pin'){
+      if(!mod){ postToolResult('⚠ ピン留めする画面が指定されていません。'); return; }
+      const ok=addEntakuPin(mod, a.label||a.title);
+      const n=navOf(mod);
+      postToolResult(ok
+        ? '【ショートカット】円卓に「'+(a.label||(n&&n.label)||mod)+'」を貼り付けました。円卓上部のピンから開けます。'
+        : '⚠ ピン留めに失敗しました。');
+      return;
+    }
+    if(op==='fill'){
+      const field=String(a.field||'').trim();
+      const value=String(a.value||'');
+      if(!FILLABLE_FIELDS.has(field)){
+        postToolResult('⚠ 入力欄「'+field+'」は編集許可リスト外です。安全のためスキップしました。');
+        return;
+      }
+      const node=document.getElementById(field);
+      if(!node){ postToolResult('⚠ 入力欄 #'+field+' が見つかりません。'); return; }
+      if(node.tagName==='SELECT' || node.tagName==='TEXTAREA' || node.tagName==='INPUT'){
+        node.value=value;
+        try{ node.dispatchEvent(new Event('input',{bubbles:true})); }catch(e){}
+        try{ node.dispatchEvent(new Event('change',{bubbles:true})); }catch(e){}
+        postToolResult('【編集】#'+field+' に値を反映しました。内容を確認してください。');
+      }else{
+        postToolResult('⚠ #'+field+' は入力欄ではありません。');
+      }
+    }
+  }
+  function executeEntakuActions(actions){
+    (actions||[]).forEach(function(a){
+      try{ executeEntakuAction(a); }catch(e){ console.error('[entaku-tool]', e); }
+    });
+  }
   function setAiWorking(on,opts){
     opts=opts||{};
     document.getElementById('treasury-pane')?.classList.toggle('ai-working', on);
@@ -10246,12 +10610,12 @@ window.EntakuDocIngest=(function(){
   function gotoScreen(sid,opts){
     if(!sid) return;
     opts=opts||{};
-    if(window.PortalAuth&&PortalAuth.isAccountingScreen(sid)){
-      if(!PortalAuth.canAccessAccounting()){
+    if(sid==='cf-forecast' || (window.PortalAuth&&PortalAuth.isAccountingScreen(sid))){
+      if(window.PortalAuth&&!PortalAuth.canAccessAccounting()){
         try{toast("会計・法務メニューは社長・経理・法務のみ利用できます");}catch(e){}
         return;
       }
-      try{ PortalAuth.revealSecureNav?.(true, sid); }catch(e){}
+      try{ PortalAuth.revealSecureNav?.(true, sid==='cf-forecast'?'biz-cf':sid); }catch(e){}
     }
     const prev=window._entakuSuppressScroll;
     if(opts.noScroll)window._entakuSuppressScroll=true;
@@ -10287,6 +10651,9 @@ window.EntakuDocIngest=(function(){
   function minutesHtml(m){
     if(m.kind==='load-status'){
       return '<div class="ent-load-status '+(m.loadClass||'')+'">'+esc(m.content||'')+'</div>';
+    }
+    if(m.kind==='tool-result'){
+      return '';
     }
     if(m.kind!=='minutes') return '';
     const dec=(Array.isArray(m.decisions)?m.decisions:[]).map(function(d){
@@ -10421,13 +10788,16 @@ window.EntakuDocIngest=(function(){
     body.innerHTML = S.history.map((m,idx)=>{
       const who = agentLabel(m);
       const cls = m.role==='user' ? 'ent-me' : ('ent-ai ent-agent-'+(m.agent||'secretary'));
-      const jumps = m.role==='assistant' && m.kind!=='load-status' && m.kind!=='doc-clarify' ? jumpButtons(m.content) : '';
-      const bodyTxt = m.kind==='load-status' ? '' : esc(m.content).replace(/\n/g,'<br>');
+      const jumps = m.role==='assistant' && m.kind!=='load-status' && m.kind!=='doc-clarify' && m.kind!=='tool-result' ? jumpButtons(m.content) : '';
+      const bodyTxt = m.kind==='load-status' ? '' : (m.kind==='tool-result'
+        ? '<div class="ent-tool-result">'+esc(m.content).replace(/\n/g,'<br>')+'</div>'
+        : esc(m.content).replace(/\n/g,'<br>'));
       return '<div class="ent-msg '+cls+'" data-ent-idx="'+idx+'"><div class="ent-msg-head"><span class="ent-who">'+who+'</span><button type="button" class="ent-msg-del" data-ent-del="'+idx+'" title="この相談を削除" aria-label="削除">削除</button></div><div class="ent-txt">'+bodyTxt+minutesHtml(m)+meetingPickHtml(m,idx)+docClarifyHtml(m)+attachmentsHtml(m.attachments)+jumps+'</div></div>';
     }).join('')
       + (S.busy?'<div class="ent-msg ent-ai ent-agent-secretary"><span class="ent-who">秘書　凛</span><div class="ent-txt ent-typing">凛・紬・陽翔が協議中…</div></div>':'')
       + actionsHtml();
     body.scrollTop = body.scrollHeight;
+    renderPins();
     const clearBtn=el('entakuClearBtn');
     if(clearBtn) clearBtn.disabled=!S.history.length || !!S.busy;
     body.querySelectorAll('[data-ent-del]').forEach(function(b){
@@ -10439,7 +10809,15 @@ window.EntakuDocIngest=(function(){
         deleteEntakuMsg(i);
       };
     });
-    body.querySelectorAll('.entaku-jump,.ent-act-jump').forEach(b=>b.onclick=()=>gotoScreen(b.dataset.s,{noScroll:true}));
+    body.querySelectorAll('.entaku-jump,.ent-act-jump[data-s]').forEach(b=>b.onclick=()=>gotoScreen(b.dataset.s,{noScroll:true}));
+    body.querySelectorAll('[data-ent-run]').forEach(function(b){
+      b.onclick=function(e){
+        e.preventDefault(); e.stopPropagation();
+        const i=+b.dataset.entRun;
+        const act=S.actions[i];
+        if(act) executeEntakuAction(act);
+      };
+    });
     body.querySelectorAll('.ent-act-chk').forEach(function(c){
       c.onchange=function(){ const i=+c.dataset.idx; if(S.actions[i]){ S.actions[i].done=c.checked; persistEntaku(); render(); } };
     });
@@ -10525,8 +10903,27 @@ window.EntakuDocIngest=(function(){
     try{
       const S2 = window.Treasury && window.Treasury.S;
       if(S2){
-        parts.push('案件 '+(S2.cases?.length||0)+'件 / 口座 '+(S2.accounts?.length||0)+'件 / 銀行明細 '+(S2.bankTx?.length||0)+'件 / 関連者 '+(S2.relatedParties?.length||0)+'件');
+        parts.push('案件 '+(S2.cases?.length||0)+'件 / 口座 '+(S2.accounts?.length||0)+'件 / 銀行明細 '+(S2.bankTx?.length||0)+'件 / 関連者 '+(S2.relatedParties?.length||0)+'件 / 契約 '+(S2.contracts?.length||0)+'件');
       }
+    }catch(e){}
+    parts.push('現在表示中の画面: '+(activeScreen()||'dash'));
+    parts.push('【ナビ地図（ボタン位置）】\n'+NAV_CATALOG.map(function(n){
+      return '・'+n.id+' = '+n.label+' ／ '+n.where+(n.acct?'（会計権限）':'');
+    }).join('\n'));
+    if(S.pins && S.pins.length){
+      parts.push('【円卓ショートカット（ピン）】\n'+S.pins.map(function(p){
+        return '・'+p.label+' → '+p.module;
+      }).join('\n'));
+    }
+    try{
+      const inbox=window.DocInbox?.load?.()||{};
+      const idx=[];
+      Object.keys(inbox).forEach(function(mod){
+        (inbox[mod]||[]).slice(0,4).forEach(function(r){
+          idx.push('・['+mod+'] '+(r.title||r.name||'資料'));
+        });
+      });
+      if(idx.length) parts.push('【資料索引（DocInbox抜粋）】\n'+idx.slice(0,24).join('\n'));
     }catch(e){}
     if(S.minutes && S.minutes.length){
       const recent = S.minutes.slice(-6).map(function(m){
@@ -10534,6 +10931,7 @@ window.EntakuDocIngest=(function(){
       }).join('\n');
       parts.push('【これまでの決定事項（議事録）】\n'+recent);
     }
+    parts.push('編集可能な入力欄id: '+Array.from(FILLABLE_FIELDS).join(', '));
     return parts.join('\n');
   }
   function updateEntakuStatus(){
@@ -11093,6 +11491,16 @@ window.EntakuDocIngest=(function(){
       if(e.key==='Enter' || e.key===' '){ e.preventDefault(); window.askAgentDirect(card.dataset.dept); }
     });
   });
+  window.EntakuTools={
+    catalog: NAV_CATALOG,
+    goto: function(sid){ gotoScreen(sid,{noScroll:true}); },
+    searchLocal: searchLocalMaterials,
+    pin: addEntakuPin,
+    unpin: removeEntakuPin,
+    snapshot: screenSnapshot,
+    execute: executeEntakuAction,
+    runAll: executeEntakuActions
+  };
   restoreEntaku();      // 前回の会議・議事録を復元
   // 復元時は未完了の会議選択・資料確認を無効化
   S.history.forEach(function(m){
@@ -11105,6 +11513,7 @@ window.EntakuDocIngest=(function(){
   else{
     const clearBtn=el('entakuClearBtn');
     if(clearBtn) clearBtn.disabled=true;
+    renderPins();
   }
   syncToggle();
   try{ window.MeetingArchive?.render?.(); }catch(e){}
