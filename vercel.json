@@ -9,7 +9,7 @@
   },
   "crons": [
     {
-      "path": "/api/attendance-remind",
+      "path": "/api/duty",
       "schedule": "30 0 * * 1-5"
     }
   ],

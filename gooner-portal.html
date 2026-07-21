@@ -9542,7 +9542,7 @@ window.BizCaseLink=(function(){
   function postCheckin(){
     const u=user()||{};
     const m=member()||{};
-    fetch('/api/attendance',{
+    fetch('/api/duty',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
