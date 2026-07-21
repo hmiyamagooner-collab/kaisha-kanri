@@ -1049,25 +1049,46 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   opacity:0;pointer-events:none;overflow:hidden;
 }
 #portal-shell.nav-collapsed #quests-row{
-  padding:8px 14px 10px;
-  gap:10px;
-  grid-template-rows:minmax(0,42fr) minmax(0,58fr);
+  padding:6px 10px 8px;
+  gap:8px;
+  /* 上段キャラを抑え、下段（円卓＋クエスト）を確実に収める */
+  grid-template-rows:minmax(0,32fr) minmax(0,68fr);
+  height:calc(100dvh - 44px);
+  max-height:calc(100dvh - 44px);
+  overflow:hidden;
 }
 #portal-shell.nav-collapsed .dash-split-row{
-  gap:12px;
-  grid-template-columns:minmax(0,78fr) minmax(0,22fr);
+  gap:8px;
+  /* 円卓を狭め、オフィスクエストを広く */
+  grid-template-columns:minmax(240px,38fr) minmax(0,62fr);
+  min-height:0;
+  height:100%;
+  overflow:hidden;
+}
+#portal-shell.nav-collapsed .dash-entaku-pane{
+  min-width:0;
+  max-width:420px;
+}
+#portal-shell.nav-collapsed #office-pane{
+  min-width:0;
+  min-height:0;
+}
+#portal-shell.nav-collapsed .office-frame{
+  flex:1 1 auto;
+  min-height:0;
+  max-height:100%;
 }
 #portal-shell.nav-collapsed .dash-cards-wrap{
-  padding:8px 12px 10px;
+  padding:4px 8px 6px;
 }
 #portal-shell.nav-collapsed .dc-cards{
-  gap:clamp(8px,1.5vw,16px);
-  max-width:min(1120px,100%);
+  gap:clamp(6px,1.2vw,12px);
+  max-width:min(960px,100%);
 }
-#portal-shell.nav-collapsed .dc-name{font-size:14px}
-#portal-shell.nav-collapsed .dc-dept{font-size:12px}
-#portal-shell.nav-collapsed .dc-name-en{font-size:9px}
-#portal-shell.nav-collapsed .office-tk-links{padding:10px 12px 12px;gap:8px}
+#portal-shell.nav-collapsed .dc-name{font-size:13px}
+#portal-shell.nav-collapsed .dc-dept{font-size:11px}
+#portal-shell.nav-collapsed .dc-name-en{font-size:8px}
+#portal-shell.nav-collapsed .office-tk-links{padding:8px 10px 10px;gap:6px}
 /* 円卓集中モード：サイドナビを隠し、円卓・本体を大きく */
 #portal-shell.entaku-focus{
   grid-template-columns:minmax(0,1fr);
@@ -1212,7 +1233,8 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .dash-split-row{
   min-height:0;height:100%;overflow:hidden;
   display:grid;
-  grid-template-columns:minmax(0,76fr) minmax(0,24fr);
+  /* 円卓を抑えめ、クエスト側を見やすく */
+  grid-template-columns:minmax(0,48fr) minmax(0,52fr);
   gap:8px;
 }
 #office-pane .office-frame{
@@ -1440,7 +1462,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .office-tk-item button:hover{color:var(--nav-green);border-color:var(--nav-green)}
 .office-tk-empty{font-size:11px;color:var(--muted);padding:4px 2px}
 .office-frame{
-  flex:1 1 auto;min-height:0;overflow:hidden;display:flex;position:relative;
+  flex:1 1 auto;min-height:120px;max-height:100%;overflow:hidden;display:flex;position:relative;
   background:#000;
 }
 .office-expand-hit{
@@ -2487,7 +2509,7 @@ video.dc-card__image{
   .dash-split-row{
     min-height:340px;
     height:340px;
-    grid-template-columns:minmax(0,76fr) minmax(260px,24fr);
+    grid-template-columns:minmax(0,45fr) minmax(280px,55fr);
   }
   #dashboard-pane{
     min-height:300px;height:100%;overflow:hidden;
@@ -10606,6 +10628,15 @@ window.PortalAuth=(function(){
     try{ localStorage.setItem(KEY, on?'1':'0'); }catch(e){}
     syncUi(!!on);
     try{ window.dispatchEvent(new CustomEvent('portal-nav-collapse',{detail:{on:!!on}})); }catch(e){}
+    // クエストiframeのフィットを再計算
+    requestAnimationFrame(function(){
+      try{ window.dispatchEvent(new Event('resize')); }catch(e){}
+      try{
+        document.querySelectorAll('#office-pane iframe, #officeQuestModal iframe').forEach(function(fr){
+          try{ fr.contentWindow?.dispatchEvent(new Event('resize')); }catch(e2){}
+        });
+      }catch(e){}
+    });
     return !!on;
   }
   function toggle(){ return setCollapsed(!isOn()); }
