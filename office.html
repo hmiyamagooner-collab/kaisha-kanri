@@ -1074,8 +1074,8 @@ function drawAllZoneLabels(g){
     drawZoneLabel(g,z,z.label);
   }
 }
-const BUBBLE_FONT='600 8px "Zen Kaku Gothic New",sans-serif';
-const BUBBLE_PAD_X=5,BUBBLE_H=17,BUBBLE_MAX_W=72,BUBBLE_R=3;
+const BUBBLE_FONT='600 4px "Zen Kaku Gothic New",sans-serif';
+const BUBBLE_PAD_X=3,BUBBLE_H=9,BUBBLE_MAX_W=36,BUBBLE_R=2;
 function bubbleRectOverlap(a,b){
   return a.bx<b.bx+b.w&&a.bx+a.w>b.bx&&a.by<b.by+b.h&&a.by+a.h>b.by;
 }
@@ -1121,15 +1121,15 @@ function drawSpeechBubble(g,bx,by,bw,bh,text,style,tailX,tailY,dir){
   const ty=tailY==null?by+bh/2:tailY;
   g.beginPath();
   if(dir==='left'){
-    const ly=Math.max(by+4,Math.min(ty,by+bh-4));
-    g.moveTo(bx,ly-3);g.lineTo(bx,ly+3);g.lineTo(bx-4,ly);
+    const ly=Math.max(by+2,Math.min(ty,by+bh-2));
+    g.moveTo(bx,ly-2);g.lineTo(bx,ly+2);g.lineTo(bx-2,ly);
   }else if(dir==='right'){
-    const ry=Math.max(by+4,Math.min(ty,by+bh-4));
-    g.moveTo(bx+bw,ry-3);g.lineTo(bx+bw,ry+3);g.lineTo(bx+bw+4,ry);
+    const ry=Math.max(by+2,Math.min(ty,by+bh-2));
+    g.moveTo(bx+bw,ry-2);g.lineTo(bx+bw,ry+2);g.lineTo(bx+bw+2,ry);
   }else{
-    const tcx=Math.max(bx+5,Math.min(tailX||bx+bw/2,bx+bw-5));
+    const tcx=Math.max(bx+3,Math.min(tailX||bx+bw/2,bx+bw-3));
     const tby=by+bh;
-    g.moveTo(tcx-3,tby);g.lineTo(tcx+3,tby);g.lineTo(tcx,tby+4);
+    g.moveTo(tcx-2,tby);g.lineTo(tcx+2,tby);g.lineTo(tcx,tby+2);
   }
   g.closePath();
   g.fillStyle=bg;g.fill();
