@@ -11059,13 +11059,21 @@ window.EntakuAI=(function(){
     chat:function(messages,context,focus){
       var ep=endpoint();
       if(!ep)return Promise.reject(new Error('AI_NOT_CONNECTED'));
+      if(typeof location!=='undefined' && /^file:/i.test(location.protocol||'')){
+        return Promise.reject(new Error('LOCAL_FILE'));
+      }
       return fetch(ep,{
         method:'POST',
         headers:{'Content-Type':'application/json'},
         body:JSON.stringify({mode:'entaku',messages:messages,context:context||'',focus:focus||''})
       }).then(function(r){
         return r.json().catch(function(){return{};}).then(function(data){
-          if(!r.ok)throw new Error(data.error||('HTTP '+r.status));
+          if(!r.ok){
+            var detail=String(data.detail||data.hint||'').trim();
+            var err=String(data.error||('HTTP '+r.status)).trim();
+            if(detail && detail.length<280) err+=' — '+detail;
+            throw new Error(err);
+          }
           var replies=normalizeReplies(data);
           if(!replies.length)throw new Error('EMPTY_REPLY');
           var actions=Array.isArray(data.actions)
@@ -11088,6 +11096,11 @@ window.EntakuAI=(function(){
             :[];
           return {replies:replies, actions:actions};
         });
+      }).catch(function(e){
+        if(e && e.name==='TypeError'){
+          throw new Error('NETWORK — /api/openai に届きません。https://kaisha-kanri.vercel.app で開いてください');
+        }
+        throw e;
       });
     },
     askAgents:function(question){
@@ -12730,9 +12743,13 @@ window.EntakuDocIngest=(function(){
     }).catch(function(e){
       S.busy=false; S.playing=false; window.__entakuSpeaking=false;
       el('entakuSend').disabled=false;
-      var msg=e&&e.message==='AI_NOT_CONNECTED'
-        ?'⚠ AIは未接続です。Vercel版で開き、OPENAI_API_KEY を設定してください。'
-        :'⚠ OpenAIに接続できませんでした（'+(e&&e.message||e)+'）。Vercel版＋OPENAI_API_KEYの設定が必要です。';
+      var m=String(e&&e.message||e||'');
+      var msg=
+        m==='AI_NOT_CONNECTED'||m==='LOCAL_FILE'
+          ?'⚠ AIは未接続です。https://kaisha-kanri.vercel.app/gooner-portal で開いてください（ローカルでは /api/openai が動きません）。'
+          :m.indexOf('NETWORK')===0
+            ?'⚠ '+m
+            :'⚠ OpenAIエラー: '+m;
       S.history.push({role:'assistant', agent:'secretary', content:msg});
       persistEntaku();
       render();
