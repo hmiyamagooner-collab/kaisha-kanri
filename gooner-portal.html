@@ -1089,9 +1089,10 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 #portal-shell.nav-collapsed .dc-card{border-radius:0}
 /* クエスト格納：円卓を全幅に */
 #portal-shell.quest-collapsed .dash-split-row{
-  grid-template-columns:minmax(0,1fr);
+  grid-template-columns:minmax(0,1fr)!important;
 }
-#portal-shell.quest-collapsed #office-pane{
+#portal-shell.quest-collapsed #office-pane,
+#portal-shell.quest-collapsed #entakuQuestSplit{
   display:none!important;
 }
 /* 円卓集中モード：サイドナビを隠し、円卓・本体を大きく */
@@ -1101,11 +1102,8 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 #portal-shell.entaku-focus > .gamenav{
   display:none!important;
 }
-#portal-shell.entaku-focus .dash-split-row{
-  grid-template-columns:minmax(0,60fr) minmax(0,40fr);
-}
 #portal-shell.entaku-focus.quest-collapsed .dash-split-row{
-  grid-template-columns:minmax(0,1fr);
+  grid-template-columns:minmax(0,1fr)!important;
 }
 #portal-shell.entaku-focus .dash-entaku-pane{
   min-width:0;
@@ -1204,6 +1202,22 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   background:linear-gradient(90deg,transparent,#0a2a0a 8%,#246024 50%,#0a2a0a 92%,transparent);
 }
 body.is-vsplit-drag{cursor:ns-resize;user-select:none}
+/* 円卓／クエストの左右伸縮 */
+.entaku-quest-split{
+  width:7px;margin:0;padding:0;border:0;border-radius:0;cursor:ew-resize;
+  background:linear-gradient(180deg,transparent,#123012 8%,#1a4a1a 50%,#123012 92%,transparent);
+  position:relative;z-index:6;align-self:stretch;
+}
+.entaku-quest-split::after{
+  content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:2px;height:42px;background:#39ff14;
+  box-shadow:0 0 8px rgba(57,255,20,.55);
+}
+.entaku-quest-split:hover,
+.entaku-quest-split.is-drag{
+  background:linear-gradient(180deg,transparent,#0a2a0a 8%,#246024 50%,#0a2a0a 92%,transparent);
+}
+body.is-hsplit-drag{cursor:ew-resize;user-select:none}
 /* サイドバー：ボタンは通常サイズ。マトリクス枠は画面下端まで */
 #portal-shell > .gamenav{
   position:sticky;
@@ -1277,9 +1291,9 @@ body.is-vsplit-drag{cursor:ns-resize;user-select:none}
 .dash-split-row{
   min-height:0;height:100%;overflow:hidden;
   display:grid;
-  /* 通常：円卓 60% / クエスト 40% */
-  grid-template-columns:minmax(0,60fr) minmax(0,40fr);
-  gap:8px;
+  /* 通常：円卓 60% / スプリッタ / クエスト 40% — 比率は JS が上書き可 */
+  grid-template-columns:minmax(0,60fr) 7px minmax(0,40fr);
+  gap:0;
 }
 #office-pane .office-frame{
   align-items:stretch;justify-content:stretch;
@@ -2518,6 +2532,7 @@ video.dc-card__image{
     grid-template-columns:1fr;
     grid-template-rows:minmax(180px,1fr) minmax(200px,1fr);
   }
+  .entaku-quest-split{display:none!important}
   #dashboard-pane,#office-pane,.dash-entaku-pane{min-height:0;overflow:hidden;}
   .dc-cards{min-height:0;min-width:0;width:100%;height:100%;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);}
   .entaku-inline{max-height:none;min-height:0;}
@@ -2558,7 +2573,7 @@ video.dc-card__image{
   .dash-split-row{
     min-height:340px;
     height:340px;
-    grid-template-columns:minmax(0,60fr) minmax(0,40fr);
+    grid-template-columns:minmax(0,60fr) 7px minmax(0,40fr);
   }
   #dashboard-pane{
     min-height:300px;height:100%;overflow:hidden;
@@ -3101,6 +3116,7 @@ video.dc-card__image{
         </form>
       </div>
     </section>
+    <button type="button" class="entaku-quest-split" id="entakuQuestSplit" title="ドラッグで円卓とクエストの幅を調整" aria-label="円卓とクエストの幅を調整"></button>
     <section class="quest-pane" id="office-pane">
       <div class="office-frame">
         <iframe src="office.html?embedded=1" title="オフィスクエスト マップ" tabindex="-1"></iframe>
@@ -10993,6 +11009,83 @@ window.PortalAuth=(function(){
     handle.addEventListener('pointercancel', endDrag);
   }
   window.PortalQuestsVSplit={ apply:apply, load:load };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire);
+  else wire();
+})();
+</script>
+
+<script>
+/* ===== 円卓／クエストの左右伸縮 ===== */
+(function(){
+  const KEY='gp_entaku_h_split_v1';
+  const SPLIT_W=7;
+  let leftFr=60; // 円卓側（残りがクエスト）
+  function row(){ return document.querySelector('.dash-split-row'); }
+  function collapsed(){
+    return !!document.getElementById('portal-shell')?.classList.contains('quest-collapsed');
+  }
+  function apply(){
+    const el=row();
+    if(!el) return;
+    if(collapsed()){
+      el.style.gridTemplateColumns='minmax(0,1fr)';
+      return;
+    }
+    const right=Math.max(18, 100-leftFr);
+    el.style.gridTemplateColumns='minmax(160px,'+leftFr+'fr) '+SPLIT_W+'px minmax(140px,'+right+'fr)';
+  }
+  function load(){
+    try{
+      const v=parseFloat(localStorage.getItem(KEY)||'');
+      if(Number.isFinite(v)&&v>=28&&v<=82) leftFr=v;
+    }catch(e){}
+    apply();
+  }
+  function save(){
+    try{ localStorage.setItem(KEY, String(Math.round(leftFr*10)/10)); }catch(e){}
+  }
+  function wire(){
+    load();
+    const handle=document.getElementById('entakuQuestSplit');
+    if(!handle) return;
+    let dragging=false;
+    handle.addEventListener('pointerdown', function(e){
+      if(e.button!=null&&e.button!==0) return;
+      if(collapsed()) return;
+      const el=row();
+      if(!el) return;
+      dragging=true;
+      handle.classList.add('is-drag');
+      document.body.classList.add('is-hsplit-drag');
+      try{ handle.setPointerCapture(e.pointerId); }catch(err){}
+      e.preventDefault();
+    });
+    handle.addEventListener('pointermove', function(e){
+      if(!dragging) return;
+      const el=row();
+      if(!el) return;
+      const r=el.getBoundingClientRect();
+      const usable=Math.max(1, r.width-SPLIT_W);
+      const x=e.clientX-r.left;
+      let pct=(x/usable)*100;
+      if(pct<28) pct=28;
+      if(pct>82) pct=82;
+      leftFr=pct;
+      apply();
+    });
+    function endDrag(){
+      if(!dragging) return;
+      dragging=false;
+      handle.classList.remove('is-drag');
+      document.body.classList.remove('is-hsplit-drag');
+      save();
+      try{ window.PortalNavCollapse?.kickOfficeFit?.(); }catch(err){}
+    }
+    handle.addEventListener('pointerup', endDrag);
+    handle.addEventListener('pointercancel', endDrag);
+    window.addEventListener('portal-quest-collapse', function(){ apply(); });
+  }
+  window.PortalEntakuHSplit={ apply:apply, load:load };
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire);
   else wire();
 })();
