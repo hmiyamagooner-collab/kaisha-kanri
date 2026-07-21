@@ -1048,47 +1048,100 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   padding:0!important;margin:0!important;border:0!important;
   opacity:0;pointer-events:none;overflow:hidden;
 }
+/* サイドバー左格納：優先度 円卓 > キャラ > クエスト */
+#portal-shell.nav-collapsed{
+  grid-template-columns:0 minmax(0,1fr);
+}
+#portal-shell.nav-collapsed > .gamenav{
+  width:0!important;min-width:0!important;max-width:0!important;
+  padding:0!important;margin:0!important;border:0!important;
+  opacity:0;pointer-events:none;overflow:hidden;
+}
 #portal-shell.nav-collapsed #quests-row{
-  padding:6px 10px 8px;
-  gap:8px;
-  /* 上段キャラを抑え、下段（円卓＋クエスト）を確実に収める */
-  grid-template-rows:minmax(0,32fr) minmax(0,68fr);
+  padding:4px 6px 6px;
+  gap:6px;
+  /* 上段キャラをしっかり確保、下段は円卓メイン */
+  grid-template-rows:minmax(260px,40fr) minmax(0,60fr);
   height:calc(100dvh - 44px);
   max-height:calc(100dvh - 44px);
   overflow:hidden;
 }
 #portal-shell.nav-collapsed .dash-split-row{
-  gap:8px;
-  /* 円卓を狭め、オフィスクエストを広く */
-  grid-template-columns:minmax(240px,38fr) minmax(0,62fr);
+  gap:6px;
+  /* 円卓を広く、クエストは右の細パネル */
+  grid-template-columns:minmax(0,76fr) minmax(180px,24fr);
   min-height:0;
   height:100%;
   overflow:hidden;
 }
 #portal-shell.nav-collapsed .dash-entaku-pane{
   min-width:0;
-  max-width:420px;
+  max-width:none;
 }
 #portal-shell.nav-collapsed #office-pane{
   min-width:0;
   min-height:0;
+  max-width:320px;
 }
 #portal-shell.nav-collapsed .office-frame{
   flex:1 1 auto;
-  min-height:0;
+  min-height:80px;
   max-height:100%;
 }
+#portal-shell.nav-collapsed .office-task-dock{
+  flex:0 0 auto;
+}
+#portal-shell.nav-collapsed .office-tk-links{
+  padding:6px;gap:4px;
+  grid-template-columns:1fr;
+}
+#portal-shell.nav-collapsed .office-tk-open{
+  min-height:32px;padding:0 8px;border-radius:6px;
+}
+#portal-shell.nav-collapsed .office-tk-open .nav-label{font-size:11px}
+/* キャラ：余白なし・全幅・吹き出しが読めるサイズ */
+#portal-shell.nav-collapsed #dashboard-pane,
 #portal-shell.nav-collapsed .dash-cards-wrap{
-  padding:4px 8px 6px;
+  padding:0;
+  align-items:stretch;
+  justify-content:stretch;
 }
 #portal-shell.nav-collapsed .dc-cards{
-  gap:clamp(6px,1.2vw,12px);
-  max-width:min(960px,100%);
+  gap:4px;
+  max-width:none;
+  margin:0;
+  width:100%;
+  height:100%;
 }
-#portal-shell.nav-collapsed .dc-name{font-size:13px}
-#portal-shell.nav-collapsed .dc-dept{font-size:11px}
-#portal-shell.nav-collapsed .dc-name-en{font-size:8px}
-#portal-shell.nav-collapsed .office-tk-links{padding:8px 10px 10px;gap:6px}
+#portal-shell.nav-collapsed .dc-card{
+  border-radius:0;
+}
+#portal-shell.nav-collapsed .dc-name{font-size:14px}
+#portal-shell.nav-collapsed .dc-dept{font-size:12px}
+#portal-shell.nav-collapsed .dc-name-en{font-size:9px}
+#portal-shell.nav-collapsed .dc-risk-bubble,
+#portal-shell.nav-collapsed .dc-short-bubble{
+  top:8px;left:8px;right:8px;
+  padding:9px 11px 10px;
+  border-radius:12px;
+  line-height:1.25;
+}
+#portal-shell.nav-collapsed .dc-risk-bubble .dc-risk-cap,
+#portal-shell.nav-collapsed .dc-short-bubble .dc-short-title{
+  font-size:12px;margin-bottom:4px;
+}
+#portal-shell.nav-collapsed .dc-risk-bubble .dc-risk-line,
+#portal-shell.nav-collapsed .dc-short-bubble .dc-short-label{
+  font-size:13px;
+}
+#portal-shell.nav-collapsed .dc-risk-bubble .dc-risk-line em,
+#portal-shell.nav-collapsed .dc-short-bubble .dc-short-amt{
+  font-size:15px;
+}
+#portal-shell.nav-collapsed .dc-risk-bubble .dc-risk-sub,
+#portal-shell.nav-collapsed .dc-short-bubble .dc-short-hint{
+  font-size:10px;margin-top:4px;
+}
 /* 円卓集中モード：サイドナビを隠し、円卓・本体を大きく */
 #portal-shell.entaku-focus{
   grid-template-columns:minmax(0,1fr);
@@ -1100,10 +1153,14 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   grid-template-rows:minmax(0,34fr) minmax(0,66fr);
 }
 #portal-shell.entaku-focus .dash-split-row{
-  grid-template-columns:minmax(0,84fr) minmax(0,16fr);
+  grid-template-columns:minmax(0,82fr) minmax(160px,18fr);
 }
 #portal-shell.entaku-focus .dash-entaku-pane{
   min-width:0;
+  max-width:none;
+}
+#portal-shell.entaku-focus #office-pane{
+  max-width:280px;
 }
 #portal-shell.entaku-focus #treasury-pane{
   max-width:none;
@@ -1223,7 +1280,8 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   height:calc(100dvh - 44px);
   min-height:420px;
   display:grid;
-  grid-template-rows:minmax(0,40fr) minmax(0,60fr);
+  /* 上段キャラ / 下段（円卓＋クエスト） */
+  grid-template-rows:minmax(0,42fr) minmax(0,58fr);
   grid-template-columns:1fr;
   gap:6px;
   padding:4px 6px 4px;
@@ -1233,8 +1291,8 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .dash-split-row{
   min-height:0;height:100%;overflow:hidden;
   display:grid;
-  /* 円卓を抑えめ、クエスト側を見やすく */
-  grid-template-columns:minmax(0,48fr) minmax(0,52fr);
+  /* 優先：円卓を広く、クエストは右にコンパクト */
+  grid-template-columns:minmax(0,72fr) minmax(0,28fr);
   gap:8px;
 }
 #office-pane .office-frame{
@@ -1428,8 +1486,13 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .daily-duty-ghost{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,.18)!important;font-weight:600!important}
 .tk-due{color:#9fe8dc;font-weight:700}
 .tk-due.late{color:#ff8a8a}
-.tk-score-chip{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;font-size:10px;font-weight:800;background:rgba(51,198,179,.18);color:#9fe8dc}
+.tk-score-chip{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:800;background:rgba(51,198,179,.18);color:#9fe8dc}
 .tk-char-link{font-size:10px;margin-left:4px;max-width:7.5em}
+.tk-dbx-tog{
+  font-size:10px;font-weight:700;margin-left:6px;padding:2px 7px;border-radius:3px;cursor:pointer;
+  border:1px solid rgba(76,175,80,.4);background:rgba(15,138,78,.1);color:var(--muted);
+}
+.tk-dbx-tog.on{border-color:rgba(154,209,74,.65);background:rgba(56,142,60,.22);color:var(--nav-label)}
 .office-tk-form button[type=submit]{
   padding:6px 10px;border:1px solid var(--nav-green-soft);border-radius:7px;cursor:pointer;font-size:11px;font-weight:700;
   background:linear-gradient(180deg,var(--nav-green-fill-hi) 0%,var(--nav-green-fill) 45%,var(--nav-green-fill-dim) 100%);
@@ -1574,16 +1637,16 @@ body.quest-expanded .dc-card video{
 #dashboard-pane #root{display:none!important;}
 .dash-cards-wrap{
   flex:1;min-height:0;min-width:0;overflow:hidden;
-  display:flex;flex-direction:column;align-items:center;justify-content:stretch;
+  display:flex;flex-direction:column;align-items:stretch;justify-content:stretch;
   width:100%;
-  padding:4px 8px 6px;
+  padding:0;
   background:#000;
 }
 .dc-cards{
-  flex:1;min-height:0;min-width:0;width:100%;max-width:min(1080px,100%);
-  margin:0 auto;overflow:hidden;
+  flex:1;min-height:0;min-width:0;width:100%;max-width:none;
+  margin:0;overflow:hidden;
   display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);
-  gap:clamp(6px,1.1vw,12px);align-items:stretch;
+  gap:4px;align-items:stretch;
 }
 /* ===== 円卓会議（Dashboard内インライン） ===== */
 .entaku-inline{
@@ -2275,61 +2338,61 @@ video.dc-card__image{
 /* クリックできるキャラカード（反応は .dc-photo 枠内のみ） */
 .dc-card.dc-clickable .dc-photo{cursor:pointer}
 .dc-card.dc-clickable .dc-photo:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
-/* 経理・紬：本日/今週ショート吹き出し（コンパクト） */
+/* 経理・紬：本日/今週ショート吹き出し */
 .dc-short-bubble{
-  position:absolute;z-index:7;top:6px;left:6px;right:6px;
+  position:absolute;z-index:7;top:8px;left:8px;right:8px;
   pointer-events:none;
-  padding:5px 8px 6px;
-  border-radius:10px;
+  padding:9px 11px 10px;
+  border-radius:12px;
   background:rgba(255,252,246,.96);
   border:1px solid rgba(40,36,30,.78);
-  box-shadow:0 4px 12px rgba(0,0,0,.4),0 1px 0 rgba(255,255,255,.55) inset;
+  box-shadow:0 6px 16px rgba(0,0,0,.42),0 1px 0 rgba(255,255,255,.55) inset;
   font-family:'Zen Kaku Gothic New',var(--font-body),sans-serif;
   color:#1f1b16;
-  line-height:1.15;
+  line-height:1.25;
 }
 .dc-short-bubble::after{
-  content:"";position:absolute;left:20px;bottom:-6px;
-  border:6px solid transparent;border-top-color:rgba(255,252,246,.96);
+  content:"";position:absolute;left:24px;bottom:-7px;
+  border:7px solid transparent;border-top-color:rgba(255,252,246,.96);
   filter:drop-shadow(0 1px 0 rgba(40,36,30,.55));
 }
 .dc-short-bubble .dc-short-title{
-  font-size:9px;font-weight:700;letter-spacing:.06em;
-  color:#5a5044;margin-bottom:3px;
+  font-size:11px;font-weight:700;letter-spacing:.06em;
+  color:#5a5044;margin-bottom:5px;
 }
 .dc-short-bubble .dc-short-row{
-  display:flex;align-items:baseline;justify-content:space-between;gap:6px;
-  margin-top:2px;
+  display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+  margin-top:3px;
 }
 .dc-short-bubble .dc-short-label{
-  font-size:10px;font-weight:700;color:#2a241c;white-space:nowrap;
+  font-size:12px;font-weight:700;color:#2a241c;white-space:nowrap;
 }
 .dc-short-bubble .dc-short-amt{
   font-family:var(--font-num),ui-monospace,monospace;
-  font-size:12px;font-weight:800;letter-spacing:.01em;
+  font-size:15px;font-weight:800;letter-spacing:.01em;
   color:#c42828;text-align:right;
 }
 .dc-short-bubble .dc-short-amt.ok{color:#1f7a4c}
 .dc-short-bubble .dc-short-hint{
-  margin-top:3px;font-size:8px;color:#7a7064;line-height:1.25;
+  margin-top:5px;font-size:10px;color:#7a7064;line-height:1.35;
 }
 @media(max-width:980px){
-  .dc-short-bubble{padding:4px 6px 5px;border-radius:8px}
-  .dc-short-bubble .dc-short-label{font-size:9px}
-  .dc-short-bubble .dc-short-amt{font-size:11px}
+  .dc-short-bubble{padding:7px 9px 8px;border-radius:10px}
+  .dc-short-bubble .dc-short-label{font-size:11px}
+  .dc-short-bubble .dc-short-amt{font-size:13px}
 }
-/* 社員リスク忠告吹き出し（コンパクト） */
+/* 社員リスク忠告吹き出し */
 .dc-risk-bubble{
-  position:absolute;z-index:8;top:4px;left:4px;right:4px;
+  position:absolute;z-index:8;top:8px;left:8px;right:8px;
   pointer-events:none;
-  padding:5px 8px 6px;
-  border-radius:10px;
+  padding:9px 11px 10px;
+  border-radius:12px;
   background:linear-gradient(180deg,rgba(255,248,240,.98),rgba(255,236,220,.96));
   border:1.5px solid rgba(180,48,36,.78);
-  box-shadow:0 4px 14px rgba(0,0,0,.42),0 1px 0 rgba(255,255,255,.5) inset;
+  box-shadow:0 6px 18px rgba(0,0,0,.45),0 1px 0 rgba(255,255,255,.5) inset;
   font-family:'Zen Kaku Gothic New',var(--font-body),sans-serif;
   color:#2a1814;
-  line-height:1.15;
+  line-height:1.25;
   animation:dcRiskIn .35s ease-out;
 }
 .dc-risk-bubble.is-ok{
@@ -2337,35 +2400,35 @@ video.dc-card__image{
   background:linear-gradient(180deg,rgba(244,255,248,.98),rgba(220,245,230,.95));
 }
 .dc-risk-bubble::after{
-  content:"";position:absolute;left:22px;bottom:-6px;
-  border:6px solid transparent;border-top-color:rgba(255,236,220,.96);
+  content:"";position:absolute;left:26px;bottom:-7px;
+  border:7px solid transparent;border-top-color:rgba(255,236,220,.96);
   filter:drop-shadow(0 1px 0 rgba(180,48,36,.45));
 }
 .dc-risk-bubble.is-ok::after{border-top-color:rgba(220,245,230,.95)}
 .dc-risk-bubble .dc-risk-cap{
-  font-size:10px;font-weight:800;letter-spacing:.04em;
-  color:#a02818;margin-bottom:2px;
+  font-size:12px;font-weight:800;letter-spacing:.04em;
+  color:#a02818;margin-bottom:4px;
 }
 .dc-risk-bubble.is-ok .dc-risk-cap{color:#176b3e}
 .dc-risk-bubble .dc-risk-line{
-  font-size:11px;font-weight:700;margin:1px 0;color:#1f1410;
+  font-size:13px;font-weight:700;margin:2px 0;color:#1f1410;
 }
 .dc-risk-bubble .dc-risk-line em{
-  font-style:normal;color:#c42828;font-size:12px;font-weight:800;
+  font-style:normal;color:#c42828;font-size:15px;font-weight:800;
   font-family:var(--font-num),ui-monospace,monospace;
 }
 .dc-risk-bubble .dc-risk-sub{
-  margin-top:2px;font-size:9px;font-weight:600;color:#6a5048;line-height:1.25;
+  margin-top:4px;font-size:10px;font-weight:600;color:#6a5048;line-height:1.35;
 }
 @keyframes dcRiskIn{
   from{opacity:0;transform:translateY(-8px) scale(.96)}
   to{opacity:1;transform:translateY(0) scale(1)}
 }
 @media(max-width:980px){
-  .dc-risk-bubble{padding:4px 6px 5px;border-radius:8px}
-  .dc-risk-bubble .dc-risk-cap{font-size:9px}
-  .dc-risk-bubble .dc-risk-line{font-size:10px}
-  .dc-risk-bubble .dc-risk-line em{font-size:11px}
+  .dc-risk-bubble{padding:7px 9px 8px;border-radius:10px}
+  .dc-risk-bubble .dc-risk-cap{font-size:11px}
+  .dc-risk-bubble .dc-risk-line{font-size:12px}
+  .dc-risk-bubble .dc-risk-line em{font-size:13px}
 }
 /* パラダイスシティ：案件ボード */
 .bp-form{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -2509,7 +2572,7 @@ video.dc-card__image{
   .dash-split-row{
     min-height:340px;
     height:340px;
-    grid-template-columns:minmax(0,45fr) minmax(280px,55fr);
+    grid-template-columns:minmax(0,70fr) minmax(220px,30fr);
   }
   #dashboard-pane{
     min-height:300px;height:100%;overflow:hidden;
@@ -3410,44 +3473,112 @@ video.dc-card__image{
 #s-tasks .tk-add-row select:focus,#s-tasks .tk-add-row input:focus{border-color:var(--gold)}
 #s-tasks .tk-add-row button{background:var(--in);color:#062012;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap}
 #s-tasks .tk-hint{font-size:11px;color:var(--muted);margin-top:8px}
-#s-tasks .tk-filter{display:flex;gap:8px;margin-bottom:14px}
-#s-tasks .tk-filter button{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:6px 15px;font-size:12px;font-weight:600;cursor:pointer}
+#s-tasks .tk-filter{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+#s-tasks .tk-filter button{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:4px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer}
 #s-tasks .tk-filter button.on{
   background:linear-gradient(180deg,var(--nav-green-fill-hi) 0%,var(--nav-green-fill) 100%);
   color:var(--nav-label);border-color:var(--nav-green-soft);
 }
-#s-tasks .tk-cols{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
-#s-tasks .tk-col.is-focus{border-color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.35)}
-#s-tasks .tk-staff-jump button{background:var(--panel2);border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:6px 15px;font-size:12px;font-weight:600;cursor:pointer}
-#s-tasks .tk-staff-jump button.on{
-  background:linear-gradient(180deg,var(--nav-green-fill-hi) 0%,var(--nav-green-fill) 100%);
-  color:var(--nav-label);border-color:var(--nav-green-soft);
+#s-tasks .tk-cols{display:flex;flex-direction:column;gap:10px;max-width:720px}
+#s-tasks .tk-col.is-focus{border-color:var(--nav-green);box-shadow:0 0 0 1px rgba(51,198,179,.35)}
+#s-tasks .tk-staff-roster{
+  display:flex;flex-direction:column;gap:0;
+  margin:0 0 16px;max-width:720px;
+  border:1px solid var(--line);border-radius:4px;overflow:hidden;
+  background:var(--panel);
 }
-#s-tasks .tk-col{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;min-height:120px}
+#s-tasks .tk-staff-roster-cap{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:10px 12px;border-bottom:1px solid var(--line);
+  background:rgba(255,255,255,.03);
+}
+#s-tasks .tk-staff-roster-cap strong{
+  font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--nav-green-bright);
+}
+#s-tasks .tk-staff-all{
+  border:1px solid var(--line)!important;border-radius:4px!important;
+  background:var(--panel2)!important;color:var(--muted)!important;
+  padding:5px 12px!important;font-size:11px!important;font-weight:700!important;cursor:pointer;
+}
+#s-tasks .tk-staff-all.on{
+  background:linear-gradient(180deg,var(--nav-green-fill-hi) 0%,var(--nav-green-fill) 100%)!important;
+  color:var(--nav-label)!important;border-color:var(--nav-green-soft)!important;
+}
+#s-tasks .tk-staff-row{
+  display:grid;
+  grid-template-columns:minmax(0,1.4fr) auto minmax(7em,9em) auto;
+  gap:10px;align-items:center;
+  padding:10px 12px;
+  border-bottom:1px solid rgba(255,255,255,.12);
+}
+#s-tasks .tk-staff-row:last-child{border-bottom:none}
+#s-tasks .tk-staff-row:hover{background:rgba(255,255,255,.03)}
+#s-tasks .tk-staff-row.is-focus{background:rgba(51,198,179,.08)}
+#s-tasks .tk-staff-main{min-width:0;display:flex;flex-direction:column;gap:2px}
+#s-tasks .tk-staff-name{
+  display:inline-flex;align-items:center;gap:8px;width:100%;
+  border:0;background:transparent;padding:0;cursor:pointer;text-align:left;
+  color:var(--text);font-size:13px;font-weight:700;
+}
+#s-tasks .tk-staff-name:hover{color:var(--nav-green-bright)}
+#s-tasks .tk-staff-role{font-size:11px;color:var(--muted);font-weight:500}
+#s-tasks .tk-score-chip{
+  display:inline-block;margin-left:0;padding:2px 7px;border-radius:3px;
+  font-size:10px;font-weight:800;background:rgba(51,198,179,.18);color:#9fe8dc;
+  font-family:var(--font-num);
+}
+#s-tasks .tk-char-link{
+  font-size:11px;margin-left:0;max-width:none;width:100%;
+  background:var(--panel2);border:1px solid var(--line-strong);border-radius:3px;
+  color:var(--text);padding:6px 8px;
+}
+#s-tasks .tk-char-chip{
+  display:inline-block;padding:4px 8px;border-radius:3px;font-size:11px;
+  border:1px solid var(--line);color:var(--muted);background:var(--panel2);
+}
+#s-tasks .tk-dbx-tog{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  font-size:11px;font-weight:700;margin-left:0;min-width:7.5em;
+  padding:6px 10px;border-radius:3px;cursor:pointer;white-space:nowrap;
+  border:1px solid rgba(255,255,255,.28);background:var(--panel2);color:var(--muted);
+}
+#s-tasks .tk-dbx-tog .tk-dbx-mark{font-size:12px;line-height:1;opacity:.9}
+#s-tasks .tk-dbx-tog.on{
+  border-color:rgba(154,209,74,.65);background:rgba(56,142,60,.22);color:var(--nav-label);
+}
+#s-tasks .tk-dbx-tog:disabled{
+  opacity:.55;cursor:default;
+}
+#s-tasks .tk-col{background:var(--panel);border:1px solid var(--line);border-radius:4px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
 #s-tasks .tk-col-head{display:flex;justify-content:space-between;align-items:center;padding:11px 13px;border-bottom:1px solid var(--line)}
 #s-tasks .tk-col-name{font-size:13px;font-weight:700;color:var(--text)}
 #s-tasks .tk-col-role{font-size:10px;color:var(--muted);margin-left:6px}
-#s-tasks .tk-col-cnt{font-size:11px;font-weight:800;font-family:var(--font-num);min-width:20px;text-align:center;padding:2px 7px;border-radius:99px;background:var(--panel2);color:var(--muted)}
+#s-tasks .tk-col-cnt{font-size:11px;font-weight:800;font-family:var(--font-num);min-width:20px;text-align:center;padding:2px 7px;border-radius:3px;background:var(--panel2);color:var(--muted)}
 #s-tasks .tk-col-cnt.hot{background:var(--out);color:#111}
 #s-tasks .tk-col-body{padding:10px;display:flex;flex-direction:column;gap:8px}
-#s-tasks .tk-card{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 11px}
+#s-tasks .tk-card{background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:10px 11px}
 #s-tasks .tk-card.done{opacity:.6}
 #s-tasks .tk-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 #s-tasks .tk-card-title{font-size:13px;font-weight:600;color:var(--text);line-height:1.4}
 #s-tasks .tk-card.done .tk-card-title{text-decoration:line-through;color:var(--muted)}
 #s-tasks .tk-card-detail{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5}
-#s-tasks .tk-card-meta{display:flex;align-items:center;gap:6px;margin-top:8px}
-#s-tasks .tk-src{font-size:9px;font-weight:700;border-radius:4px;padding:2px 6px}
+#s-tasks .tk-card-meta{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+#s-tasks .tk-src{font-size:9px;font-weight:700;border-radius:3px;padding:2px 6px}
 #s-tasks .tk-src.boss{background:rgba(255,157,60,.18);color:var(--out)}
 #s-tasks .tk-src.self{background:rgba(74,222,128,.16);color:var(--in)}
 #s-tasks .tk-date{font-size:10px;color:var(--muted);font-family:var(--font-num)}
 #s-tasks .tk-card-acts{display:flex;gap:6px;margin-top:9px}
-#s-tasks .tk-toggle{flex:1;border:none;border-radius:7px;padding:7px;font-size:12px;font-weight:700;cursor:pointer}
+#s-tasks .tk-toggle{flex:1;border:none;border-radius:3px;padding:7px;font-size:12px;font-weight:700;cursor:pointer}
 #s-tasks .tk-toggle.todo{background:var(--in);color:#062012}
 #s-tasks .tk-toggle.done{background:var(--panel);color:var(--muted);border:1px solid var(--line-strong)}
-#s-tasks .tk-del{background:transparent;border:1px solid var(--line-strong);color:var(--out);border-radius:7px;width:30px;font-size:13px;cursor:pointer}
+#s-tasks .tk-del{background:transparent;border:1px solid var(--line-strong);color:var(--out);border-radius:3px;width:30px;font-size:13px;cursor:pointer}
 #s-tasks .tk-empty{font-size:11px;color:var(--muted);padding:6px 2px}
-@media(max-width:760px){#s-tasks .tk-add-row{grid-template-columns:1fr 1fr}#s-tasks .tk-cols{grid-template-columns:1fr}}
+@media(max-width:760px){
+  #s-tasks .tk-add-row{grid-template-columns:1fr 1fr}
+  #s-tasks .tk-cols{grid-template-columns:1fr;max-width:none}
+  #s-tasks .tk-staff-roster{max-width:none}
+  #s-tasks .tk-staff-row{grid-template-columns:1fr;gap:8px}
+}
 </style>
 <section class="screen" id="s-tasks">
   <h2 class="stitle">✔ タスク管理</h2>
@@ -3474,7 +3605,7 @@ video.dc-card__image{
     <button type="button" data-tk-filter="done">完了</button>
     <button type="button" data-tk-filter="all">すべて</button>
   </div>
-  <div class="tk-filter tk-staff-jump" id="tkStaffJump" style="flex-wrap:wrap"></div>
+  <div class="tk-staff-roster" id="tkStaffJump"></div>
 
   <div class="tk-cols" id="tkCols"></div>
 </section>
@@ -8374,27 +8505,47 @@ window.Treasury={
     const staff=staffList();
     const prez=isPresident();
     const links=loadLinks();
-    box.innerHTML=`<button type="button" data-staff-focus="" class="${!focusStaff?'on':''}">全員</button>`+
-      staff.map(s=>{
-        const on=!!s.dropbox_allowed || s.role==='社長';
-        const score=memberScore(s.id);
-        const linked=links[String(s.id)]||autoLinkGuess(s)||'';
-        const tog=prez
-          ? `<button type="button" class="tk-dbx-tog ${on?'on':''}" data-dbx-allow="${esc(s.id)}" data-dbx-on="${on?'1':'0'}" title="Dropbox閲覧許可">📦 Dropbox:${on?'許可':'停止'}</button>`
-          : '';
-        const defs=loadCharDefs();
-        const own=defs[linked]||null;
-        const charOpts=OFFICE_CHARS.map(c=>`<option value="${esc(c.id)}"${linked===c.id?' selected':''}>${esc(c.name)}（旧）</option>`).join('')+
-          (own?`<option value="${esc(own.id)}"${linked===own.id?' selected':''}>${esc(own.name)}（登録）</option>`:'');
-        const linkSel=prez
-          ? `<select class="tk-char-link" data-char-link="${esc(s.id)}" title="クエストキャラ紐づけ">`+
-            `<option value="">自動（登録キャラ）</option>`+
-            charOpts+
-            `</select>`
-          : (own||linked?`<span class="tk-score-chip" title="紐づけキャラ">${esc((own&&own.name)||(OFFICE_CHARS.find(c=>c.id===linked)||{}).name||linked)}</span>`:'');
-        return `<span style="display:inline-flex;align-items:center;gap:2px;flex-wrap:wrap">`+
-          `<button type="button" data-staff-focus="${esc(s.id)}" class="${focusStaff===s.id?'on':''}">${esc(s.name)}<span class="tk-score-chip">${score}点</span></button>${linkSel}${tog}</span>`;
-      }).join('');
+    const defs=loadCharDefs();
+    const rows=staff.map(function(s){
+      const on=!!s.dropbox_allowed || s.role==='社長';
+      const locked=s.role==='社長';
+      const score=memberScore(s.id);
+      const linked=links[String(s.id)]||autoLinkGuess(s)||'';
+      const own=defs[linked]||null;
+      const charOpts=OFFICE_CHARS.map(function(c){
+        return `<option value="${esc(c.id)}"${linked===c.id?' selected':''}>${esc(c.name)}（旧）</option>`;
+      }).join('')+
+        (own?`<option value="${esc(own.id)}"${linked===own.id?' selected':''}>${esc(own.name)}（登録）</option>`:'');
+      const linkSel=prez
+        ? `<select class="tk-char-link" data-char-link="${esc(s.id)}" title="クエストキャラ紐づけ">`+
+          `<option value="">自動（登録キャラ）</option>`+
+          charOpts+
+          `</select>`
+        : (own||linked
+          ?`<span class="tk-char-chip" title="紐づけキャラ">${esc((own&&own.name)||(OFFICE_CHARS.find(function(c){return c.id===linked;})||{}).name||linked)}</span>`
+          :`<span class="tk-char-chip">—</span>`);
+      const tog=prez
+        ? `<button type="button" class="tk-dbx-tog ${on?'on':''}" data-dbx-allow="${esc(s.id)}" data-dbx-on="${on?'1':'0'}" ${locked?'disabled':''} title="Dropbox閲覧許可">`+
+          `<span class="tk-dbx-mark" aria-hidden="true">${on?'■':'□'}</span>`+
+          `<span>Dropbox ${on?'許可':'停止'}</span></button>`
+        : `<span class="tk-dbx-tog ${on?'on':''}" aria-hidden="true"><span class="tk-dbx-mark">${on?'■':'□'}</span><span>Dropbox ${on?'許可':'停止'}</span></span>`;
+      return `<div class="tk-staff-row ${focusStaff===s.id?'is-focus':''}">`+
+        `<div class="tk-staff-main">`+
+          `<button type="button" class="tk-staff-name" data-staff-focus="${esc(s.id)}">`+
+            `<span>${esc(s.name)}</span><span class="tk-score-chip">${score}点</span>`+
+          `</button>`+
+          `<span class="tk-staff-role">${esc(s.role||'社員')}</span>`+
+        `</div>`+
+        linkSel+
+        tog+
+      `</div>`;
+    }).join('');
+    box.innerHTML=
+      `<div class="tk-staff-roster-cap">`+
+        `<strong>社員管理</strong>`+
+        `<button type="button" class="tk-staff-all ${!focusStaff?'on':''}" data-staff-focus="">全員表示</button>`+
+      `</div>`+
+      (rows||`<div class="tk-staff-row"><span class="tk-empty">登録社員がいません</span></div>`);
   }
 
   function renderTasks(){
