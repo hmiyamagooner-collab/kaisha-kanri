@@ -75,9 +75,13 @@ window.GoonerSB=(function(){
       if(authUserId && !existing.auth_user_id){
         const { data: upd }=await c.from('members').update({ auth_user_id: authUserId }).eq('id', existing.id).select().single();
         const row=upd||Object.assign({}, existing, { auth_user_id: authUserId });
-        saveMe(row); return row;
+        saveMe(row);
+        try{ window.dispatchEvent(new CustomEvent('portal-members-changed',{detail:{member:row,reason:'update'}})); }catch(e){}
+        return row;
       }
-      saveMe(existing); return existing;
+      saveMe(existing);
+      try{ window.dispatchEvent(new CustomEvent('portal-members-changed',{detail:{member:existing,reason:'exists'}})); }catch(e){}
+      return existing;
     }
     const payload={ name, role, email };
     if(authUserId) payload.auth_user_id=authUserId;
@@ -87,6 +91,14 @@ window.GoonerSB=(function(){
       return null;
     }
     saveMe(data);
+    try{ window.dispatchEvent(new CustomEvent('portal-members-changed',{detail:{member:data,reason:'insert'}})); }catch(e){}
+    try{
+      if(typeof BroadcastChannel!=='undefined'){
+        const bc=new BroadcastChannel('gp-members');
+        bc.postMessage({type:'members-changed', member:data});
+        bc.close();
+      }
+    }catch(e){}
     return data;
   }
   async function signUp(name, role, email, password, opts){
@@ -8204,9 +8216,22 @@ window.Treasury={
 
   async function loadMembers(){
     const c=client(); if(!c) return;
-    const { data, error } = await c.from('members').select('*').order('created_at');
+    let data=null, error=null;
+    ({ data, error } = await c.from('members').select('*').order('name'));
+    if(error){
+      // created_at / name ソート不可などの場合はソートなしで再取得
+      ({ data, error } = await c.from('members').select('*'));
+    }
     if(error){ console.warn('[tasks] members', error); return; }
-    members=data||[];
+    members=Array.isArray(data)?data:[];
+    // 名前順に安定ソート（日本語）
+    members.sort(function(a,b){
+      const ra=String(a.role||'');
+      const rb=String(b.role||'');
+      if(ra==='社長' && rb!=='社長') return -1;
+      if(rb==='社長' && ra!=='社長') return 1;
+      return String(a.name||'').localeCompare(String(b.name||''),'ja');
+    });
     // 自分の dropbox_allowed 等を最新化（auth_user_id 紐付け以外のタスク処理は変更しない）
     try{
       const cur=me();
@@ -8217,6 +8242,7 @@ window.Treasury={
     }catch(e){}
     try{ window.syncDropboxBtnVisibility?.(); }catch(e){}
     fillAssigneeSelects();
+    renderStaffJump();
     renderTasks();
   }
 
@@ -8426,6 +8452,7 @@ window.Treasury={
     c.channel('members-live')
       .on('postgres_changes', { event:'INSERT', schema:'public', table:'members' }, function(){ loadMembers(); })
       .on('postgres_changes', { event:'UPDATE', schema:'public', table:'members' }, function(){ loadMembers(); })
+      .on('postgres_changes', { event:'DELETE', schema:'public', table:'members' }, function(){ loadMembers(); })
       .subscribe();
     c.channel('tasks-live')
       .on('postgres_changes', { event:'*', schema:'public', table:'tasks' }, function(payload){
@@ -8451,12 +8478,32 @@ window.Treasury={
     try{ window.PortalRisk?.refresh?.(); }catch(e){}
     setInterval(function(){
       checkOverduePenalties(); syncOfficeQuestState();
+      loadMembers();
       try{ window.PortalRisk?.refresh?.(); }catch(e){}
     }, 60000);
   }
-  window.addEventListener('portal-member-ready', function(){ syncOfficeQuestState(); });
+  window.addEventListener('portal-member-ready', function(){ syncOfficeQuestState(); loadMembers(); });
+  window.addEventListener('portal-members-changed', function(){ loadMembers(); });
+  window.addEventListener('portal-staff-change', function(){ loadMembers(); });
   window.addEventListener('message', function(ev){
     if(ev?.data?.type==='office-ready') syncOfficeQuestState();
+  });
+  try{
+    if(typeof BroadcastChannel!=='undefined'){
+      const bc=new BroadcastChannel('gp-members');
+      bc.addEventListener('message', function(ev){
+        if(ev?.data?.type==='members-changed') loadMembers();
+      });
+    }
+  }catch(e){}
+  document.addEventListener('visibilitychange', function(){
+    if(!document.hidden) loadMembers();
+  });
+  ['#tkAssignee','#officeTkAssignee'].forEach(function(sel){
+    const el=$(sel);
+    if(!el) return;
+    el.addEventListener('focus', function(){ loadMembers(); });
+    el.addEventListener('mousedown', function(){ loadMembers(); });
   });
 
   function openTasks(){ return tasks.filter(function(t){ return t && t.status!=='done'; }); }
@@ -8494,6 +8541,7 @@ window.Treasury={
     parseDue:parseDue,
     todayISO:todayISO,
     refresh:refreshTaskBoard,
+    reloadMembers:loadMembers,
     applyScore:applyScore,
     memberScore:memberScore,
     me:me
@@ -9981,12 +10029,16 @@ window.PortalAuth=(function(){
             if(err && res.error.message) err.textContent=String(res.error.message);
             return;
           }
+          // ローカル名簿にも追加し、開いている社長画面のタスク担当プルダウンを更新
+          try{ upsertStaff({ name:name, role:role, email:String(email).trim().toLowerCase() }); }catch(e){}
+          try{ window.dispatchEvent(new CustomEvent('portal-members-changed',{detail:{reason:'signup'}})); }catch(e){}
+          try{ window.PortalTasks?.reloadMembers?.(); }catch(e){}
           // セッションが即時ある場合は onAuthStateChange が開く。無い場合はログインへ誘導
           const c=window.GoonerSB.sb();
           const sess=c?(await c.auth.getSession()).data.session:null;
           if(sess) await onAuthed(sess);
           else{
-            if(err) err.textContent='登録しました。確認メールがある場合は確認後、ログインしてください。';
+            if(err) err.textContent='登録しました。確認メールがある場合は確認後、ログインしてください。タスク担当一覧にも反映されます。';
             setMode('signin');
           }
         }else{
