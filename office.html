@@ -475,7 +475,8 @@ const SEATS={
 const ELDER_SEATS=[];
 
 /* ================= CHARACTERS ================= */
-const CHARS=[
+/* プリセットは非表示。アカウント登録キャラのみ portal-office-sync で投入 */
+const PRESET_CHARS=[
  {id:'shacho',name:'社長',short:'社長',dept:'本社',female:false,cloth:'#7c3aed',hair:'#3f3f46',seat:pt('shacho',0.5,0.58),home:'shacho',
   sched:[[9,10,'会議'],[10,12,'デスクワーク'],[12,13,'休憩'],[13,14,'来客対応'],[14,16,'デスクワーク'],[16,17,'会議'],[17,19,'デスクワーク']]},
  {id:'koshiishi',name:'越石',short:'越石',dept:'本社',female:true,cloth:'#3b82f6',hair:'#52341d',seat:DESK[0],home:'honsha',
@@ -495,12 +496,84 @@ const CHARS=[
  {id:'shinagawa',name:'品川さん',short:'品川',dept:'デイサービス',female:true,cloth:'#f472b6',hair:'#3f3f46',seat:pt('day',0.5,0.75),home:'day',
   sched:[[9,10,'送迎'],[10,12,'デイサービス業務'],[12,13,'送迎'],[13,14,'休憩'],[14,16,'デイサービス業務'],[16,17,'送迎'],[17,19,'デスクワーク']]}
 ];
-CHARS.forEach((c,i)=>{
-  c.idx=i;c.px=c.seat.x;c.py=c.seat.y;c.path=[];c.curAct=null;c.hidden=false;
-  c.wanderRoom=null;c.wanderAt=0;c.bubble=null;c.override=null;c.calId='';c.calEvent=null;c.calAct=null;c.pendingBubble=null;
-  c.score=0;c.linked=false;c.nightForced=false;
-});
-const SHINA=CHARS.find(c=>c.id==='shinagawa');
+const DEFAULT_SCHED=[[9,12,'デスクワーク'],[12,13,'休憩'],[13,19,'デスクワーク']];
+let productionCast=false; // 登録キャラのみ表示
+let CHARS=[];
+function initCharRuntime(c,i){
+  c.idx=i;
+  if(c.px==null) c.px=c.seat.x;
+  if(c.py==null) c.py=c.seat.y;
+  c.path=c.path||[];
+  c.curAct=c.curAct||null;
+  c.hidden=!!c.hidden;
+  c.wanderRoom=c.wanderRoom||null;
+  c.wanderAt=c.wanderAt||0;
+  c.bubble=c.bubble||null;
+  c.override=c.override||null;
+  c.calId=c.calId||'';
+  c.calEvent=c.calEvent||null;
+  c.calAct=c.calAct||null;
+  c.pendingBubble=c.pendingBubble||null;
+  c.score=c.score|0;
+  c.linked=!!c.linked;
+  c.nightForced=!!c.nightForced;
+  c.openTasks=c.openTasks|0;
+  c.actOverride=c.actOverride||null;
+}
+function seatForDef(def,i){
+  const home=def.home||'honsha';
+  const deskIdx=Math.abs(def.deskIdx!=null?def.deskIdx:i)%DESK.length;
+  if(home==='shacho') return pt('shacho',0.5,0.58);
+  if(home==='day') return pt('day',0.28+0.22*(i%3),0.38+0.28*(((i/3)|0)%2));
+  if(home==='park'||home==='beach') return pt('park',0.35+0.15*(i%3),0.45+0.12*((i%2)));
+  return DESK[deskIdx]||DESK[0];
+}
+function makeCharFromDef(def,i,prev){
+  const seat=seatForDef(def,i);
+  const c=prev||{
+    id:def.id,
+    seat:seat,
+    path:[],
+    px:seat.x,
+    py:seat.y
+  };
+  c.id=def.id;
+  c.name=String(def.name||'社員');
+  c.short=String(def.short||c.name).slice(0,6);
+  c.dept=String(def.dept||def.role||'社員');
+  c.female=!!def.female;
+  c.cloth=def.cloth||'#3b82f6';
+  c.hair=def.hair||'#3f3f46';
+  c.home=def.home||'honsha';
+  c.seat=seat;
+  c.sched=Array.isArray(def.sched)&&def.sched.length?def.sched:(prev&&prev.sched)||DEFAULT_SCHED.slice();
+  c.linked=true;
+  initCharRuntime(c,i);
+  if(!prev){ c.px=seat.x; c.py=seat.y; }
+  return c;
+}
+function setAmbientHidden(hide){
+  const on=!!hide;
+  if(typeof ELDERS!=='undefined') ELDERS.forEach(e=>{ e.hidden=on||e.hidden; if(on){ e.path=[]; e.bubble=null; }});
+  if(typeof GUESTS!=='undefined') GUESTS.forEach(g=>{ g.hidden=on; if(on){ g.path=[]; g.zone=null; g.bubble=null; }});
+  if(typeof CARE_USERS!=='undefined') CARE_USERS.forEach(u=>{ u.hidden=on; if(on){ u.path=[]; }});
+}
+function rebuildCharsFromPortal(defs, activeIds){
+  const prevMap=new Map(CHARS.map(c=>[c.id,c]));
+  const allow=Array.isArray(activeIds)&&activeIds.length?new Set(activeIds.map(String)):null;
+  const next=[];
+  (defs||[]).forEach(function(def,i){
+    if(!def||!def.id) return;
+    if(allow && !allow.has(String(def.id))) return;
+    next.push(makeCharFromDef(def,i,prevMap.get(def.id)));
+  });
+  CHARS=next;
+  SHINA=CHARS.find(c=>c.id==='shinagawa')||null;
+  productionCast=true;
+  setAmbientHidden(true);
+}
+// 初期は空（同期まで未登録デモキャラを出さない）
+let SHINA=null;
 
 /* ===== 昼 / サンセット / 夜（日没時刻ベース） ===== */
 let dayPhase='day'; // day | sunset | night
@@ -543,7 +616,7 @@ function applyDayPhase(){
     if(night){ c.nightForced=true; c.hidden=true; c.path=[]; c.bubble=null; }
     else if(c.nightForced){ c.nightForced=false; /* updateChar が再配置 */ }
   });
-  if(night){
+  if(night || productionCast){
     ELDERS.forEach(e=>{ e.hidden=true; e.path=[]; e.bubble=null; });
     GUESTS.forEach(g=>{ g.hidden=true; g.path=[]; g.zone=null; g.bubble=null; });
     if(typeof CARE_USERS!=='undefined') CARE_USERS.forEach(u=>{ u.hidden=true; u.path=[]; });
@@ -770,7 +843,8 @@ function updateModeBtn(){
 /* ================= ACTIVITY ================= */
 function scheduledAct(c,h){
   if(h<8||h>=19)return '退勤';
-  const s=c.sched.find(r=>h>=r[0]&&h<r[1]);
+  const sched=c.sched||DEFAULT_SCHED;
+  const s=sched.find(r=>h>=r[0]&&h<r[1]);
   return s?s[2]:'手すき';
 }
 function computeAct(c){
@@ -778,6 +852,7 @@ function computeAct(c){
     if(Date.now()<c.override.until)return c.override.act;
     c.override=null;
   }
+  if(c.actOverride) return c.actOverride;
   if(!demoMode&&c.calSynced){
     return c.calAct||'手すき';
   }
@@ -839,7 +914,7 @@ function moveAlong(c,dt){
 function updateChar(c,dt){
   if(dayPhase==='night' || c.nightForced){ c.hidden=true; c.path=[]; return; }
   /* 送迎シーケンス中の品川は escort 側で制御する */
-  if(c===SHINA&&escort){moveAlong(c,dt);return;}
+  if(SHINA&&c===SHINA&&escort){moveAlong(c,dt);return;}
   const act=computeAct(c);
   if(act!==c.curAct){
     const prev=c.curAct;c.curAct=act;
@@ -875,7 +950,7 @@ let escort=null;
 function carRouteOut(){return [{x:BV_X,y:PARK_Y},{x:BV_X,y:130},{x:BV_X,y:40},{x:BV_X,y:-50}];}
 function carRouteIn(){return [{x:BV_X,y:-50},{x:BV_X,y:40},{x:BV_X,y:130},{x:BV_X,y:PARK_Y}];}
 function startEscort(){
-  if(escort)return;
+  if(escort||!SHINA||productionCast)return;
   const board=ELDERS.filter(e=>!e.hidden);
   const h=simHour();
   let arrive=[];
@@ -901,7 +976,7 @@ function followWp(dt){
   return false;
 }
 function updateEscort(dt){
-  if(!escort)return;
+  if(!escort||!SHINA)return;
   switch(escort.phase){
     case 'walk':{
       const ok=atPoint(SHINA,BOARD_PT.x,BOARD_PT.y)&&escort.board.every((e,i)=>atPoint(e,pt('parking',0.55+i*0.08,0.5).x,pt('parking',0.55+i*0.08,0.5).y));
@@ -946,7 +1021,7 @@ function resetDay(){
   ELDERS.forEach(e=>{e.hidden=true;e.path=[];e.bubble=null;e.pendingBubble=null;});
   escort=null;
   CAR.x=CAR.homeX;CAR.y=CAR.homeY;CAR.facing='n';
-  SHINA.hidden=false;SHINA.px=SHINA.seat.x;SHINA.py=SHINA.seat.y;SHINA.path=[];
+  if(SHINA){ SHINA.hidden=false;SHINA.px=SHINA.seat.x;SHINA.py=SHINA.seat.y;SHINA.path=[]; }
 }
 
 /* ================= DRAWING（俯瞰街マップ・高精細） ================= */
@@ -1072,6 +1147,8 @@ function drawSpeechBubbles(g,chars,now){
   let quietShown=0;
   const placed=[];
   const prio=(a,b)=>{
+    const at=a.bubble&&a.bubble.task?2:0, bt=b.bubble&&b.bubble.task?2:0;
+    if(at!==bt) return bt-at;
     const ap=a===selected||a===hovered?1:0,bp=b===selected||b===hovered?1:0;
     if(ap!==bp)return bp-ap;
     return b.bubble.until-a.bubble.until;
@@ -1447,6 +1524,14 @@ function refreshScoreBubbles(now){
   if(dayPhase==='night') return;
   CHARS.forEach(c=>{
     if(c.hidden) return;
+    const open=c.openTasks|0;
+    // 未完了タスクがあれば赤い吹き出しを優先
+    if(open>0){
+      if(!c.bubble || c.bubble.task || now>c.bubble.until-400){
+        c.bubble={text:'タスク '+open+'件', until:now+5000, quiet:false, task:true, score:false};
+      }
+      return;
+    }
     // 点数吹き出しを定期更新（他の吹き出しより優先しない quiet）
     if(!c.bubble || c.bubble.score || now>c.bubble.until-400){
       const pts=(c.score|0);
@@ -1503,17 +1588,28 @@ function log(msg){
 function esc(s){return s.replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 function renderMembers(){
   const host=document.getElementById('members');host.innerHTML='';
+  if(!CHARS.length){
+    const row=document.createElement('div');
+    row.className='member';
+    row.innerHTML='<span class="nm">登録社員がいません</span><span class="ac">アカウント登録でクエストキャラが登場します</span>';
+    host.appendChild(row);
+    return;
+  }
   CHARS.forEach(c=>{
     const act=c.curAct||'…';
     const row=document.createElement('div');
     row.className='member'+(selected===c?' sel':'');
     row.onclick=()=>{selectChar(c);};
     const pts=(c.score|0);
+    const open=c.openTasks|0;
     row.innerHTML='<span class="dot" style="background:'+(ACT_COLORS[act]||'#888')+'"></span>'
-      +'<span class="nm">'+esc(c.name)+' <b style="color:#33c6b3">'+(pts>0?'+':'')+pts+'点</b></span><span class="dp">'+esc(c.dept)+'</span>'
+      +'<span class="nm">'+esc(c.name)+' <b style="color:#33c6b3">'+(pts>0?'+':'')+pts+'点</b>'
+      +(open?' <b style="color:#e23b3b">タスク'+open+'</b>':'')
+      +'</span><span class="dp">'+esc(c.dept)+'</span>'
       +'<span class="ac">'+(dayPhase==='night'?'退勤（夜）':esc(act))+(c.calSynced&&!demoMode?' <span class="cal">[カレンダー]</span>':'')+'</span>';
     host.appendChild(row);
   });
+  if(productionCast) return;
   const present=ELDERS.filter(e=>!e.hidden);
   if(present.length){
     const row=document.createElement('div');
@@ -1699,9 +1795,10 @@ function closeModal(id){document.getElementById(id).classList.remove('show');}
 const KEYWORDS=[
  [/送迎|お迎え|お送り/,'送迎'],
  [/商談/,'商談'],
- [/プール/,'イベント（プール）'],
- [/海|ビーチ/,'イベント（海）'],
- [/コンサート|ライブ|ステージ|公園/,'イベント（コンサート）'],
+ [/稲毛|いなぷー|海浜|inage|ビーチ/i,'イベント（海）'],
+ [/プール|pool/i,'イベント（プール）'],
+ [/海(?!外)|ビーチ/,'イベント（海）'],
+ [/パラダイス|paradise|コンサート|ライブ|ステージ|公園|イベント会場/i,'イベント（コンサート）'],
  [/来客|応接|接客|お客/,'来客対応'],
  [/会議|ミーティング|MTG|打ち?合わせ|打合/i,'会議'],
  [/振込|銀行|経理|支払/,'振込作業'],
@@ -1818,10 +1915,20 @@ function loop(now){
 function applyPortalSync(msg){
   if(!msg||typeof msg!=='object') return;
   const scores=msg.scores||{};
+  const openTasks=msg.openTasks||{};
+  const actOverrides=msg.actOverrides||{};
+  if(msg.production || (Array.isArray(msg.chars) && msg.chars.length) || Array.isArray(msg.activeCharIds)){
+    rebuildCharsFromPortal(msg.chars||[], msg.activeCharIds||[]);
+  }
   CHARS.forEach(c=>{
     c.score=Number(scores[c.id]||0)||0;
-    c.linked=Object.prototype.hasOwnProperty.call(scores,c.id);
+    c.linked=Object.prototype.hasOwnProperty.call(scores,c.id) || !!(msg.links && Object.values(msg.links||{}).includes(c.id));
+    c.openTasks=Number(openTasks[c.id]||0)||0;
+    c.actOverride=actOverrides[c.id]||null;
   });
+  if(dayPhase==='night'){
+    CHARS.forEach(c=>{ c.hidden=true; c.path=[]; });
+  }
   renderMembers();
 }
 window.addEventListener('message',function(ev){
@@ -1835,7 +1942,7 @@ prerenderCity();
 refreshSunTimes().then(function(){ applyDayPhase(); renderMembers(); });
 setInterval(function(){ refreshSunTimes().then(applyDayPhase); }, 15*60*1000);
 renderMembers();
-log('オフィスクエストが はじまった！');
+log('オフィスクエスト（本番）：登録キャラのみ表示');
 if(window.parent!==window){
   try{
     const cached=window.parent.__portalOfficeSync;

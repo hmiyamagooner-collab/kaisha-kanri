@@ -1404,10 +1404,22 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 }
 .office-expand-hit:hover{background:linear-gradient(180deg,rgba(0,0,0,.12) 20%,rgba(0,0,0,.55))}
 #officeQuestModal{
-  position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;
+  position:fixed;inset:0;z-index:5000;display:flex;align-items:center;justify-content:center;
   padding:18px;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);
+  pointer-events:auto;
 }
 #officeQuestModal[hidden]{display:none!important}
+/* クエスト拡大中は背面の3エージェントを操作不可にする */
+body.quest-expanded #dashboard-pane,
+body.quest-expanded #dashCompact,
+body.quest-expanded .dc-cards,
+body.quest-expanded .dc-card,
+body.quest-expanded .dc-card .dc-photo{
+  pointer-events:none!important;
+}
+body.quest-expanded .dc-card video{
+  pointer-events:none!important;
+}
 .oqm-panel{
   width:min(1100px,96vw);height:min(860px,92vh);
   display:flex;flex-direction:column;overflow:hidden;
@@ -2656,12 +2668,11 @@ video.dc-card__image{
       </div>
       <button type="submit" class="portal-login-submit" id="portalLoginSubmit">ログイン</button>
       <p class="portal-login-err" id="portalLoginErr" aria-live="polite"></p>
-      <a class="portal-login-demo-link" href="demo.html">営業デモはこちら →</a>
     </form>
   </div>
 </div>
 
-<div id="portalDemoBanner" role="status">営業デモモード（本番データとは切り離して案内してください） <a href="demo.html">デモ入口</a></div>
+<div id="portalDemoBanner" role="status" hidden></div>
 
 <div id="portal-shell" hidden>
 <nav class="gamenav" aria-label="メインメニュー">
@@ -5418,6 +5429,7 @@ window.PortalTTS=(function(){
   let officeHoverId=null;
   function deptCard(dept){return document.querySelector('.dc-card[data-dept="'+dept+'"]');}
   function setDeptAudio(dept,on){
+    if(window.OfficeBridge?.isQuestExpanded?.())return;
     document.querySelectorAll('.dc-card video').forEach(v=>{v.muted=true;});
     if(!on||!dept||!window.PortalTTS?.isEnabled?.())return;
     const card=deptCard(dept);if(!card)return;
@@ -5426,6 +5438,7 @@ window.PortalTTS=(function(){
     const p=video.play();if(p&&p.catch)p.catch(function(){});
   }
   function unlockPortalAudio(){
+    if(window.OfficeBridge?.isQuestExpanded?.())return;
     // 既に再生中の動画は触らない（クエストクリックで3本が一斉に再生し直されるのを防ぐ）
     document.querySelectorAll('.dc-card video').forEach(v=>{
       v.muted=true;v.volume=1;
@@ -5435,8 +5448,12 @@ window.PortalTTS=(function(){
   }
   window.OfficeBridge={
     unlockAudio:unlockPortalAudio,
+    isQuestExpanded(){
+      const modal=document.getElementById('officeQuestModal');
+      return !!(modal && !modal.hidden);
+    },
     hover(d){
-      if(document.getElementById('officeQuestModal')&&!document.getElementById('officeQuestModal').hidden)return;
+      if(window.OfficeBridge.isQuestExpanded())return;
       if(window.__entakuSpeaking||window.PortalTTS?.isSpeaking?.())return;
       if(!d||!d.charId||officeHoverId===d.charId)return;
       officeHoverId=d.charId;
@@ -5456,6 +5473,7 @@ window.PortalTTS=(function(){
       document.querySelectorAll('.dc-card video').forEach(v=>{v.muted=true;});
     },
     summon(d){
+      if(window.OfficeBridge.isQuestExpanded())return;
       if(!d||!d.charId)return;
       const dash=d.dash||(d.entaku==='finance'?'finance':d.entaku==='legal'?'legal':'secretary');
       const agentName=OFFICE_ENTAKU_NAME[d.entaku]||OFFICE_ENTAKU_NAME[dash]||'凛';
@@ -5465,16 +5483,34 @@ window.PortalTTS=(function(){
       if(dash)setDeptAudio(dash,true);
     }
   };
-  document.addEventListener('pointerdown',unlockPortalAudio,{once:true,capture:true});
+  document.addEventListener('pointerdown',function(){
+    if(window.OfficeBridge?.isQuestExpanded?.()) return;
+    unlockPortalAudio();
+  },{once:true,capture:true});
 
   (function wireOfficeExpand(){
     const modal=document.getElementById('officeQuestModal');
     const frame=document.getElementById('officeQuestModalFrame');
     const openBtn=document.getElementById('officeExpandBtn');
     const closeBtn=document.getElementById('officeQuestClose');
+    function freezeAgents(){
+      document.body.classList.add('quest-expanded');
+      document.querySelectorAll('.dc-card').forEach(function(c){ c.classList.remove('is-hot'); });
+      document.querySelectorAll('.dc-photo').forEach(function(p){ p.classList.remove('is-hot'); });
+      document.querySelectorAll('.dc-card video').forEach(function(v){
+        try{ v.pause(); }catch(e){}
+        v.muted=true;
+      });
+      try{ window.DashTalk?.stop?.(); }catch(e){}
+      try{ window.PortalTTS?.stop?.(); }catch(e){}
+    }
+    function unfreezeAgents(){
+      document.body.classList.remove('quest-expanded');
+    }
     function open(){
       if(!modal||!frame)return;
       window.OfficeBridge?.hoverEnd?.();
+      freezeAgents();
       if(!frame.dataset.loaded){
         frame.src='office.html?embedded=1&expand=1';
         frame.dataset.loaded='1';
@@ -5486,17 +5522,23 @@ window.PortalTTS=(function(){
       if(!modal)return;
       modal.hidden=true;
       document.body.style.overflow='';
+      unfreezeAgents();
       window.OfficeBridge?.hoverEnd?.();
     }
     openBtn?.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();open();});
     closeBtn?.addEventListener('click',close);
     modal?.addEventListener('click',function(e){ if(e.target===modal)close(); });
     document.addEventListener('keydown',function(e){ if(e.key==='Escape'&&modal&&!modal.hidden)close(); });
+    window.OfficeBridge.expandQuest=open;
+    window.OfficeBridge.closeQuest=close;
   })();
 })();
 window.addEventListener("message",e=>{
   const d=e.data;
   if(!d||!d.type)return;
+  if(window.OfficeBridge?.isQuestExpanded?.() && (d.type==="office-hover"||d.type==="office-hover-end"||d.type==="office-entaku")){
+    return;
+  }
   if(d.type==="office-hover"){window.OfficeBridge?.hover(d);return;}
   if(d.type==="office-hover-end"){window.OfficeBridge?.hoverEnd();return;}
   if(d.type==="office-entaku"){window.OfficeBridge?.summon(d);return;}
@@ -7806,11 +7848,152 @@ window.Treasury={
   const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)], esc=T.esc;
   const SCORE_KEY='gp_task_scores_v1';
   const LINK_KEY='gp_char_links_v1';
+  const CHAR_DEFS_KEY='gp_office_chars_v1';
   const OFFICE_CHARS=[
     {id:'shacho',name:'社長'},{id:'koshiishi',name:'越石'},{id:'sayaka',name:'さやか'},
     {id:'yuzuru',name:'譲'},{id:'tanji',name:'丹治'},{id:'okabe',name:'岡部'},
     {id:'tokita',name:'鴇田施設長'},{id:'takahashi',name:'高橋さん'},{id:'shinagawa',name:'品川さん'}
   ];
+  const PLACE_KEYWORDS=[
+    [/稲毛|いなぷー|海浜|inage|ビーチ|海(?!外)/i,'イベント（海）'],
+    [/プール|pool|いなぷー/i,'イベント（プール）'],
+    [/パラダイス|paradise|コンサート|ライブ|ステージ|公園|イベント会場/i,'イベント（コンサート）'],
+    [/デイ|介護|レク|入浴/i,'デイサービス業務'],
+    [/会議|ミーティング|MTG|打合/i,'会議'],
+    [/振込|経理|支払|入出金/i,'振込作業'],
+    [/商談|営業|外回り|訪問/i,'商談'],
+    [/プログラ|開発|実装|コード/i,'プログラミング'],
+    [/法務|契約|リーガル/i,'書類整理']
+  ];
+  function mapPlaceKeyword(text){
+    const s=String(text||'');
+    for(let i=0;i<PLACE_KEYWORDS.length;i++){
+      if(PLACE_KEYWORDS[i][0].test(s)) return PLACE_KEYWORDS[i][1];
+    }
+    return '';
+  }
+  function loadCharDefs(){
+    try{ return JSON.parse(localStorage.getItem(CHAR_DEFS_KEY)||'{}'); }
+    catch(e){ return {}; }
+  }
+  function saveCharDefs(map){ try{ localStorage.setItem(CHAR_DEFS_KEY, JSON.stringify(map||{})); }catch(e){} }
+  function hashHue(str){
+    let h=0;
+    String(str||'').split('').forEach(function(ch){ h=((h<<5)-h)+ch.charCodeAt(0); h|=0; });
+    return Math.abs(h)%360;
+  }
+  function roleHome(role, name){
+    const r=String(role||'')+String(name||'');
+    if(/社長|ヒロ|深山/.test(r)) return 'shacho';
+    if(/デイ|介護|施設/.test(r)) return 'day';
+    if(/イベント|稲毛|パラダイス|プール/.test(r)) return 'park';
+    if(/営業/.test(r)) return 'honsha';
+    if(/法務/.test(r)) return 'honsha';
+    if(/経理/.test(r)) return 'honsha';
+    return 'honsha';
+  }
+  function memberCharId(member){
+    const mid=String(member&&member.id||'');
+    return 'm-'+mid.replace(/[^a-zA-Z0-9_-]/g,'').slice(0,28);
+  }
+  function ensureMemberChar(member){
+    if(!member||!member.id) return null;
+    if(String(member.email||'').toLowerCase()==='demo@gooner-portal.sales') return null;
+    if(String(member.id)==='demo-local') return null;
+    const mid=String(member.id);
+    const links=loadLinks();
+    const defs=loadCharDefs();
+    let cid=links[mid];
+    // 社長が明示紐づけしたプリセット以外は会員専用キャラを自動生成
+    if(!cid){
+      cid=memberCharId(member);
+      links[mid]=cid;
+      saveLinks(links);
+    }
+    const hue=hashHue(mid+String(member.name||''));
+    const home=roleHome(member.role, member.name);
+    const short=String(member.name||'社員').replace(/さん|様|氏/g,'').slice(0,6)||'社員';
+    const female=/経理|秘書|さやか|紗|美|子|菜|香|花|女/.test(String(member.name||'')+String(member.role||''));
+    const deskIdx=Math.abs(hashHue(mid))%8;
+    defs[cid]={
+      id:cid,
+      memberId:mid,
+      name:String(member.name||'社員').slice(0,40),
+      short:short,
+      dept:String(member.role||'社員').slice(0,20),
+      female:!!female,
+      cloth:'hsl('+hue+' 55% 45%)',
+      hair: female ? 'hsl('+((hue+40)%360)+' 35% 28%)' : 'hsl('+((hue+20)%360)+' 20% 22%)',
+      home:home,
+      deskIdx:deskIdx,
+      role:String(member.role||''),
+      email:String(member.email||'')
+    };
+    saveCharDefs(defs);
+    return defs[cid];
+  }
+  function syncAllMemberChars(){
+    const links=loadLinks();
+    const keep={};
+    members.forEach(function(m){
+      const def=ensureMemberChar(m);
+      if(def) keep[String(m.id)]=def.id;
+    });
+    Object.keys(links).forEach(function(mid){
+      if(!members.some(function(m){ return String(m.id)===String(mid); })) delete links[mid];
+    });
+    Object.keys(keep).forEach(function(mid){ links[mid]=keep[mid]; });
+    saveLinks(links);
+    // 名簿にいないキャラ定義を削除
+    const defs=loadCharDefs();
+    const live=new Set(Object.values(keep));
+    Object.keys(defs).forEach(function(cid){
+      if(!live.has(cid)) delete defs[cid];
+    });
+    saveCharDefs(defs);
+    return keep;
+  }
+  function openTasksByChar(){
+    const links=loadLinks();
+    const open={};
+    tasks.forEach(function(t){
+      if(!t || t.status==='done') return;
+      const mids=[];
+      if(t.assigned_all){
+        members.forEach(function(m){ mids.push(String(m.id)); });
+      }else if(t.assigned_to){
+        mids.push(String(t.assigned_to));
+      }
+      mids.forEach(function(mid){
+        const cid=links[mid]||autoLinkGuess(staffById(mid))||'';
+        if(!cid) return;
+        open[cid]=(open[cid]||0)+1;
+      });
+    });
+    return open;
+  }
+  function actOverridesByChar(){
+    const links=loadLinks();
+    const overrides={};
+    // 未完了タスクのタイトル／詳細からキーワード配置（最新の未完了を優先）
+    const byChar={};
+    tasks.forEach(function(t){
+      if(!t || t.status==='done') return;
+      const mids=t.assigned_all
+        ? members.map(function(m){ return String(m.id); })
+        : (t.assigned_to?[String(t.assigned_to)]:[]);
+      const place=mapPlaceKeyword((t.title||'')+' '+(displayDetail(t)||'')+' '+(t.detail||''));
+      if(!place) return;
+      mids.forEach(function(mid){
+        const cid=links[mid];
+        if(!cid) return;
+        const at=String(t.created_at||t.updated_at||'');
+        if(!byChar[cid] || at>byChar[cid].at) byChar[cid]={act:place, at:at};
+      });
+    });
+    Object.keys(byChar).forEach(function(cid){ overrides[cid]=byChar[cid].act; });
+    return overrides;
+  }
 
   let members=[];
   let tasks=[];
@@ -7897,14 +8080,31 @@ window.Treasury={
     return '';
   }
   function syncOfficeQuestState(){
+    syncAllMemberChars();
     const links=loadLinks();
+    const defs=loadCharDefs();
     const scoresByChar={};
+    const chars=[];
+    const activeCharIds=[];
     members.forEach(function(m){
       const cid=links[String(m.id)] || autoLinkGuess(m);
       if(!cid) return;
       scoresByChar[cid]=(scoresByChar[cid]||0)+memberScore(m.id);
+      activeCharIds.push(cid);
+      const def=defs[cid] || ensureMemberChar(m);
+      if(def && !chars.some(function(x){ return x.id===cid; })) chars.push(def);
     });
-    const payload={type:'portal-office-sync', scores:scoresByChar, links:links, at:Date.now()};
+    const payload={
+      type:'portal-office-sync',
+      production:true,
+      scores:scoresByChar,
+      links:links,
+      chars:chars,
+      activeCharIds:activeCharIds,
+      openTasks:openTasksByChar(),
+      actOverrides:actOverridesByChar(),
+      at:Date.now()
+    };
     try{
       document.querySelectorAll('#office-pane iframe, #officeQuestModal iframe').forEach(function(fr){
         fr.contentWindow?.postMessage(payload,'*');
@@ -8150,12 +8350,16 @@ window.Treasury={
         const tog=prez
           ? `<button type="button" class="tk-dbx-tog ${on?'on':''}" data-dbx-allow="${esc(s.id)}" data-dbx-on="${on?'1':'0'}" title="Dropbox閲覧許可">📦 Dropbox:${on?'許可':'停止'}</button>`
           : '';
+        const defs=loadCharDefs();
+        const own=defs[linked]||null;
+        const charOpts=OFFICE_CHARS.map(c=>`<option value="${esc(c.id)}"${linked===c.id?' selected':''}>${esc(c.name)}（旧）</option>`).join('')+
+          (own?`<option value="${esc(own.id)}"${linked===own.id?' selected':''}>${esc(own.name)}（登録）</option>`:'');
         const linkSel=prez
           ? `<select class="tk-char-link" data-char-link="${esc(s.id)}" title="クエストキャラ紐づけ">`+
-            `<option value="">キャラ未設定</option>`+
-            OFFICE_CHARS.map(c=>`<option value="${esc(c.id)}"${linked===c.id?' selected':''}>${esc(c.name)}</option>`).join('')+
+            `<option value="">自動（登録キャラ）</option>`+
+            charOpts+
             `</select>`
-          : (linked?`<span class="tk-score-chip" title="紐づけキャラ">${esc((OFFICE_CHARS.find(c=>c.id===linked)||{}).name||linked)}</span>`:'');
+          : (own||linked?`<span class="tk-score-chip" title="紐づけキャラ">${esc((own&&own.name)||(OFFICE_CHARS.find(c=>c.id===linked)||{}).name||linked)}</span>`:'');
         return `<span style="display:inline-flex;align-items:center;gap:2px;flex-wrap:wrap">`+
           `<button type="button" data-staff-focus="${esc(s.id)}" class="${focusStaff===s.id?'on':''}">${esc(s.name)}<span class="tk-score-chip">${score}点</span></button>${linkSel}${tog}</span>`;
       }).join('');
@@ -8241,9 +8445,11 @@ window.Treasury={
       }
     }catch(e){}
     try{ window.syncDropboxBtnVisibility?.(); }catch(e){}
+    syncAllMemberChars();
     fillAssigneeSelects();
     renderStaffJump();
     renderTasks();
+    syncOfficeQuestState();
   }
 
   async function refreshTaskBoard(){
@@ -8254,6 +8460,7 @@ window.Treasury={
     if(error){ console.warn('[tasks] list', error); return; }
     tasks=data||[];
     renderTasks();
+    syncOfficeQuestState();
   }
 
   async function createTask({ title, detail, target, due }){
@@ -8438,8 +8645,16 @@ window.Treasury={
     if(!isPresident()){ T.toast('キャラ紐づけは社長のみ変更できます'); return; }
     const map=loadLinks();
     const mid=sel.getAttribute('data-char-link');
-    const cid=sel.value||'';
-    if(cid) map[mid]=cid; else delete map[mid];
+    let cid=sel.value||'';
+    if(!cid){
+      const m=staffById(mid);
+      const def=ensureMemberChar(m);
+      cid=def?def.id:'';
+      if(cid) map[mid]=cid;
+      else delete map[mid];
+    }else{
+      map[mid]=cid;
+    }
     saveLinks(map);
     T.toast('クエストキャラを紐づけました');
     syncOfficeQuestState();
@@ -8544,6 +8759,8 @@ window.Treasury={
     reloadMembers:loadMembers,
     applyScore:applyScore,
     memberScore:memberScore,
+    syncOffice:syncOfficeQuestState,
+    ensureMemberChar:ensureMemberChar,
     me:me
   };
 
@@ -9573,9 +9790,10 @@ window.PortalAuth=(function(){
     const b=document.getElementById('portalDemoBanner');
     const on=isDemoMode();
     if(b){
+      b.hidden=!on;
       b.classList.toggle('is-on', on);
       if(on){
-        b.innerHTML='営業デモモード（会計・Dropboxは非表示） <a href="demo.html">デモ入口</a>';
+        b.innerHTML='デモアカウントでのログインは制限モードです（正式運用中）';
       }
     }
   }
@@ -10036,8 +10254,23 @@ window.PortalAuth=(function(){
           // セッションが即時ある場合は onAuthStateChange が開く。無い場合はログインへ誘導
           const c=window.GoonerSB.sb();
           const sess=c?(await c.auth.getSession()).data.session:null;
-          if(sess) await onAuthed(sess);
-          else{
+          if(sess){
+            await onAuthed(sess);
+            try{
+              await window.PortalTasks?.reloadMembers?.();
+              window.PortalTasks?.syncOffice?.();
+            }catch(e){}
+            try{
+              // 登録完了後にクエストを拡大表示してキャラを見せる
+              setTimeout(function(){
+                try{ window.OfficeBridge?.expandQuest?.(); }catch(e2){}
+                try{
+                  const pane=document.querySelector('[data-s="office"], #office-pane, button[data-s="office"]');
+                  if(pane && pane.click) pane.click();
+                }catch(e3){}
+              }, 400);
+            }catch(e){}
+          }else{
             if(err) err.textContent='登録しました。確認メールがある場合は確認後、ログインしてください。タスク担当一覧にも反映されます。';
             setMode('signin');
           }
@@ -10077,20 +10310,16 @@ window.PortalAuth=(function(){
       });
     });
 
-    // 営業デモ: ?demo=1 で自動入場
-    if(isDemoQuery()){
-      enterDemo().then(function(){ syncDemoBanner(); });
-    }
+    // 正式運用：営業デモ自動入場は無効
+    // if(isDemoQuery()){ enterDemo()... }
 
     // Auth セッション監視（未ログイン＝ゲート）
     const c=window.GoonerSB?.sb?.();
     if(c){
       c.auth.getSession().then(function(res){
-        if(isDemoQuery() && !(res.data&&res.data.session)) return;
         onAuthed(res.data&&res.data.session);
       });
       c.auth.onAuthStateChange(function(_ev, session){
-        if(isDemoQuery() && !session) return;
         onAuthed(session);
       });
     }else{
