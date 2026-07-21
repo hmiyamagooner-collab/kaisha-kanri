@@ -650,7 +650,7 @@ function drawDayOverlay(g){
 }
 
 function elder(name,short,female,cloth,hair){
-  return {name:name,short:short,female:female,cloth:cloth,hair:hair,px:pt('parking',0.5,0.5).x,py:pt('parking',0.5,0.5).y,path:[],hidden:true,spd:0.85,bubble:null,pendingBubble:null};
+  return {elder:true,name:name,short:short,female:female,cloth:cloth,hair:hair,px:pt('parking',0.5,0.5).x,py:pt('parking',0.5,0.5).y,path:[],hidden:true,spd:0.85,bubble:null,pendingBubble:null};
 }
 const ELDERS=[
  elder('ウメさん','ウメ',true,'#9d7bb0','#cbd5e1'),
@@ -1485,8 +1485,16 @@ function prerenderCity(){
   drawOcean(g,ZONES.umi);
 }
 function drawPerson(g,c,walking,frame){
+  const mob=!!(c.guest||c.care||c.elder);
+  const scale=mob?0.52:1;
   const x=c.px|0,y=c.py|0,sw=walking&&frame,skin='#f2c9a0';
   const fem=c.female;
+  g.save();
+  if(scale!==1){
+    g.translate(x,y);
+    g.scale(scale,scale);
+    g.translate(-x,-y);
+  }
   px(g,x-8,y+15,16,3,'rgba(0,0,0,.2)');                       /* 影 */
   if(c.guest){                                                /* 海水浴・イベント客＝水着 */
     px(g,x-5,y+7,4,8,skin);px(g,x+1,y+7,4,8,skin);            /* 素足 */
@@ -1499,6 +1507,7 @@ function drawPerson(g,c,walking,frame){
     if(fem){px(g,x-6,y-13,2,10,c.hair);px(g,x+4,y-13,2,10,c.hair);}  /* ロングヘア */
     else{px(g,x-5,y-12,2,5,c.hair);px(g,x+4,y-12,2,5,c.hair);}
     px(g,x-3,y-7,2,2,'#2a2a2a');px(g,x+1,y-7,2,2,'#2a2a2a');
+    g.restore();
     return;
   }
   px(g,x-7,y-3,14,11,c.cloth);                                /* 胴 */
@@ -1517,6 +1526,7 @@ function drawPerson(g,c,walking,frame){
   if(fem){px(g,x-6,y-13,2,10,c.hair);px(g,x+4,y-13,2,10,c.hair);}  /* ロングヘア */
   else{px(g,x-5,y-12,2,5,c.hair);px(g,x+4,y-12,2,5,c.hair);}
   px(g,x-3,y-7,2,2,'#2a2a2a');px(g,x+1,y-7,2,2,'#2a2a2a');    /* 目 */
+  g.restore();
 }
 function drawCar(g){drawPixVan(g,CAR.x,CAR.y,CAR.facing||'n');}
 let selected=null,hovered=null;
@@ -1556,8 +1566,11 @@ function draw(){
       ctx.strokeRect(((c.px-12)|0)+.5,((c.py-16)|0)+.5,24,33);
     }
     drawPerson(ctx,c,walking,frame);
-    if(!c.guest&&(c===hovered||c===selected)){
-      const label=c.short+(c.score!=null?(' '+((c.score|0)>0?'+':'')+(c.score|0)+'点'):'');
+    if(!c.guest&&!c.care&&!c.elder&&(c===hovered||c===selected)){
+      const open=c.openTasks|0;
+      const label=c.short
+        +(open?(' タスク'+open+'件'):'')
+        +(c.score!=null?(' '+((c.score|0)>0?'+':'')+(c.score|0)+'点'):'');
       ctx.font=LABEL_FONT;
       const tw=Math.ceil(ctx.measureText(label).width),lw=tw+LABEL_PAD*2;
       const lx=Math.max(MAP_UI_MARGIN,Math.min((c.px-lw/2)|0,MAP_W-lw-MAP_UI_MARGIN));
@@ -1657,10 +1670,10 @@ const CHAR_PORTAL={
 const CHAR_TAB={shacho:'dash',koshiishi:'cf-bank',sayaka:'biz-it',yuzuru:'biz-paradise',
   tanji:'biz-cf',okabe:'cf-legal',tokita:'biz-care',takahashi:'biz-care',shinagawa:'biz-care'};
 function hoverLine(c){
-  const p=CHAR_PORTAL[c.id];
-  const ls=p&&p.lines;
-  if(!ls||!ls.length)return c.short+'です。';
-  return ls[Math.floor(Math.random()*ls.length)];
+  const name=String(c.name||c.short||'社員');
+  const open=c.openTasks|0;
+  if(open>0) return name+'です。未完了タスクは'+open+'件です。';
+  return name+'です。未完了タスクはありません。';
 }
 let _lastHoverId=null;
 function speakLocalTTS(text){
@@ -1691,12 +1704,28 @@ function portalBridge(msg){
   }catch(e){window.parent.postMessage(msg,'*');}
 }
 function onCharHover(c){
-  if(!c||c.guest)return;
+  if(!c||c.guest||c.care||c.elder)return;
   const line=hoverLine(c);
-  const dash=CHAR_PORTAL[c.id]?.dash||null;
-  c.bubble={text:line,until:performance.now()+3200,quiet:true};
-  if(!dash)speakLocalTTS(line);
-  portalBridge({type:'office-hover',charId:c.id,name:c.name,short:c.short,line:line,dash:dash});
+  const open=c.openTasks|0;
+  // 吹き出しにも名前＋タスク件数
+  c.bubble={
+    text:open>0?(c.short+' タスク'+open+'件'):(c.short+' タスクなし'),
+    until:performance.now()+4200,
+    quiet:false,
+    task:open>0,
+    score:false
+  };
+  // 音声：名前とタスク件数を必ず読み上げ（親TTS優先）
+  speakLocalTTS(line);
+  portalBridge({
+    type:'office-hover',
+    charId:c.id,
+    name:c.name,
+    short:c.short,
+    line:line,
+    openTasks:open,
+    dash:null
+  });
 }
 function onCharHoverEnd(){
   try{window.parent.PortalTTS?.stop();}catch(e){}
