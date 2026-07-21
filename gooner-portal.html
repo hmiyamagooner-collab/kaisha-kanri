@@ -699,13 +699,15 @@ p.sdesc{color:var(--muted);font-size:14px;margin-bottom:22px;line-height:1.7;max
 }
 
 /* ===== 精算クエストボード ===== */
-.quest-board{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-@media(max-width:860px){.quest-board{grid-template-columns:1fr}}
+.quest-board{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:1100px){.quest-board{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.quest-board{grid-template-columns:1fr}}
 .lane{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px;min-height:220px}
 .lane h3{font-family:var(--font-display);font-size:13px;font-weight:600;letter-spacing:.04em;padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between}
 .lane h3 .cnt{color:var(--muted)}
 .lane.l-pending h3{color:var(--out)}
 .lane.l-approved h3{color:var(--gold)}
+.lane.l-paid h3{color:#7ec8ff}
 .lane.l-settled h3{color:var(--in)}
 .qcard{
   background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:11px;margin-bottom:9px;
@@ -718,21 +720,30 @@ p.sdesc{color:var(--muted);font-size:14px;margin-bottom:22px;line-height:1.7;max
 .qcard .meta{font-size:11px;color:var(--muted);margin-top:6px;font-family:var(--font-num)}
 .qcard .actions{display:flex;gap:6px;margin-top:9px}
 .qcard .actions button{
-  flex:1;border:none;border-radius:8px;padding:8px;font-family:var(--font-display);font-size:12px;letter-spacing:1px;
+  flex:1;border:none;border-radius:8px;padding:8px;font-family:var(--font-display);font-size:12px;letter-spacing:1px;cursor:pointer;
 }
 .btn-approve{
   background:linear-gradient(180deg,var(--nav-green-fill-hi) 0%,var(--nav-green-fill) 100%);
   border:1px solid var(--nav-green-soft)!important;color:var(--nav-label);
 }
 .btn-reject{background:transparent;border:1px solid var(--out)!important;color:var(--out)}
+.btn-pay{background:#1a4a7a;border:1px solid #7ec8ff!important;color:#d7ecff}
 .btn-settle{background:var(--in);color:#00291a}
+.btn-receive{background:linear-gradient(180deg,#4ade80,#22c55e);color:#062012;font-weight:700}
 .stamp{
   position:absolute;top:6px;right:8px;font-family:var(--font-display);font-size:11px;
   padding:2px 8px;border-radius:6px;transform:rotate(4deg);
 }
 .stamp.ok{border:1px solid var(--gold);color:var(--gold)}
+.stamp.pay{border:1px solid #7ec8ff;color:#7ec8ff}
 .stamp.done{border:1px solid var(--in);color:var(--in)}
 .qcard:has(.stamp) .top{padding-right:56px}
+.quest-role-hint{
+  margin:0 0 12px;padding:10px 12px;border:1px solid var(--nav-green-line);
+  background:rgba(0,20,0,.35);font-size:12px;color:var(--muted);line-height:1.55;
+}
+.quest-role-hint b{color:var(--nav-green-bright)}
+.quest-role-hint .qr-you{color:var(--text);font-weight:700}
 
 /* ===== 商流マップ ===== */
 .flow-wrap{overflow-x:auto}
@@ -770,6 +781,7 @@ table.ledger tr:hover td{background:rgba(232,184,75,.04)}
 .tag.t8{border-color:#c9b1ff;color:#c9b1ff}
 .tag.st-pending{border-color:var(--out);color:var(--out)}
 .tag.st-approved{border-color:var(--gold);color:var(--gold)}
+.tag.st-paid{border-color:#7ec8ff;color:#7ec8ff}
 .tag.st-settled,.tag.st-none{border-color:var(--in);color:var(--in)}
 
 /* ===== 税スクリーン ===== */
@@ -2915,10 +2927,6 @@ video.dc-card__image{
           <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
           <span class="nav-label">納税タンク</span>
         </button>
-        <button type="button" class="nav-biz nav-green" data-s="quest" data-acct="1">
-          <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
-          <span class="nav-label">精算クエスト</span>
-        </button>
         <button type="button" class="nav-biz nav-green" data-s="billing-invoice" data-acct="1">
           <span class="nav-photo" style="background-image:url(dash-finance.png)"></span>
           <span class="nav-label">請求・見積書</span>
@@ -2929,6 +2937,10 @@ video.dc-card__image{
         </button>
       </div>
     </div>
+    <button type="button" class="nav-biz nav-green" data-s="quest" data-quest="1" title="精算状況は全員閲覧可">
+      <span class="nav-photo" style="background-image:url(nav-task.png)"></span>
+      <span class="nav-label">精算クエスト</span>
+    </button>
     <div class="nav-drop" data-nav-drop="legal" data-secure="1" hidden>
       <button type="button" class="nav-drop-toggle" aria-expanded="false" aria-controls="navDropPanel-legal">
         <span>法務</span><span class="nav-drop-chevron" aria-hidden="true">▼</span>
@@ -3182,9 +3194,9 @@ video.dc-card__image{
       <button id="mNext" aria-label="次の月">▶</button>
       <span id="fiscalBadge" class="hud-fiscal" title="会計年度・四半期"></span>
     </div>
-    <div class="role-switch" role="group" aria-label="モード切替">
-      <button id="roleStaff" class="on">社員</button>
-      <button id="roleBoss">承認者</button>
+    <div class="role-switch" role="group" aria-label="表示モード" title="操作権限はログイン役職で決まります">
+      <button type="button" id="roleStaff" class="on" disabled>状況確認</button>
+      <button type="button" id="roleBoss" disabled>役職連動</button>
     </div>
   </div>
 </header>
@@ -3434,7 +3446,7 @@ video.dc-card__image{
     <div class="tax-preview" id="taxPreview">税抜 ¥0 ／ うち消費税 ¥0</div>
     <label class="expense-check" id="expWrap" style="display:none">
       <input type="checkbox" id="fExpense">
-      <span><b style="color:var(--gold)">経費精算にする</b> — 立て替えたお金。承認者のOK後に精算されます（精算クエストに登録）</span>
+      <span><b style="color:var(--gold)">経費精算にする</b> — 立て替え申請。社長承認 → 経理支払 → 受取で完了（精算クエスト）</span>
     </label>
     <button class="save-btn" id="saveBtn">記 録 す る</button>
   </div>
@@ -3443,11 +3455,13 @@ video.dc-card__image{
 <!-- ===== 精算クエスト ===== -->
 <section class="screen" id="s-quest">
   <h2 class="stitle">⚔ 精算クエスト</h2>
-  <p class="sdesc">経費の申請 → 承認 → 精算の流れ。カードが右のレーンに進むほどクリアに近づきます。承認は「承認者」モードで。</p>
+  <p class="sdesc">申請 → 社長承認 → 経理支払 → 社員受取。状況は全員が確認できます。操作ボタンはログイン役職で分かれます。</p>
+  <div class="quest-role-hint" id="questRoleHint"></div>
   <div class="quest-board">
     <div class="lane l-pending"><h3>申請中 <span class="cnt" id="cPending">0</span></h3><div id="lanePending"></div></div>
     <div class="lane l-approved"><h3>承認済 <span class="cnt" id="cApproved">0</span></h3><div id="laneApproved"></div></div>
-    <div class="lane l-settled"><h3>精算完了 <span class="cnt" id="cSettled">0</span></h3><div id="laneSettled"></div></div>
+    <div class="lane l-paid"><h3>支払済 <span class="cnt" id="cPaid">0</span></h3><div id="lanePaid"></div></div>
+    <div class="lane l-settled"><h3>受取完了 <span class="cnt" id="cSettled">0</span></h3><div id="laneSettled"></div></div>
   </div>
 </section>
 
@@ -5243,7 +5257,7 @@ const clock=useClock();return/*#__PURE__*/React.createElement("div",{className:"
      tx.cat         -> cf_transactions.category
      tx.taxRate     -> cf_transactions.tax_rate   (10/8/0/-1)
      tx.amount      -> cf_transactions.amount_incl_tax
-     tx.status      -> cf_transactions.expense_status (none/pending/approved/settled)
+     tx.status      -> cf_transactions.expense_status (none/pending/approved/paid/settled)
      tx.by          -> cf_transactions.created_by
    保存/読込を saveAll()/loadAll() に集約してあるので、
    ここを supabase-js の insert/select に差し替えるだけで移行できます。
@@ -5277,6 +5291,7 @@ function seed(){
     t(m+"-04","out","◯◯広告社","STEALTH FILE TikTok広告 6月分","広告宣伝費",10,55000,"none","さやか"),
     t(m+"-05","out","JR東日本","クライアント訪問 交通費（立替）","交通費",10,3840,"pending","さやか"),
     t(m+"-05","out","文具のカワイ","事務用品（立替）","消耗品費",10,2680,"approved","ノジ"),
+    t(m+"-05","out","コンビニA","打合せ飲料（立替）","消耗品費",10,980,"paid","さやか"),
     t(m+"-06","out","居酒屋 月あかり","協力事務所との会食（立替）","接待交際費",10,12800,"settled","ヒロ"),
   ]};
   function t(date,type,who,memo,cat,taxRate,amount,status,by){
@@ -5372,26 +5387,48 @@ function shiftViewMonth(delta){
 $("#mPrev").onclick=()=>shiftViewMonth(-1);
 $("#mNext").onclick=()=>shiftViewMonth(1);
 
-/* ---------- ロール ---------- */
-let role="staff";
-$("#roleStaff").onclick=()=>setRole("staff");
-$("#roleBoss").onclick=()=>setRole("boss");
-function setRole(r){role=r;
-  $("#roleStaff").classList.toggle("on",r==="staff");
-  $("#roleBoss").classList.toggle("on",r==="boss");
-  renderQuest();
-  toast(r==="boss"?"承認者モード：承認ボタンが使えます":"社員モードに戻りました");
+/* ---------- 精算クエスト権限（ログイン役職） ---------- */
+function questActor(){
+  try{
+    const u=window.PortalAuth?.getUser?.();
+    if(!u) return {role:'', name:'', canApprove:false, canPay:false, canReceive:false};
+    const role=String(u.role||'').trim();
+    return {
+      role,
+      name:String(u.name||'').trim()||role||'社員',
+      canApprove: role==='社長',
+      canPay: role==='社長' || role==='経理',
+      canReceive: role==='社長' || role==='経理' || role==='社員'
+    };
+  }catch(e){
+    return {role:'', name:'', canApprove:false, canPay:false, canReceive:false};
+  }
 }
+/* HUDロールは廃止（互換のため残す） */
+let role="staff";
+const _roleStaff=$("#roleStaff");
+const _roleBoss=$("#roleBoss");
+if(_roleStaff) _roleStaff.onclick=null;
+if(_roleBoss) _roleBoss.onclick=null;
+function setRole(r){role=r; try{renderQuest();}catch(e){}}
 
 /* ---------- ナビ ---------- */
 $$(".gamenav button[data-s]").forEach(b=>b.onclick=()=>{
-  if(b.dataset.acct==="1"){
+  const isQuest=b.dataset.s==="quest"||b.dataset.quest==="1";
+  if(b.dataset.acct==="1" && !isQuest){
     if(!window.PortalAuth||!PortalAuth.canAccessAccounting()){
       try{
         toast(window.PortalAuth?.isDemoMode?.()
           ?"営業デモでは会計・お金関連メニューは利用できません"
           :"会計・法務メニューは社長・経理・法務のみ利用できます");
       }catch(e){}
+      return;
+    }
+  }
+  if(isQuest){
+    const u=window.PortalAuth?.getUser?.();
+    if(!u){
+      try{toast("ログイン後に精算クエストを確認できます");}catch(e){}
       return;
     }
   }
@@ -5770,9 +5807,10 @@ $("#saveBtn").onclick=ev=>{
   const who=$("#fWho").value.trim(), memo=$("#fMemo").value.trim(), amt=+$("#fAmt").value;
   if(!who||!amt){toast("相手先と金額は必須です");return;}
   const isExp=eType==="out"&&$("#fExpense").checked;
+  const actor=questActor();
   S.tx.push({id:crypto.randomUUID(),date:$("#fDate").value,type:eType,who,
     memo:memo||"（目的未記入）",cat:$("#fCat").value,taxRate:eTax,amount:amt,
-    status:isExp?"pending":"none",by:role==="boss"?"承認者":"社員"});
+    status:isExp?"pending":"none",by:actor.name||"社員"});
   gainXP(10,ev);
   $("#fWho").value="";$("#fMemo").value="";$("#fAmt").value="";$("#fExpense").checked=false;
   previewTax(); saveAll(); renderAll();
@@ -5858,30 +5896,78 @@ function renderDash(){
 
 /* ---------- 精算クエスト ---------- */
 function renderQuest(){
-  const lanes={pending:$("#lanePending"),approved:$("#laneApproved"),settled:$("#laneSettled")};
-  Object.values(lanes).forEach(l=>l.innerHTML="");
+  const actor=questActor();
+  const hint=$("#questRoleHint");
+  if(hint){
+    const bits=[];
+    if(actor.canApprove) bits.push('承認');
+    if(actor.canPay) bits.push('支払');
+    if(actor.canReceive) bits.push('受け取り');
+    const can=bits.length?bits.join('・'):'閲覧のみ';
+    hint.innerHTML=actor.role
+      ?`いまのログイン：<span class="qr-you">${esc(actor.role)}　${esc(actor.name)}</span> — 操作できるのは <b>${can}</b>。<br>社長＝承認・支払・受取 ／ 経理＝支払・受取 ／ 社員＝受取。状況ボードは全員共通です。`
+      :`ログイン後、役職に応じた操作ボタンが表示されます。状況は全員が確認できます。`;
+  }
+  const lanes={
+    pending:$("#lanePending"),
+    approved:$("#laneApproved"),
+    paid:$("#lanePaid"),
+    settled:$("#laneSettled")
+  };
+  Object.values(lanes).forEach(l=>{ if(l) l.innerHTML=""; });
   const q=S.tx.filter(t=>t.status&&t.status!=="none");
-  const cnt={pending:0,approved:0,settled:0};
+  const cnt={pending:0,approved:0,paid:0,settled:0};
   q.sort((a,b)=>b.date.localeCompare(a.date)).forEach(t=>{
-    cnt[t.status]++;
+    // 旧データ互換：未知ステータスは申請中扱いしない
+    const st=t.status==="paid"||t.status==="approved"||t.status==="settled"||t.status==="pending"?t.status:"pending";
+    if(!(st in cnt)) return;
+    cnt[st]++;
     const el=document.createElement("div");el.className="qcard";
     let actions="";
-    if(t.status==="pending"&&role==="boss")
+    if(st==="pending"&&actor.canApprove)
       actions=`<div class="actions"><button class="btn-approve" data-a="approve" data-id="${t.id}">承認する</button><button class="btn-reject" data-a="reject" data-id="${t.id}">差戻し</button></div>`;
-    if(t.status==="approved"&&role==="boss")
-      actions=`<div class="actions"><button class="btn-settle" data-a="settle" data-id="${t.id}">精算した（振込済）</button></div>`;
-    const stamp=t.status==="approved"?`<span class="stamp ok">承認</span>`:t.status==="settled"?`<span class="stamp done">完了</span>`:"";
+    if(st==="approved"&&actor.canPay)
+      actions=`<div class="actions"><button class="btn-pay" data-a="pay" data-id="${t.id}">支払実行</button></div>`;
+    if(st==="paid"&&actor.canReceive)
+      actions=`<div class="actions"><button class="btn-receive" data-a="receive" data-id="${t.id}">受け取り</button></div>`;
+    const stamp=st==="approved"?`<span class="stamp ok">承認</span>`
+      :st==="paid"?`<span class="stamp pay">支払済</span>`
+      :st==="settled"?`<span class="stamp done">受取</span>`:"";
     el.innerHTML=`${stamp}<div class="top"><b>${esc(t.who)}</b><span class="amt">${yen(t.amount)}</span></div>
       <div class="memo">${esc(t.memo)}</div>
       <div class="meta">${t.date} ／ ${esc(t.cat)} ／ 申請者: ${esc(t.by)}</div>${actions}`;
-    lanes[t.status].appendChild(el);
+    const lane=lanes[st];
+    if(lane) lane.appendChild(el);
   });
-  $("#cPending").textContent=cnt.pending;$("#cApproved").textContent=cnt.approved;$("#cSettled").textContent=cnt.settled;
+  const setCnt=(id,n)=>{ const el=$(id); if(el) el.textContent=n; };
+  setCnt("#cPending",cnt.pending);
+  setCnt("#cApproved",cnt.approved);
+  setCnt("#cPaid",cnt.paid);
+  setCnt("#cSettled",cnt.settled);
   $$("#s-quest [data-a]").forEach(b=>b.onclick=ev=>{
     const t=S.tx.find(x=>x.id===b.dataset.id); if(!t)return;
-    if(b.dataset.a==="approve"){t.status="approved";gainXP(5,ev);toast("承認しました +5 XP");}
-    if(b.dataset.a==="reject"){t.status="none";toast("差戻しました（通常の出金記録に戻ります）");}
-    if(b.dataset.a==="settle"){t.status="settled";gainXP(5,ev);toast("精算完了！クエストクリア ⚔ +5 XP");}
+    const a=questActor();
+    if(b.dataset.a==="approve"){
+      if(!a.canApprove){toast("承認は社長のみ実行できます");return;}
+      t.status="approved";gainXP(5,ev);toast("承認しました（経理の支払待ち） +5 XP");
+    }
+    if(b.dataset.a==="reject"){
+      if(!a.canApprove){toast("差戻しは社長のみ実行できます");return;}
+      t.status="none";toast("差戻しました（通常の出金記録に戻ります）");
+    }
+    if(b.dataset.a==="pay"){
+      if(!a.canPay){toast("支払実行は社長・経理のみ実行できます");return;}
+      t.status="paid";gainXP(5,ev);toast("支払済みにしました（申請者の受取待ち） +5 XP");
+    }
+    if(b.dataset.a==="receive"){
+      if(!a.canReceive){toast("受け取りは社長・経理・社員が実行できます");return;}
+      t.status="settled";gainXP(5,ev);toast("受け取り完了！クエストクリア ⚔ +5 XP");
+    }
+    // 旧ボタン互換
+    if(b.dataset.a==="settle"){
+      if(!a.canPay){toast("支払実行は社長・経理のみ実行できます");return;}
+      t.status="paid";gainXP(5,ev);toast("支払済みにしました（申請者の受取待ち） +5 XP");
+    }
     saveAll();renderAll();
   });
 }
@@ -5917,7 +6003,7 @@ function renderFlow(){
 }
 
 /* ---------- 台帳・CSV ---------- */
-const STATUS_JA={none:"—",pending:"申請中",approved:"承認済",settled:"精算完了"};
+const STATUS_JA={none:"—",pending:"申請中",approved:"承認済",paid:"支払済",settled:"受取完了"};
 const TAX_JA=r=>r===10?"課税10%":r===8?"軽減8%":r===0?"非課税":"不課税";
 function renderLedger(){
   const q=($("#lq").value||"").toLowerCase(), ty=$("#lt").value;
@@ -10038,6 +10124,9 @@ window.PortalAuth=(function(){
     }).catch(function(){});
   }
   const ACCT_ROLES=['社長','経理','法務'];
+  function canAccessQuest(){
+    return !!getUser();
+  }
   function canAccessAccounting(){
     const u=getUser();
     // 営業デモでは会計・法務（お金関連）を見せない
@@ -10048,6 +10137,7 @@ window.PortalAuth=(function(){
     return !!document.querySelector('.nav-drop-panel[data-secure="1"]:not([hidden])');
   }
   function isAccountingScreen(sid){
+    if(sid==='quest') return false; // 精算クエストは全員閲覧可
     if(sid==='cf-forecast')return true;
     const b=document.querySelector('.gamenav button[data-s="'+sid+'"]');
     return !!(b&&b.dataset.acct==='1');
@@ -10131,6 +10221,7 @@ window.PortalAuth=(function(){
   }
   function applyNavAcl(){
     const ok=canAccessAccounting();
+    const questOk=canAccessQuest();
     document.querySelectorAll('.nav-drop[data-secure="1"]').forEach(function(drop){
       drop.hidden=!ok;
       if(!ok) setDropOpen(drop, false);
@@ -10146,9 +10237,14 @@ window.PortalAuth=(function(){
         ? '営業デモでは会計・お金関連メニューは利用できません'
         : '会計・法務メニューは社長・経理・法務のみ利用できます';
     });
+    document.querySelectorAll('.gamenav button[data-quest="1"], .gamenav button[data-s="quest"]').forEach(function(b){
+      b.classList.toggle('nav-locked', !questOk);
+      b.setAttribute('aria-disabled', questOk?'false':'true');
+      if(questOk) b.title='精算状況は全員閲覧可（操作は役職別）';
+      else b.title='ログイン後に精算クエストを確認できます';
+    });
     document.querySelectorAll('.nav-drop').forEach(function(drop){
       if(drop.hidden){ setDropOpen(drop, false); return; }
-      const key=drop.dataset.navDrop;
       const panel=panelForDrop(drop);
       const active=panel && panel.querySelector('button[data-s].on');
       if(active) setDropOpen(drop, true);
@@ -10509,7 +10605,7 @@ window.PortalAuth=(function(){
     }
     requestAnimationFrame(syncNavMatrix);
   });
-  return{getUser,login,logout,userContext,syncUi,serverLog,listStaff,upsertStaff,canAccessAccounting,isAccountingScreen,isAccountingRevealed,revealSecureNav,applyNavAcl,updateBrandCover,syncNavMatrix,onAuthed,enterDemo,DEMO,isDemoMode};
+  return{getUser,login,logout,userContext,syncUi,serverLog,listStaff,upsertStaff,canAccessAccounting,canAccessQuest,isAccountingScreen,isAccountingRevealed,revealSecureNav,applyNavAcl,updateBrandCover,syncNavMatrix,onAuthed,enterDemo,DEMO,isDemoMode};
 })();
 </script>
 
