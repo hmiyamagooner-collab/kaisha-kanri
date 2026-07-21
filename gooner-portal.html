@@ -1205,7 +1205,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 #treasury-pane .pane-cap::after{background:var(--nav-green)}
 #office-pane{background:#000;overflow:hidden;display:flex;flex-direction:column;min-height:0;}
 .office-task-dock{
-  flex:1 1 auto;min-height:0;overflow:hidden;
+  flex:0 0 auto;min-height:0;overflow:visible;
   display:flex;flex-direction:column;
   border-top:1px solid var(--nav-green-line);
   background:#000;
@@ -1254,9 +1254,9 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   font-size:10px;color:var(--muted);padding:0 10px 6px;line-height:1.4;
 }
 .office-tk-links{
-  flex-shrink:0;display:grid;grid-template-columns:1fr;gap:6px;
-  padding:8px 10px 10px;margin-top:auto;
-  border-top:1px solid var(--nav-green-line);
+  flex-shrink:0;display:grid;grid-template-columns:1fr 1fr;gap:6px;
+  padding:8px 10px 10px;margin-top:0;
+  border-top:none;
 }
 .office-tk-open{
   cursor:pointer;min-height:40px;padding:0 12px;border-radius:9px;
@@ -1392,7 +1392,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .office-tk-item button:hover{color:var(--nav-green);border-color:var(--nav-green)}
 .office-tk-empty{font-size:11px;color:var(--muted);padding:4px 2px}
 .office-frame{
-  flex:0 0 32%;max-height:32%;min-height:96px;overflow:hidden;display:flex;position:relative;
+  flex:1 1 auto;min-height:0;overflow:hidden;display:flex;position:relative;
   background:#000;
 }
 .office-expand-hit{
@@ -2968,25 +2968,10 @@ video.dc-card__image{
         <button type="button" class="office-expand-hit" id="officeExpandBtn" title="クリックで拡大">クリックで拡大</button>
       </div>
       <div class="office-task-dock">
-        <div class="office-task-head">
-          <strong>タスク</strong>
-          <span id="officeTkHeadHint" style="font-size:10px;color:var(--muted)"></span>
-        </div>
         <div class="office-tk-alert" id="officeTkAlert" hidden>
           <div class="office-tk-alert-msg">新しいタスクが届いています</div>
           <div class="office-tk-pending" id="officeTkPending"></div>
         </div>
-        <div class="office-tk-staffs" id="officeTkStaffs"></div>
-        <p class="office-tk-dir-note" id="officeTkDirNote" hidden>社長指示：担当を選ぶか「全員」へ送ると、相手の承認後にタスクが追加されます。</p>
-        <form class="office-tk-form" id="officeTkForm">
-          <select id="officeTkAssignee" aria-label="担当"></select>
-          <div class="office-tk-form-row">
-            <input id="officeTkTitle" placeholder="タスクを入力（Enterで追加）" required maxlength="120">
-            <input id="officeTkDue" type="date" aria-label="期日" title="期日" required>
-            <button type="submit" id="officeTkSubmit">追加</button>
-          </div>
-        </form>
-        <div class="office-tk-list" id="officeTkList"></div>
         <div class="office-tk-links" role="navigation" aria-label="タスク画面">
           <button type="button" class="office-tk-open" data-jump="tasks" title="タスク管理を開く">
             <span class="nav-photo" style="background-image:url(nav-task.png)" aria-hidden="true"></span>
@@ -8236,12 +8221,6 @@ window.Treasury={
       else if(prez) el.value='all';
       else if(m) el.value=m.id;
     });
-    const note=$("#officeTkDirNote"), hint=$("#officeTkHeadHint"), sub=$("#officeTkSubmit");
-    if(note) note.hidden=!prez;
-    if(hint) hint.textContent=prez?'社長：指示を送れます（共有・即時反映）':'承認待ちは赤字で表示';
-    if(sub) sub.textContent=prez?'指示':'追加';
-    const title=$("#officeTkTitle");
-    if(title) title.placeholder=prez?'指示内容':'タスクを入力（Enterで追加）';
   }
 
   function tasksForMember(memberId){
@@ -8298,34 +8277,6 @@ window.Treasury={
   function renderOfficeDock(){
     fillAssigneeSelects();
     renderPendingAlerts();
-    const chips=$("#officeTkStaffs");
-    const staff=staffList();
-    const m=me();
-    if(chips){
-      chips.innerHTML=staff.length
-        ?staff.map(s=>{
-          const pend=tasks.filter(t=>t.status==='pending'&&(t.assigned_all||String(t.assigned_to)===String(s.id))).length;
-          const mark=pend?` <b style="color:#ff8a8a">+${pend}</b>`:'';
-          return `<button type="button" data-staff-jump="${esc(s.id)}" title="${esc(s.email||'')}" class="${m&&s.id===m.id?'on':''}">${esc(s.name)}${mark}</button>`;
-        }).join('')
-        :`<span class="office-tk-empty">ログインすると名簿が共有表示されます</span>`;
-    }
-    const list=$("#officeTkList"); if(!list) return;
-    const open=tasks.filter(t=>t.status!=='done')
-      .sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')))
-      .slice(0,12);
-    list.innerHTML=open.length?open.map(t=>{
-      const name=t.assigned_all?'全員':(t.assignee?.name||staffById(t.assigned_to)?.name||'?');
-      const aid=t.assigned_all?'':(t.assigned_to||'');
-      const due=parseDue(t);
-      const late=due && due<todayISO();
-      return `<div class="office-tk-item" data-id="${t.id}">
-        <button type="button" class="office-tk-who" data-staff-jump="${esc(aid)}">${esc(name)}</button>
-        <span class="office-tk-title">${esc(t.title)} <small style="color:var(--muted)">${esc(statusLabel(t.status))}${due?` · <span class="tk-due${late?' late':''}">期日 ${esc(due)}</span>`:''}</small></span>
-        ${t.status==='accepted'&&isMine(t,me())?`<button type="button" data-task-done="${esc(t.id)}">完了</button>`:
-          t.status==='pending'&&isMine(t,me())?`<button type="button" data-task-arrive="${esc(t.id)}">確認</button>`:''}
-      </div>`;
-    }).join(''):`<div class="office-tk-empty">未完了タスクはありません。下の欄から追加できます。</div>`;
   }
 
   async function setDropboxAllowed(memberId, allowed){
