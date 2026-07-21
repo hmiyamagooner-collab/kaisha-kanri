@@ -239,15 +239,6 @@ input,select,textarea{font-family:inherit}
 .xp-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--gold),var(--accent));transition:width .6s cubic-bezier(.2,.9,.3,1.2);border-radius:99px}
 .hud-right{display:flex;align-items:center;gap:10px;margin-left:auto}
 .streak{font-family:var(--font-body);font-size:12px;font-weight:500;color:var(--out)}
-.role-switch{display:flex;border:1px solid var(--line-strong);border-radius:var(--radius-sm);overflow:hidden;background:var(--panel2)}
-.role-switch button{
-  background:transparent;color:var(--muted);border:none;padding:7px 14px;
-  font-family:var(--font-body);font-size:12px;font-weight:500;transition:.2s;
-}
-.role-switch button.on{
-  background:linear-gradient(180deg,var(--nav-green-fill-hi) 0%,var(--nav-green-fill) 100%);
-  border-color:var(--nav-green-soft);color:var(--nav-label);font-weight:600;
-}
 .month-nav{display:flex;align-items:center;gap:6px;font-family:var(--font-num);font-size:13px}
 .month-nav button{background:var(--panel2);border:1px solid var(--line-strong);color:var(--text);border-radius:8px;width:30px;height:30px;font-size:13px;transition:.15s}
 .month-nav button:hover{border-color:var(--gold);color:var(--gold-hi)}
@@ -3194,10 +3185,6 @@ video.dc-card__image{
       <button id="mNext" aria-label="次の月">▶</button>
       <span id="fiscalBadge" class="hud-fiscal" title="会計年度・四半期"></span>
     </div>
-    <div class="role-switch" role="group" aria-label="表示モード" title="操作権限はログイン役職で決まります">
-      <button type="button" id="roleStaff" class="on" disabled>状況確認</button>
-      <button type="button" id="roleBoss" disabled>役職連動</button>
-    </div>
   </div>
 </header>
 
@@ -5404,13 +5391,7 @@ function questActor(){
     return {role:'', name:'', canApprove:false, canPay:false, canReceive:false};
   }
 }
-/* HUDロールは廃止（互換のため残す） */
-let role="staff";
-const _roleStaff=$("#roleStaff");
-const _roleBoss=$("#roleBoss");
-if(_roleStaff) _roleStaff.onclick=null;
-if(_roleBoss) _roleBoss.onclick=null;
-function setRole(r){role=r; try{renderQuest();}catch(e){}}
+/* HUDの社員／承認者切替は廃止。権限はログイン役職（questActor）のみ */
 
 /* ---------- ナビ ---------- */
 $$(".gamenav button[data-s]").forEach(b=>b.onclick=()=>{
@@ -7441,7 +7422,12 @@ window.renderInage=renderInage;
 
 window.Treasury={
   get S(){return S;},
-  get role(){return role;},
+  get role(){
+    try{
+      const r=String(window.PortalAuth?.getUser?.()?.role||'').trim();
+      return r==='社長'?'boss':'staff';
+    }catch(e){ return 'staff'; }
+  },
   saveAll, renderAll, esc, yen, toast,
   loadFromStorage(){
     try{
@@ -8030,7 +8016,7 @@ window.Treasury={
     }
     if(e.target.closest('#reApprove')){
       const p=active(); if(!canApprove(p)){ T.toast('未充足の項目があります'); return; }
-      const who=(window.PortalAuth&&PortalAuth.getUser&&(PortalAuth.getUser()||{}).name)||(T.role==='boss'?'社長 ヒロ':'担当者');
+      const who=(window.PortalAuth&&PortalAuth.getUser&&(PortalAuth.getUser()||{}).name)||'担当者';
       p.approval={approved:true, by:who, at:new Date().toISOString().slice(0,10)};
       T.saveAll(); renderRE(); T.toast('印籠を押しました：この案件を承認しました'); return;
     }
@@ -8283,7 +8269,7 @@ window.Treasury={
   function isPresident(){
     const m=me();
     const u=window.PortalAuth?.getUser?.();
-    return (m&&m.role==='社長') || (u&&u.role==='社長') || T.role==='boss';
+    return (m&&m.role==='社長') || (u&&u.role==='社長');
   }
   function staffList(){ return members.slice(); }
   function staffById(id){ return members.find(s=>String(s.id)===String(id))||null; }
