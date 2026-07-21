@@ -1853,11 +1853,12 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   opacity:1;
   transform:translate3d(0,0,0);
   backface-visibility:hidden;
+  /* 反応は枠内(.dc-photo)のみ。枠外クリックを拾わない */
+  pointer-events:none;
   box-shadow:
     0 8px 28px rgba(0,0,0,.45),
     inset 0 1px 0 rgba(255,255,255,.04);
   transition:
-    transform 240ms ease,
     box-shadow 240ms ease,
     border-color 240ms ease;
   animation:dcCardIn .52s cubic-bezier(.22,1,.36,1) var(--dc-in-delay,0s) forwards;
@@ -1890,22 +1891,37 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   from{opacity:0;transform:translate3d(-10px,12px,0)}
   to{opacity:1;transform:translate3d(0,0,0)}
 }
-.dc-card:hover{
-  transform:translate3d(0,-5px,0);
+.dc-card:has(.dc-photo:hover),
+.dc-card.is-hot{
   border-color:rgba(225,194,125,.34);
   box-shadow:
     0 18px 48px rgba(0,0,0,.62),
     0 10px 24px rgba(0,0,0,.38),
     0 0 20px rgba(210,173,99,.08);
 }
-.dc-card:active{transform:translate3d(0,-2px,0) scale(.99);transition-duration:120ms}
-.dc-card[data-dept="secretary"]:hover{border-color:rgba(196,166,106,.45);box-shadow:0 18px 48px rgba(0,0,0,.62),0 10px 24px rgba(0,0,0,.38),0 0 28px rgba(91,108,255,.1)}
-.dc-card[data-dept="finance"]:hover{border-color:rgba(196,166,106,.45);box-shadow:0 18px 48px rgba(0,0,0,.62),0 10px 24px rgba(0,0,0,.38),0 0 28px rgba(140,150,170,.1)}
-.dc-card[data-dept="legal"]:hover{border-color:rgba(196,166,106,.45);box-shadow:0 18px 48px rgba(0,0,0,.62),0 10px 24px rgba(0,0,0,.38),0 0 28px rgba(150,135,175,.1)}
+.dc-card[data-dept="secretary"]:has(.dc-photo:hover),
+.dc-card[data-dept="secretary"].is-hot{border-color:rgba(196,166,106,.45);box-shadow:0 18px 48px rgba(0,0,0,.62),0 10px 24px rgba(0,0,0,.38),0 0 28px rgba(91,108,255,.1)}
+.dc-card[data-dept="finance"]:has(.dc-photo:hover),
+.dc-card[data-dept="finance"].is-hot{border-color:rgba(196,166,106,.45);box-shadow:0 18px 48px rgba(0,0,0,.62),0 10px 24px rgba(0,0,0,.38),0 0 28px rgba(140,150,170,.1)}
+.dc-card[data-dept="legal"]:has(.dc-photo:hover),
+.dc-card[data-dept="legal"].is-hot{border-color:rgba(196,166,106,.45);box-shadow:0 18px 48px rgba(0,0,0,.62),0 10px 24px rgba(0,0,0,.38),0 0 28px rgba(150,135,175,.1)}
 .dc-photo.dc-card__media{
   position:relative;overflow:hidden;min-height:0;min-width:0;width:100%;
   height:100%;
   background:#030405;
+  pointer-events:auto;
+  cursor:pointer;
+  contain:layout paint;
+  transform:translate3d(0,0,0);
+  transition:transform 200ms ease;
+}
+.dc-photo.dc-card__media:hover,
+.dc-photo.dc-card__media.is-hot{
+  transform:translate3d(0,-3px,0);
+}
+.dc-photo.dc-card__media:active{
+  transform:translate3d(0,-1px,0) scale(.995);
+  transition-duration:120ms;
 }
 .dc-card__media::before{
   content:"";position:absolute;inset:0;z-index:0;
@@ -1927,7 +1943,8 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   100%{transform:translate3d(120%,0,0);opacity:0}
 }
 @media(hover:hover){
-  .dc-card:hover .dc-card__shine{
+  .dc-card:has(.dc-photo:hover) .dc-card__shine,
+  .dc-card.is-hot .dc-card__shine{
     opacity:1;
     animation:dcCardShine 900ms ease-out 1;
   }
@@ -1935,6 +1952,7 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
 .dc-avatar-wrap{
   position:absolute;inset:0;z-index:2;
   width:100%;height:100%;overflow:hidden;
+  pointer-events:none;
 }
 .dc-card .dc-photo{
   background:var(--dc-bg-image) center top/cover no-repeat,#060608;
@@ -1960,19 +1978,21 @@ video.dc-card__image{
   animation:none;background:transparent;
   transform:scale(var(--dc-img-scale,1.0));
   transform-origin:center top;
+  pointer-events:none;
 }
 @keyframes dcCharacterIdle{
   0%,100%{transform:translate3d(0,0,0) scale(1)}
   50%{transform:translate3d(0,-2px,0) scale(1.008)}
 }
 @media(hover:hover){
-  .dc-card:hover img.dc-card__image{
+  .dc-card:has(.dc-photo:hover) img.dc-card__image,
+  .dc-card.is-hot img.dc-card__image{
     animation-play-state:paused;
     transform:translate3d(0,-2px,0) scale(1.018);
     filter:brightness(1) saturate(.98) contrast(1.02);
   }
-  .dc-card:hover video.dc-card__image{
-    animation-play-state:paused;
+  .dc-card:has(.dc-photo:hover) video.dc-card__image,
+  .dc-card.is-hot video.dc-card__image{
     transform:translate3d(0,-2px,0) scale(calc(var(--dc-img-scale,1.0) * 1.015));
     filter:brightness(1) saturate(.98) contrast(1.02);
   }
@@ -2108,9 +2128,9 @@ video.dc-card__image{
   border:1px solid var(--nav-green-soft);border-radius:7px;padding:4px 10px;cursor:pointer;
 }
 .ent-act-jump:hover{filter:brightness(1.08);border-color:var(--nav-green)}
-/* クリックできるキャラカード */
-.dc-card.dc-clickable{cursor:pointer}
-.dc-card.dc-clickable:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+/* クリックできるキャラカード（反応は .dc-photo 枠内のみ） */
+.dc-card.dc-clickable .dc-photo{cursor:pointer}
+.dc-card.dc-clickable .dc-photo:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
 /* 経理・紬：本日/今週ショート吹き出し（大きめ） */
 .dc-short-bubble{
   position:absolute;z-index:7;top:10px;left:8px;right:8px;
@@ -2787,7 +2807,7 @@ video.dc-card__image{
             <div class="dc-risk-bubble" data-risk-bubble="secretary" hidden></div>
             <span class="dc-photo-fallback" aria-hidden="true">凛</span>
             <div class="dc-avatar-wrap">
-              <video class="dc-card__image" src="rin.mp4" poster="dash-secretary.png" data-has-audio="1" muted loop playsinline autoplay preload="metadata" aria-label="凛"></video>
+              <video class="dc-card__image" src="rin.mp4" poster="dash-secretary.png" data-has-audio="1" muted loop playsinline preload="metadata" aria-label="凛"></video>
             </div>
             <div class="dc-card-foot">
               <div class="dc-dept">秘書</div>
@@ -2802,7 +2822,7 @@ video.dc-card__image{
             <div class="dc-risk-bubble" data-risk-bubble="finance" hidden></div>
             <span class="dc-photo-fallback" aria-hidden="true">紬</span>
             <div class="dc-avatar-wrap">
-              <video class="dc-card__image" src="tumugi.mp4" poster="dash-finance.png" data-has-audio="1" muted loop playsinline autoplay preload="metadata" aria-label="紬"></video>
+              <video class="dc-card__image" src="tumugi.mp4" poster="dash-finance.png" data-has-audio="1" muted loop playsinline preload="metadata" aria-label="紬"></video>
             </div>
             <div class="dc-card-foot">
               <div class="dc-dept">経理</div>
@@ -2817,7 +2837,7 @@ video.dc-card__image{
             <div class="dc-risk-bubble" data-risk-bubble="legal" hidden></div>
             <span class="dc-photo-fallback" aria-hidden="true">陽</span>
             <div class="dc-avatar-wrap">
-              <video class="dc-card__image" src="haruto.mp4" poster="dash-legal.png" data-has-audio="1" muted loop playsinline autoplay preload="metadata" aria-label="陽翔"></video>
+              <video class="dc-card__image" src="haruto.mp4" poster="dash-legal.png" data-has-audio="1" muted loop playsinline preload="metadata" aria-label="陽翔"></video>
             </div>
             <div class="dc-card-foot">
               <div class="dc-dept">法務</div>
@@ -8733,7 +8753,7 @@ window.BizCaseLink=(function(){
 </script>
 
 <script>
-/* キャラクターカード動画 */
+/* キャラクターカード動画：ホバー中だけ再生（枠内 .dc-photo のみ反応） */
 (function(){
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
   function swapToPoster(video){
@@ -8746,43 +8766,75 @@ window.BizCaseLink=(function(){
     img.onerror=function(){img.dataset.fallback='1';};
     video.replaceWith(img);
   }
-  function syncVideos(){
-    document.querySelectorAll('video.dc-card__image').forEach(function(video){
-      if(reduced.matches){video.pause();return;}
-      const p=video.play();
-      if(p&&typeof p.catch==='function'){p.catch(function(){swapToPoster(video);});}
+  function pauseAll(){
+    document.querySelectorAll('video.dc-card__image').forEach(function(v){
+      try{ v.pause(); }catch(e){}
+      v.muted=true;
     });
+    document.querySelectorAll('.dc-card').forEach(function(c){ c.classList.remove('is-hot'); });
+    document.querySelectorAll('.dc-photo').forEach(function(p){ p.classList.remove('is-hot'); });
+  }
+  function playOn(photo){
+    if(!photo || reduced.matches) return;
+    const card=photo.closest('.dc-card');
+    const video=photo.querySelector('video.dc-card__image');
+    document.querySelectorAll('.dc-card').forEach(function(c){ c.classList.remove('is-hot'); });
+    document.querySelectorAll('.dc-photo').forEach(function(p){ p.classList.remove('is-hot'); });
+    document.querySelectorAll('video.dc-card__image').forEach(function(v){
+      if(v===video) return;
+      try{ v.pause(); }catch(e){}
+      v.muted=true;
+    });
+    if(card) card.classList.add('is-hot');
+    photo.classList.add('is-hot');
+    if(!video) return;
+    video.loop=true;
+    const wantSound=!(window.PortalTTS&&!window.PortalTTS.isEnabled()) && video.dataset.hasAudio==='1';
+    video.muted=!wantSound;
+    if(wantSound) video.volume=1;
+    const p=video.play();
+    if(p&&typeof p.catch==='function'){
+      p.catch(function(){
+        video.muted=true;
+        video.play().catch(function(){ swapToPoster(video); });
+      });
+    }
+  }
+  function stopOn(photo){
+    if(!photo) return;
+    const card=photo.closest('.dc-card');
+    const video=photo.querySelector('video.dc-card__image');
+    if(card) card.classList.remove('is-hot');
+    photo.classList.remove('is-hot');
+    if(!video) return;
+    try{ video.pause(); }catch(e){}
+    video.muted=true;
+    try{ if(video.currentTime>0.2) video.currentTime=0; }catch(e){}
   }
   document.querySelectorAll('video.dc-card__image').forEach(function(video){
+    video.autoplay=false;
+    video.removeAttribute('autoplay');
     video.loop=true;
-    video.addEventListener('error',function(){swapToPoster(video);});
-    video.addEventListener('ended',function(){
-      video.currentTime=0;
-      video.play().catch(function(){});
-    });
+    video.muted=true;
+    try{ video.pause(); }catch(e){}
+    video.addEventListener('error',function(){ swapToPoster(video); });
   });
-  document.querySelectorAll('.dc-card').forEach(function(card){
-    var video=card.querySelector('video[data-has-audio]');
-    if(!video)return;
-    function enableAudio(){
-      if(window.PortalTTS&&!window.PortalTTS.isEnabled())return;
-      document.querySelectorAll('.dc-card video').forEach(function(v){v.muted=true;});
-      video.muted=false;video.volume=1;
-      video.play().catch(function(){});
-    }
-    function disableAudio(){
-      video.muted=true;
-    }
-    card.addEventListener('mouseenter',enableAudio);
-    card.addEventListener('mouseleave',disableAudio);
-    card.addEventListener('touchstart',enableAudio,{passive:true});
+  document.querySelectorAll('.dc-card .dc-photo').forEach(function(photo){
+    photo.addEventListener('mouseenter', function(){ playOn(photo); });
+    photo.addEventListener('mouseleave', function(){ stopOn(photo); });
+    photo.addEventListener('touchstart', function(){ playOn(photo); }, {passive:true});
+    photo.addEventListener('touchend', function(){ stopOn(photo); }, {passive:true});
+    photo.addEventListener('touchcancel', function(){ stopOn(photo); }, {passive:true});
   });
-  syncVideos();
-  reduced.addEventListener('change',syncVideos);
-  window.addEventListener('portal-audio-change',function(e){
+  if(reduced.matches) pauseAll();
+  reduced.addEventListener('change', function(){ if(reduced.matches) pauseAll(); });
+  window.addEventListener('portal-audio-change', function(e){
     if(e.detail&&!e.detail.enabled){
-      document.querySelectorAll('.dc-card video').forEach(function(v){v.muted=true;});
+      document.querySelectorAll('.dc-card video').forEach(function(v){ v.muted=true; });
     }
+  });
+  document.addEventListener('visibilitychange', function(){
+    if(document.hidden) pauseAll();
   });
 })();
 </script>
@@ -11954,13 +12006,19 @@ window.EntakuDocIngest=(function(){
     });
     stopBtn?.addEventListener('click', function(e){ e.preventDefault(); stopRec(); });
   })();
-  // キャラカードをクリック → その専門家を指名して質問できる
+  // キャラカードをクリック → 枠内(.dc-photo)だけ反応して専門家を指名
   document.querySelectorAll('.dc-card[data-dept]').forEach(function(card){
     card.classList.add('dc-clickable');
-    card.setAttribute('role','button');
-    card.setAttribute('tabindex','0');
-    card.addEventListener('click', function(){ window.askAgentDirect(card.dataset.dept); });
-    card.addEventListener('keydown', function(e){
+    const photo=card.querySelector('.dc-photo');
+    const hit=photo||card;
+    hit.setAttribute('role','button');
+    hit.setAttribute('tabindex','0');
+    hit.setAttribute('aria-label', (card.querySelector('.dc-name')?.textContent||card.dataset.dept||'').trim());
+    hit.addEventListener('click', function(e){
+      e.stopPropagation();
+      window.askAgentDirect(card.dataset.dept);
+    });
+    hit.addEventListener('keydown', function(e){
       if(e.key==='Enter' || e.key===' '){ e.preventDefault(); window.askAgentDirect(card.dataset.dept); }
     });
   });
