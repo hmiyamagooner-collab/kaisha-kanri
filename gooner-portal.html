@@ -3598,10 +3598,15 @@ video.dc-card__image{
 #s-tasks .tk-src.boss{background:rgba(255,157,60,.18);color:var(--out)}
 #s-tasks .tk-src.self{background:rgba(74,222,128,.16);color:var(--in)}
 #s-tasks .tk-date{font-size:10px;color:var(--muted);font-family:var(--font-num)}
-#s-tasks .tk-card-acts{display:flex;gap:6px;margin-top:9px}
+#s-tasks .tk-card-acts{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
 #s-tasks .tk-toggle{flex:1;border:none;border-radius:3px;padding:7px;font-size:12px;font-weight:700;cursor:pointer}
 #s-tasks .tk-toggle.todo{background:var(--in);color:#062012}
 #s-tasks .tk-toggle.done{background:var(--panel);color:var(--muted);border:1px solid var(--line-strong)}
+#s-tasks .tk-act-hint{
+  flex:1;font-size:11px;line-height:1.45;color:#ffc078;
+  padding:8px 10px;border:1px dashed rgba(255,180,80,.45);background:rgba(80,40,0,.28);border-radius:4px;
+}
+#s-tasks .tk-act-hint b{color:#ffe7b0;font-weight:800}
 #s-tasks .tk-del{background:transparent;border:1px solid var(--line-strong);color:var(--out);border-radius:3px;width:30px;font-size:13px;cursor:pointer}
 #s-tasks .tk-empty{font-size:11px;color:var(--muted);padding:6px 2px}
 @media(max-width:760px){
@@ -3627,7 +3632,7 @@ video.dc-card__image{
   </div>
 
   <div class="office-tk-alert" id="tkAlert" hidden style="margin:0 0 14px;max-width:720px">
-    <div class="office-tk-alert-msg">新しいタスクが届いています（承認すると着手できます）</div>
+    <div class="office-tk-alert-msg">新しいタスクが届いています（承諾すると着手できます）</div>
     <div class="office-tk-pending" id="tkPending"></div>
   </div>
 
@@ -8282,7 +8287,7 @@ window.Treasury={
   function staffById(id){ return members.find(s=>String(s.id)===String(id))||null; }
   function staffLabel(s){ if(!s) return '?'; return (s.role?s.role+'　':'')+s.name; }
   function statusLabel(st){
-    if(st==='pending') return '未承認';
+    if(st==='pending') return '着手待ち';
     if(st==='accepted') return '進行中';
     if(st==='done') return '完了';
     return st||'';
@@ -8594,14 +8599,20 @@ window.Treasury={
   function cardActs(t){
     const m=me();
     const mine=isMine(t,m);
-    if(t.status==='pending' && mine){
-      return `<button type="button" class="tk-toggle todo" data-task-accept="${esc(t.id)}">承認する</button>`;
+    const prez=isPresident();
+    if(t.status==='pending' && (mine || prez)){
+      const label=mine?'承諾して着手':'着手にする（代理）';
+      return `<button type="button" class="tk-toggle todo" data-task-accept="${esc(t.id)}">${label}</button>`;
     }
     if(t.status==='accepted' && mine){
       return `<button type="button" class="tk-toggle todo" data-task-done="${esc(t.id)}">完了にする</button>`;
     }
     if(t.status==='done'){
       return `<button type="button" class="tk-toggle done" disabled>完了済</button>`;
+    }
+    if(t.status==='pending'){
+      const who=t.assigned_all?'担当者全員':(t.assignee?.name||staffById(t.assigned_to)?.name||'担当者');
+      return `<div class="tk-act-hint">着手待ち — <b>${esc(who)}</b> がログインし、「承諾して着手」を押します</div>`;
     }
     return `<span class="tk-date">${esc(statusLabel(t.status))}</span>`;
   }
@@ -8701,8 +8712,8 @@ window.Treasury={
     const hint=$("#tkHint");
     const prez=isPresident();
     if(hint) hint.textContent = prez
-      ? '社長：期日付きで指示。相手は中央ダイアログのOKでタスク追加。期日厳守+1／遅延-2。キャラ紐づけでクエスト吹き出しに点数表示。'
-      : '社員：期日付きで自己申告可。届いた指示は中央のOKで追加→完了。期日厳守+1／遅延-2点。';
+      ? '社長：期日付きで指示。相手はログイン後に「承諾して着手」→完了。自己申告は登録と同時に進行中になります。'
+      : '社員：届いた指示は「承諾して着手」で追加→完了。自己申告は登録と同時に進行中。期日厳守+1／遅延-2点。';
     const addBtn=$("#tkAdd");
     if(addBtn) addBtn.textContent=prez?'＋ 指示を送る':'＋ 追加';
     const staff=staffList();
@@ -8738,7 +8749,7 @@ window.Treasury={
         :`<div class="tk-empty">${filter==='done'?'完了タスクはありません。':filter==='todo'?'未完了タスクはありません。':'タスクはありません。'}</div>`;
       return `<div class="tk-col ${focusStaff===a.id?'is-focus':''}" data-staff="${esc(a.id)}">
         <div class="tk-col-head">
-          <div><span class="tk-col-name">${esc(a.name)}</span><span class="tk-col-role">${esc(a.role||'')}${pend?` <span style="color:#ff8a8a;font-weight:800">承認待 ${pend}</span>`:''}</span></div>
+          <div><span class="tk-col-name">${esc(a.name)}</span><span class="tk-col-role">${esc(a.role||'')}${pend?` <span style="color:#ff8a8a;font-weight:800">着手待 ${pend}</span>`:''}</span></div>
           <span class="tk-col-cnt ${open||pend?'hot':''}">${open}</span>
         </div>
         <div class="tk-col-body">${cards}</div>
@@ -8802,6 +8813,7 @@ window.Treasury={
       T.toast('自分宛のみ登録できます'); return false;
     }
     const detailEnc=encodeDue(detail, due);
+    const selfReported=m.role!=='社長' && String(target)===String(m.id);
     const base={
       title,
       detail: detailEnc,
@@ -8809,8 +8821,10 @@ window.Treasury={
       assigned_to: target==='all' ? null : target,
       created_by: m.id || null,
       created_by_name: m.name || '不明',
-      self_reported: m.role!=='社長' && String(target)===String(m.id),
-      status: 'pending'
+      self_reported: selfReported,
+      // 自己申告は登録＝着手（承諾ステップ不要）。指示タスクのみ pending
+      status: selfReported ? 'accepted' : 'pending',
+      ...(selfReported ? { accepted_at: new Date().toISOString() } : {})
     };
     let { error } = await c.from('tasks').insert(Object.assign({}, base, { due_date: due }));
     if(error && /due_date|schema|column/i.test(String(error.message||''))){
@@ -8827,8 +8841,8 @@ window.Treasury={
     const { error } = await c.from('tasks')
       .update({ status:'accepted', accepted_at:new Date().toISOString() })
       .eq('id', id);
-    if(error){ alert('承認エラー: '+error.message); return; }
-    T.toast('タスクに追加しました');
+    if(error){ alert('承諾エラー: '+error.message); return; }
+    T.toast('着手しました');
     await refreshTaskBoard();
   }
   async function completeTask(id){
