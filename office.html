@@ -627,11 +627,30 @@ function drawDayOverlay(g){
   if(dayPhase==='day') return;
   g.save();
   if(dayPhase==='sunset'){
+    // 全体をオレンジ寄りの夕焼けに（紫・青みを抑える）
+    g.globalCompositeOperation='multiply';
+    g.fillStyle='#e89048';
+    g.fillRect(0,0,MAP_W,MAP_H);
+    g.globalCompositeOperation='source-over';
+    // 空〜地へ：暖色オレンジのグラデ
     const grd=g.createLinearGradient(0,0,0,MAP_H);
-    grd.addColorStop(0,'rgba(255,120,40,.18)');
-    grd.addColorStop(0.45,'rgba(180,60,90,.12)');
-    grd.addColorStop(1,'rgba(20,10,40,.28)');
-    g.fillStyle=grd; g.fillRect(0,0,MAP_W,MAP_H);
+    grd.addColorStop(0,'rgba(255,150,40,.42)');
+    grd.addColorStop(0.28,'rgba(255,110,30,.34)');
+    grd.addColorStop(0.62,'rgba(255,90,40,.22)');
+    grd.addColorStop(1,'rgba(180,50,10,.18)');
+    g.fillStyle=grd;
+    g.fillRect(0,0,MAP_W,MAP_H);
+    // 西寄り（海側）に夕陽のグロー
+    const sunX=MAP_W*0.82, sunY=MAP_H*0.22;
+    const glow=g.createRadialGradient(sunX,sunY,8,sunX,sunY,MAP_W*0.55);
+    glow.addColorStop(0,'rgba(255,210,90,.38)');
+    glow.addColorStop(0.35,'rgba(255,140,40,.22)');
+    glow.addColorStop(1,'rgba(255,80,20,0)');
+    g.fillStyle=glow;
+    g.fillRect(0,0,MAP_W,MAP_H);
+    // 海面だけ少し濃いオレンジ反射
+    g.fillStyle='rgba(255,100,30,.16)';
+    g.fillRect(COAST_X,0,MAP_W-COAST_X,MAP_H);
   }else{
     // 参考画像風：全体を青〜シアンに寄せ、マップは読めるまま
     g.globalCompositeOperation='multiply';
@@ -659,10 +678,10 @@ function drawDayOverlay(g){
   const lx=6, ly=6;
   g.fillStyle='rgba(0,0,0,.7)';
   g.fillRect(lx,ly,tw,14);
-  g.strokeStyle=dayPhase==='sunset'?'#ffc089':'#6a9cff';
+  g.strokeStyle=dayPhase==='sunset'?'#ff9a4a':'#6a9cff';
   g.lineWidth=1;
   g.strokeRect(lx-0.5,ly-0.5,tw+1,15);
-  g.fillStyle=dayPhase==='sunset'?'#ffc089':'#c8dcff';
+  g.fillStyle=dayPhase==='sunset'?'#ffb060':'#c8dcff';
   g.fillText(label, lx+5, ly+10);
 }
 
