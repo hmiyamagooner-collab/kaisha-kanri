@@ -2128,7 +2128,7 @@ body.is-hsplit-drag{cursor:ew-resize;user-select:none}
   display:grid;grid-template-rows:minmax(0,1fr);
   overflow:hidden;position:relative;z-index:1;
   background:linear-gradient(180deg,#121823 0%,#0a0e14 100%);
-  border:1px solid rgba(210,173,99,.16);border-radius:0;
+  border:1px solid rgba(217,183,111,.32);border-radius:14px;
   cursor:default;
   opacity:1;
   transform:translate3d(0,0,0);
@@ -2136,11 +2136,12 @@ body.is-hsplit-drag{cursor:ew-resize;user-select:none}
   /* 反応は枠内(.dc-photo)のみ。枠外クリックを拾わない */
   pointer-events:none;
   box-shadow:
-    0 8px 28px rgba(0,0,0,.45),
-    inset 0 1px 0 rgba(255,255,255,.04);
+    0 18px 44px rgba(0,0,0,.32),
+    inset 0 0 0 1px rgba(255,255,255,.015);
   transition:
     box-shadow 240ms ease,
-    border-color 240ms ease;
+    border-color 240ms ease,
+    transform 200ms ease;
   animation:dcCardIn .52s cubic-bezier(.22,1,.36,1) var(--dc-in-delay,0s) forwards;
 }
 .dc-dept{
@@ -2164,9 +2165,9 @@ body.is-hsplit-drag{cursor:ew-resize;user-select:none}
   --dc-img-scale:1.03;
 }
 .dc-card[data-dept="finance"]{
-  --dc-bg-image:url('dash-finance.png');
-  --dc-img-pos:center 24%;
-  --dc-img-scale:1.01;
+  --dc-bg-image:url('dash-finance.png?v=20260722');
+  --dc-img-pos:center top;
+  --dc-img-scale:1.0;
 }
 .dc-card[data-dept="legal"]{
   --dc-bg-image:url('dash-legal.png');
@@ -2296,26 +2297,32 @@ video.dc-card__image{
   position:absolute;left:0;right:0;bottom:0;z-index:6;
   flex-shrink:0;min-width:0;width:100%;
   height:auto;min-height:0;max-height:none;
-  display:flex;flex-direction:row;justify-content:center;align-items:baseline;gap:8px;flex-wrap:wrap;
-  padding:16px 10px 10px;pointer-events:none;
+  display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;gap:2px;
+  padding:28px 12px 12px;pointer-events:none;
   border-top:none;
-  background:linear-gradient(180deg,transparent,rgba(0,0,0,.28) 35%,rgba(0,0,0,.72));
+  background:
+    linear-gradient(180deg,transparent 0%,rgba(3,5,8,.55) 42%,rgba(3,5,8,.92) 100%);
 }
 .dc-name{
   flex:0 1 auto;min-height:0;max-height:none;
-  font-family:var(--font-display);font-size:13px;font-weight:700;color:#f7fcf9;
-  text-align:center;padding:0;letter-spacing:.04em;position:relative;z-index:2;
-  display:inline-flex;align-items:center;justify-content:center;gap:4px;
+  font-family:var(--font-display);font-size:15px;font-weight:700;color:#f7f3ea;
+  text-align:left;padding:0;letter-spacing:.04em;position:relative;z-index:2;
+  display:inline-flex;align-items:baseline;justify-content:flex-start;gap:6px;
   line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   text-shadow:0 1px 3px rgba(0,0,0,.95),0 0 8px rgba(0,0,0,.55);
 }
 .dc-name::before{display:none}
-.dc-name-en{font-size:8px;color:#eef8f2;letter-spacing:.12em;font-family:var(--font-num);font-weight:500;opacity:.92}
-.dc-role{display:none!important}
-.dc-card-foot .dc-dept::after{
-  content:"";display:inline-block;width:1px;height:11px;margin-left:8px;
-  background:rgba(51,198,179,.45);vertical-align:middle;
+.dc-name-en{font-size:9px;color:rgba(247,243,234,.78);letter-spacing:.14em;font-family:var(--font-num);font-weight:500;opacity:.95}
+.dc-role{
+  display:block!important;
+  font-size:10px;font-weight:600;letter-spacing:.06em;
+  color:rgba(217,183,111,.92);line-height:1.3;
+  text-shadow:0 1px 2px rgba(0,0,0,.85);
 }
+.dc-card-foot .dc-dept{
+  font-size:10px;letter-spacing:.14em;opacity:.88;margin-bottom:2px;
+}
+.dc-card-foot .dc-dept::after{display:none!important}
 @media(prefers-reduced-motion:reduce){
   .dc-card,
   .dc-card__image,
@@ -2688,14 +2695,14 @@ video.dc-card__image{
   .dc-cards,.dc-card,.dc-card .dc-photo,.dc-card .dc-avatar-wrap{min-height:0;}
 }
 /* キャラカード動画枠：rin.mp4 / tumugi.mp4 / haruto.mp4 */
-.dc-avatar-wrap:has(> video[src="rin.mp4"]),
-.dc-avatar-wrap:has(> video[src="tumugi.mp4"]),
-.dc-avatar-wrap:has(> video[src="haruto.mp4"]){
+.dc-avatar-wrap:has(> video[src^="rin.mp4"]),
+.dc-avatar-wrap:has(> video[src^="tumugi.mp4"]),
+.dc-avatar-wrap:has(> video[src^="haruto.mp4"]){
   overflow:hidden;
 }
-.dc-avatar-wrap>video[src="rin.mp4"],
-.dc-avatar-wrap>video[src="tumugi.mp4"],
-.dc-avatar-wrap>video[src="haruto.mp4"]{
+.dc-avatar-wrap>video[src^="rin.mp4"],
+.dc-avatar-wrap>video[src^="tumugi.mp4"],
+.dc-avatar-wrap>video[src^="haruto.mp4"]{
   width:100%;
   height:100%;
   object-fit:cover;
@@ -3122,7 +3129,7 @@ video.dc-card__image{
             <div class="dc-risk-bubble" data-risk-bubble="finance" hidden></div>
             <span class="dc-photo-fallback" aria-hidden="true">紬</span>
             <div class="dc-avatar-wrap">
-              <video class="dc-card__image" src="tumugi.mp4" poster="dash-finance.png" data-has-audio="1" muted loop playsinline preload="metadata" aria-label="紬"></video>
+              <video class="dc-card__image" src="tumugi.mp4?v=20260722" poster="dash-finance.png?v=20260722" data-has-audio="1" muted loop playsinline preload="metadata" aria-label="紬"></video>
             </div>
             <div class="dc-card-foot">
               <div class="dc-dept">経理</div>
@@ -5354,7 +5361,7 @@ function(a,b,c){if(!Vd(b))throw Error(m(200));return Wd(null,a,b,!1,c)};Q.unmoun
    ============================================================ */const yenMan=n=>(Math.round(n/1000)/10).toLocaleString("ja-JP")+"万";function buildFinance(){const today=new Date();today.setHours(0,0,0,0);const d=n=>{const r=new Date(today);r.setDate(r.getDate()+n);return r;};const fmt=x=>`${x.getMonth()+1}/${x.getDate()}`;const balance=4200000;const buffer=1000000;const events=[{amt:-85000,date:d(4)},{amt:-450000,date:d(6)},{amt:-2400000,date:d(9)},{amt:-280000,date:d(11)},{amt:-380000,date:d(16)},{amt:3200000,date:d(17)},{amt:1800000,date:d(21)}];let bal=balance,firstBreach=null,min={bal:balance,date:today};events.forEach(e=>{bal+=e.amt;if(bal<min.bal)min={bal,date:e.date};if(firstBreach===null&&bal<buffer)firstBreach={bal,date:e.date};});return{balance,buffer,firstBreach,min,fmt};}const FIN=buildFinance();const FINANCE_DATA=`現在の国庫残高: ${yenMan(FIN.balance)}円 / 安全バッファ: ${yenMan(FIN.buffer)}円 / 今後120日の最低残高: 約${yenMan(FIN.min.bal)}円(${FIN.fmt(FIN.min.date)}頃) / 安全ライン割れ予測: ${FIN.firstBreach?`${FIN.fmt(FIN.firstBreach.date)}頃に約${yenMan(FIN.firstBreach.bal)}円まで低下`:"なし"} / 資金ショート: なし(売上入金で回復) / 主な支払い: 給与240万・外注45万・家賃28万 / 主な入金予定: 売上A 320万・売上B 180万`;/* ============================================================
    7部署 = 7人の住人（カード世界観）
    image: 後で gpt-image-1 等で生成した画像URLを入れると差し替わります
-   ============================================================ */const GOLD="#c9a227";const GOLD_LT="#e7cd84";const DEPTS=[{id:"secretary",name:"秘書室",char:"凛",role:"窓口・相談役",titleEn:"THE CHATELAINE / GUARDIAN",houseEn:"CASTLE LOTHAR",arcana:"XIV · STRENGTH & SERVICE",tag:"窓口",icon:Crown,hue:"#5b6cff",image:"char-secretary.png",status:"soon",persona:"礼節を重んじる聡明な女性秘書。落ち着いた敬語で、社長に寄り添い段取りを整える。",expertise:"スケジュール管理・タスク整理・連絡調整・意思決定サポート",need:"予定・タスク・連絡先（カレンダー連携）"},{id:"finance",name:"経理",char:"紬",role:"請求・経費・入金管理",titleEn:"THE COMPTROLLER & AUDITOR",houseEn:"IMPERIAL LEDGER OFFICE",arcana:"XXII · FISCAL BALANCE",tag:"財務",icon:Wallet,hue:"#2dd4bf",image:"dash-finance.png",status:"live",persona:"几帳面で冷静な会計士。数字に厳格だが、社長には端的に要点を伝える。",expertise:"資金繰り・残高管理・支払い予定・キャッシュフロー予測",data:FINANCE_DATA},{id:"legal",name:"法務",char:"Tsukasa",role:"契約・規約・コンプラ",titleEn:"THE MAGISTRATE / ADVOCATE",houseEn:"THE HIGH COURT",arcana:"XI · SCALES OF TRUTH",tag:"法理",icon:Scale,hue:"#34d399",image:"char-legal.png",status:"soon",persona:"公正な法官。リスクを見抜き、社長を守る盾となる。",expertise:"契約書・利用規約・特定商取引法・個人情報保護・探偵業法・コンプライアンス",need:"社内契約書・規約（一般的な法務助言は接続なしでも可）"}];/* ============================================================
+   ============================================================ */const GOLD="#c9a227";const GOLD_LT="#e7cd84";const DEPTS=[{id:"secretary",name:"秘書室",char:"凛",role:"窓口・相談役",titleEn:"THE CHATELAINE / GUARDIAN",houseEn:"CASTLE LOTHAR",arcana:"XIV · STRENGTH & SERVICE",tag:"窓口",icon:Crown,hue:"#5b6cff",image:"dash-secretary.png",status:"soon",persona:"礼節を重んじる聡明な女性秘書。落ち着いた敬語で、社長に寄り添い段取りを整える。",expertise:"スケジュール管理・タスク整理・連絡調整・意思決定サポート",need:"予定・タスク・連絡先（カレンダー連携）"},{id:"finance",name:"経理",char:"紬",role:"請求・経費・入金管理",titleEn:"THE COMPTROLLER & AUDITOR",houseEn:"IMPERIAL LEDGER OFFICE",arcana:"XXII · FISCAL BALANCE",tag:"財務",icon:Wallet,hue:"#2dd4bf",image:"dash-finance.png",status:"live",persona:"几帳面で冷静な会計士。数字に厳格だが、社長には端的に要点を伝える。",expertise:"資金繰り・残高管理・支払い予定・キャッシュフロー予測",data:FINANCE_DATA},{id:"legal",name:"法務",char:"Tsukasa",role:"契約・規約・コンプラ",titleEn:"THE MAGISTRATE / ADVOCATE",houseEn:"THE HIGH COURT",arcana:"XI · SCALES OF TRUTH",tag:"法理",icon:Scale,hue:"#34d399",image:"dash-legal.png",status:"soon",persona:"公正な法官。リスクを見抜き、社長を守る盾となる。",expertise:"契約書・利用規約・特定商取引法・個人情報保護・探偵業法・コンプライアンス",need:"社内契約書・規約（一般的な法務助言は接続なしでも可）"}];/* ============================================================
    OpenAI API
    ============================================================ */// ▼▼▼ AI接続設定 ▼▼▼
 // 既存のAIバックエンド（messages配列をPOSTすると {text} を返すエンドポイント）のURLを入れると
