@@ -8568,7 +8568,7 @@ window.Treasury={
   }
   function openForMe(){
     const m=me(); if(!m) return [];
-    return tasks.filter(function(t){ return t && t.status!=='done' && isMine(t,m); })
+    return tasks.filter(function(t){ return t && !isRemovedTask(t) && t.status!=='done' && isMine(t,m); })
       .sort(function(a,b){
         const da=parseDue(a)||'9999-99-99', db=parseDue(b)||'9999-99-99';
         if(da!==db) return da.localeCompare(db);
@@ -8764,14 +8764,23 @@ window.Treasury={
     });
   }
   function matchesFilter(t){
+    if(isRemovedTask(t)) return false;
     if(filter==='all') return true;
     if(filter==='done') return t.status==='done';
     return t.status!=='done'; // 未完了 = pending + accepted
   }
 
+  function isRemovedTask(t){
+    if(!t) return true;
+    const st=String(t.status||'');
+    if(st==='cancelled' || st==='deleted' || st==='canceled') return true;
+    if(/^（削除）/.test(String(t.title||''))) return true;
+    if(/\[DELETED\]/i.test(String(t.detail||''))) return true;
+    return false;
+  }
   function canDeleteTask(t){
     const m=me();
-    if(!t || !m) return false;
+    if(!t || !m || isRemovedTask(t)) return false;
     if(isPresident()) return true;
     if(t.created_by && String(t.created_by)===String(m.id)) return true;
     return false;
@@ -8982,7 +8991,7 @@ window.Treasury={
       .select('*, assignee:assigned_to(name)')
       .order('created_at', { ascending:false });
     if(error){ console.warn('[tasks] list', error); return; }
-    tasks=data||[];
+    tasks=(data||[]).filter(function(t){ return !isRemovedTask(t); });
     renderTasks();
     syncOfficeQuestState();
   }
@@ -9077,6 +9086,31 @@ window.Treasury={
     return { ok:true, label:who.label, due:dueNorm, title:t };
   }
 
+  function removeTaskLocally(id){
+    const sid=String(id);
+    tasks=tasks.filter(function(x){ return String(x.id)!==sid; });
+    try{ renderTasks(); }catch(e){}
+    try{ syncOfficeQuestState(); }catch(e){}
+  }
+
+  async function softCancelTask(c, t){
+    // RLSで DELETE が拒否される環境向け。UPDATE は着手/完了で通っている前提。
+    let r=await c.from('tasks').update({ status:'cancelled' }).eq('id', t.id).select('id');
+    if((!r.error) && r.data && r.data.length) return r;
+    if(r.error && !/status|check|enum|invalid|constraint/i.test(String(r.error.message||''))){
+      return r;
+    }
+    const due=parseDue(t);
+    const det='[DELETED] '+displayDetail(t);
+    r=await c.from('tasks').update({
+      status:'done',
+      completed_at:new Date().toISOString(),
+      title:('（削除）'+String(t.title||'')).slice(0,120),
+      detail:encodeDue(det, due)
+    }).eq('id', t.id).select('id');
+    return r;
+  }
+
   async function deleteTask(id, opts){
     opts=opts||{};
     const c=client();
@@ -9090,13 +9124,34 @@ window.Treasury={
     if(!opts.skipConfirm && !confirm('このタスクを削除しますか？\n「'+(t.title||'')+'」')){
       return { ok:false, error:'キャンセルしました' };
     }
-    const { error } = await c.from('tasks').delete().eq('id', id);
-    if(error){
-      if(!opts.silent) alert('削除エラー: '+error.message);
-      return { ok:false, error:error.message||'削除失敗' };
+    // 1) 物理削除（成功時は select で行が返る。RLS拒否時は error なし・0件になりがち）
+    let hard=await c.from('tasks').delete().eq('id', id).select('id');
+    let removed=!hard.error && !!(hard.data && hard.data.length);
+    if(hard.error){
+      console.warn('[tasks] delete hard', hard.error);
     }
+    // 2) ダメなら取り消し（status=cancelled / マーカー付き完了）
+    if(!removed){
+      const soft=await softCancelTask(c, t);
+      if(soft.error){
+        if(!opts.silent) alert('削除エラー: '+soft.error.message);
+        return { ok:false, error:soft.error.message||'削除失敗' };
+      }
+      if(!soft.data || !soft.data.length){
+        if(!opts.silent){
+          alert('削除できませんでした。データベースの削除権限（RLS）を確認してください。');
+        }
+        return { ok:false, error:'削除権限がありません（RLS）' };
+      }
+      removed=true;
+    }
+    removeTaskLocally(id);
     if(!opts.silent) T.toast('タスクを削除しました');
     await refreshTaskBoard();
+    // refresh 後も残っていたら強制的にローカル除外
+    if(tasks.some(function(x){ return String(x.id)===String(id) && !isRemovedTask(x); })){
+      removeTaskLocally(id);
+    }
     return { ok:true, title:t.title||'', id:String(t.id) };
   }
 
@@ -9398,7 +9453,7 @@ window.Treasury={
     el.addEventListener('mousedown', function(){ loadMembers(); });
   });
 
-  function openTasks(){ return tasks.filter(function(t){ return t && t.status!=='done'; }); }
+  function openTasks(){ return tasks.filter(function(t){ return t && !isRemovedTask(t) && t.status!=='done'; }); }
   function overdueTasks(){
     const today=todayISO();
     return openTasks().filter(function(t){
