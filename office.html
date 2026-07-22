@@ -448,16 +448,14 @@ function findZonePath(a,b){
   }
   return [a,b];
 }
-/* 本社オフィス：机は4つ（各机2席）＝各社員の席（縦表示：机は南北、椅子は西側＝画面下） */
+/* 本社オフィス：机は2列×3台（縦表示・重ならない間隔） */
 const DESK_CENTERS=[
-  pt('honsha',0.28,0.34),pt('honsha',0.72,0.34),
-  pt('honsha',0.28,0.72),pt('honsha',0.72,0.72)
+  pt('honsha',0.40,0.24),pt('honsha',0.40,0.50),pt('honsha',0.40,0.76),
+  pt('honsha',0.72,0.24),pt('honsha',0.72,0.50),pt('honsha',0.72,0.76)
 ];
 const DESK=[
-  pt('honsha',0.22,0.28),pt('honsha',0.22,0.40),   /* 机A（2席・縦並び） */
-  pt('honsha',0.66,0.28),pt('honsha',0.66,0.40),   /* 机B */
-  pt('honsha',0.22,0.66),pt('honsha',0.22,0.78),   /* 机C */
-  pt('honsha',0.66,0.66),pt('honsha',0.66,0.78)    /* 机D */
+  pt('honsha',0.32,0.24),pt('honsha',0.32,0.50),pt('honsha',0.32,0.76),
+  pt('honsha',0.64,0.24),pt('honsha',0.64,0.50),pt('honsha',0.64,0.76)
 ];
 const SEATS={
   meeting:[pt('kaigi',0.18,0.36),pt('kaigi',0.18,0.48),pt('kaigi',0.18,0.60),pt('kaigi',0.18,0.72),
@@ -1379,12 +1377,12 @@ function drawBeachStrip(g,z){
   px(g,x,y,w,h,'#ecd49a');
   for(let i=0;i<90;i++){const sx=x+((i*11)%(w-1)),sy=y+((i*29)%(h-1));px(g,sx,sy,1,1,'#d4b878');}
   px(g,x+w-2,y,2,h,'#e6c98a');
-  /* パラソル：縦表示後にポールが画面で縦になるよう、マップ上は横向きに描く */
+  /* パラソル：傘が海側（マップ+X＝画面上）になるよう描く */
   const cols=['#e05a5a','#5a8ad0','#e0c060','#5ac08a','#e0863a'];
   [0.16,0.34,0.52,0.7,0.86].forEach((ny,i)=>{
     const cx=(x+w*0.42)|0,cy=(y+h*ny)|0;
-    px(g,cx-3,cy,8,1,'#8a5a3a');                 /* ポール（マップX＝画面で縦） */
-    px(g,cx-2,cy-5,3,11,cols[i%cols.length]);     /* 傘（マップY＝画面で横） */
+    px(g,cx-4,cy,8,1,'#8a5a3a');                 /* ポール */
+    px(g,cx+2,cy-5,3,11,cols[i%cols.length]);     /* 傘（海側＝画面上） */
   });
 }
 function drawOcean(g,z){
@@ -1442,32 +1440,19 @@ function drawShelf(g,x,y,w,h){          /* 書庫（縦表示：西壁ぞい＝�
   for(let by=y+2;by<y+h-1;by+=3)px(g,x+2,by,w-4,2,cols[(by*7)%cols.length]);
   px(g,x+w-1,y,1,h,'#4a3020');
 }
-function drawDesk(g,cx,cy){             /* 机＋PC＋椅子（縦表示：椅子＝西＝画面下） */
+function drawDesk(g,cx,cy){             /* 机＋PC＋椅子（縦表示・コンパクト） */
   cx=cx|0;cy=cy|0;
-  px(g,cx-5,cy-12,10,24,'#b98a5a');      /* 天板（南北に長い） */
-  px(g,cx-5,cy-12,1,24,'#cda06a');
-  px(g,cx+4,cy-12,1,24,'#8a6438');
-  px(g,cx+1,cy-6,6,12,'#20242c');       /* PCモニタ（東＝画面上側） */
-  px(g,cx+2,cy-5,4,10,'#7fd4ff');
-  px(g,cx+2,cy-5,1,10,'#bfeaff');
-  px(g,cx-1,cy-5,2,10,'#3a4048');       /* キーボード */
-  px(g,cx-11,cy-4,6,8,'#48515e');       /* 椅子（西） */
-  px(g,cx-11,cy-4,1,8,'#5a6472');
+  px(g,cx-4,cy-8,8,16,'#b98a5a');        /* 天板 */
+  px(g,cx-4,cy-8,1,16,'#cda06a');
+  px(g,cx+3,cy-8,1,16,'#8a6438');
+  px(g,cx+1,cy-5,5,10,'#20242c');       /* PCモニタ（東＝画面上） */
+  px(g,cx+2,cy-4,3,8,'#7fd4ff');
+  px(g,cx+2,cy-4,1,8,'#bfeaff');
+  px(g,cx-1,cy-4,2,8,'#3a4048');        /* キーボード */
+  px(g,cx-9,cy-3,5,6,'#48515e');        /* 椅子（西＝画面下） */
+  px(g,cx-9,cy-3,1,6,'#5a6472');
 }
-function drawDesk2(g,cx,cy){            /* 2人用デスク（縦並び・PC×2＋椅子×2） */
-  cx=cx|0;cy=cy|0;
-  px(g,cx-5,cy-22,10,44,'#b98a5a');
-  px(g,cx-5,cy-22,1,44,'#cda06a');
-  px(g,cx+4,cy-22,1,44,'#8a6438');
-  [-11,11].forEach(o=>{
-    px(g,cx+1,cy+o-6,6,12,'#20242c');
-    px(g,cx+2,cy+o-5,4,10,'#7fd4ff');
-    px(g,cx+2,cy+o-5,1,10,'#bfeaff');
-    px(g,cx-1,cy+o-5,2,10,'#3a4048');
-    px(g,cx-11,cy+o-4,6,8,'#48515e');
-    px(g,cx-11,cy+o-4,1,8,'#5a6472');
-  });
-}
+function drawDesk2(g,cx,cy){ drawDesk(g,cx,cy); }
 function drawCopier(g,cx,cy){           /* コピー機 */
   cx=cx|0;cy=cy|0;
   px(g,cx-5,cy-5,10,11,'#c8ccd4');
@@ -1479,7 +1464,7 @@ function drawOfficeRoom(g,z){
   drawFloor(g,z,'#e2e6ee','本社オフィス');
   const {x,y,w,h}=z;
   drawShelf(g,x+6,y+10,7,h-20);                    /* 書庫（西壁ぞい） */
-  DESK_CENTERS.forEach(d=>drawDesk2(g,d.x,d.y));    /* 机4つ（各2席） */
+  DESK_CENTERS.forEach(d=>drawDesk(g,d.x,d.y));    /* 机 3台×2列 */
   drawCopier(g,SEATS.copier.x,SEATS.copier.y);      /* コピー機 */
 }
 function drawExecRoom(g,z){
