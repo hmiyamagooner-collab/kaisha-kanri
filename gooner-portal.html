@@ -1440,7 +1440,7 @@ body.is-hsplit-drag{cursor:ew-resize;user-select:none}
   font-size:10px;color:var(--muted);padding:0 10px 6px;line-height:1.4;
 }
 .office-tk-links{
-  flex-shrink:0;display:grid;grid-template-columns:1fr;gap:6px;
+  flex-shrink:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:6px;
   padding:8px 10px 10px;margin-top:0;
   border-top:none;
 }
@@ -3195,13 +3195,7 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
             <span>録音中 <span class="entaku-rec-timer" id="entakuRecTimer">0:00</span></span>
             <button type="button" id="entakuRecStop">停止して議事録化</button>
           </div>
-          <div class="entaku-quick" id="entakuQuick" aria-label="クイック指示">
-            <button type="button" class="entaku-qchip" data-eq="directive">＋ 細かい指示</button>
-            <button type="button" class="entaku-qchip" data-eq="progress">進捗を確認</button>
-            <button type="button" class="entaku-qchip" data-eq="risk">リスク確認</button>
-            <button type="button" class="entaku-qchip" data-eq="all-report">全員に報告指示</button>
-            <button type="button" class="entaku-qchip" data-eq="tasks-open">タスク画面</button>
-          </div>
+          <!-- クイック指示（細かい指示など）の行は削除（#17） -->
           <div class="entaku-directive" id="entakuDirective" hidden>
             <div class="entaku-directive-cap">
               <span>TASK 指示（社長）</span>
@@ -11988,13 +11982,13 @@ window.PortalAuth=(function(){
       el.style.gridTemplateColumns='minmax(0,1fr)';
       return;
     }
-    const right=Math.max(18, 100-leftFr);
-    el.style.gridTemplateColumns='minmax(160px,'+leftFr+'fr) '+SPLIT_W+'px minmax(140px,'+right+'fr)';
+    const right=Math.max(8, 100-leftFr);
+    el.style.gridTemplateColumns='minmax(120px,'+leftFr+'fr) '+SPLIT_W+'px minmax(60px,'+right+'fr)';
   }
   function load(){
     try{
       const v=parseFloat(localStorage.getItem(KEY)||'');
-      if(Number.isFinite(v)&&v>=28&&v<=82) leftFr=v;
+      if(Number.isFinite(v)&&v>=20&&v<=92) leftFr=v;
     }catch(e){}
     apply();
   }
@@ -12025,8 +12019,8 @@ window.PortalAuth=(function(){
       const usable=Math.max(1, r.width-SPLIT_W);
       const x=e.clientX-r.left;
       let pct=(x/usable)*100;
-      if(pct<28) pct=28;
-      if(pct>82) pct=82;
+      if(pct<20) pct=20;
+      if(pct>92) pct=92;
       leftFr=pct;
       apply();
     });
