@@ -74,9 +74,23 @@ body.embedded canvas#game{
   image-rendering:pixelated;image-rendering:crisp-edges;
   border:none;border-radius:0;box-shadow:none;
   background:#54963a;
+  transform-origin:center center;
 }
+#mapOrientBtn{
+  position:absolute;z-index:20;right:8px;bottom:8px;
+  border:1px solid rgba(255,255,255,.35);border-radius:6px;
+  background:rgba(0,0,0,.72);color:#e8f0ff;
+  font-family:'Zen Kaku Gothic New','DotGothic16',sans-serif;
+  font-size:11px;font-weight:700;letter-spacing:.06em;
+  padding:6px 10px;cursor:pointer;line-height:1.2;
+  box-shadow:0 4px 14px rgba(0,0,0,.45);
+}
+#mapOrientBtn:hover{border-color:#ffc089;color:#ffc089}
+#mapOrientBtn.is-portrait{border-color:#ff9a4a;color:#ffb060;background:rgba(60,24,8,.82)}
+body.embedded #mapOrientBtn{right:6px;bottom:6px;font-size:10px;padding:5px 8px}
 /* 埋め込み(ポータル)では縦長ペインでも「よこ画面推奨」を出さずマップを描画する */
 body.embedded #rotate-note{display:none!important;}
+body.map-portrait #rotate-note{display:none!important;}
 @media(max-width:1000px) and (orientation:portrait){
   .toprow{flex-direction:column;}
   .cards{flex:1 1 auto;height:72vh;}
@@ -219,6 +233,7 @@ body.embedded .hud-dock{padding:0 0 4px;}
       <div class="hud-dock" id="hud-dock"></div>
       <div class="stage-game">
       <canvas id="game" width="720" height="960"></canvas>
+      <button type="button" id="mapOrientBtn" title="マップのたて／よこ表示を切替">たて表示</button>
       <div id="wx" class="wx"></div>
       <div class="panel overlays">
         <div class="win ov" data-panel="clock" id="p-clock">
@@ -391,6 +406,25 @@ const MAP_W=480, MAP_H=320, DPR=2;
 /* 埋め込み表示：道路・建物エリアだけ見せる（上下の芝生マージンをカット） */
 const EMBED_VIEW_Y0=12, EMBED_VIEW_Y1=300, EMBED_VIEW_H=EMBED_VIEW_Y1-EMBED_VIEW_Y0;
 let _embedFit=null;
+const MAP_ORIENT_KEY='gp_office_map_portrait_v1';
+let mapPortrait=false;
+try{ mapPortrait=localStorage.getItem(MAP_ORIENT_KEY)==='1'; }catch(e){}
+function syncMapOrientUi(){
+  document.body.classList.toggle('map-portrait', !!mapPortrait);
+  const btn=document.getElementById('mapOrientBtn');
+  if(btn){
+    btn.classList.toggle('is-portrait', !!mapPortrait);
+    btn.textContent=mapPortrait?'よこ表示':'たて表示';
+    btn.title=mapPortrait?'よこ向き（通常）に戻す':'たて向きに回転して表示';
+  }
+}
+function setMapPortrait(on){
+  mapPortrait=!!on;
+  try{ localStorage.setItem(MAP_ORIENT_KEY, mapPortrait?'1':'0'); }catch(e){}
+  syncMapOrientUi();
+  try{ fitCanvas(); }catch(e){}
+}
+function toggleMapPortrait(){ setMapPortrait(!mapPortrait); }
 const PAD=6;
 /* 道路：横のメイン通り＋縦のメイン(十字路)＋右のT字 */
 const ROADS={
@@ -1838,6 +1872,16 @@ function mapPointFromEvent(e){
     if(!wrap)return{mx:0,my:0};
     const wr=wrap.getBoundingClientRect();
     const f=_embedFit;
+    if(f.portrait){
+      const sx=t.clientX-wr.left-wr.width/2;
+      const sy=t.clientY-wr.top-wr.height/2;
+      // CSS rotate(90deg) CW の逆変換
+      const lx=-sy, ly=sx;
+      return{
+        mx:MAP_W/2+lx/f.scale,
+        my:MAP_H/2+ly/f.scale
+      };
+    }
     return{
       mx:(t.clientX-wr.left-f.offX)/f.scale,
       my:f.vy0+(t.clientY-wr.top-f.offY)/f.scale
@@ -1845,6 +1889,14 @@ function mapPointFromEvent(e){
   }
   const cv=document.getElementById('game');
   const r=cv.getBoundingClientRect();
+  if(mapPortrait){
+    const sx=t.clientX-(r.left+r.width/2);
+    const sy=t.clientY-(r.top+r.height/2);
+    const lx=-sy, ly=sx;
+    // rotate後のAABB: width≈MAP_H*scale, height≈MAP_W*scale
+    const sc=Math.min(r.width/MAP_H, r.height/MAP_W) || 1;
+    return {mx:MAP_W/2+lx/sc, my:MAP_H/2+ly/sc};
+  }
   const w=Math.max(1,r.width),h=Math.max(1,r.height);
   return {mx:(t.clientX-r.left)/w*MAP_W,my:(t.clientY-r.top)/h*MAP_H};
 }
@@ -2092,67 +2144,77 @@ function fitCanvas(){
   const availW=Math.max(8,r.width);
   const availH=Math.max(8,r.height);
   if(availW<8||availH<8)return;
-  if(EMBEDDED){
-    // 拡大モーダル：マップ全体（ビーチ含む）を収める。通常埋め込みは従来どおり切り抜き
-    if(EMBED_EXPAND){
-      const scale=Math.min(availW/MAP_W,availH/MAP_H);
-      const dispW=MAP_W*scale,dispFullH=MAP_H*scale;
-      const offX=Math.max(0,(availW-dispW)/2);
-      const offY=Math.max(0,(availH-dispFullH)/2);
-      cv.style.width=Math.max(1,Math.floor(dispW))+'px';
-      cv.style.height=Math.max(1,Math.floor(dispFullH))+'px';
-      cv.style.position='absolute';
-      cv.style.left=Math.round(offX)+'px';
-      cv.style.top=Math.round(offY)+'px';
-      cv.style.transform='none';
-      cv.style.maxWidth='none';
-      cv.style.maxHeight='none';
-      wrap.style.alignItems='stretch';
-      wrap.style.justifyContent='stretch';
-      _embedFit={scale,offX,offY,vy0:0,vh:MAP_H};
-      return;
-    }
-    const vy0=EMBED_VIEW_Y0,vh=EMBED_VIEW_H;
-    // ビーチ（右端）が切れないよう contain 優先。狭い時だけ cover＋右寄せ。
-    const scaleContain=Math.min(availW/MAP_W,availH/vh);
-    const scaleCover=Math.max(availW/MAP_W,availH/vh);
-    let scale=scaleContain;
-    let offX,offY;
-    const dispW=MAP_W*scale,dispFullH=MAP_H*scale,viewDispH=vh*scale;
-    if(scaleContain>=scaleCover*0.82){
-      offX=Math.max(0,(availW-dispW)/2);
-      offY=(availH-viewDispH)/2-vy0*scale;
-    }else{
-      scale=scaleCover;
-      const dw=MAP_W*scale,vdh=vh*scale;
-      // 右端（ビーチ／海）を必ずフレーム内へ
-      offX=availW-dw;
-      if(offX>0) offX=offX/2;
-      offY=(availH-vdh)/2-vy0*scale;
-      cv.style.width=Math.max(1,Math.floor(dw))+'px';
-      cv.style.height=Math.max(1,Math.floor(MAP_H*scale))+'px';
-      cv.style.position='absolute';
-      cv.style.left=Math.round(offX)+'px';
-      cv.style.top=Math.round(offY)+'px';
-      cv.style.transform='none';
-      cv.style.maxWidth='none';
-      cv.style.maxHeight='none';
-      wrap.style.alignItems='stretch';
-      wrap.style.justifyContent='stretch';
-      _embedFit={scale,offX,offY,vy0,vh};
-      return;
-    }
+
+  function placeLandscape(scale, offX, offY, vy0, vh){
+    const dispW=MAP_W*scale, dispFullH=MAP_H*scale;
     cv.style.width=Math.max(1,Math.floor(dispW))+'px';
     cv.style.height=Math.max(1,Math.floor(dispFullH))+'px';
     cv.style.position='absolute';
     cv.style.left=Math.round(offX)+'px';
     cv.style.top=Math.round(offY)+'px';
     cv.style.transform='none';
+    cv.style.transformOrigin='center center';
     cv.style.maxWidth='none';
     cv.style.maxHeight='none';
     wrap.style.alignItems='stretch';
     wrap.style.justifyContent='stretch';
-    _embedFit={scale,offX,offY,vy0,vh};
+    _embedFit={scale,offX,offY,vy0:vy0||0,vh:vh||MAP_H,portrait:false};
+  }
+  function placePortrait(){
+    // 90°回転後の見た目サイズ: 幅=MAP_H*scale, 高さ=MAP_W*scale
+    const scale=Math.min(availW/MAP_H, availH/MAP_W);
+    const dispW=MAP_W*scale, dispH=MAP_H*scale;
+    const left=(availW-dispW)/2;
+    const top=(availH-dispH)/2;
+    cv.style.width=Math.max(1,Math.floor(dispW))+'px';
+    cv.style.height=Math.max(1,Math.floor(dispH))+'px';
+    cv.style.position='absolute';
+    cv.style.left=Math.round(left)+'px';
+    cv.style.top=Math.round(top)+'px';
+    cv.style.transform='rotate(90deg)';
+    cv.style.transformOrigin='center center';
+    cv.style.maxWidth='none';
+    cv.style.maxHeight='none';
+    cv.style.margin='0';
+    wrap.style.alignItems='stretch';
+    wrap.style.justifyContent='stretch';
+    _embedFit={scale,offX:left,offY:top,vy0:0,vh:MAP_H,portrait:true};
+  }
+
+  if(EMBEDDED){
+    if(mapPortrait){
+      placePortrait();
+      return;
+    }
+    if(EMBED_EXPAND){
+      const scale=Math.min(availW/MAP_W,availH/MAP_H);
+      const dispW=MAP_W*scale,dispFullH=MAP_H*scale;
+      placeLandscape(scale, Math.max(0,(availW-dispW)/2), Math.max(0,(availH-dispFullH)/2), 0, MAP_H);
+      return;
+    }
+    const vy0=EMBED_VIEW_Y0,vh=EMBED_VIEW_H;
+    const scaleContain=Math.min(availW/MAP_W,availH/vh);
+    const scaleCover=Math.max(availW/MAP_W,availH/vh);
+    let scale=scaleContain;
+    let offX,offY;
+    const dispW=MAP_W*scale,viewDispH=vh*scale;
+    if(scaleContain>=scaleCover*0.82){
+      offX=Math.max(0,(availW-dispW)/2);
+      offY=(availH-viewDispH)/2-vy0*scale;
+      placeLandscape(scale, offX, offY, vy0, vh);
+      return;
+    }
+    scale=scaleCover;
+    const dw=MAP_W*scale,vdh=vh*scale;
+    offX=availW-dw;
+    if(offX>0) offX=offX/2;
+    offY=(availH-vdh)/2-vy0*scale;
+    placeLandscape(scale, offX, offY, vy0, vh);
+    return;
+  }
+
+  if(mapPortrait){
+    placePortrait();
     return;
   }
   _embedFit=null;
@@ -2165,11 +2227,17 @@ function fitCanvas(){
   cv.style.width=w+'px';
   cv.style.height=h+'px';
   cv.style.transform='';
+  cv.style.transformOrigin='center center';
   cv.style.marginLeft='auto';
   cv.style.marginRight='auto';
   cv.style.marginTop='auto';
   cv.style.marginBottom='auto';
 }
+syncMapOrientUi();
+document.getElementById('mapOrientBtn')?.addEventListener('click', function(e){
+  e.preventDefault(); e.stopPropagation();
+  toggleMapPortrait();
+});
 if(EMBEDDED){
   const sg=document.querySelector('.stage-game');
   if(sg&&typeof ResizeObserver!=='undefined'){
@@ -2179,6 +2247,9 @@ if(EMBEDDED){
   requestAnimationFrame(fitCanvas);
   setTimeout(fitCanvas,120);
   window.addEventListener('resize',fitCanvas);
+}else{
+  window.addEventListener('resize',fitCanvas);
+  fitCanvas();
 }
 requestAnimationFrame(loop);
 </script>
