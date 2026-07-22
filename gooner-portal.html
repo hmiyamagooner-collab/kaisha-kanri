@@ -3243,11 +3243,7 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
           <div class="office-tk-alert-msg" id="officeTkOpenMsg">未完了タスクがあります</div>
           <div class="office-tk-pending" id="officeTkOpenList"></div>
         </div>
-        <div class="office-tk-msg" title="簡単なメッセージを送る">
-          <select id="officeMsgTo" aria-label="宛先"></select>
-          <input id="officeMsgBody" maxlength="200" placeholder="短いメッセージ（200字まで）">
-          <button type="button" id="officeMsgSend">送信</button>
-        </div>
+        <!-- メッセージ送信は円卓へ集約（#14）。ドックからは削除。 -->
         <div class="office-tk-links" role="navigation" aria-label="タスク画面">
           <button type="button" class="office-tk-open" data-jump="tasks" title="タスク管理を開く">
             <span class="nav-photo" style="background-image:url(nav-task.png)" aria-hidden="true"></span>
@@ -13678,8 +13674,56 @@ window.EntakuDocIngest=(function(){
     render();
     window.Treasury?.toast?.('相談内容をクリアしました');
   }
+  // #15 円卓スペースを左右分割：左=会話+入力／右=AIの助言・選択事項(次の一手)＋メッセージ。
+  // 冪等（1回だけ構築）。DOMノードを移動するので既存の配線は維持される。
+  function ensureEntakuSplit(){
+    try{
+      var inline=document.getElementById('entaku-inline');
+      var body=document.getElementById('entakuBody');
+      var form=document.getElementById('entakuForm');
+      if(!inline||!body||!form) return;
+      if(document.getElementById('entakuSplitRow')) return;
+      if(!document.getElementById('entaku-split-style')){
+        var st=document.createElement('style'); st.id='entaku-split-style';
+        st.textContent=
+          ".entaku-split-row{display:flex;gap:10px;align-items:stretch;flex:1;min-height:0;overflow:hidden}"+
+          ".entaku-inline.collapsed .entaku-split-row{display:none}"+
+          ".entaku-col-left{display:flex;flex-direction:column;flex:1 1 60%;min-width:0;min-height:0}"+
+          ".entaku-col-right{flex:0 0 36%;max-width:360px;min-width:200px;display:flex;flex-direction:column;gap:8px;overflow:auto;border-left:1px solid rgba(196,166,106,.18);padding:6px 4px 6px 10px}"+
+          ".entaku-side-cap{font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--gold-hi,#e7cd84);padding:2px}"+
+          ".entaku-side-actions:empty::after{content:'まだ選択事項はありません';color:var(--muted,#888);font-size:11px}"+
+          "details.entaku-msg-box{border:1px solid rgba(196,166,106,.25);border-radius:10px;background:rgba(0,0,0,.15)}"+
+          "details.entaku-msg-box>summary{cursor:pointer;user-select:none;list-style:none;padding:8px 10px;font-weight:700;color:var(--gold-hi,#e7cd84);font-size:12px}"+
+          "details.entaku-msg-box>summary::-webkit-details-marker{display:none}"+
+          "details.entaku-msg-box .tk-msg-box{padding:8px 10px 10px;border:none;margin:0;background:none}"+
+          "@media(max-width:820px){.entaku-split-row{flex-direction:column}.entaku-col-right{flex:none;max-width:none;border-left:none;border-top:1px solid rgba(196,166,106,.18);padding:8px 0 0}}";
+        document.head.appendChild(st);
+      }
+      var side=document.createElement('div'); side.id='entakuSide'; side.className='entaku-col-right';
+      var cap=document.createElement('div'); cap.className='entaku-side-cap'; cap.textContent='AIの助言・選択事項';
+      var acts=document.createElement('div'); acts.id='entakuSideActions'; acts.className='entaku-side-actions';
+      side.appendChild(cap); side.appendChild(acts);
+      var wrap=document.getElementById('entakuMsgWrap');
+      if(!wrap){
+        var mb=document.getElementById('tkMsgBox');
+        if(mb){
+          wrap=document.createElement('details'); wrap.className='entaku-msg-box'; wrap.id='entakuMsgWrap';
+          var sm=document.createElement('summary'); sm.textContent='📨 メッセージ（送信・受信箱）';
+          wrap.appendChild(sm); wrap.appendChild(mb);
+        }
+      }
+      if(wrap) side.appendChild(wrap);
+      var left=document.createElement('div'); left.className='entaku-col-left';
+      var row=document.createElement('div'); row.id='entakuSplitRow'; row.className='entaku-split-row';
+      inline.insertBefore(row, body);
+      left.appendChild(body); left.appendChild(form);
+      row.appendChild(left); row.appendChild(side);
+    }catch(e){}
+  }
+  window.__entakuEnsureSplit=ensureEntakuSplit;
   function render(){
     const body = el('entakuBody'); if(!body) return;
+    ensureEntakuSplit();
     body.innerHTML = S.history.map((m,idx)=>{
       const who = agentLabel(m);
       const cls = m.role==='user' ? 'ent-me' : ('ent-ai ent-agent-'+(m.agent||'secretary'));
@@ -13689,12 +13733,17 @@ window.EntakuDocIngest=(function(){
         : esc(m.content).replace(/\n/g,'<br>'));
       return '<div class="ent-msg '+cls+'" data-ent-idx="'+idx+'"><div class="ent-msg-head"><span class="ent-who">'+who+'</span><button type="button" class="ent-msg-del" data-ent-del="'+idx+'" title="この相談を削除" aria-label="削除">削除</button></div><div class="ent-txt">'+bodyTxt+minutesHtml(m)+meetingPickHtml(m,idx)+docClarifyHtml(m)+attachmentsHtml(m.attachments)+jumps+'</div></div>';
     }).join('')
-      + (S.busy?'<div class="ent-msg ent-ai ent-agent-secretary"><span class="ent-who">秘書　凛</span><div class="ent-txt ent-typing">'+(S.streamPreview?esc(S.streamPreview).replace(/\n/g,'<br>'):'凛・紬・陽翔が協議中…')+'</div></div>':'')
-      + actionsHtml();
+      + (S.busy?'<div class="ent-msg ent-ai ent-agent-secretary"><span class="ent-who">秘書　凛</span><div class="ent-txt ent-typing">'+(S.streamPreview?esc(S.streamPreview).replace(/\n/g,'<br>'):'凛・紬・陽翔が協議中…')+'</div></div>':'');
+    // 「次の一手（選択事項）」は右カラムへ描画。分割前(右枠なし)はbody末尾に出す。
+    const _side=document.getElementById('entakuSideActions');
+    if(_side) _side.innerHTML=actionsHtml();
+    else body.insertAdjacentHTML('beforeend', actionsHtml());
     body.scrollTop = body.scrollHeight;
     renderPins();
+    // アクションは右カラムに出るので、配線は円卓全体をスコープにする
+    const _scope=document.getElementById('entaku-inline')||body;
     // 「次の一手」折りたたみ状態を保持
-    const _actsDet=body.querySelector('details.ent-actions');
+    const _actsDet=_scope.querySelector('details.ent-actions');
     if(_actsDet) _actsDet.addEventListener('toggle',function(){ S.actionsOpen=_actsDet.open; });
     const clearBtn=el('entakuClearBtn');
     if(clearBtn) clearBtn.disabled=!S.history.length || !!S.busy;
@@ -13707,8 +13756,8 @@ window.EntakuDocIngest=(function(){
         deleteEntakuMsg(i);
       };
     });
-    body.querySelectorAll('.entaku-jump,.ent-act-jump[data-s]').forEach(b=>b.onclick=()=>gotoScreen(b.dataset.s,{noScroll:true}));
-    body.querySelectorAll('[data-ent-run]').forEach(function(b){
+    _scope.querySelectorAll('.entaku-jump,.ent-act-jump[data-s]').forEach(b=>b.onclick=()=>gotoScreen(b.dataset.s,{noScroll:true}));
+    _scope.querySelectorAll('[data-ent-run]').forEach(function(b){
       b.onclick=function(e){
         e.preventDefault(); e.stopPropagation();
         const i=+b.dataset.entRun;
@@ -13716,7 +13765,7 @@ window.EntakuDocIngest=(function(){
         if(act) executeEntakuAction(act);
       };
     });
-    body.querySelectorAll('.ent-act-chk').forEach(function(c){
+    _scope.querySelectorAll('.ent-act-chk').forEach(function(c){
       c.onchange=function(){ const i=+c.dataset.idx; if(S.actions[i]){ S.actions[i].done=c.checked; persistEntaku(); render(); } };
     });
     body.querySelectorAll('[data-mtg-pick-type]').forEach(function(b){
@@ -14689,44 +14738,13 @@ window.EntakuDocIngest=(function(){
 })();
 </script>
 <script>
-/* #13 タスク管理のメッセージBOX(#tkMsgBox)を円卓(#entaku-inline)へ移設。
-   同一DOMノードを移動するので、既存の送信(#tkMsgSend)・受信箱(#tkMsgInbox)の配線はそのまま維持される。 */
+/* #15/#13 円卓を左右分割し、メッセージBOX(#tkMsgBox)を右カラムへ集約する初期化トリガー。
+   本体は円卓スクリプト内の window.__entakuEnsureSplit()。render()未実行のケースの保険として呼ぶ。 */
 (function(){
-  function injectStyle(){
-    if(document.getElementById('entaku-msg-style')) return;
-    var st=document.createElement('style');
-    st.id='entaku-msg-style';
-    st.textContent=
-      "details.entaku-msg-box{margin:8px 10px;border:1px solid rgba(196,166,106,.25);border-radius:10px;background:rgba(0,0,0,.15)}"+
-      "details.entaku-msg-box>summary{cursor:pointer;user-select:none;list-style:none;padding:8px 10px;font-weight:700;color:var(--gold-hi,#e7cd84);font-size:12px;letter-spacing:.04em}"+
-      "details.entaku-msg-box>summary::-webkit-details-marker{display:none}"+
-      "details.entaku-msg-box[open]>summary{border-bottom:1px solid rgba(196,166,106,.18)}"+
-      "details.entaku-msg-box .tk-msg-box{padding:8px 10px 10px;border:none;margin:0;background:none}"+
-      "details.entaku-msg-box .tk-msg-box h3{margin:6px 0 4px}";
-    document.head.appendChild(st);
-  }
-  function relocate(){
-    try{
-      var box=document.getElementById('tkMsgBox');
-      var entaku=document.getElementById('entaku-inline');
-      if(!box||!entaku) return;
-      if(document.getElementById('entakuMsgWrap')) return; // 二重移設防止
-      injectStyle();
-      var det=document.createElement('details');
-      det.className='entaku-msg-box';
-      det.id='entakuMsgWrap';
-      var sum=document.createElement('summary');
-      sum.textContent='📨 メッセージ（送信・受信箱）';
-      det.appendChild(sum);
-      det.appendChild(box); // 同一ノードを移動＝配線を維持
-      var form=document.getElementById('entakuForm');
-      if(form&&form.parentNode===entaku) entaku.insertBefore(det, form);
-      else entaku.appendChild(det);
-    }catch(e){}
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', relocate);
-  else relocate();
-  setTimeout(relocate, 1500); // 描画順の保険
+  function build(){ try{ if(window.__entakuEnsureSplit) window.__entakuEnsureSplit(); }catch(e){} }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', build);
+  else build();
+  setTimeout(build, 1500); // 描画順の保険
 })();
 </script>
 <script src="billing-docs.js"></script>
