@@ -76,33 +76,11 @@ body.embedded canvas#game{
   background:#54963a;
   transform-origin:center center;
 }
-#mapOrientBtn{
-  position:absolute;z-index:20;right:8px;bottom:8px;
-  border:1px solid rgba(255,255,255,.35);border-radius:6px;
-  background:rgba(0,0,0,.72);color:#e8f0ff;
-  font-family:'Zen Kaku Gothic New','DotGothic16',sans-serif;
-  font-size:11px;font-weight:700;letter-spacing:.06em;
-  padding:6px 10px;cursor:pointer;line-height:1.2;
-  box-shadow:0 4px 14px rgba(0,0,0,.45);
-}
-#mapOrientBtn:hover{border-color:#ffc089;color:#ffc089}
-#mapOrientBtn.is-portrait{border-color:#ff9a4a;color:#ffb060;background:rgba(60,24,8,.82)}
-body.embedded #mapOrientBtn{right:6px;bottom:6px;font-size:10px;padding:5px 8px}
-/* 埋め込み(ポータル)では縦長ペインでも「よこ画面推奨」を出さずマップを描画する */
-body.embedded #rotate-note{display:none!important;}
-body.map-portrait #rotate-note{display:none!important;}
+/* クエストは縦表示固定（ビーチ上）。横画面推奨オーバーレイは出さない */
+#rotate-note{display:none!important;}
 @media(max-width:1000px) and (orientation:portrait){
   .toprow{flex-direction:column;}
   .cards{flex:1 1 auto;height:72vh;}
-}
-/* ===== スマホ対応（横画面前提） ===== */
-#rotate-note{
-  display:none;position:fixed;inset:0;z-index:999;background:#0a0e2a;
-  text-align:center;padding:38vh 20px 0;font-size:15px;line-height:2;color:#ffe9a8;
-}
-#rotate-note .ic{font-size:34px;display:block;margin-bottom:10px;}
-@media(max-width:820px) and (orientation:portrait){
-  #rotate-note{display:block;}
 }
 @media(max-width:1000px) and (orientation:landscape){
   body{padding:6px;}
@@ -232,8 +210,7 @@ body.embedded .hud-dock{padding:0 0 4px;}
     <div class="stage">
       <div class="hud-dock" id="hud-dock"></div>
       <div class="stage-game">
-      <canvas id="game" width="720" height="960"></canvas>
-      <button type="button" id="mapOrientBtn" title="マップのたて／よこ表示を切替">たて表示</button>
+      <canvas id="game" width="640" height="960"></canvas>
       <div id="wx" class="wx"></div>
       <div class="panel overlays">
         <div class="win ov" data-panel="clock" id="p-clock">
@@ -403,28 +380,13 @@ else if(!EMBEDDED){const f=document.getElementById('cardframe');if(f&&f.dataset.
 })();
 /* ================= MAP（横長・ドット／町：社長室独立・オフィス+会議併設・デイ独立・右端に海） ================= */
 const MAP_W=480, MAP_H=320, DPR=2;
+/* 縦表示固定：描画バッファはたて（ビーチが上＝元マップ右端が上） */
+const VIEW_W=MAP_H, VIEW_H=MAP_W;
+const mapPortrait=true;
 /* 埋め込み表示：道路・建物エリアだけ見せる（上下の芝生マージンをカット） */
 const EMBED_VIEW_Y0=12, EMBED_VIEW_Y1=300, EMBED_VIEW_H=EMBED_VIEW_Y1-EMBED_VIEW_Y0;
 let _embedFit=null;
-const MAP_ORIENT_KEY='gp_office_map_portrait_v1';
-let mapPortrait=false;
-try{ mapPortrait=localStorage.getItem(MAP_ORIENT_KEY)==='1'; }catch(e){}
-function syncMapOrientUi(){
-  document.body.classList.toggle('map-portrait', !!mapPortrait);
-  const btn=document.getElementById('mapOrientBtn');
-  if(btn){
-    btn.classList.toggle('is-portrait', !!mapPortrait);
-    btn.textContent=mapPortrait?'よこ表示':'たて表示';
-    btn.title=mapPortrait?'よこ向き（通常）に戻す':'たて向きに回転して表示';
-  }
-}
-function setMapPortrait(on){
-  mapPortrait=!!on;
-  try{ localStorage.setItem(MAP_ORIENT_KEY, mapPortrait?'1':'0'); }catch(e){}
-  syncMapOrientUi();
-  try{ fitCanvas(); }catch(e){}
-}
-function toggleMapPortrait(){ setMapPortrait(!mapPortrait); }
+try{ document.body.classList.add('map-portrait'); }catch(e){}
 const PAD=6;
 /* 道路：横のメイン通り＋縦のメイン(十字路)＋右のT字 */
 const ROADS={
@@ -705,7 +667,10 @@ function drawDayOverlay(g){
     g.fillRect(COAST_X,0,MAP_W-COAST_X,MAP_H);
   }
   g.restore();
-  // フェーズ表示（左上）
+}
+function drawPhaseLabel(g){
+  if(dayPhase==='day') return;
+  // 画面座標（縦表示）の左上
   const label=dayPhase==='sunset'?'ゆうがた':'よる';
   g.font='700 9px "DotGothic16","Zen Kaku Gothic New",monospace';
   const tw=Math.ceil(g.measureText(label).width)+10;
@@ -1098,10 +1063,19 @@ function resetDay(){
 const cv=document.getElementById('game'),ctx=cv.getContext('2d');
 const cityCv=document.createElement('canvas');
 function initCanvasSize(){
-  cv.width=MAP_W*DPR;cv.height=MAP_H*DPR;
+  cv.width=VIEW_W*DPR;cv.height=VIEW_H*DPR;
   cityCv.width=MAP_W*DPR;cityCv.height=MAP_H*DPR;
 }
 initCanvasSize();
+/** 縦表示ワールド変換後も、人・文字が画面に対して正立するよう +90° */
+function drawUprightAt(g,x,y,fn){
+  g.save();
+  g.translate(x,y);
+  g.rotate(Math.PI/2);
+  g.translate(-x,-y);
+  fn();
+  g.restore();
+}
 function px(g,x,y,w,h,c){g.fillStyle=c;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,h|0));}
 function shade(hex,amt){
   const n=parseInt(hex.slice(1),16);
@@ -1131,11 +1105,14 @@ function drawZoneLabel(g,z,text){
   const bw=tw+ZONE_LABEL_PAD*2,bh=ZONE_LABEL_BOX_H;
   const bx=z.x+2;
   const by=z.y+z.h-bh*ZONE_LABEL_SCALE-2;
-  g.save();
-  g.translate(bx,by);
-  g.scale(ZONE_LABEL_SCALE,ZONE_LABEL_SCALE);
-  drawUiTag(g,0,0,bw,bh,text,ZONE_LABEL_FONT);
-  g.restore();
+  const cx=bx+(bw*ZONE_LABEL_SCALE)/2, cy=by+(bh*ZONE_LABEL_SCALE)/2;
+  drawUprightAt(g,cx,cy,()=>{
+    g.save();
+    g.translate(bx,by);
+    g.scale(ZONE_LABEL_SCALE,ZONE_LABEL_SCALE);
+    drawUiTag(g,0,0,bw,bh,text,ZONE_LABEL_FONT);
+    g.restore();
+  });
 }
 function drawAllZoneLabels(g){
   for(const id of LABEL_ZONE_IDS){
@@ -1232,7 +1209,9 @@ function drawSpeechBubbles(g,chars,now){
     const m=measureBubble(g,b.text);
     const pos=placeSpeechBubble(c,m,placed);
     placed.push({bx:pos.bx,by:pos.by,w:pos.w,h:pos.h});
-    drawSpeechBubble(g,pos.bx,pos.by,pos.w,pos.h,m.text,style,pos.tailX,pos.tailY,pos.dir);
+    drawUprightAt(g,c.px,c.py,()=>{
+      drawSpeechBubble(g,pos.bx,pos.by,pos.w,pos.h,m.text,style,pos.tailX,pos.tailY,pos.dir);
+    });
     if(isQuiet)quietShown++;
   }
   for(const c of chars){
@@ -1568,8 +1547,9 @@ function drawWxPixelIcon(g,ix,iy,ic){
 function drawStatusHud(g){
   const wz=weather(),W=124,H=54;
   const sw=W*STATUS_HUD_SCALE,sh=H*STATUS_HUD_SCALE;
-  const x=MAP_W-sw-MAP_UI_MARGIN;
-  const y=EMBEDDED?EMBED_VIEW_Y0+6:MAP_UI_MARGIN;
+  // 縦画面の右上（画面座標）
+  const x=VIEW_W-sw-MAP_UI_MARGIN;
+  const y=MAP_UI_MARGIN;
   g.save();
   g.translate(x,y);
   g.scale(STATUS_HUD_SCALE,STATUS_HUD_SCALE);
@@ -1678,6 +1658,11 @@ function refreshScoreBubbles(now){
 function draw(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.imageSmoothingEnabled=false;
+  ctx.clearRect(0,0,VIEW_W,VIEW_H);
+  // ワールド：ビーチ（元マップ右端）が上になるよう -90°
+  ctx.save();
+  ctx.translate(0,MAP_W);
+  ctx.rotate(-Math.PI/2);
   ctx.drawImage(cityCv,0,0,MAP_W,MAP_H);
   drawOceanWaves(ctx,performance.now());
   drawTraffic(ctx);
@@ -1686,28 +1671,33 @@ function draw(){
   const order=[...CHARS,...ELDERS,...GUESTS,...CARE_USERS].filter(c=>!c.hidden).sort((a,b)=>a.py-b.py);
   for(const c of order){
     const walking=c.path.length>0,frame=Math.floor(now/150)%2===0;
-    if(selected===c){
-      ctx.strokeStyle='#ffd75e';ctx.lineWidth=1;
-      ctx.strokeRect(((c.px-12)|0)+.5,((c.py-16)|0)+.5,24,33);
-    }
-    drawPerson(ctx,c,walking,frame);
-    if(!c.guest&&!c.care&&!c.elder&&(c===hovered||c===selected)){
-      const open=c.openTasks|0;
-      const label=c.short
-        +(open?(' タスク'+open+'件'):'')
-        +(c.score!=null?(' '+((c.score|0)>0?'+':'')+(c.score|0)+'点'):'');
-      ctx.font=LABEL_FONT;
-      const tw=Math.ceil(ctx.measureText(label).width),lw=tw+LABEL_PAD*2;
-      const lx=Math.max(MAP_UI_MARGIN,Math.min((c.px-lw/2)|0,MAP_W-lw-MAP_UI_MARGIN));
-      const ly=Math.max(MAP_UI_MARGIN,(c.py-36)|0);
-      drawUiTag(ctx,lx,ly,lw,LABEL_BOX_H,label);
-    }
+    drawUprightAt(ctx,c.px,c.py,()=>{
+      if(selected===c){
+        ctx.strokeStyle='#ffd75e';ctx.lineWidth=1;
+        ctx.strokeRect(((c.px-12)|0)+.5,((c.py-16)|0)+.5,24,33);
+      }
+      drawPerson(ctx,c,walking,frame);
+      if(!c.guest&&!c.care&&!c.elder&&(c===hovered||c===selected)){
+        const open=c.openTasks|0;
+        const label=c.short
+          +(open?(' タスク'+open+'件'):'')
+          +(c.score!=null?(' '+((c.score|0)>0?'+':'')+(c.score|0)+'点'):'');
+        ctx.font=LABEL_FONT;
+        const tw=Math.ceil(ctx.measureText(label).width),lw=tw+LABEL_PAD*2;
+        const lx=Math.max(MAP_UI_MARGIN,Math.min((c.px-lw/2)|0,MAP_W-lw-MAP_UI_MARGIN));
+        const ly=Math.max(MAP_UI_MARGIN,(c.py-36)|0);
+        drawUiTag(ctx,lx,ly,lw,LABEL_BOX_H,label);
+      }
+    });
   }
   drawSpeechBubbles(ctx,order,now);
   drawDayOverlay(ctx);
   drawTrafficLights(ctx);
   drawWeatherFx(ctx,now);
   drawAllZoneLabels(ctx);
+  ctx.restore();
+  // 画面固定HUD（縦・正立・右上）
+  drawPhaseLabel(ctx);
   drawStatusHud(ctx);
 }
 
@@ -1867,38 +1857,21 @@ function onCharHoverEnd(){
 }
 function mapPointFromEvent(e){
   const t=(e.touches&&e.touches[0])||e;
-  if(EMBEDDED&&_embedFit){
-    const wrap=document.querySelector('.stage-game');
-    if(!wrap)return{mx:0,my:0};
+  const wrap=document.querySelector('.stage-game');
+  const cv=document.getElementById('game');
+  if(EMBEDDED&&_embedFit&&wrap){
     const wr=wrap.getBoundingClientRect();
     const f=_embedFit;
-    if(f.portrait){
-      const sx=t.clientX-wr.left-wr.width/2;
-      const sy=t.clientY-wr.top-wr.height/2;
-      // CSS rotate(90deg) CW の逆変換
-      const lx=-sy, ly=sx;
-      return{
-        mx:MAP_W/2+lx/f.scale,
-        my:MAP_H/2+ly/f.scale
-      };
-    }
-    return{
-      mx:(t.clientX-wr.left-f.offX)/f.scale,
-      my:f.vy0+(t.clientY-wr.top-f.offY)/f.scale
-    };
+    const sx=t.clientX-wr.left-f.offX;
+    const sy=t.clientY-wr.top-f.offY;
+    // 画面(sx,sy) ← ワールド: sx=my*s, sy=(MAP_W-mx)*s
+    return{mx:MAP_W-sy/f.scale, my:sx/f.scale};
   }
-  const cv=document.getElementById('game');
-  const r=cv.getBoundingClientRect();
-  if(mapPortrait){
-    const sx=t.clientX-(r.left+r.width/2);
-    const sy=t.clientY-(r.top+r.height/2);
-    const lx=-sy, ly=sx;
-    // rotate後のAABB: width≈MAP_H*scale, height≈MAP_W*scale
-    const sc=Math.min(r.width/MAP_H, r.height/MAP_W) || 1;
-    return {mx:MAP_W/2+lx/sc, my:MAP_H/2+ly/sc};
-  }
+  const r=(cv||wrap).getBoundingClientRect();
   const w=Math.max(1,r.width),h=Math.max(1,r.height);
-  return {mx:(t.clientX-r.left)/w*MAP_W,my:(t.clientY-r.top)/h*MAP_H};
+  const sx=(t.clientX-r.left)/w*VIEW_W;
+  const sy=(t.clientY-r.top)/h*VIEW_H;
+  return{mx:MAP_W-sy, my:sx};
 }
 function charAtEvent(e){
   const {mx,my}=mapPointFromEvent(e);
@@ -2145,99 +2118,25 @@ function fitCanvas(){
   const availH=Math.max(8,r.height);
   if(availW<8||availH<8)return;
 
-  function placeLandscape(scale, offX, offY, vy0, vh){
-    const dispW=MAP_W*scale, dispFullH=MAP_H*scale;
-    cv.style.width=Math.max(1,Math.floor(dispW))+'px';
-    cv.style.height=Math.max(1,Math.floor(dispFullH))+'px';
-    cv.style.position='absolute';
-    cv.style.left=Math.round(offX)+'px';
-    cv.style.top=Math.round(offY)+'px';
-    cv.style.transform='none';
-    cv.style.transformOrigin='center center';
-    cv.style.maxWidth='none';
-    cv.style.maxHeight='none';
-    wrap.style.alignItems='stretch';
-    wrap.style.justifyContent='stretch';
-    _embedFit={scale,offX,offY,vy0:vy0||0,vh:vh||MAP_H,portrait:false};
-  }
-  function placePortrait(){
-    // 90°回転後の見た目サイズ: 幅=MAP_H*scale, 高さ=MAP_W*scale
-    const scale=Math.min(availW/MAP_H, availH/MAP_W);
-    const dispW=MAP_W*scale, dispH=MAP_H*scale;
-    const left=(availW-dispW)/2;
-    const top=(availH-dispH)/2;
-    cv.style.width=Math.max(1,Math.floor(dispW))+'px';
-    cv.style.height=Math.max(1,Math.floor(dispH))+'px';
-    cv.style.position='absolute';
-    cv.style.left=Math.round(left)+'px';
-    cv.style.top=Math.round(top)+'px';
-    cv.style.transform='rotate(90deg)';
-    cv.style.transformOrigin='center center';
-    cv.style.maxWidth='none';
-    cv.style.maxHeight='none';
-    cv.style.margin='0';
-    wrap.style.alignItems='stretch';
-    wrap.style.justifyContent='stretch';
-    _embedFit={scale,offX:left,offY:top,vy0:0,vh:MAP_H,portrait:true};
-  }
-
-  if(EMBEDDED){
-    if(mapPortrait){
-      placePortrait();
-      return;
-    }
-    if(EMBED_EXPAND){
-      const scale=Math.min(availW/MAP_W,availH/MAP_H);
-      const dispW=MAP_W*scale,dispFullH=MAP_H*scale;
-      placeLandscape(scale, Math.max(0,(availW-dispW)/2), Math.max(0,(availH-dispFullH)/2), 0, MAP_H);
-      return;
-    }
-    const vy0=EMBED_VIEW_Y0,vh=EMBED_VIEW_H;
-    const scaleContain=Math.min(availW/MAP_W,availH/vh);
-    const scaleCover=Math.max(availW/MAP_W,availH/vh);
-    let scale=scaleContain;
-    let offX,offY;
-    const dispW=MAP_W*scale,viewDispH=vh*scale;
-    if(scaleContain>=scaleCover*0.82){
-      offX=Math.max(0,(availW-dispW)/2);
-      offY=(availH-viewDispH)/2-vy0*scale;
-      placeLandscape(scale, offX, offY, vy0, vh);
-      return;
-    }
-    scale=scaleCover;
-    const dw=MAP_W*scale,vdh=vh*scale;
-    offX=availW-dw;
-    if(offX>0) offX=offX/2;
-    offY=(availH-vdh)/2-vy0*scale;
-    placeLandscape(scale, offX, offY, vy0, vh);
-    return;
-  }
-
-  if(mapPortrait){
-    placePortrait();
-    return;
-  }
-  _embedFit=null;
-  cv.style.position='';
-  cv.style.left='';
-  cv.style.top='';
-  const scale=Math.min(availW/MAP_W,availH/MAP_H,1);
-  const w=Math.max(1,Math.floor(MAP_W*scale));
-  const h=Math.max(1,Math.floor(MAP_H*scale));
-  cv.style.width=w+'px';
-  cv.style.height=h+'px';
-  cv.style.transform='';
+  // 縦表示固定：描画バッファ VIEW_W×VIEW_H（ビーチ上）
+  const scale=Math.min(availW/VIEW_W, availH/VIEW_H);
+  const dispW=VIEW_W*scale, dispH=VIEW_H*scale;
+  const left=(availW-dispW)/2;
+  const top=(availH-dispH)/2;
+  cv.style.width=Math.max(1,Math.floor(dispW))+'px';
+  cv.style.height=Math.max(1,Math.floor(dispH))+'px';
+  cv.style.position='absolute';
+  cv.style.left=Math.round(left)+'px';
+  cv.style.top=Math.round(top)+'px';
+  cv.style.transform='none';
   cv.style.transformOrigin='center center';
-  cv.style.marginLeft='auto';
-  cv.style.marginRight='auto';
-  cv.style.marginTop='auto';
-  cv.style.marginBottom='auto';
+  cv.style.maxWidth='none';
+  cv.style.maxHeight='none';
+  cv.style.margin='0';
+  wrap.style.alignItems='stretch';
+  wrap.style.justifyContent='stretch';
+  _embedFit={scale,offX:left,offY:top,vy0:0,vh:VIEW_H,portrait:true};
 }
-syncMapOrientUi();
-document.getElementById('mapOrientBtn')?.addEventListener('click', function(e){
-  e.preventDefault(); e.stopPropagation();
-  toggleMapPortrait();
-});
 if(EMBEDDED){
   const sg=document.querySelector('.stage-game');
   if(sg&&typeof ResizeObserver!=='undefined'){
