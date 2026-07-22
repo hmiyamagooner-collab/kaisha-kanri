@@ -1749,10 +1749,16 @@ function hoverLine(c){
   return name+'です。未完了タスクはありません。';
 }
 let _lastHoverId=null;
-function speakLocalTTS(text){
+function speakLocalTTS(text, opts){
+  opts=opts||{};
   try{
     if(window.parent!==window&&window.parent.PortalTTS){
-      window.parent.PortalTTS.speak(text);return;
+      try{ window.parent.PortalTTS.unlock?.(); }catch(e){}
+      if(!window.parent.PortalTTS.isEnabled?.()){
+        try{ window.parent.PortalTTS.setEnabled?.(true); }catch(e){}
+      }
+      window.parent.PortalTTS.speak(text, null, {agent: opts.agent||'secretary'});
+      return;
     }
   }catch(e){}
   if(!text||!window.speechSynthesis)return;
@@ -1788,8 +1794,9 @@ function onCharHover(c){
     task:open>0,
     score:false
   };
-  // 音声：名前とタスク件数を必ず読み上げ（親TTS優先）
-  speakLocalTTS(line);
+  // 音声：名前とタスク件数（マウスが外れても途中で止めない）
+  const p=CHAR_PORTAL[c.id];
+  speakLocalTTS(line, {agent: p?.entaku||p?.dash||'secretary'});
   portalBridge({
     type:'office-hover',
     charId:c.id,
@@ -1797,12 +1804,12 @@ function onCharHover(c){
     short:c.short,
     line:line,
     openTasks:open,
-    dash:null
+    dash:p?.dash||null,
+    entaku:p?.entaku||null
   });
 }
 function onCharHoverEnd(){
-  try{window.parent.PortalTTS?.stop();}catch(e){}
-  if(window.speechSynthesis)window.speechSynthesis.cancel();
+  // 読み上げは完走させる（即stopするとクラウド音声が聞こえない）
   portalBridge({type:'office-hover-end'});
 }
 function mapPointFromEvent(e){
@@ -1828,23 +1835,30 @@ function charAtEvent(e){
   CHARS.forEach(c=>{
     if(c.hidden)return;
     const d=Math.hypot(c.px-mx,c.py-my);
-    if(d<18&&d<bd){bd=d;best=c;}
+    // クリックしやすいよう判定を広めに
+    if(d<28&&d<bd){bd=d;best=c;}
   });
   return best;
 }
 cv.addEventListener('pointerdown',()=>{
   try{window.parent.OfficeBridge?.unlockAudio?.();}catch(e){}
+  try{window.parent.PortalTTS?.unlock?.();}catch(e){}
 },{capture:true,passive:true});
 cv.addEventListener('click',e=>{
   const best=charAtEvent(e);
   if(!best)return;
+  if(best.guest||best.care||best.elder)return;
   hovered=best;selectChar(best);
   const p=CHAR_PORTAL[best.id];
+  const line=hoverLine(best);
+  // クリック＝まず本人がしゃべる（3カード一斉反応はしない）
+  speakLocalTTS(line, {agent: p?.entaku||p?.dash||'secretary'});
   portalBridge({
     type:'office-entaku',charId:best.id,name:best.name,short:best.short,
-    entaku:p?.entaku||'secretary',dash:p?.dash||null,line:hoverLine(best)
+    entaku:p?.entaku||'secretary',dash:p?.dash||null,line:line,
+    speakOnly:false
   });
-  say(best,'円卓へ お呼びしました');
+  say(best, line);
 });
 cv.addEventListener('mousemove',e=>{
   const c=charAtEvent(e);
