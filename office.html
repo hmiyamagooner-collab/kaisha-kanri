@@ -380,8 +380,9 @@ else if(!EMBEDDED){const f=document.getElementById('cardframe');if(f&&f.dataset.
 })();
 /* ================= MAP（横長・ドット／町：社長室独立・オフィス+会議併設・デイ独立・右端に海） ================= */
 const MAP_W=480, MAP_H=320, DPR=2;
-/* 縦表示固定：描画バッファはたて（ビーチが上＝元マップ右端が上） */
-const VIEW_W=MAP_H, VIEW_H=MAP_W;
+/* 縦表示固定：ビーチ上。元マップの上下芝生（画面の両脇）は切り捨て */
+const CROP_Y0=40, CROP_Y1=280;
+const VIEW_W=CROP_Y1-CROP_Y0, VIEW_H=MAP_W;
 const mapPortrait=true;
 /* 埋め込み表示：道路・建物エリアだけ見せる（上下の芝生マージンをカット） */
 const EMBED_VIEW_Y0=12, EMBED_VIEW_Y1=300, EMBED_VIEW_H=EMBED_VIEW_Y1-EMBED_VIEW_Y0;
@@ -447,34 +448,34 @@ function findZonePath(a,b){
   }
   return [a,b];
 }
-/* 本社オフィス：机は4つ（各机2席）＝各社員の席 */
+/* 本社オフィス：机は4つ（各机2席）＝各社員の席（縦表示：机は南北、椅子は西側＝画面下） */
 const DESK_CENTERS=[
   pt('honsha',0.28,0.34),pt('honsha',0.72,0.34),
   pt('honsha',0.28,0.72),pt('honsha',0.72,0.72)
 ];
 const DESK=[
-  pt('honsha',0.234,0.34),pt('honsha',0.326,0.34),   /* 机A（2席） */
-  pt('honsha',0.674,0.34),pt('honsha',0.766,0.34),   /* 机B */
-  pt('honsha',0.234,0.72),pt('honsha',0.326,0.72),   /* 机C */
-  pt('honsha',0.674,0.72),pt('honsha',0.766,0.72)    /* 机D */
+  pt('honsha',0.22,0.28),pt('honsha',0.22,0.40),   /* 机A（2席・縦並び） */
+  pt('honsha',0.66,0.28),pt('honsha',0.66,0.40),   /* 机B */
+  pt('honsha',0.22,0.66),pt('honsha',0.22,0.78),   /* 机C */
+  pt('honsha',0.66,0.66),pt('honsha',0.66,0.78)    /* 机D */
 ];
 const SEATS={
-  meeting:[pt('kaigi',0.22,0.4),pt('kaigi',0.42,0.4),pt('kaigi',0.62,0.4),pt('kaigi',0.82,0.4),
-           pt('kaigi',0.22,0.66),pt('kaigi',0.42,0.66),pt('kaigi',0.62,0.66),pt('kaigi',0.82,0.66)],
-  recept:[pt('kaigi',0.85,0.72),pt('kaigi',0.7,0.72),pt('kaigi',0.5,0.72),pt('kaigi',0.3,0.72)],
+  meeting:[pt('kaigi',0.18,0.36),pt('kaigi',0.18,0.48),pt('kaigi',0.18,0.60),pt('kaigi',0.18,0.72),
+           pt('kaigi',0.72,0.36),pt('kaigi',0.72,0.48),pt('kaigi',0.72,0.60),pt('kaigi',0.72,0.72)],
+  recept:[pt('kaigi',0.88,0.55),pt('kaigi',0.88,0.68),pt('kaigi',0.88,0.42),pt('kaigi',0.78,0.55)],
   pool:[pt('pool',0.35,0.55),pt('pool',0.7,0.5),pt('pool',0.25,0.75),pt('pool',0.65,0.3)],
   umi:[pt('beach',0.5,0.24),pt('beach',0.4,0.44),pt('beach',0.6,0.62),pt('beach',0.45,0.8)],
   concert:[pt('park',0.15,0.55),pt('park',0.35,0.55),pt('park',0.6,0.55),pt('park',0.82,0.65)],
-  day:[pt('day',0.3,0.4),pt('day',0.68,0.4),pt('day',0.3,0.75),pt('day',0.68,0.72)],
-  copier:pt('honsha',0.93,0.42),
-  shelf:[pt('honsha',0.2,0.16),pt('honsha',0.4,0.16),pt('honsha',0.6,0.16)]
+  day:[pt('day',0.22,0.42),pt('day',0.22,0.62),pt('day',0.55,0.78),pt('day',0.78,0.55)],
+  copier:pt('honsha',0.88,0.55),
+  shelf:[pt('honsha',0.12,0.22),pt('honsha',0.12,0.40),pt('honsha',0.12,0.58)]
 };
 const ELDER_SEATS=[];
 
 /* ================= CHARACTERS ================= */
 /* プリセットは非表示。アカウント登録キャラのみ portal-office-sync で投入 */
 const PRESET_CHARS=[
- {id:'shacho',name:'社長',short:'社長',dept:'本社',female:false,cloth:'#7c3aed',hair:'#3f3f46',seat:pt('shacho',0.5,0.58),home:'shacho',
+ {id:'shacho',name:'社長',short:'社長',dept:'本社',female:false,cloth:'#7c3aed',hair:'#3f3f46',seat:pt('shacho',0.42,0.58),home:'shacho',
   sched:[[9,10,'会議'],[10,12,'デスクワーク'],[12,13,'休憩'],[13,14,'来客対応'],[14,16,'デスクワーク'],[16,17,'会議'],[17,19,'デスクワーク']]},
  {id:'koshiishi',name:'越石',short:'越石',dept:'本社',female:true,cloth:'#3b82f6',hair:'#52341d',seat:DESK[0],home:'honsha',
   sched:[[9,10,'会議'],[10,11,'振込作業'],[11,12,'書類整理'],[12,13,'休憩'],[13,15,'デスクワーク'],[15,16,'コピー'],[16,19,'デスクワーク']]},
@@ -1378,11 +1379,12 @@ function drawBeachStrip(g,z){
   px(g,x,y,w,h,'#ecd49a');
   for(let i=0;i<90;i++){const sx=x+((i*11)%(w-1)),sy=y+((i*29)%(h-1));px(g,sx,sy,1,1,'#d4b878');}
   px(g,x+w-2,y,2,h,'#e6c98a');
+  /* パラソル：縦表示後にポールが画面で縦になるよう、マップ上は横向きに描く */
   const cols=['#e05a5a','#5a8ad0','#e0c060','#5ac08a','#e0863a'];
   [0.16,0.34,0.52,0.7,0.86].forEach((ny,i)=>{
     const cx=(x+w*0.42)|0,cy=(y+h*ny)|0;
-    px(g,cx,cy,1,8,'#8a5a3a');
-    px(g,cx-5,cy-3,11,3,cols[i%cols.length]);
+    px(g,cx-3,cy,8,1,'#8a5a3a');                 /* ポール（マップX＝画面で縦） */
+    px(g,cx-2,cy-5,3,11,cols[i%cols.length]);     /* 傘（マップY＝画面で横） */
   });
 }
 function drawOcean(g,z){
@@ -1432,80 +1434,86 @@ function drawFloor(g,z,col,label){
   px(g,x,y,3,h,wc);px(g,x,y,1,h,'#9aa2ad');
   px(g,x+w-3,y,3,h,wc);px(g,x+w-1,y,1,h,'#4c525a');
 }
-function drawShelf(g,x,y,w,h){          /* 書庫 */
-  x=x|0;y=y|0;w=w|0;h=Math.max(5,h|0);
+function drawShelf(g,x,y,w,h){          /* 書庫（縦表示：西壁ぞい＝画面下側） */
+  x=x|0;y=y|0;w=Math.max(5,w|0);h=h|0;
   px(g,x,y,w,h,'#6a4a30');
-  px(g,x,y,w,1,'#8a6848');
+  px(g,x,y,1,h,'#8a6848');
   const cols=['#c85a5a','#5a8ad0','#e0c060','#5ac08a','#d08ad0','#e0863a','#9a6ad0'];
-  for(let bx=x+2;bx<x+w-1;bx+=3)px(g,bx,y+2,2,h-4,cols[(bx*7)%cols.length]);
-  px(g,x,y+h-1,w,1,'#4a3020');
+  for(let by=y+2;by<y+h-1;by+=3)px(g,x+2,by,w-4,2,cols[(by*7)%cols.length]);
+  px(g,x+w-1,y,1,h,'#4a3020');
 }
-function drawDesk(g,cx,cy){             /* 机＋PC＋椅子（大） */
+function drawDesk(g,cx,cy){             /* 机＋PC＋椅子（縦表示：椅子＝西＝画面下） */
   cx=cx|0;cy=cy|0;
-  px(g,cx-12,cy-10,24,10,'#b98a5a');
-  px(g,cx-12,cy-10,24,1,'#cda06a');
-  px(g,cx-12,cy-1,24,1,'#8a6438');
-  px(g,cx-6,cy-9,12,6,'#20242c');        /* PCモニタ */
-  px(g,cx-5,cy-8,10,4,'#7fd4ff');
-  px(g,cx-5,cy-8,10,1,'#bfeaff');
-  px(g,cx-5,cy-1,10,2,'#3a4048');        /* キーボード */
-  px(g,cx-4,cy+2,8,6,'#48515e');         /* 椅子 */
-  px(g,cx-4,cy+2,8,1,'#5a6472');
+  px(g,cx-5,cy-12,10,24,'#b98a5a');      /* 天板（南北に長い） */
+  px(g,cx-5,cy-12,1,24,'#cda06a');
+  px(g,cx+4,cy-12,1,24,'#8a6438');
+  px(g,cx+1,cy-6,6,12,'#20242c');       /* PCモニタ（東＝画面上側） */
+  px(g,cx+2,cy-5,4,10,'#7fd4ff');
+  px(g,cx+2,cy-5,1,10,'#bfeaff');
+  px(g,cx-1,cy-5,2,10,'#3a4048');       /* キーボード */
+  px(g,cx-11,cy-4,6,8,'#48515e');       /* 椅子（西） */
+  px(g,cx-11,cy-4,1,8,'#5a6472');
 }
-function drawDesk2(g,cx,cy){            /* 2人用デスク（PC×2＋椅子×2・大） */
+function drawDesk2(g,cx,cy){            /* 2人用デスク（縦並び・PC×2＋椅子×2） */
   cx=cx|0;cy=cy|0;
-  px(g,cx-22,cy-10,44,10,'#b98a5a');
-  px(g,cx-22,cy-10,44,1,'#cda06a');
-  px(g,cx-22,cy-1,44,1,'#8a6438');
+  px(g,cx-5,cy-22,10,44,'#b98a5a');
+  px(g,cx-5,cy-22,1,44,'#cda06a');
+  px(g,cx+4,cy-22,1,44,'#8a6438');
   [-11,11].forEach(o=>{
-    px(g,cx+o-6,cy-9,12,6,'#20242c');           /* PCモニタ大 */
-    px(g,cx+o-5,cy-8,10,4,'#7fd4ff');
-    px(g,cx+o-5,cy-8,10,1,'#bfeaff');
-    px(g,cx+o-5,cy-1,10,2,'#3a4048');           /* キーボード */
-    px(g,cx+o-4,cy+2,8,6,'#48515e');            /* 椅子 */
-    px(g,cx+o-4,cy+2,8,1,'#5a6472');
+    px(g,cx+1,cy+o-6,6,12,'#20242c');
+    px(g,cx+2,cy+o-5,4,10,'#7fd4ff');
+    px(g,cx+2,cy+o-5,1,10,'#bfeaff');
+    px(g,cx-1,cy+o-5,2,10,'#3a4048');
+    px(g,cx-11,cy+o-4,6,8,'#48515e');
+    px(g,cx-11,cy+o-4,1,8,'#5a6472');
   });
 }
 function drawCopier(g,cx,cy){           /* コピー機 */
   cx=cx|0;cy=cy|0;
   px(g,cx-5,cy-5,10,11,'#c8ccd4');
-  px(g,cx-5,cy-5,10,2,'#9aa0aa');
-  px(g,cx-3,cy-2,6,3,'#3a4048');
-  px(g,cx-4,cy+3,8,2,'#eef2f8');
+  px(g,cx-5,cy-5,2,11,'#9aa0aa');
+  px(g,cx-2,cy-3,3,6,'#3a4048');
+  px(g,cx+3,cy-4,2,8,'#eef2f8');
 }
 function drawOfficeRoom(g,z){
   drawFloor(g,z,'#e2e6ee','本社オフィス');
   const {x,y,w,h}=z;
-  drawShelf(g,x+8,y+8,w-16,7);                     /* 書庫（上壁ぞい） */
+  drawShelf(g,x+6,y+10,7,h-20);                    /* 書庫（西壁ぞい） */
   DESK_CENTERS.forEach(d=>drawDesk2(g,d.x,d.y));    /* 机4つ（各2席） */
   drawCopier(g,SEATS.copier.x,SEATS.copier.y);      /* コピー機 */
 }
 function drawExecRoom(g,z){
   drawFloor(g,z,'#e6ddc6','社長室');
   const {x,y,w,h}=z;
-  drawShelf(g,x+6,y+6,(w*0.44)|0,6);
-  drawDesk(g,x+w*0.5,y+h*0.58);
-  px(g,(x+w*0.64)|0,(y+h*0.26)|0,(w*0.3)|0,7,'#8a6a9a');   /* ソファ */
-  px(g,(x+w*0.64)|0,(y+h*0.26)|0,(w*0.3)|0,1,'#a888b8');
+  drawShelf(g,x+6,y+8,6,(h*0.5)|0);
+  drawDesk(g,x+w*0.52,y+h*0.55);
+  px(g,(x+w*0.72)|0,(y+h*0.22)|0,7,(h*0.36)|0,'#8a6a9a');   /* ソファ（南北） */
+  px(g,(x+w*0.72)|0,(y+h*0.22)|0,1,(h*0.36)|0,'#a888b8');
 }
 function drawMeetingRoom(g,z){
   drawFloor(g,z,'#d7dbe2','会議・応接');
   const {x,y,w,h}=z;
-  const tx=(x+w*0.12)|0,ty=(y+h*0.30)|0,tw=(w*0.58)|0,th=(h*0.34)|0;
-  px(g,tx,ty,tw,th,'#a9c4d8');                 /* 会議テーブル */
-  px(g,tx,ty,tw,1,'#c4dcea');
-  px(g,tx,ty+th-1,tw,1,'#7fa2b8');
-  for(let i=0;i<4;i++){const cx=tx+5+(i*(tw-10)/3)|0;px(g,cx,ty-4,4,3,'#48515e');px(g,cx,ty+th+1,4,3,'#48515e');}
-  px(g,(x+w*0.5)|0,(y+h*0.74)|0,(w*0.42)|0,6,'#8a6a9a');   /* 応接ソファ */
+  /* 会議テーブル：縦長（南北）。椅子は東西＝画面の上下 */
+  const tx=(x+w*0.32)|0,ty=(y+h*0.18)|0,tw=(w*0.28)|0,th=(h*0.58)|0;
+  px(g,tx,ty,tw,th,'#a9c4d8');
+  px(g,tx,ty,1,th,'#c4dcea');
+  px(g,tx+tw-1,ty,1,th,'#7fa2b8');
+  for(let i=0;i<4;i++){
+    const cy=ty+6+(i*(th-12)/3)|0;
+    px(g,tx-4,cy,3,4,'#48515e');
+    px(g,tx+tw+1,cy,3,4,'#48515e');
+  }
+  px(g,(x+w*0.78)|0,(y+h*0.28)|0,6,(h*0.42)|0,'#8a6a9a');   /* 応接ソファ */
 }
 function drawCareRoom(g,z){                 /* デイサービス（ベッド・テーブル・椅子） */
   drawFloor(g,z,'#e9dfcf','デイサービス');
   const {x,y,w,h}=z;
-  px(g,x+7,y+9,18,9,'#cbb78c');px(g,x+7,y+9,18,3,'#e2d3a8');       /* ベッド */
-  px(g,x+w-25,y+9,18,9,'#cbb78c');px(g,x+w-25,y+9,18,3,'#e2d3a8');
-  const tx=(x+w*0.5-11)|0,ty=(y+h-22)|0;
-  px(g,tx,ty,22,12,'#b98a5a');px(g,tx,ty,22,2,'#cda06a');          /* テーブル */
-  px(g,tx-4,ty+3,3,5,'#48515e');px(g,tx+23,ty+3,3,5,'#48515e');    /* 椅子 */
+  /* ベッド：縦向き（頭が東＝画面上） */
+  px(g,x+8,y+10,9,20,'#cbb78c');px(g,x+8+6,y+10,3,20,'#e2d3a8');
+  px(g,x+8,y+h-30,9,20,'#cbb78c');px(g,x+8+6,y+h-30,3,20,'#e2d3a8');
+  const tx=(x+w-28)|0,ty=(y+h*0.5-11)|0;
+  px(g,tx,ty,12,22,'#b98a5a');px(g,tx,ty,2,22,'#cda06a');          /* テーブル縦 */
+  px(g,tx+3,ty-4,5,3,'#48515e');px(g,tx+3,ty+23,5,3,'#48515e');    /* 椅子 */
 }
 /* ===== お天気の描画 ===== */
 function drawWeatherFx(g,now){
@@ -1583,8 +1591,6 @@ function prerenderCity(){
   drawParkingLot(g,ZONES.parking);
   drawPoolArea(g,ZONES.pool);
   drawParkVenue(g,ZONES.park);
-  drawTree(g,70,26,6);drawTree(g,250,26,5);                           /* 上マージン */
-  drawTree(g,70,300,6);drawTree(g,240,302,5);drawTree(g,344,300,6);   /* 下マージン */
   /* 右端の外側：砂浜→海（建物や壁でふさがない） */
   drawBeachStrip(g,ZONES.beach);
   drawOcean(g,ZONES.umi);
@@ -1659,9 +1665,9 @@ function draw(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.imageSmoothingEnabled=false;
   ctx.clearRect(0,0,VIEW_W,VIEW_H);
-  // ワールド：ビーチ（元マップ右端）が上になるよう -90°
+  // ワールド：ビーチ上＋両脇芝生（元マップ上下）をカット
   ctx.save();
-  ctx.translate(0,MAP_W);
+  ctx.translate(-CROP_Y0,MAP_W);
   ctx.rotate(-Math.PI/2);
   ctx.drawImage(cityCv,0,0,MAP_W,MAP_H);
   drawOceanWaves(ctx,performance.now());
@@ -1864,14 +1870,14 @@ function mapPointFromEvent(e){
     const f=_embedFit;
     const sx=t.clientX-wr.left-f.offX;
     const sy=t.clientY-wr.top-f.offY;
-    // 画面(sx,sy) ← ワールド: sx=my*s, sy=(MAP_W-mx)*s
-    return{mx:MAP_W-sy/f.scale, my:sx/f.scale};
+    // 画面(sx,sy) ← ワールド: sx=(my-CROP_Y0)*s, sy=(MAP_W-mx)*s
+    return{mx:MAP_W-sy/f.scale, my:CROP_Y0+sx/f.scale};
   }
   const r=(cv||wrap).getBoundingClientRect();
   const w=Math.max(1,r.width),h=Math.max(1,r.height);
   const sx=(t.clientX-r.left)/w*VIEW_W;
   const sy=(t.clientY-r.top)/h*VIEW_H;
-  return{mx:MAP_W-sy, my:sx};
+  return{mx:MAP_W-sy, my:CROP_Y0+sx};
 }
 function charAtEvent(e){
   const {mx,my}=mapPointFromEvent(e);
