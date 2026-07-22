@@ -8,7 +8,13 @@ export const config = {
   api: { bodyParser: { sizeLimit: "8mb" } },
 };
 
-const OPENAI_TIMEOUT_MS = 55000;
+// Vercelの関数上限(60s)に収めるための全体予算。これを超えると関数ごと強制終了され
+// クライアントに何も返らない＝「議事録が途中で止まる」原因になるため、内部で締切管理する。
+const TOTAL_BUDGET_MS = 57000;
+// 文字起こし(Whisper)に割ける最大時間。残りを議事録生成(GPT)に回す。
+const WHISPER_MAX_MS = 45000;
+// 議事録生成(GPT)に最低これだけ残っていなければ、生成をスキップして文字起こしだけ返す。
+const MINUTES_MIN_MS = 7000;
 const CHAT_MODEL = process.env.OPENAI_MODEL || "gpt-4o";
 const WHISPER_MODEL = process.env.OPENAI_WHISPER_MODEL || "whisper-1";
 
@@ -101,7 +107,29 @@ function parseMinutesJson(raw) {
   }
 }
 
+// 議事録生成(GPT)が時間切れ・失敗した場合でも、文字起こしだけは必ず返すためのフォールバック。
+// 文字起こしの冒頭を要約代わりに載せ、凛が「後で整えられる」旨を伝える。
+function fallbackMinutes(transcript, note) {
+  const text = String(transcript || "").trim();
+  const head = text.slice(0, 1200);
+  return {
+    summary: head,
+    decisions: [],
+    actions: [],
+    replies: [
+      {
+        agent: "secretary",
+        text:
+          (note || "議事録の自動整形が間に合いませんでした。") +
+          "文字起こしは保存しています。必要なら『議事録を整えて』ともう一度お申し付けください。",
+      },
+    ],
+  };
+}
+
 export default async function handler(req, res) {
+  const startedAt = Date.now();
+  const deadlineAt = startedAt + TOTAL_BUDGET_MS;
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -138,8 +166,13 @@ export default async function handler(req, res) {
     form.append("language", "ja");
     form.append("response_format", "json");
 
+    // 文字起こしに割ける時間 = 残り予算から議事録生成の最低分を引く（上限 WHISPER_MAX_MS）
+    const whisperBudget = Math.min(
+      WHISPER_MAX_MS,
+      Math.max(8000, deadlineAt - Date.now() - MINUTES_MIN_MS)
+    );
     const ac1 = new AbortController();
-    const t1 = setTimeout(() => ac1.abort(), OPENAI_TIMEOUT_MS);
+    const t1 = setTimeout(() => ac1.abort(), whisperBudget);
     let whRes;
     try {
       whRes = await fetch("https://api.openai.com/v1/audio/transcriptions", {
@@ -178,44 +211,75 @@ export default async function handler(req, res) {
       .filter(Boolean)
       .join("\n\n");
 
-    const ac2 = new AbortController();
-    const t2 = setTimeout(() => ac2.abort(), OPENAI_TIMEOUT_MS);
-    let aiRes;
-    try {
-      aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: CHAT_MODEL,
-          max_tokens: 1800,
-          temperature: 0.3,
-          response_format: { type: "json_object" },
-          messages: [
-            { role: "system", content: MINUTES_SYSTEM },
-            { role: "user", content: userPrompt },
-          ],
-        }),
-        signal: ac2.signal,
-      });
-    } finally {
-      clearTimeout(t2);
-    }
-
-    if (!aiRes.ok) {
-      const t = await aiRes.text();
-      return res.status(502).json({
-        error: "議事録生成に失敗しました",
-        detail: t.slice(0, 500),
+    // 議事録生成に回せる残り時間。少なすぎるなら生成せず文字起こしだけ返す（途中停止の回避）。
+    const minutesBudget = deadlineAt - Date.now();
+    if (minutesBudget < MINUTES_MIN_MS) {
+      const fb = fallbackMinutes(
         transcript,
+        "録音が長く、議事録の自動整形まで時間が足りませんでした。"
+      );
+      return res.status(200).json({
+        ok: true,
+        transcript,
+        summary: fb.summary,
+        decisions: fb.decisions,
+        actions: fb.actions,
+        replies: fb.replies,
+        degraded: true,
+        model: CHAT_MODEL,
+        at: new Date().toISOString(),
       });
     }
 
-    const data = await aiRes.json();
-    const raw = String(data.choices?.[0]?.message?.content || "").trim();
-    const parsed = parseMinutesJson(raw);
+    // GPT段は失敗・時間切れでも「文字起こしは返す」よう try/catch で握りつぶし、200を返す。
+    let parsed = null;
+    let degraded = false;
+    try {
+      const ac2 = new AbortController();
+      // 1.5秒のマージンを残して締切より前に必ず自分で中断する。
+      const t2 = setTimeout(() => ac2.abort(), Math.max(5000, minutesBudget - 1500));
+      let aiRes;
+      try {
+        aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: CHAT_MODEL,
+            max_tokens: 1600,
+            temperature: 0.3,
+            response_format: { type: "json_object" },
+            messages: [
+              { role: "system", content: MINUTES_SYSTEM },
+              { role: "user", content: userPrompt },
+            ],
+          }),
+          signal: ac2.signal,
+        });
+      } finally {
+        clearTimeout(t2);
+      }
+      if (aiRes.ok) {
+        const data = await aiRes.json();
+        const raw = String(data.choices?.[0]?.message?.content || "").trim();
+        parsed = parseMinutesJson(raw);
+      } else {
+        degraded = true;
+      }
+    } catch (e) {
+      // AbortError（時間切れ）やネットワーク断でも文字起こしは救う
+      degraded = true;
+    }
+
+    if (!parsed) {
+      parsed = fallbackMinutes(
+        transcript,
+        "議事録の自動整形が時間内に終わりませんでした。"
+      );
+      degraded = true;
+    }
 
     return res.status(200).json({
       ok: true,
@@ -224,6 +288,7 @@ export default async function handler(req, res) {
       decisions: parsed.decisions,
       actions: parsed.actions,
       replies: parsed.replies,
+      degraded,
       model: CHAT_MODEL,
       at: new Date().toISOString(),
     });

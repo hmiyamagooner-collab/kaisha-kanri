@@ -861,9 +861,73 @@
     </div>`;
   }
 
+  // 日次CF表のスタイルを一度だけ注入（HTMLを触らず自己完結）
+  function ensureCfDailyStyle() {
+    if (document.getElementById("cf-daily-style")) return;
+    const st = document.createElement("style");
+    st.id = "cf-daily-style";
+    st.textContent =
+      ".cf-daily-wrap{margin-top:8px;border:1px solid var(--line,#333);border-radius:8px;overflow-x:auto;-webkit-overflow-scrolling:touch}" +
+      "table.cf-daily{border-collapse:collapse;width:100%;font-size:12px;min-width:520px}" +
+      "table.cf-daily th,table.cf-daily td{padding:5px 8px;border-bottom:1px solid var(--line,#2a2a2a);white-space:nowrap}" +
+      "table.cf-daily thead th{position:sticky;top:0;background:var(--panel,#161616);color:var(--gold,#c9a227);text-align:right;font-weight:700;z-index:1}" +
+      "table.cf-daily thead th:first-child,table.cf-daily td:first-child{text-align:left}" +
+      "table.cf-daily td.num{text-align:right;font-variant-numeric:tabular-nums}" +
+      "table.cf-daily td.in{color:var(--in,#2dd4bf)}" +
+      "table.cf-daily td.out{color:var(--out,#f87171)}" +
+      "table.cf-daily td.cf-d-items{text-align:left;color:var(--muted,#999);max-width:240px;overflow:hidden;text-overflow:ellipsis}" +
+      "table.cf-daily tr.cf-d-start{opacity:.85}" +
+      "table.cf-daily tbody tr:hover{background:rgba(201,162,39,.06)}";
+    document.head.appendChild(st);
+  }
+
+  // 予定入出金(analyzeShortage.rows)を日ごとに集計したエクセル調の日次CF表
+  function dailyCfTableHtml(analysis, startBal, startDate) {
+    const esc = T().esc, yen = T().yen;
+    const rows = (analysis && analysis.rows) || [];
+    if (!rows.length) {
+      return `<div class="cf-col-t" style="margin-top:16px">日次キャッシュフロー表（予定）</div>
+        <div class="cf-empty">この期間に予定入出金がありません。案件・予定を登録すると日ごとの残高見込が表示されます。</div>`;
+    }
+    const byDay = new Map();
+    const order = [];
+    rows.forEach((r) => {
+      const d = r.date;
+      if (!byDay.has(d)) { byDay.set(d, { date: d, in: 0, out: 0, bal: r.bal, items: [] }); order.push(d); }
+      const rec = byDay.get(d);
+      if (r.amount >= 0) rec.in += r.amount; else rec.out += Math.abs(r.amount);
+      rec.bal = r.bal; // 日内で最後の行が日末残高
+      if (r.label) rec.items.push(r.label);
+    });
+    const startRow =
+      `<tr class="cf-d-start"><td>${esc(startDate)}</td><td></td><td></td><td class="num">起点</td><td class="num">${yen(startBal)}</td><td class="cf-d-items">現在残高</td></tr>`;
+    const bodyRows = order
+      .map((d) => {
+        const rec = byDay.get(d);
+        const net = rec.in - rec.out;
+        const items = rec.items.slice(0, 3).join("、") + (rec.items.length > 3 ? ` 他${rec.items.length - 3}件` : "");
+        return `<tr>
+          <td>${esc(d)}</td>
+          <td class="num in">${rec.in ? yen(rec.in) : ""}</td>
+          <td class="num out">${rec.out ? yen(rec.out) : ""}</td>
+          <td class="num ${net < 0 ? "out" : "in"}">${rec.in || rec.out ? yen(net) : ""}</td>
+          <td class="num ${rec.bal < 0 ? "out" : ""}">${yen(rec.bal)}</td>
+          <td class="cf-d-items" title="${esc(rec.items.join("、"))}">${esc(items)}</td>
+        </tr>`;
+      })
+      .join("");
+    return `<div class="cf-col-t" style="margin-top:16px">日次キャッシュフロー表（予定・スプシ風／横スクロール可）</div>
+      <div class="cf-daily-wrap">
+        <table class="cf-daily"><thead>
+          <tr><th>日付</th><th>入金</th><th>出金</th><th>差引</th><th>残高見込</th><th>主な項目</th></tr>
+        </thead><tbody>${startRow}${bodyRows}</tbody></table>
+      </div>`;
+  }
+
   function renderForecast() {
     const box = document.getElementById("cfForecastBody");
     if (!box) return;
+    ensureCfDailyStyle();
     const S = T().S;
     const days = +(document.getElementById("cfForecastDays") || { value: 90 }).value || 90;
     const start = today();
@@ -998,6 +1062,7 @@
         <div class="cf-fc-tile ${outflows.length ? "warn" : "ok"}"><span class="k">予定外の出金</span><span class="v out">${outflows.length}件 ／ ${T().yen(sumOut)}</span><span class="sub">承認・予定のない引き出し</span></div>
         <div class="cf-fc-tile"><span class="k">今後${days}日の予定入金</span><span class="v in">${T().yen(futureAnalysis.sumIn)}</span><span class="sub">予定出金 ${T().yen(futureAnalysis.sumOut)}</span></div>
       </div>
+      ${dailyCfTableHtml(futureAnalysis, bal, start)}
       ${shortageHtml(futureAnalysis, { title: `今後${days}日 — 何が足りなくなるか` })}
       <div class="cf-col-t" style="margin-top:16px">⚠ 予定外・要説明の入出金（大口＝赤で最上位）</div>
       ${[...inflows, ...outflows].slice(0, 40).map(alertRow).join("") || `<div class="cf-empty ok">該当なし — 説明のつかない入出金はありません</div>`}

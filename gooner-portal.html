@@ -1440,7 +1440,7 @@ body.is-hsplit-drag{cursor:ew-resize;user-select:none}
   font-size:10px;color:var(--muted);padding:0 10px 6px;line-height:1.4;
 }
 .office-tk-links{
-  flex-shrink:0;display:grid;grid-template-columns:1fr 1fr;gap:6px;
+  flex-shrink:0;display:grid;grid-template-columns:1fr;gap:6px;
   padding:8px 10px 10px;margin-top:0;
   border-top:none;
 }
@@ -2405,7 +2405,9 @@ video.dc-card__image{
 .entaku-jumps{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 /* 決定事項・次の一手（アクション化） */
 .ent-actions{margin-top:6px;padding:10px 11px;border-radius:12px;background:linear-gradient(180deg,rgba(196,166,106,.10),rgba(196,166,106,.03));border:1px solid rgba(196,166,106,.28)}
-.ent-actions-cap{font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--gold-hi);margin-bottom:8px}
+.ent-actions-cap{font-family:var(--font-display);font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--gold-hi);margin-bottom:8px;cursor:pointer;user-select:none}
+details.ent-actions[open]>summary.ent-actions-cap{margin-bottom:8px}
+details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
 .ent-act-item{display:flex;align-items:flex-start;gap:8px;padding:7px 6px;border-radius:8px;cursor:pointer;transition:background .15s}
 .ent-act-item+.ent-act-item{border-top:1px solid rgba(196,166,106,.1)}
 .ent-act-item:hover{background:rgba(196,166,106,.06)}
@@ -5738,23 +5740,34 @@ window.PortalTTS=(function(){
     syncUi();
     const chunks=splitText(text);
     const voice=agentToVoice(agent);
-    try{
-      for(let i=0;i<chunks.length;i++){
-        if(gen!==queueGen || intentionalStop){ finish(onend); return; }
+    // 1チャンク分のTTS音声を取得（決してrejectせず {blob}/{error} を返す＝先読みの未処理reject回避）
+    const fetchChunk=async function(idx){
+      try{
         const res=await fetch(ttsEndpoint(),{
           method:'POST',
           headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({ mode:'tts', text:chunks[i], voice:voice, agent:agent||'' })
+          body:JSON.stringify({ mode:'tts', text:chunks[idx], voice:voice, agent:agent||'' })
         });
         const data=await res.json().catch(function(){ return {}; });
         if(!res.ok || !data.audioBase64){
-          throw new Error(data.error||('HTTP '+res.status));
+          return { error:new Error(data.error||('HTTP '+res.status)) };
         }
         const bin=atob(data.audioBase64);
         const arr=new Uint8Array(bin.length);
         for(let j=0;j<bin.length;j++) arr[j]=bin.charCodeAt(j);
-        const blob=new Blob([arr],{type:data.mime||'audio/mpeg'});
-        const ok=await playBlob(blob, gen, onend);
+        return { blob:new Blob([arr],{type:data.mime||'audio/mpeg'}) };
+      }catch(e){ return { error:e }; }
+    };
+    try{
+      if(!chunks.length){ finish(onend); return; }
+      // 先読みパイプライン：現在チャンクを再生している間に次チャンクを取得しておく
+      let nextP=fetchChunk(0);
+      for(let i=0;i<chunks.length;i++){
+        if(gen!==queueGen || intentionalStop){ finish(onend); return; }
+        const cur=await nextP;
+        nextP=(i+1<chunks.length)?fetchChunk(i+1):null; // 再生前に次を先読み開始
+        if(cur.error) throw cur.error;
+        const ok=await playBlob(cur.blob, gen, onend);
         if(!ok) throw new Error('AUDIO_PLAY_FAIL');
       }
       if(gen===queueGen) finish(onend);
@@ -12177,6 +12190,72 @@ window.EntakuAI=(function(){
         throw e;
       });
     },
+    // ストリーミング版：deltaを onDelta(full) で逐次通知しつつ、最終 {replies,actions} を返す。
+    // 失敗時は reject（呼び出し側が従来の chat にフォールバックする）。
+    chatStream:function(messages,context,focus,onDelta){
+      var ep=endpoint();
+      if(!ep) return Promise.reject(new Error('AI_NOT_CONNECTED'));
+      if(typeof location!=='undefined' && /^file:/i.test(location.protocol||'')) return Promise.reject(new Error('LOCAL_FILE'));
+      if(typeof window==='undefined' || !window.fetch || typeof TextDecoder==='undefined') return Promise.reject(new Error('NO_STREAM'));
+      return fetch(ep,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({mode:'entaku',stream:true,messages:messages,context:context||'',focus:focus||''})
+      }).then(function(r){
+        if(!r.ok || !r.body || !r.body.getReader) throw new Error('HTTP '+r.status);
+        var reader=r.body.getReader();
+        var dec=new TextDecoder();
+        var buf='', full='', result=null, errMsg=null;
+        function handleEvent(evt){
+          if(evt.indexOf('data:')!==0) return;
+          var payload=evt.slice(5).trim();
+          if(payload==='[DONE]') return;
+          var j; try{ j=JSON.parse(payload); }catch(e){ return; }
+          if(j.delta){
+            full+=j.delta;
+            if(typeof onDelta==='function'){ try{ onDelta(full); }catch(e){} }
+          } else if(j.done){
+            var reps=normalizeReplies(j);
+            var acts=Array.isArray(j.actions)?j.actions.map(function(a){
+              return{
+                title:String(a.title||'').trim()||'次の一手',
+                owner:String(a.owner||'').trim(), due:String(a.due||'').trim(),
+                module:String(a.module||'').trim(), op:String(a.op||'').trim(),
+                query:String(a.query||'').trim(), scope:String(a.scope||'').trim(),
+                label:String(a.label||'').trim(), field:String(a.field||'').trim(),
+                value:String(a.value||'').trim(), assignee:String(a.assignee||a.to||'').trim(),
+                detail:String(a.detail||'').trim(), taskId:String(a.taskId||'').trim(), done:false
+              };
+            }):[];
+            result={replies:reps, actions:acts};
+          } else if(j.error){
+            errMsg=String(j.error)+(j.detail?(' — '+j.detail):'');
+          }
+        }
+        function pump(){
+          return reader.read().then(function(res){
+            if(res.done) return;
+            buf+=dec.decode(res.value,{stream:true});
+            var idx;
+            while((idx=buf.indexOf('\n\n'))>=0){
+              var evt=buf.slice(0,idx).trim();
+              buf=buf.slice(idx+2);
+              if(evt) handleEvent(evt);
+            }
+            return pump();
+          });
+        }
+        return pump().then(function(){
+          if(errMsg) throw new Error(errMsg);
+          if(result && result.replies && result.replies.length) return result;
+          var reps=[];
+          try{ var m=full.match(/\{[\s\S]*\}/); if(m){ reps=normalizeReplies(JSON.parse(m[0])); } }catch(e){}
+          if(!reps.length){ reps=normalizeReplies({text:full}); }
+          if(reps.length) return {replies:reps, actions:(result&&result.actions)||[]};
+          throw new Error('EMPTY_REPLY');
+        });
+      });
+    },
     askAgents:function(question){
       if(typeof route!=='function'||typeof askAgent!=='function')
         return Promise.resolve(null);
@@ -12807,6 +12886,24 @@ window.EntakuDocIngest=(function(){
       setTimeout(done, Math.min(3600, Math.max(1200, plain.length * 55)));
     }
   }
+  // ストリーミング中：JSONバッファから各発言(text値)を抜き出してプレビュー文字列にする
+  function previewFromBuffer(buf){
+    if(!buf) return '';
+    var out=[], re=/"text"\s*:\s*"((?:\\.|[^"\\])*)"?/g, m;
+    while((m=re.exec(buf))){
+      var s=(m[1]||'').replace(/\\n/g,'\n').replace(/\\"/g,'"').replace(/\\t/g,' ').replace(/\\\\/g,'\\');
+      if(s.trim()) out.push(s.trim());
+    }
+    return out.join('\n\n');
+  }
+  // 「協議中…」の吹き出しを、生成中の本文で直接置き換える（毎トークンの軽量更新）
+  function renderStreamPreview(){
+    var body=el('entakuBody'); if(!body) return;
+    var t=body.querySelector('.ent-typing'); if(!t) return;
+    var txt=S.streamPreview;
+    t.innerHTML = txt ? esc(txt).replace(/\n/g,'<br>') : '凛・紬・陽翔が協議中…';
+    body.scrollTop=body.scrollHeight;
+  }
   function playReplies(replies, actions, scrollY){
     S.playing = true;
     window.__entakuSpeaking = true;
@@ -12860,7 +12957,8 @@ window.EntakuDocIngest=(function(){
         + (meta?'<span class="ent-act-meta">'+esc(meta)+'</span>':'') + '</span>'
         + run + jump + '</label>';
     }).join('');
-    return '<div class="ent-actions"><div class="ent-actions-cap">決定事項・次の一手</div>'+items+'</div>';
+    // 最下部で邪魔にならないよう折りたたみ式に（既定は畳む）。キャップに件数を表示。
+    return '<details class="ent-actions"'+(S.actionsOpen?' open':'')+'><summary class="ent-actions-cap">決定事項・次の一手（'+S.actions.length+'）</summary>'+items+'</details>';
   }
   function highlightLatestAgents(){
     if(S.busy)return;
@@ -13472,16 +13570,16 @@ window.EntakuDocIngest=(function(){
       if(!s||seen.has(s)) return;
       seen.add(s); names.push(s);
     }
+    // 議事録の参加者は「実在の登録メンバー」のみ。AI(凛/紬/陽翔)や汎用役職ラベルは出さない。
+    // ログインユーザーと登録スタッフを表示名で重複排除して並べる（同一人物の二重表示＝社長ダブりを防ぐ）。
     const u=window.PortalAuth?.getUser?.();
     if(u) push((u.role?u.role+'　':'')+u.name);
-    push('社長'); push('経理'); push('法務'); push('営業');
-    push('凛'); push('紬'); push('陽翔');
     try{
       (window.PortalAuth?.listStaff?.()||[]).forEach(function(s){
         push((s.role?s.role+'　':'')+s.name);
       });
     }catch(e){}
-    return names.slice(0,18);
+    return names.slice(0,24);
   }
   function meetingPickHtml(m, idx){
     if(m.kind!=='meeting-pick') return '';
@@ -13493,17 +13591,20 @@ window.EntakuDocIngest=(function(){
     }
     const draft=S.pickDraft||{ type:null, people:[] };
     const people=participantChoices();
+    // 「＋その他」で追加した社外参加者も選択肢に混ぜて表示（選択済みとして残す）
+    (draft.people||[]).forEach(function(p){ if(people.indexOf(p)<0) people.push(p); });
     const types=MTG_TYPES.map(function(t){
       return '<button type="button" class="ent-pick-type'+(draft.type===t.id?' on':'')+'" data-mtg-pick-type="'+t.id+'">'+esc(t.label)+'</button>';
     }).join('');
-    const peeps=people.map(function(p,i){
+    const peeps=people.map(function(p){
       const on=draft.people.indexOf(p)>=0;
-      return '<button type="button" class="ent-pick-person'+(on?' on':'')+'" data-mtg-pick-pi="'+i+'">'+esc(p)+'</button>';
-    }).join('');
+      return '<button type="button" class="ent-pick-person'+(on?' on':'')+'" data-mtg-pick-name="'+esc(p)+'">'+esc(p)+'</button>';
+    }).join('')
+      +'<button type="button" class="ent-pick-person is-other" data-mtg-pick-other="1">＋その他</button>';
     return '<div class="ent-meeting-pick" data-pick-idx="'+idx+'">'
       +'<div class="ent-pick-cap">① 会議の種類</div>'
       +'<div class="ent-pick-types">'+types+'</div>'
-      +'<div class="ent-pick-cap">② 参加者（複数可）</div>'
+      +'<div class="ent-pick-cap">② 参加者（登録メンバー＋その他・複数可）</div>'
       +'<div class="ent-pick-people">'+peeps+'</div>'
       +'<button type="button" class="ent-pick-start" data-mtg-pick-start="1"'+(draft.type?'':' disabled')+'>この内容で録音開始</button>'
       +'<button type="button" class="ent-pick-cancel" data-mtg-pick-cancel="1">キャンセル</button>'
@@ -13588,10 +13689,13 @@ window.EntakuDocIngest=(function(){
         : esc(m.content).replace(/\n/g,'<br>'));
       return '<div class="ent-msg '+cls+'" data-ent-idx="'+idx+'"><div class="ent-msg-head"><span class="ent-who">'+who+'</span><button type="button" class="ent-msg-del" data-ent-del="'+idx+'" title="この相談を削除" aria-label="削除">削除</button></div><div class="ent-txt">'+bodyTxt+minutesHtml(m)+meetingPickHtml(m,idx)+docClarifyHtml(m)+attachmentsHtml(m.attachments)+jumps+'</div></div>';
     }).join('')
-      + (S.busy?'<div class="ent-msg ent-ai ent-agent-secretary"><span class="ent-who">秘書　凛</span><div class="ent-txt ent-typing">凛・紬・陽翔が協議中…</div></div>':'')
+      + (S.busy?'<div class="ent-msg ent-ai ent-agent-secretary"><span class="ent-who">秘書　凛</span><div class="ent-txt ent-typing">'+(S.streamPreview?esc(S.streamPreview).replace(/\n/g,'<br>'):'凛・紬・陽翔が協議中…')+'</div></div>':'')
       + actionsHtml();
     body.scrollTop = body.scrollHeight;
     renderPins();
+    // 「次の一手」折りたたみ状態を保持
+    const _actsDet=body.querySelector('details.ent-actions');
+    if(_actsDet) _actsDet.addEventListener('toggle',function(){ S.actionsOpen=_actsDet.open; });
     const clearBtn=el('entakuClearBtn');
     if(clearBtn) clearBtn.disabled=!S.history.length || !!S.busy;
     body.querySelectorAll('[data-ent-del]').forEach(function(b){
@@ -13622,14 +13726,25 @@ window.EntakuDocIngest=(function(){
         render();
       };
     });
-    body.querySelectorAll('[data-mtg-pick-pi]').forEach(function(b){
+    body.querySelectorAll('[data-mtg-pick-name]').forEach(function(b){
       b.onclick=function(){
         if(!S.pickDraft) S.pickDraft={ type:null, people:[] };
-        const name=participantChoices()[+b.dataset.mtgPickPi];
+        const name=b.getAttribute('data-mtg-pick-name');
         if(!name) return;
         const i=S.pickDraft.people.indexOf(name);
         if(i>=0) S.pickDraft.people.splice(i,1);
         else S.pickDraft.people.push(name);
+        render();
+      };
+    });
+    body.querySelectorAll('[data-mtg-pick-other]').forEach(function(b){
+      b.onclick=function(){
+        if(!S.pickDraft) S.pickDraft={ type:null, people:[] };
+        let nm='';
+        try{ nm=window.prompt('参加者の名前を入力（社外・その他）',''); }catch(e){ nm=''; }
+        nm=String(nm||'').trim().slice(0,40);
+        if(!nm) return;
+        if(S.pickDraft.people.indexOf(nm)<0) S.pickDraft.people.push(nm);
         render();
       };
     });
@@ -13888,10 +14003,24 @@ window.EntakuDocIngest=(function(){
     window.DashTalk?.speak(routeDept, atts.length?'添付を確認します。':'承知しました。', 2800);
     el('entakuSend').disabled = true;
     var ctx=cfContext();
-    var chatReq = window.EntakuAI && window.EntakuAI.isConnected()
-      ? window.EntakuAI.chat(S.history, ctx, S.focus||'')
-      : Promise.reject(new Error('AI_NOT_CONNECTED'));
+    var _focus=S.focus||'';
+    var chatReq;
+    if(window.EntakuAI && window.EntakuAI.isConnected() && typeof window.EntakuAI.chatStream==='function'){
+      // ストリーミング：生成中の本文を吹き出しに逐次表示。失敗時は従来の chat へフォールバック。
+      chatReq = window.EntakuAI.chatStream(S.history, ctx, _focus, function(full){
+        S.streamPreview = previewFromBuffer(full);
+        try{ renderStreamPreview(); }catch(e){}
+      }).catch(function(err){
+        S.streamPreview='';
+        return window.EntakuAI.chat(S.history, ctx, _focus);
+      });
+    } else if(window.EntakuAI && window.EntakuAI.isConnected()){
+      chatReq = window.EntakuAI.chat(S.history, ctx, _focus);
+    } else {
+      chatReq = Promise.reject(new Error('AI_NOT_CONNECTED'));
+    }
     chatReq.then(function(data){
+      S.streamPreview='';
       S.busy=false; el('entakuSend').disabled=false;
       var replies = (data && data.replies) || (Array.isArray(data)?data:[]);
       var actions = (data && data.actions) || [];
@@ -13899,6 +14028,7 @@ window.EntakuDocIngest=(function(){
       render();
       playReplies(replies, actions, scrollY); // 1人ずつ順番に発言＋読み上げ
     }).catch(function(e){
+      S.streamPreview='';
       S.busy=false; S.playing=false; window.__entakuSpeaking=false;
       el('entakuSend').disabled=false;
       var m=String(e&&e.message||e||'');
@@ -14394,6 +14524,36 @@ window.EntakuDocIngest=(function(){
             content:'議事録を『'+meta.label+'』へ保管しました。左サイドバーの会議から確認できます。'
           });
         }catch(err){}
+        // Dropbox「PORTAL会議」フォルダーへ議事録テキストを自動保存（許可ユーザーのみ・非同期）
+        try{
+          if(window.dbxUploadBase64 && window.GoonerSB?.canUseDropbox?.()){
+            const now=new Date();
+            const p2=function(n){ return String(n).padStart(2,'0'); };
+            const stamp=now.getFullYear()+'-'+p2(now.getMonth()+1)+'-'+p2(now.getDate())+'_'+p2(now.getHours())+p2(now.getMinutes());
+            const safe=function(s){ return String(s||'').replace(/[\/\\:?*"<>|]/g,'　').trim().slice(0,40); };
+            const decLines=(decisions||[]).map(function(d){ return '・'+(d.title||'')+(d.owner?'（'+d.owner+'）':'')+(d.due?' 期限:'+d.due:''); }).join('\n')||'（なし）';
+            const actLines=(actions||[]).map(function(a){ return '・'+(a.title||'')+(a.owner?'（'+a.owner+'）':'')+(a.due?' 期限:'+a.due:''); }).join('\n')||'（なし）';
+            const doc=[
+              '【会議】'+meta.label,
+              '日時: '+now.toLocaleString('ja-JP'),
+              '参加者: '+((meta.participants||[]).join('・')||'（未指定）'),
+              '',
+              '■ 要約','',(summary||'（要約なし）'),'',
+              '■ 決定事項',decLines,'',
+              '■ 次の一手',actLines,'',
+              '■ 文字起こし','',(transcript||'（文字起こしなし）'),''
+            ].join('\n');
+            const b64=btoa(unescape(encodeURIComponent(doc)));
+            const path='/PORTAL会議/'+stamp+'_'+safe(meta.label)+'.txt';
+            window.dbxUploadBase64(path, b64).then(function(res){
+              window.Treasury?.toast?.('議事録をDropbox（PORTAL会議）へ保存しました');
+              S.history.push({ role:'assistant', agent:'secretary', content:'議事録をDropboxの『PORTAL会議』フォルダーへ保存しました（'+((res&&res.name)||path.split('/').pop())+'）。' });
+              persistEntaku(); render();
+            }).catch(function(err){
+              window.Treasury?.toast?.('Dropbox保存に失敗: '+((err&&err.message)||err));
+            });
+          }
+        }catch(e){}
         const merged = actions.concat(decisions.map(function(d){
           return { title:d.title, owner:d.owner, due:d.due, module: window.MeetingArchive?.screenOf?.(meta.type)||'' };
         }));
@@ -14526,6 +14686,47 @@ window.EntakuDocIngest=(function(){
   }
   syncToggle();
   try{ window.MeetingArchive?.render?.(); }catch(e){}
+})();
+</script>
+<script>
+/* #13 タスク管理のメッセージBOX(#tkMsgBox)を円卓(#entaku-inline)へ移設。
+   同一DOMノードを移動するので、既存の送信(#tkMsgSend)・受信箱(#tkMsgInbox)の配線はそのまま維持される。 */
+(function(){
+  function injectStyle(){
+    if(document.getElementById('entaku-msg-style')) return;
+    var st=document.createElement('style');
+    st.id='entaku-msg-style';
+    st.textContent=
+      "details.entaku-msg-box{margin:8px 10px;border:1px solid rgba(196,166,106,.25);border-radius:10px;background:rgba(0,0,0,.15)}"+
+      "details.entaku-msg-box>summary{cursor:pointer;user-select:none;list-style:none;padding:8px 10px;font-weight:700;color:var(--gold-hi,#e7cd84);font-size:12px;letter-spacing:.04em}"+
+      "details.entaku-msg-box>summary::-webkit-details-marker{display:none}"+
+      "details.entaku-msg-box[open]>summary{border-bottom:1px solid rgba(196,166,106,.18)}"+
+      "details.entaku-msg-box .tk-msg-box{padding:8px 10px 10px;border:none;margin:0;background:none}"+
+      "details.entaku-msg-box .tk-msg-box h3{margin:6px 0 4px}";
+    document.head.appendChild(st);
+  }
+  function relocate(){
+    try{
+      var box=document.getElementById('tkMsgBox');
+      var entaku=document.getElementById('entaku-inline');
+      if(!box||!entaku) return;
+      if(document.getElementById('entakuMsgWrap')) return; // 二重移設防止
+      injectStyle();
+      var det=document.createElement('details');
+      det.className='entaku-msg-box';
+      det.id='entakuMsgWrap';
+      var sum=document.createElement('summary');
+      sum.textContent='📨 メッセージ（送信・受信箱）';
+      det.appendChild(sum);
+      det.appendChild(box); // 同一ノードを移動＝配線を維持
+      var form=document.getElementById('entakuForm');
+      if(form&&form.parentNode===entaku) entaku.insertBefore(det, form);
+      else entaku.appendChild(det);
+    }catch(e){}
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', relocate);
+  else relocate();
+  setTimeout(relocate, 1500); // 描画順の保険
 })();
 </script>
 <script src="billing-docs.js"></script>

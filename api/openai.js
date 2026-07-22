@@ -335,13 +335,89 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "messages が空です" });
     }
 
-    const messages = history.slice(-16).map((m) => toOpenAIMessage(m));
+    // 応答を速めるため送信する履歴を直近12件に抑える（入力トークン＝処理時間の削減）
+    const messages = history.slice(-12).map((m) => toOpenAIMessage(m));
 
     let baseSystem = entaku ? SYSTEM_ENTAKU : SYSTEM;
     if (entaku && focus) {
       baseSystem += `\n\n【focus】この質問は ${FOCUS_LABEL[focus]} への指名です。${FOCUS_LABEL[focus]} を主役に、その人物が最初に答えてください。他の2名は必要なときだけ短く補足します。`;
     }
-    const system = context ? `${baseSystem}\n\n【現在のシステム状況】\n${context.slice(0, 7000)}` : baseSystem;
+    // 現在状況コンテキストも 5000 字までに圧縮（巨大な状況メモによる遅延を抑える）
+    const system = context ? `${baseSystem}\n\n【現在のシステム状況】\n${context.slice(0, 5000)}` : baseSystem;
+
+    // ===== ストリーミング（円卓のみ・体感速度改善）=====
+    // body.stream===true のときだけ SSE で逐次配信。既存の非ストリーミング経路は不変。
+    // 失敗してもクライアントは非ストリーミングへフォールバックする設計。
+    if (entaku && body.stream === true) {
+      res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache, no-transform");
+      res.setHeader("Connection", "keep-alive");
+      const sse = (obj) => {
+        try { res.write(`data: ${JSON.stringify(obj)}\n\n`); } catch (e) {}
+      };
+      const acS = new AbortController();
+      const timerS = setTimeout(() => acS.abort(), OPENAI_TIMEOUT_MS);
+      let full = "";
+      try {
+        const upstream = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+          body: JSON.stringify({
+            model: MODEL,
+            max_tokens: 2200,
+            temperature: 0.5,
+            response_format: { type: "json_object" },
+            stream: true,
+            messages: [{ role: "system", content: system }, ...messages],
+          }),
+          signal: acS.signal,
+        });
+        if (!upstream.ok || !upstream.body) {
+          const t = await upstream.text().catch(() => "");
+          sse({ error: "OpenAI " + upstream.status, detail: t.slice(0, 300) });
+          sse("[DONE]"); clearTimeout(timerS); return res.end();
+        }
+        const reader = upstream.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          let nl;
+          while ((nl = buf.indexOf("\n")) >= 0) {
+            const line = buf.slice(0, nl).trim();
+            buf = buf.slice(nl + 1);
+            if (!line.startsWith("data:")) continue;
+            const payload = line.slice(5).trim();
+            if (payload === "[DONE]") continue;
+            try {
+              const j = JSON.parse(payload);
+              const delta = j.choices?.[0]?.delta?.content || "";
+              if (delta) { full += delta; sse({ delta }); }
+            } catch (e) { /* keepalive / partial */ }
+          }
+        }
+        clearTimeout(timerS);
+        const parsed = parseEntakuReplies(full);
+        sse({ done: true, replies: parsed.replies, actions: parsed.actions });
+        res.write("data: [DONE]\n\n");
+        return res.end();
+      } catch (e) {
+        clearTimeout(timerS);
+        // ここまでに full があれば救済して返す
+        try {
+          if (full && full.trim()) {
+            const parsed = parseEntakuReplies(full);
+            sse({ done: true, replies: parsed.replies, actions: parsed.actions });
+          } else {
+            sse({ error: (e && e.name === "AbortError") ? "timeout" : String((e && e.message) || e).slice(0, 200) });
+          }
+        } catch (e2) {}
+        try { res.write("data: [DONE]\n\n"); } catch (e3) {}
+        return res.end();
+      }
+    }
 
     const ac = new AbortController();
     const timer = setTimeout(() => ac.abort(), OPENAI_TIMEOUT_MS);
