@@ -5780,50 +5780,60 @@ window.PortalTTS=(function(){
   let officeHoverId=null;
   function deptCard(dept){return document.querySelector('.dc-card[data-dept="'+dept+'"]');}
   function setDeptAudio(dept,on){
-    document.querySelectorAll('.dc-card video').forEach(v=>{v.muted=true;});
-    if(!on||!dept||!window.PortalTTS?.isEnabled?.())return;
-    const card=deptCard(dept);if(!card)return;
-    const video=card.querySelector('video');if(!video)return;
-    video.muted=false;video.volume=1;
-    const p=video.play();if(p&&p.catch)p.catch(function(){});
+    // 対象1枚だけ反応。他2枚は必ず止める
+    document.querySelectorAll('.dc-card').forEach(function(c){ c.classList.remove('is-hot'); });
+    document.querySelectorAll('.dc-photo').forEach(function(p){ p.classList.remove('is-hot'); });
+    document.querySelectorAll('.dc-card video').forEach(function(v){
+      try{ v.pause(); }catch(e){}
+      v.muted=true;
+    });
+    if(!on||!dept) return;
+    const card=deptCard(dept); if(!card) return;
+    const photo=card.querySelector('.dc-photo');
+    const video=card.querySelector('video');
+    if(photo) photo.classList.add('is-hot');
+    card.classList.add('is-hot');
+    if(!video||!window.PortalTTS?.isEnabled?.()) return;
+    video.muted=false; video.volume=1;
+    const p=video.play(); if(p&&p.catch) p.catch(function(){});
   }
   function unlockPortalAudio(){
-    // 既に再生中の動画は触らない（クエストクリックで3本が一斉に再生し直されるのを防ぐ）
-    document.querySelectorAll('.dc-card video').forEach(v=>{
-      v.muted=true;v.volume=1;
-      if(!v.paused)return;
-      const p=v.play();if(p&&p.catch)p.catch(function(){});
+    // 3本の動画を一斉再生しない（無音でも「3人が反応」に見えるため）
+    try{ window.PortalTTS?.unlock?.(); }catch(e){}
+    document.querySelectorAll('.dc-card video').forEach(function(v){
+      v.muted=true;
     });
   }
   window.OfficeBridge={
     unlockAudio:unlockPortalAudio,
     hover(d){
-      if(window.__entakuSpeaking||window.PortalTTS?.isSpeaking?.())return;
-      if(!d||!d.charId||officeHoverId===d.charId)return;
+      if(!d||!d.charId) return;
       officeHoverId=d.charId;
-      if(d.dash){
-        setDeptAudio(d.dash,true);
-        window.DashTalk?.speak(d.dash,d.line||d.short+'です。',99999);
-      }
+      // ダッシュボード動画はホバーでは動かさない（クエストキャラ本人の声だけ）
     },
     hoverEnd(){
       officeHoverId=null;
-      if(window.__entakuSpeaking||window.PortalTTS?.isSpeaking?.()){
-        document.querySelectorAll('.dc-card video').forEach(v=>{v.muted=true;});
-        return;
-      }
-      window.DashTalk?.stop();
-      window.PortalTTS.stop();
-      document.querySelectorAll('.dc-card video').forEach(v=>{v.muted=true;});
+      // TTSは止めない（読み上げ完走）。動画だけ静音
+      document.querySelectorAll('.dc-card video').forEach(function(v){ v.muted=true; });
     },
     summon(d){
       if(!d||!d.charId)return;
-      const dash=d.dash||(d.entaku==='finance'?'finance':d.entaku==='legal'?'legal':'secretary');
-      const agentName=OFFICE_ENTAKU_NAME[d.entaku]||OFFICE_ENTAKU_NAME[dash]||'凛';
+      const dash=d.dash||null;
+      const entaku=d.entaku||(dash==='finance'?'finance':dash==='legal'?'legal':'secretary');
+      const agentName=OFFICE_ENTAKU_NAME[entaku]||'凛';
+      // 対応カードがあるときだけ1枚反応。なければ円卓呼び出しのみ
+      if(dash) setDeptAudio(dash, true);
+      else {
+        document.querySelectorAll('.dc-card').forEach(function(c){ c.classList.remove('is-hot'); });
+        document.querySelectorAll('.dc-photo').forEach(function(p){ p.classList.remove('is-hot'); });
+        document.querySelectorAll('.dc-card video').forEach(function(v){
+          try{ v.pause(); }catch(e){}
+          v.muted=true;
+        });
+      }
       const greet='円卓へお越しください。'+agentName+'です。'+(d.short||d.name)+'の件、お聞かせください。';
-      if(window.summonOfficeToEntaku)window.summonOfficeToEntaku({greet:greet,charId:d.charId,short:d.short,agent:dash});
-      window.DashTalk?.speak(dash,(d.short||d.name)+'、円卓へどうぞ。',4500);
-      if(dash)setDeptAudio(dash,true);
+      if(window.summonOfficeToEntaku)window.summonOfficeToEntaku({greet:greet,charId:d.charId,short:d.short,agent:entaku});
+      // 追加のTTSは office 側で本人セリフを既に話すので、ここでは重ねない
     }
   };
   document.addEventListener('pointerdown',function(){
@@ -8879,30 +8889,68 @@ window.Treasury={
     syncOfficeQuestState();
   }
 
-  async function createTask({ title, detail, target, due }){
+  function resolveAssignee(nameOrId){
+    const raw=String(nameOrId||'').trim();
+    if(!raw) return null;
+    if(/^(all|全員|everybody|everyone)$/i.test(raw)) return { target:'all', label:'全員' };
+    const byId=staffById(raw);
+    if(byId) return { target:String(byId.id), label:byId.name||raw };
+    const norm=raw.replace(/\s+/g,'');
+    let hit=members.find(function(m){ return String(m.name||'')===raw; });
+    if(!hit) hit=members.find(function(m){
+      const n=String(m.name||'').replace(/\s+/g,'');
+      return n && (n.includes(norm) || norm.includes(n));
+    });
+    if(!hit) hit=members.find(function(m){
+      const role=String(m.role||'');
+      return role && (raw===role || raw.includes(role));
+    });
+    if(!hit) return null;
+    return { target:String(hit.id), label:hit.name||raw };
+  }
+  function normalizeDueDate(due){
+    const s=String(due||'').trim();
+    const m=s.match(/(\d{4}-\d{2}-\d{2})/);
+    if(m) return m[1];
+    const base=new Date();
+    let add=3;
+    if(/今日|本日/.test(s)) add=0;
+    else if(/明日/.test(s)) add=1;
+    else if(/明後日/.test(s)) add=2;
+    else if(/今週/.test(s)) add=Math.max(1, 5-base.getDay()); // 金曜寄り
+    else if(/来週/.test(s)) add=7;
+    else if(/月末/.test(s)){
+      const last=new Date(base.getFullYear(), base.getMonth()+1, 0);
+      return last.getFullYear()+'-'+String(last.getMonth()+1).padStart(2,'0')+'-'+String(last.getDate()).padStart(2,'0');
+    }
+    base.setDate(base.getDate()+add);
+    return base.getFullYear()+'-'+String(base.getMonth()+1).padStart(2,'0')+'-'+String(base.getDate()).padStart(2,'0');
+  }
+  async function createTask({ title, detail, target, due, asPresident }){
     const c=client(); const m=me();
     if(!c){ T.toast('Supabase未接続'); return false; }
     if(!m){ T.toast('先にログインしてください'); return false; }
     if(!title){ T.toast('タスク内容を入力してください'); return false; }
-    if(!due){ T.toast('期日を指定してください'); return false; }
-    if(!isPresident() && target!=='all' && String(target)!==String(m.id)){
+    const dueNorm=normalizeDueDate(due);
+    if(!dueNorm){ T.toast('期日を指定してください'); return false; }
+    const prez=isPresident() || !!asPresident;
+    if(!prez && target!=='all' && String(target)!==String(m.id)){
       T.toast('自分宛のみ登録できます'); return false;
     }
-    const detailEnc=encodeDue(detail, due);
-    const selfReported=m.role!=='社長' && String(target)===String(m.id);
+    const detailEnc=encodeDue(detail, dueNorm);
+    const selfReported=!prez && m.role!=='社長' && String(target)===String(m.id);
     const base={
       title,
       detail: detailEnc,
       assigned_all: target==='all',
       assigned_to: target==='all' ? null : target,
       created_by: m.id || null,
-      created_by_name: m.name || '不明',
+      created_by_name: (m.name || '不明')+(asPresident?'（円卓）':''),
       self_reported: selfReported,
-      // 自己申告は登録＝着手（承諾ステップ不要）。指示タスクのみ pending
       status: selfReported ? 'accepted' : 'pending',
       ...(selfReported ? { accepted_at: new Date().toISOString() } : {})
     };
-    let { error } = await c.from('tasks').insert(Object.assign({}, base, { due_date: due }));
+    let { error } = await c.from('tasks').insert(Object.assign({}, base, { due_date: dueNorm }));
     if(error && /due_date|schema|column/i.test(String(error.message||''))){
       ({ error } = await c.from('tasks').insert(base));
     }
@@ -8910,6 +8958,25 @@ window.Treasury={
     T.toast(target==='all'?'全員へ指示を送りました':'タスクを登録しました');
     await refreshTaskBoard();
     return true;
+  }
+  async function assignFromAi({ title, detail, assignee, due }){
+    if(!isPresident()){
+      return { ok:false, error:'タスク指示（assign）は社長ログイン時のみ実行できます' };
+    }
+    const who=resolveAssignee(assignee);
+    if(!who) return { ok:false, error:'宛先「'+(assignee||'')+'」が名簿に見つかりません' };
+    const t=String(title||'').trim();
+    if(!t) return { ok:false, error:'タスク内容が空です' };
+    const dueNorm=normalizeDueDate(due);
+    const ok=await createTask({
+      title:t,
+      detail:String(detail||'').trim(),
+      target:who.target,
+      due:dueNorm,
+      asPresident:true
+    });
+    if(!ok) return { ok:false, error:'タスク登録に失敗しました' };
+    return { ok:true, label:who.label, due:dueNorm, title:t };
   }
 
   async function acceptTask(id){
@@ -9189,7 +9256,12 @@ window.Treasury={
     memberScore:memberScore,
     syncOffice:syncOfficeQuestState,
     ensureMemberChar:ensureMemberChar,
-    me:me
+    me:me,
+    isPresident:isPresident,
+    create:createTask,
+    assignFromAi:assignFromAi,
+    resolveAssignee:resolveAssignee,
+    normalizeDueDate:normalizeDueDate
   };
 
   window.addEventListener('portal-member-ready', boot);
@@ -11680,6 +11752,8 @@ window.EntakuAI=(function(){
                   label:String(a.label||'').trim(),
                   field:String(a.field||'').trim(),
                   value:String(a.value||'').trim(),
+                  assignee:String(a.assignee||a.to||'').trim(),
+                  detail:String(a.detail||'').trim(),
                   done:false
                 };
               })
@@ -12818,6 +12892,29 @@ window.EntakuDocIngest=(function(){
       }
       return;
     }
+    if(op==='assign' || op==='task'){
+      const title=String(a.title||'').trim();
+      const assignee=String(a.assignee||a.value||a.owner||'').trim();
+      const due=String(a.due||'').trim();
+      const detail=String(a.detail||'').trim();
+      if(!window.PortalTasks?.assignFromAi){
+        postToolResult('⚠ タスク機能が未接続です。');
+        return;
+      }
+      window.PortalTasks.assignFromAi({ title:title, detail:detail, assignee:assignee, due:due })
+        .then(function(res){
+          if(!res||!res.ok){
+            postToolResult('⚠ タスク指示失敗: '+(res&&res.error||'不明なエラー'));
+            return;
+          }
+          postToolResult('【タスク指示】'+res.label+' へ届けました。\n・内容: '+res.title+'\n・期日: '+res.due+'\n相手はログイン後に「承諾して着手」できます。');
+          try{ gotoScreen('tasks',{noScroll:true}); }catch(e){}
+        })
+        .catch(function(e){
+          postToolResult('⚠ タスク指示エラー: '+(e&&e.message||e));
+        });
+      return;
+    }
     if(op==='tasks' || op==='risk'){
       const dept=['secretary','finance','legal'].includes(mod)?mod:(op==='tasks'?'secretary':'secretary');
       const focusDept=op==='tasks'?'secretary':(a.owner==='紬'?'finance':a.owner==='陽翔'?'legal':dept);
@@ -13171,6 +13268,16 @@ window.EntakuDocIngest=(function(){
       parts.push('【これまでの決定事項（議事録）】\n'+recent);
     }
     parts.push('編集可能な入力欄id: '+Array.from(FILLABLE_FIELDS).join(', '));
+    try{
+      const mem=window.PortalTasks?.members?.()||[];
+      if(mem.length){
+        parts.push('【社員名簿（タスク指示の宛先）】\n'+mem.map(function(m){
+          return '・'+String(m.name||'')+(m.role?'（'+m.role+'）':'')+' id='+String(m.id||'');
+        }).join('\n')+'\n※ 社長が円卓で指示したら op=assign で届ける。assignee は氏名または all。due は YYYY-MM-DD。');
+      }
+      const today=window.PortalTasks?.todayISO?.();
+      if(today) parts.push('今日の日付: '+today);
+    }catch(e){}
     try{
       const riskCtx=window.PortalRisk?.aiContext?.();
       if(riskCtx) parts.push(riskCtx);
