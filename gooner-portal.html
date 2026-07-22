@@ -5513,7 +5513,6 @@ window.PortalTTS=(function(){
   const LS_KEY='portal-audio-on';
   const LS_VOICE='portal-tts-voice';
   const LS_ENGINE='portal-tts-engine'; // cloud | browser
-  const TTS_PROD='https://kaisha-kanri.vercel.app/api/tts';
   const CLOUD_VOICES=[
     {id:'nova', label:'凛（nova）', agent:'secretary'},
     {id:'shimmer', label:'紬（shimmer）', agent:'finance'},
@@ -5539,13 +5538,11 @@ window.PortalTTS=(function(){
   function escAttr(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   function ttsEndpoint(){
     try{
-      if(typeof resolveAiEndpoint==='function'){
-        return String(resolveAiEndpoint()).replace(/\/api\/openai$/,'/api/tts');
-      }
+      if(typeof resolveAiEndpoint==='function') return resolveAiEndpoint();
       const h=String(location.hostname||'');
-      if(/vercel\.app$/i.test(h)) return '/api/tts';
+      if(/vercel\.app$/i.test(h)) return '/api/openai';
     }catch(e){}
-    return TTS_PROD;
+    return 'https://kaisha-kanri.vercel.app/api/openai';
   }
   function agentToVoice(agent){
     if(agent==='finance') return 'shimmer';
@@ -5653,7 +5650,7 @@ window.PortalTTS=(function(){
         const res=await fetch(ttsEndpoint(),{
           method:'POST',
           headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({ text:chunks[i], voice:voice, agent:agent||'' })
+          body:JSON.stringify({ mode:'tts', text:chunks[i], voice:voice, agent:agent||'' })
         });
         const data=await res.json().catch(function(){ return {}; });
         if(!res.ok || !data.audioBase64){
@@ -5670,6 +5667,7 @@ window.PortalTTS=(function(){
     }catch(err){
       if(gen!==queueGen) return;
       console.warn('[PortalTTS] cloud failed, fallback browser', err);
+      toast('クラウド音声に失敗したため端末読み上げを試します');
       // ブラウザ予備へ
       speakBrowser(text, onend, gen);
     }

@@ -260,6 +260,59 @@ export default async function handler(req, res) {
 
   try {
     const body = req.body || {};
+
+    // ===== Text-to-Speech（円卓AIの声）=====
+    // /api/tts が未デプロイでも動くよう、既存の /api/openai に載せる
+    if (body.mode === "tts" || body.tts === true) {
+      const VOICES = new Set(["alloy", "echo", "fable", "onyx", "nova", "shimmer"]);
+      let text = String(body.text || body.input || "").replace(/\s+/g, " ").trim();
+      if (!text) return res.status(400).json({ error: "text が空です" });
+      if (text.length > 3500) text = text.slice(0, 3500);
+      let voice = String(body.voice || body.agent || "nova").toLowerCase();
+      if (voice === "secretary" || voice === "rin" || voice === "凛") voice = "nova";
+      else if (voice === "finance" || voice === "tsumugi" || voice === "紬") voice = "shimmer";
+      else if (voice === "legal" || voice === "hinata" || voice === "陽翔") voice = "onyx";
+      if (!VOICES.has(voice)) voice = "nova";
+      const speed = Math.min(1.25, Math.max(0.85, Number(body.speed) || 1.05));
+      const ttsModel = process.env.OPENAI_TTS_MODEL || "tts-1";
+      const acTts = new AbortController();
+      const timerTts = setTimeout(() => acTts.abort(), 28000);
+      let ttsRes;
+      try {
+        ttsRes = await fetch("https://api.openai.com/v1/audio/speech", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: ttsModel,
+            voice,
+            input: text,
+            response_format: "mp3",
+            speed,
+          }),
+          signal: acTts.signal,
+        });
+      } finally {
+        clearTimeout(timerTts);
+      }
+      if (!ttsRes.ok) {
+        const t = await ttsRes.text();
+        return res.status(502).json({ error: "TTS呼び出しに失敗しました", detail: t.slice(0, 400) });
+      }
+      const buf = Buffer.from(await ttsRes.arrayBuffer());
+      return res.status(200).json({
+        ok: true,
+        mime: "audio/mpeg",
+        audioBase64: buf.toString("base64"),
+        voice,
+        model: ttsModel,
+        chars: text.length,
+        at: new Date().toISOString(),
+      });
+    }
+
     const history = Array.isArray(body.messages) ? body.messages : [];
     const context = typeof body.context === "string" ? body.context : "";
     const entaku = body.mode === "entaku";
