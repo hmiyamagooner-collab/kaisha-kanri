@@ -99,6 +99,8 @@ const SYSTEM_ENTAKU = [
   "・『タスクを確認』『終わってない仕事は？』『進捗は？』→ 凛が未完了・期限超過・担当者・期日を具体的に列挙する。actions に op=tasks を付ける。",
   "・社長が円卓で『○○さんに〜を指示して』『全員に〜をやらせて』『タスクを振って』と言ったら、必ず actions に op=assign を付ける（凛が主導）。口頭の案内だけで終わらせない。",
   "・op=assign: title=タスク内容（必須）, assignee=社員の氏名または all/全員, due=YYYY-MM-DD（必須・文脈の名簿と今日を参照）, detail=補足（任意）, owner=社長。複数人なら actions を複数件にする。",
+  "・社長が『タスクを削除して』『指示を取り消して』『あのタスク消して』と言ったら、必ず actions に op=delete を付ける。文脈のタスク一覧の id・タイトル・担当を使う。",
+  "・op=delete: title または query にタスク内容の一部（必須に近い）, assignee=担当者（任意で絞り込み）, taskId=文脈の id（分かれば最優先）, value=all なら複数一致を一括削除。曖昧なら候補を聞いてから。",
   "・文脈の【社員名簿】に無い名前には assign せず、確認を求める。期日が曖昧なら妥当な YYYY-MM-DD を決めて明示する。",
   "・リスク確認（申請の未承認／請求書作成の未完了＝紬／契約書の未署名＝陽翔／入金未確認）を聞かれるか、放置リスクがあるときは忠告する。",
   "・申請は精算クエストの未承認、請求は請求書の未確定・期日超過入金未確認、契約は未署名。入金は期日超過請求・予定入金未突合・介護未受領。",
@@ -119,14 +121,15 @@ const SYSTEM_ENTAKU = [
   "・tasks … 未完了タスク一覧を円卓と凛の吹き出しに出す。",
   "・risk … 申請／請求／契約／入金のリスクを忠告表示（module で担当指定可）。",
   "・assign … 社員へタスクを指示して届ける（社長指示）。title・assignee・due 必須。",
+  "・delete … 指示済みタスクを削除する（社長指示）。title/query または taskId。複数一致は value=all で一括、不明なら確認。",
   "・note … やることだけ記録（従来どおり。module 任意）。",
   "画面ID例: dash/biz-cf/cf-forecast/cf-bank/cf-link/cf-cases/cf-inrou/cf-party/cf-legal/contracts/quest/entry/ledger/flow/fiscal/tax/billing-invoice/billing-receipt/mtg-finance/mtg-sales/mtg-other/tasks および各事業(biz-*)。",
   "会計・法務画面は権限が必要。権限外なら操作せず、権限が必要と説明する。",
   "",
   "【出力形式 — 必ずこのJSONのみ。前後に説明やMarkdownを付けない】",
-  '{"replies":[{"agent":"secretary|finance|legal","text":"発言本文"}],"actions":[{"title":"具体的な次の一手","owner":"凛|紬|陽翔|社長","due":"YYYY-MM-DDまたは期限表現","op":"goto|locate|snapshot|print|search|pin|fill|tasks|risk|assign|note","module":"画面ID","query":"検索語","scope":"local|dropbox|both","label":"ピン名","field":"入力欄id","value":"入力値","assignee":"社員名またはall","detail":"タスク補足"}]}',
+  '{"replies":[{"agent":"secretary|finance|legal","text":"発言本文"}],"actions":[{"title":"具体的な次の一手","owner":"凛|紬|陽翔|社長","due":"YYYY-MM-DDまたは期限表現","op":"goto|locate|snapshot|print|search|pin|fill|tasks|risk|assign|delete|note","module":"画面ID","query":"検索語","scope":"local|dropbox|both","label":"ピン名","field":"入力欄id","value":"入力値","assignee":"社員名またはall","detail":"タスク補足","taskId":"タスクid"}]}',
   "・replies は1〜4件。発言が自然につながる順に並べる。各 text は日本語・です/ます調で簡潔に。",
-  "・actions は0〜10件（無ければ空配列）。操作指示なら必ず op を付ける。タスク指示は op=assign。単なるやることなら op=note または省略可。",
+  "・actions は0〜10件（無ければ空配列）。操作指示なら必ず op を付ける。タスク指示は op=assign、削除は op=delete。単なるやることなら op=note または省略可。",
   "・断定的な法的・税務助言は避け、社内の可視化・記録・牽制・採算の観点で答える。",
 ].join("\n");
 
@@ -178,7 +181,7 @@ function toOpenAIMessage(m) {
   };
 }
 
-const ALLOWED_OPS = new Set(["goto", "locate", "snapshot", "print", "search", "pin", "fill", "tasks", "risk", "assign", "note", ""]);
+const ALLOWED_OPS = new Set(["goto", "locate", "snapshot", "print", "search", "pin", "fill", "tasks", "risk", "assign", "delete", "unassign", "note", ""]);
 
 function parseEntakuActions(j) {
   const list = Array.isArray(j && j.actions) ? j.actions : [];
@@ -201,6 +204,8 @@ function parseEntakuActions(j) {
           tasks: "未完了タスクを確認",
           risk: "リスクを忠告",
           assign: "タスクを指示",
+          delete: "タスクを削除",
+          unassign: "タスクを削除",
           note: "次の一手",
         }[op] || "次の一手");
       return {
@@ -216,6 +221,7 @@ function parseEntakuActions(j) {
         value: String(a.value || "").trim().slice(0, 500),
         assignee: String(a.assignee || a.to || "").trim().slice(0, 80),
         detail: String(a.detail || "").trim().slice(0, 500),
+        taskId: String(a.taskId || a.task_id || a.id || "").trim().slice(0, 80),
       };
     });
 }

@@ -1716,6 +1716,9 @@ body.is-hsplit-drag{cursor:ew-resize;user-select:none}
 .ent-act-op.is-assign{
   color:#1a1208;background:rgba(224,160,64,.82);border-color:rgba(224,160,64,.55);
 }
+.ent-act-op.is-delete{
+  color:#2a1014;background:rgba(239,127,140,.75);border-color:rgba(239,127,140,.5);
+}
 .entaku-quick{
   display:flex;flex-wrap:wrap;gap:6px;padding:0;width:100%;
 }
@@ -3684,10 +3687,17 @@ video.dc-card__image{
 #s-tasks .tk-src.boss{background:rgba(255,157,60,.18);color:var(--out)}
 #s-tasks .tk-src.self{background:rgba(74,222,128,.16);color:var(--in)}
 #s-tasks .tk-date{font-size:10px;color:var(--muted);font-family:var(--font-num)}
-#s-tasks .tk-card-acts{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+#s-tasks .tk-card-acts{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap;align-items:stretch}
 #s-tasks .tk-toggle{flex:1;border:none;border-radius:3px;padding:7px;font-size:12px;font-weight:700;cursor:pointer}
 #s-tasks .tk-toggle.todo{background:var(--in);color:#062012}
 #s-tasks .tk-toggle.done{background:var(--panel);color:var(--muted);border:1px solid var(--line-strong)}
+#s-tasks .tk-toggle.del{
+  flex:0 0 auto;min-width:64px;
+  background:rgba(239,127,140,.16);color:#ffc9cf;
+  border:1px solid rgba(239,127,140,.45);
+}
+#s-tasks .tk-toggle.del:hover{filter:brightness(1.08)}
+#s-tasks .tk-act-hint{flex:1;font-size:11px;color:var(--muted);line-height:1.4;padding:4px 0}
 #s-tasks .tk-act-hint{
   flex:1;font-size:11px;line-height:1.45;color:#ffc078;
   padding:8px 10px;border:1px dashed rgba(255,180,80,.45);background:rgba(80,40,0,.28);border-radius:4px;
@@ -8759,25 +8769,36 @@ window.Treasury={
     return t.status!=='done'; // 未完了 = pending + accepted
   }
 
+  function canDeleteTask(t){
+    const m=me();
+    if(!t || !m) return false;
+    if(isPresident()) return true;
+    if(t.created_by && String(t.created_by)===String(m.id)) return true;
+    return false;
+  }
+
   function cardActs(t){
     const m=me();
     const mine=isMine(t,m);
     const prez=isPresident();
+    const parts=[];
     if(t.status==='pending' && (mine || prez)){
       const label=mine?'承諾して着手':'着手にする（代理）';
-      return `<button type="button" class="tk-toggle todo" data-task-accept="${esc(t.id)}">${label}</button>`;
-    }
-    if(t.status==='accepted' && mine){
-      return `<button type="button" class="tk-toggle todo" data-task-done="${esc(t.id)}">完了にする</button>`;
-    }
-    if(t.status==='done'){
-      return `<button type="button" class="tk-toggle done" disabled>完了済</button>`;
-    }
-    if(t.status==='pending'){
+      parts.push(`<button type="button" class="tk-toggle todo" data-task-accept="${esc(t.id)}">${label}</button>`);
+    }else if(t.status==='accepted' && mine){
+      parts.push(`<button type="button" class="tk-toggle todo" data-task-done="${esc(t.id)}">完了にする</button>`);
+    }else if(t.status==='done'){
+      parts.push(`<button type="button" class="tk-toggle done" disabled>完了済</button>`);
+    }else if(t.status==='pending'){
       const who=t.assigned_all?'担当者全員':(t.assignee?.name||staffById(t.assigned_to)?.name||'担当者');
-      return `<div class="tk-act-hint">着手待ち — <b>${esc(who)}</b> がログインし、「承諾して着手」を押します</div>`;
+      parts.push(`<div class="tk-act-hint">着手待ち — <b>${esc(who)}</b> がログインし、「承諾して着手」を押します</div>`);
+    }else{
+      parts.push(`<span class="tk-date">${esc(statusLabel(t.status))}</span>`);
     }
-    return `<span class="tk-date">${esc(statusLabel(t.status))}</span>`;
+    if(canDeleteTask(t)){
+      parts.push(`<button type="button" class="tk-toggle del" data-task-del="${esc(t.id)}" title="このタスクを削除">削除</button>`);
+    }
+    return parts.join('');
   }
 
   function renderTaskCard(t){
@@ -9056,6 +9077,89 @@ window.Treasury={
     return { ok:true, label:who.label, due:dueNorm, title:t };
   }
 
+  async function deleteTask(id, opts){
+    opts=opts||{};
+    const c=client();
+    if(!c){ if(!opts.silent) T.toast('Supabase未接続'); return { ok:false, error:'未接続' }; }
+    const t=tasks.find(function(x){ return String(x.id)===String(id); });
+    if(!t){ if(!opts.silent) T.toast('タスクが見つかりません'); return { ok:false, error:'タスクが見つかりません' }; }
+    if(!canDeleteTask(t)){
+      if(!opts.silent) T.toast('削除できるのは社長または指示者のみです');
+      return { ok:false, error:'削除できるのは社長または指示者のみです' };
+    }
+    if(!opts.skipConfirm && !confirm('このタスクを削除しますか？\n「'+(t.title||'')+'」')){
+      return { ok:false, error:'キャンセルしました' };
+    }
+    const { error } = await c.from('tasks').delete().eq('id', id);
+    if(error){
+      if(!opts.silent) alert('削除エラー: '+error.message);
+      return { ok:false, error:error.message||'削除失敗' };
+    }
+    if(!opts.silent) T.toast('タスクを削除しました');
+    await refreshTaskBoard();
+    return { ok:true, title:t.title||'', id:String(t.id) };
+  }
+
+  function findTasksForDelete({ title, assignee, query, taskId }){
+    const id=String(taskId||'').trim();
+    if(id){
+      const hit=tasks.find(function(t){ return String(t.id)===id || String(t.id).indexOf(id)===0; });
+      return hit ? [hit] : [];
+    }
+    const q=String(query||title||'').trim().toLowerCase();
+    const whoRaw=String(assignee||'').trim();
+    let list=tasks.slice();
+    if(whoRaw){
+      const who=resolveAssignee(whoRaw);
+      if(who){
+        if(who.target==='all') list=list.filter(function(t){ return !!t.assigned_all; });
+        else list=list.filter(function(t){ return String(t.assigned_to)===String(who.target); });
+      }
+    }
+    if(q){
+      list=list.filter(function(t){
+        const blob=((t.title||'')+' '+(displayDetail(t)||'')+' '+(t.created_by_name||'')).toLowerCase();
+        return blob.includes(q) || String(t.title||'').toLowerCase()===q;
+      });
+    }
+    // 未完了を優先、新し順
+    list.sort(function(a,b){
+      const ad=a.status==='done'?1:0, bd=b.status==='done'?1:0;
+      if(ad!==bd) return ad-bd;
+      return String(b.created_at||'').localeCompare(String(a.created_at||''));
+    });
+    return list;
+  }
+
+  async function deleteFromAi({ title, assignee, query, taskId, all }){
+    if(!isPresident()){
+      return { ok:false, error:'タスク削除は社長ログイン時のみ実行できます' };
+    }
+    const hits=findTasksForDelete({ title:title, assignee:assignee, query:query, taskId:taskId });
+    if(!hits.length){
+      return { ok:false, error:'削除対象のタスクが見つかりません（タイトル・担当・idを確認）' };
+    }
+    const deleteAll=!!all || hits.length===1;
+    if(!deleteAll && hits.length>1){
+      return {
+        ok:false,
+        error:'該当が'+hits.length+'件あります。どれか特定するか、all=true で一括削除してください',
+        candidates:hits.slice(0,5).map(function(t){
+          return { id:t.id, title:t.title, status:t.status };
+        })
+      };
+    }
+    const targets=deleteAll ? hits.slice(0, 20) : [hits[0]];
+    const removed=[];
+    for(let i=0;i<targets.length;i++){
+      const res=await deleteTask(targets[i].id, { skipConfirm:true, silent:true });
+      if(res && res.ok) removed.push(res.title||targets[i].title||'');
+    }
+    if(!removed.length) return { ok:false, error:'削除に失敗しました' };
+    T.toast(removed.length+'件のタスクを削除しました');
+    return { ok:true, count:removed.length, titles:removed };
+  }
+
   async function acceptTask(id){
     const c=client(); if(!c) return;
     const { error } = await c.from('tasks')
@@ -9171,6 +9275,8 @@ window.Treasury={
     if(ac){ acceptTask(ac.dataset.taskAccept); return true; }
     const dn=e.target.closest('[data-task-done]');
     if(dn){ completeTask(dn.dataset.taskDone); return true; }
+    const del=e.target.closest('[data-task-del]');
+    if(del){ deleteTask(del.dataset.taskDel); return true; }
     return false;
   }
 
@@ -9310,7 +9416,7 @@ window.Treasury={
       const who=t.assigned_all?'全員':(t.assignee&&t.assignee.name)||staffById(t.assigned_to)?.name||'未割当';
       const due=parseDue(t);
       const late=due && due<todayISO();
-      lines.push('・['+statusLabel(t.status)+'] '+String(t.title||'').slice(0,60)
+      lines.push('・id:'+String(t.id)+' ['+statusLabel(t.status)+'] '+String(t.title||'').slice(0,60)
         +' ／担当:'+who
         +(due?(' ／期日:'+due+(late?'【超過】':'')):' ／期日なし'));
     });
@@ -9337,6 +9443,9 @@ window.Treasury={
     isPresident:isPresident,
     create:createTask,
     assignFromAi:assignFromAi,
+    deleteTask:deleteTask,
+    deleteFromAi:deleteFromAi,
+    canDelete:canDeleteTask,
     resolveAssignee:resolveAssignee,
     normalizeDueDate:normalizeDueDate
   };
@@ -12614,23 +12723,25 @@ window.EntakuDocIngest=(function(){
     if(!S.actions || !S.actions.length) return '';
     const items = S.actions.map(function(a, idx){
       const isAssign = a.op==='assign' || a.op==='task';
+      const isDelete = a.op==='delete' || a.op==='unassign' || a.op==='cancel_task';
       const who = a.assignee || a.owner || '';
       const meta = [
         who ? ('宛先:'+who) : '',
         a.due ? ('期日:'+a.due) : '',
+        a.taskId ? ('id:'+a.taskId) : '',
         a.detail ? String(a.detail).slice(0,72) : '',
-        (!isAssign && a.op) ? ('操作:'+a.op) : ''
+        (!isAssign && !isDelete && a.op) ? ('操作:'+a.op) : ''
       ].filter(Boolean).join(' ・ ');
       const opBadge = a.op
-        ? '<span class="ent-act-op'+(isAssign?' is-assign':'')+'">'+(isAssign?'指示':esc(a.op))+'</span>'
+        ? '<span class="ent-act-op'+(isAssign?' is-assign':'')+(isDelete?' is-delete':'')+'">'+(isAssign?'指示':isDelete?'削除':esc(a.op))+'</span>'
         : '';
       const jump = a.module
         ? '<button type="button" class="ent-act-jump" data-s="'+esc(a.module)+'">開く</button>'
-        : (isAssign ? '<button type="button" class="ent-act-jump" data-s="tasks">タスク</button>' : '');
+        : ((isAssign||isDelete) ? '<button type="button" class="ent-act-jump" data-s="tasks">タスク</button>' : '');
       const run = a.op && a.op!=='note'
-        ? '<button type="button" class="ent-act-jump" data-ent-run="'+idx+'">'+(isAssign?'届ける':'実行')+'</button>'
+        ? '<button type="button" class="ent-act-jump" data-ent-run="'+idx+'">'+(isAssign?'届ける':isDelete?'削除する':'実行')+'</button>'
         : '';
-      return '<label class="ent-act-item'+(a.done?' is-done':'')+(isAssign?' is-assign':'')+'">'
+      return '<label class="ent-act-item'+(a.done?' is-done':'')+(isAssign?' is-assign':'')+(isDelete?' is-delete':'')+'">'
         + '<input type="checkbox" class="ent-act-chk" data-idx="'+idx+'"'+(a.done?' checked':'')+'>'
         + '<span class="ent-act-body"><span class="ent-act-title">'+opBadge+esc(a.title)+'</span>'
         + (meta?'<span class="ent-act-meta">'+esc(meta)+'</span>':'') + '</span>'
@@ -13114,6 +13225,38 @@ window.EntakuDocIngest=(function(){
         })
         .catch(function(e){
           postToolResult('⚠ タスク指示エラー: '+(e&&e.message||e));
+        });
+      return;
+    }
+    if(op==='delete' || op==='unassign' || op==='cancel_task'){
+      if(!window.PortalTasks?.deleteFromAi){
+        postToolResult('⚠ タスク機能が未接続です。');
+        return;
+      }
+      const title=String(a.title||'').trim();
+      const assignee=String(a.assignee||a.value||'').trim();
+      const query=String(a.query||a.detail||'').trim();
+      const taskId=String(a.taskId||a.field||'').trim();
+      const all= /^(1|true|all|全部|すべて)$/i.test(String(a.value||a.label||'').trim())
+        || /全部|すべて|一括/.test(title+query);
+      window.PortalTasks.deleteFromAi({ title:title, assignee:assignee, query:query||title, taskId:taskId, all:all })
+        .then(function(res){
+          if(!res||!res.ok){
+            let msg='⚠ タスク削除失敗: '+(res&&res.error||'不明なエラー');
+            if(res&&res.candidates&&res.candidates.length){
+              msg+='\n候補:\n'+res.candidates.map(function(c){
+                return '・id:'+c.id+' '+c.title+' ['+c.status+']';
+              }).join('\n');
+            }
+            postToolResult(msg);
+            return;
+          }
+          postToolResult('【タスク削除】'+res.count+'件を削除しました。\n'
+            +(res.titles||[]).map(function(t){ return '・'+t; }).join('\n')
+            +'\nタスク画面で確認できます。');
+        })
+        .catch(function(e){
+          postToolResult('⚠ タスク削除エラー: '+(e&&e.message||e));
         });
       return;
     }
