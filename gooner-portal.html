@@ -5431,6 +5431,8 @@ function loadAll(){
 }
 function saveAll(){
   localStorage.setItem(KEY,JSON.stringify(S));
+  // CFデータのクラウド同期（会計ロールのみ・実体は PortalTreasurySync）
+  try{ window.PortalTreasurySync && window.PortalTreasurySync.onLocalSave && window.PortalTreasurySync.onLocalSave(); }catch(e){}
 }
 function seed(){
   const m=viewMonthStr(new Date());
@@ -14757,6 +14759,79 @@ window.EntakuDocIngest=(function(){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', build);
   else build();
   setTimeout(build, 1500); // 描画順の保険
+})();
+</script>
+<script>
+/* CFデータ(Treasury)のSupabaseクラウド同期 — 全員(社長/経理/法務)で同じCFを共有（#19）。
+   treasury_state(id='company')に会社全体のCFをJSON1行で保存。RLSで会計ロールのみ読み書き可。
+   初回：クラウドに有ればプル、空なら社長のローカルをシード。以後はローカル保存でpush＋Realtimeでpull。
+   タスク系(tasks/directives)は別系統のため同期対象外。 */
+(function(){
+  var ROW_ID='company', KEY='gooner_treasury_v1', EXCLUDE=['tasks','directives'];
+  var ready=false, pushTimer=null, lastSentAt='', myName='';
+  function sb(){ try{ return window.GoonerSB && window.GoonerSB.sb && window.GoonerSB.sb(); }catch(e){ return null; } }
+  function role(){ try{ return String((window.PortalAuth&&window.PortalAuth.getUser&&window.PortalAuth.getUser()||{}).role||'').trim(); }catch(e){ return ''; } }
+  function canSync(){ return ['社長','経理','法務'].indexOf(role())>=0; }
+  function T(){ return window.Treasury; }
+  function readLocal(){ try{ return JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){ return {}; } }
+  function stateForPush(){
+    var s=(T()&&T().S)||readLocal(), out={};
+    Object.keys(s).forEach(function(k){ if(EXCLUDE.indexOf(k)<0) out[k]=s[k]; });
+    return out;
+  }
+  function applyCloud(row){
+    if(!row||!row.data) return;
+    var merged=Object.assign({}, readLocal(), row.data); // cloud優先・同期対象外(tasks等)はローカル維持
+    try{ localStorage.setItem(KEY, JSON.stringify(merged)); }catch(e){}
+    try{ if(T()&&T().loadFromStorage) T().loadFromStorage(); }catch(e){}
+  }
+  async function pull(){
+    var c=sb(); if(!c) return null;
+    try{
+      var res=await c.from('treasury_state').select('*').eq('id',ROW_ID).maybeSingle();
+      if(res.error){ console.warn('[cf-sync] pull', res.error.message); return null; }
+      return res.data||null;
+    }catch(e){ console.warn('[cf-sync] pull ex', e); return null; }
+  }
+  async function push(){
+    var c=sb(); if(!c||!canSync()) return;
+    var at=new Date().toISOString(); lastSentAt=at;
+    try{
+      var res=await c.from('treasury_state').upsert({ id:ROW_ID, data:stateForPush(), updated_at:at, updated_by:myName }, { onConflict:'id' });
+      if(res.error) console.warn('[cf-sync] push', res.error.message);
+    }catch(e){ console.warn('[cf-sync] push ex', e); }
+  }
+  function schedulePush(){
+    if(!ready||!canSync()) return;
+    if(pushTimer) clearTimeout(pushTimer);
+    pushTimer=setTimeout(function(){ pushTimer=null; push(); }, 1500);
+  }
+  function subscribe(){
+    var c=sb(); if(!c) return;
+    try{
+      c.channel('treasury-sync')
+        .on('postgres_changes',{event:'*',schema:'public',table:'treasury_state'}, function(payload){
+          var row=payload&&payload.new; if(!row||row.id!==ROW_ID) return;
+          if(row.updated_at && row.updated_at===lastSentAt) return; // 自分のエコーは無視
+          applyCloud(row);
+          try{ T()&&T().toast&&T().toast('CFを最新に更新しました'+(row.updated_by?'（'+row.updated_by+'）':'')); }catch(e){}
+        })
+        .subscribe();
+    }catch(e){ console.warn('[cf-sync] sub', e); }
+  }
+  async function init(){
+    if(ready || !canSync()) return;
+    var c=sb(); if(!c) return;
+    try{ myName=String((window.PortalAuth.getUser()||{}).name||''); }catch(e){}
+    var row=await pull();
+    if(row && row.data && Object.keys(row.data).length){ applyCloud(row); }
+    else if(role()==='社長'){ await push(); } // 空クラウドは社長のローカルでシード
+    ready=true;
+    subscribe();
+  }
+  window.PortalTreasurySync={ onLocalSave:schedulePush, init:init, pull:pull, push:push };
+  window.addEventListener('portal-member-ready', function(){ setTimeout(init, 400); });
+  if(document.readyState!=='loading') setTimeout(function(){ if(!ready) init(); }, 1800);
 })();
 </script>
 <script src="billing-docs.js"></script>
