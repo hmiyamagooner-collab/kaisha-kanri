@@ -125,6 +125,38 @@ async function deleteTaskServer(taskId) {
   };
 }
 
+async function setDropboxAllowedServer(memberId, allowed) {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return { ok: false, error: "service_role_missing" };
+  const id = String(memberId || "").trim();
+  if (!id) return { ok: false, error: "memberId required" };
+  const res = await fetch(
+    url + "/rest/v1/members?id=eq." + encodeURIComponent(id),
+    {
+      method: "PATCH",
+      headers: {
+        apikey: key,
+        Authorization: "Bearer " + key,
+        "Content-Type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({ dropbox_allowed: !!allowed }),
+    }
+  );
+  const text = await res.text();
+  let rows = [];
+  try {
+    rows = text ? JSON.parse(text) : [];
+  } catch (e) {
+    rows = [];
+  }
+  if (res.ok && Array.isArray(rows) && rows.length) {
+    return { ok: true, id, allowed: !!allowed };
+  }
+  return { ok: false, error: "update_failed", detail: (text || "").slice(0, 200) };
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -161,6 +193,39 @@ export default async function handler(req, res) {
           name: member.name,
           role: member.role,
           detail: String(body.taskId || body.id || "").slice(0, 80),
+        })
+      );
+      return res.status(200).json(result);
+    }
+
+    if (action === "dropbox-allow") {
+      const auth = String(req.headers.authorization || "");
+      const token = auth.toLowerCase().startsWith("bearer ")
+        ? auth.slice(7).trim()
+        : String(body.accessToken || "").trim();
+      if (!token) {
+        return res.status(401).json({ ok: false, error: "login_required" });
+      }
+      const user = await supabaseUser(token);
+      if (!user) {
+        return res.status(401).json({ ok: false, error: "invalid_session" });
+      }
+      const member = await memberForUser(user);
+      if (!member || String(member.role || "") !== "社長") {
+        return res.status(403).json({ ok: false, error: "president_only" });
+      }
+      const result = await setDropboxAllowedServer(body.memberId || body.id, body.allowed);
+      if (!result.ok) {
+        return res.status(500).json(result);
+      }
+      console.log(
+        "[portal-log]",
+        JSON.stringify({
+          at: new Date().toISOString(),
+          action: "dropbox-allow",
+          name: member.name,
+          target: String(body.memberId || body.id || "").slice(0, 40),
+          allowed: !!body.allowed,
         })
       );
       return res.status(200).json(result);

@@ -8875,9 +8875,27 @@ window.Treasury={
 
   async function setDropboxAllowed(memberId, allowed){
     const c=client(); if(!c) return;
-    const { error } = await c.from('members')
-      .update({ dropbox_allowed: !!allowed }).eq('id', memberId);
-    if(error){ alert('権限エラー: '+error.message); return; }
+    // RLSで他人の行を更新できない環境向けに、まずサーバ(service_role)経由で更新
+    let done=false;
+    try{
+      const token=await window.GoonerSB?.authToken?.();
+      if(token){
+        const res=await fetch('/api/portal-log',{
+          method:'POST',
+          headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
+          body:JSON.stringify({ action:'dropbox-allow', memberId:memberId, allowed:!!allowed })
+        });
+        const j=await res.json().catch(function(){ return null; });
+        if(res.ok && j && j.ok) done=true;
+        else if(j && j.error) console.warn('[dbx-allow] server', j.error);
+      }
+    }catch(e){ console.warn('[dbx-allow]', e); }
+    // フォールバック：クライアント直更新（RLSが許す環境）
+    if(!done){
+      const { error } = await c.from('members')
+        .update({ dropbox_allowed: !!allowed }).eq('id', memberId);
+      if(error){ alert('権限エラー: '+error.message+'（サーバ経由も失敗）'); return; }
+    }
     T.toast(allowed?'Dropboxを許可しました':'Dropbox許可を停止しました');
     await loadMembers();
   }
