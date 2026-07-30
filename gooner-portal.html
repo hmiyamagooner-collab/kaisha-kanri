@@ -2165,9 +2165,16 @@ body.is-hsplit-drag{cursor:ew-resize;user-select:none}
   --dc-img-scale:1.03;
 }
 .dc-card[data-dept="finance"]{
-  --dc-bg-image:url('dash-finance.png?v=20260730b');
+  --dc-bg-image:none;
   --dc-img-pos:center top;
   --dc-img-scale:1.0;
+}
+.dc-card[data-dept="finance"] video.dc-card__image:not(.is-frame-ready){
+  opacity:0;
+}
+.dc-card[data-dept="finance"].is-hot video.dc-card__image,
+.dc-card[data-dept="finance"]:has(.dc-photo:hover) video.dc-card__image{
+  opacity:1;
 }
 .dc-card[data-dept="legal"]{
   --dc-bg-image:url('dash-legal.png');
@@ -3138,8 +3145,8 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
             <div class="dc-risk-bubble" data-risk-bubble="finance" hidden></div>
             <span class="dc-photo-fallback" aria-hidden="true">紬</span>
             <div class="dc-avatar-wrap">
-              <img class="dc-card__still" src="dash-finance.png?v=20260730b" alt="" aria-hidden="true">
-              <video class="dc-card__image" src="tumugi-20260730.mp4" poster="dash-finance.png?v=20260730b" data-has-audio="1" muted loop playsinline preload="metadata" aria-label="紬"></video>
+              <img class="dc-card__still" alt="" aria-hidden="true" hidden>
+              <video class="dc-card__image" src="tumugi-20260730.mp4" data-has-audio="1" muted loop playsinline preload="auto" aria-label="紬"></video>
             </div>
             <div class="dc-card-foot">
               <div class="dc-dept">経理</div>
@@ -10212,6 +10219,32 @@ window.BizCaseLink=(function(){
 /* キャラクターカード動画：ホバー中だけ再生（枠内 .dc-photo のみ反応） */
 (function(){
   const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
+  function captureStillFromVideo(video){
+    if(!video||!video.videoWidth) return null;
+    try{
+      const c=document.createElement('canvas');
+      c.width=video.videoWidth;
+      c.height=video.videoHeight;
+      c.getContext('2d').drawImage(video,0,0);
+      return c.toDataURL('image/jpeg',0.92);
+    }catch(e){ return null; }
+  }
+  function applyVideoStill(video){
+    const url=captureStillFromVideo(video);
+    if(!url) return;
+    const wrap=video.closest('.dc-avatar-wrap');
+    const still=wrap&&wrap.querySelector('.dc-card__still');
+    const card=video.closest('.dc-card');
+    if(still){
+      still.src=url;
+      still.hidden=false;
+    }
+    if(card){
+      card.style.setProperty('--dc-bg-image','url("'+url+'")');
+    }
+    try{ video.setAttribute('poster', url); }catch(e){}
+    video.classList.add('is-frame-ready');
+  }
   function swapToPoster(video){
     if(!video||video.dataset.fallback==='1')return;
     video.dataset.fallback='1';
@@ -10274,6 +10307,15 @@ window.BizCaseLink=(function(){
     video.muted=true;
     try{ video.pause(); }catch(e){}
     video.addEventListener('error',function(){ swapToPoster(video); });
+    // 紬など：旧ポスターを使わず動画先頭フレームを静止画にする
+    if(video.closest('.dc-card[data-dept="finance"]') || video.hasAttribute('data-still-from-video')){
+      video.preload='auto';
+      const snap=function(){ applyVideoStill(video); };
+      video.addEventListener('loadeddata', snap);
+      video.addEventListener('seeked', snap);
+      try{ video.currentTime=0.05; }catch(e){}
+      try{ video.load(); }catch(e){}
+    }
   });
   document.querySelectorAll('.dc-card .dc-photo').forEach(function(photo){
     photo.addEventListener('mouseenter', function(){ playOn(photo); });
