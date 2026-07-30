@@ -4,8 +4,7 @@ package-lock.json
 .env
 .env.local
 api/secrets.local.js
-# 旧キャラ静止画（dash-*.png / *-YYYYMMDD.mp4 を使う）
-char-finance.png
+# 旧キャラ静止画（secretary/legal の char- は使わない）
 char-secretary.png
 char-legal.png
-char-*.png
+

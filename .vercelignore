@@ -1,8 +1,6 @@
-char-finance.png
+# 旧キャラ静止画はデプロイしない（char-finance は dash-finance のコピーとして再配備）
 char-secretary.png
 char-legal.png
-char-*.png
-tumugi.mp4
 gooner-character-cards/
 gooner-portal.html.bak
 *.bak
