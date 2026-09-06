@@ -5810,17 +5810,25 @@ window.PortalTTS=(function(){
     intentionalStop=false;
     syncUi();
     try{ speechSynthesis.cancel(); }catch(e){}
-    const u=new SpeechSynthesisUtterance(String(text||'').slice(0,800));
-    u.lang='ja-JP';
-    u.rate=1.1;
-    u.volume=1;
-    const vs=speechSynthesis.getVoices().filter(function(v){ return /ja/i.test(v.lang||''); });
-    if(vs[0]) u.voice=vs[0];
-    u.onend=function(){ if(gen===queueGen) finish(onend); };
-    u.onerror=function(){ if(gen===queueGen) finish(onend); };
+    const chunks=splitText(text);
+    if(!chunks.length){ finish(onend); return; }
+    let i=0;
+    function next(){
+      if(gen!==queueGen || intentionalStop){ finish(onend); return; }
+      if(i>=chunks.length){ finish(onend); return; }
+      const u=new SpeechSynthesisUtterance(chunks[i++]);
+      u.lang='ja-JP';
+      u.rate=1.05;
+      u.volume=1;
+      const vs=speechSynthesis.getVoices().filter(function(v){ return /ja/i.test(v.lang||''); });
+      if(vs[0]) u.voice=vs[0];
+      u.onend=function(){ if(gen===queueGen) setTimeout(next, 40); };
+      u.onerror=function(){ if(gen===queueGen) setTimeout(next, 40); };
+      try{ speechSynthesis.speak(u); }catch(e){ finish(onend); }
+    }
     setTimeout(function(){
       if(gen!==queueGen) return;
-      try{ speechSynthesis.speak(u); }catch(e){ finish(onend); }
+      next();
     }, 60);
   }
   const api={
@@ -12998,8 +13006,19 @@ window.EntakuDocIngest=(function(){
         setTimeout(done, 220);
       };
       window.PortalTTS.speak(speech, go, {agent: agent});
-      // フェイルセーフ：クラウド音声の遅延を見込む
-      failId = setTimeout(go, Math.min(240000, 8000 + speech.length * 90));
+      // フェイルセーフ：読み上げ中は延長。途中で次の人へ進んで音声が切れるのを防ぐ
+      (function armFailsafe(ms){
+        failId = setTimeout(function tick(){
+          if(advanced) return;
+          try{
+            if(window.PortalTTS && window.PortalTTS.isSpeaking && window.PortalTTS.isSpeaking()){
+              failId = setTimeout(tick, 12000);
+              return;
+            }
+          }catch(e){}
+          go();
+        }, ms);
+      })(Math.min(240000, Math.max(28000, 14000 + speech.length * 280)));
     }else{
       if(window.PortalTTS && !window.PortalTTS.isEnabled()){
         try{ window.Treasury?.toast?.('AIの声がOFFです。円卓の 🔊 をONにしてください'); }catch(e){}
@@ -14516,10 +14535,14 @@ window.EntakuDocIngest=(function(){
     const btn=el('entakuTalkBtn');
     if(!btn) return;
     const LS='entaku-talk-mode';
+    const SILENCE_MS=2000; // 無音この時間で「話し終わり」とみなす
     let modeOn=localStorage.getItem(LS)==='1';
     let listening=false;
     let rec=null;
     let sending=false;
+    let committed='';
+    let silenceTimer=null;
+    function clearSilence(){ if(silenceTimer){ clearTimeout(silenceTimer); silenceTimer=null; } }
     function syncBtn(){
       btn.classList.toggle('is-on', modeOn);
       btn.classList.toggle('is-listen', listening);
@@ -14530,8 +14553,24 @@ window.EntakuDocIngest=(function(){
     }
     function stopListen(){
       listening=false;
+      clearSilence();
       try{ if(rec) rec.stop(); }catch(e){}
       syncBtn();
+    }
+    function submitHeard(){
+      const ta=el('entakuText');
+      const text=((committed||'') || (ta&&ta.value) || '').trim();
+      if(!text || sending) return false;
+      sending=true;
+      clearSilence();
+      stopListen();
+      committed='';
+      if(ta) ta.value=text;
+      setTimeout(function(){
+        try{ window.sendEntaku(); }catch(e){}
+        sending=false;
+      }, 80);
+      return true;
     }
     function startListen(){
       if(!SR){
@@ -14541,40 +14580,71 @@ window.EntakuDocIngest=(function(){
       if(S.busy||S.playing||window.__entakuSpeaking||sending) return;
       if(!S.open){ S.open=true; syncToggle(); }
       try{ window.PortalTTS?.stop(); }catch(e){}
+      committed='';
+      clearSilence();
       if(!rec){
         rec=new SR();
         rec.lang='ja-JP';
-        rec.continuous=false;
+        // continuous=true：途中の無音で即終了しない（長めの発話を途切れさせない）
+        rec.continuous=true;
         rec.interimResults=true;
         rec.maxAlternatives=1;
         rec.onstart=function(){ listening=true; syncBtn(); };
-        rec.onend=function(){ listening=false; syncBtn(); };
+        rec.onend=function(){
+          listening=false; syncBtn();
+          // ブラウザ側がセッションを落とした場合：確定文があれば送信、なければ会話ONなら再開
+          if(!modeOn || sending || S.busy || S.playing || window.__entakuSpeaking) return;
+          if(submitHeard()) return;
+          setTimeout(function(){
+            if(modeOn && !listening && !sending && !S.busy && !S.playing && !window.__entakuSpeaking){
+              startListen();
+            }
+          }, 500);
+        };
         rec.onerror=function(ev){
           listening=false; syncBtn();
-          if(ev&&ev.error==='not-allowed'){
+          const err=ev&&ev.error;
+          // マイク拒否だけ会話モードを落とす。no-speech / aborted 等では落とさない
+          if(err==='not-allowed' || err==='service-not-allowed'){
             window.Treasury?.toast?.('マイクを許可してください');
-            modeOn=false; localStorage.setItem(LS,'0'); syncBtn();
+            modeOn=false; localStorage.setItem(LS,'0'); clearSilence(); syncBtn();
+            return;
+          }
+          if(err==='no-speech' || err==='aborted' || err==='network'){
+            if(modeOn && !sending){
+              setTimeout(function(){
+                if(modeOn && !listening && !S.busy && !S.playing && !window.__entakuSpeaking) startListen();
+              }, 600);
+            }
           }
         };
         rec.onresult=function(ev){
-          let interim='', final='';
+          let interim='', finals='';
           for(let i=ev.resultIndex;i<ev.results.length;i++){
             const t=ev.results[i][0].transcript||'';
-            if(ev.results[i].isFinal) final+=t; else interim+=t;
+            if(ev.results[i].isFinal) finals+=t; else interim+=t;
           }
+          if(finals) committed=(committed+finals).replace(/\s+/g,' ').trim();
           const ta=el('entakuText');
-          if(ta) ta.value=(final||interim).trim();
-          if(!final.trim()||sending) return;
-          sending=true;
-          stopListen();
-          setTimeout(function(){
-            try{ window.sendEntaku(); }catch(e){}
-            sending=false;
-          }, 80);
+          if(ta) ta.value=((committed+(interim?(' '+interim):''))).trim();
+          clearSilence();
+          // 無音が続いたら発話終了とみなして送信（途中切れ防止）
+          silenceTimer=setTimeout(function(){
+            if(!modeOn || sending) return;
+            submitHeard();
+          }, SILENCE_MS);
         };
       }
       try{ rec.start(); listening=true; syncBtn(); }
-      catch(e){ listening=false; syncBtn(); }
+      catch(e){
+        listening=false; syncBtn();
+        // InvalidStateError（既に開始中）は無視して再試行
+        setTimeout(function(){
+          if(modeOn && !listening && !sending) {
+            try{ rec.start(); listening=true; syncBtn(); }catch(e2){}
+          }
+        }, 400);
+      }
     }
     window.EntakuTalk={
       isOn:function(){ return modeOn; },
@@ -14582,8 +14652,8 @@ window.EntakuDocIngest=(function(){
       onAiDone:function(){
         if(!modeOn) return;
         setTimeout(function(){
-          if(modeOn&&!S.busy&&!S.playing&&!window.__entakuSpeaking) startListen();
-        }, 450);
+          if(modeOn&&!S.busy&&!S.playing&&!window.__entakuSpeaking&&!sending) startListen();
+        }, 700);
       }
     };
     btn.addEventListener('click', function(){
@@ -14604,7 +14674,7 @@ window.EntakuDocIngest=(function(){
       }catch(e){}
       window.Treasury?.toast?.('音声会話ON：話しかけてください（AIの声=🔊がON）');
       if(!S.open) openEntaku();
-      setTimeout(function(){ startListen(); }, 1600);
+      setTimeout(function(){ startListen(); }, 1800);
     });
     syncBtn();
   })();
