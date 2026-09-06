@@ -82,7 +82,17 @@ td.rate{color:var(--up)}
 .state a.btn{display:inline-block;margin-top:16px;padding:10px 20px;border:1px solid var(--line);
   border-radius:999px;color:var(--gold)}
 .hint{font-size:11px;color:var(--dim);margin-top:8px}
+.banner{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.banner .b-item{background:linear-gradient(180deg,var(--panel),var(--panel-2));border:1px solid var(--line-soft);
+  border-left:3px solid var(--gold);border-radius:12px;padding:12px 14px}
+.banner .b-k{display:block;font-size:11px;color:var(--gold-dim);letter-spacing:.1em;margin-bottom:3px}
+.banner .b-v{display:block;font-size:13px;color:var(--ink);font-weight:500}
+.banner .b-note{display:block;font-size:11px;color:var(--dim);margin-top:2px}
+.coin-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px}
+.coin-cards .card .k-val{font-size:24px}
+.coin-note{font-size:11px;color:var(--dim);margin-top:2px}
 .foot-note{font-size:11px;color:var(--dim);text-align:center;margin-top:24px}
+@media (max-width:720px){ .banner{grid-template-columns:1fr} .coin-cards{grid-template-columns:repeat(2,1fr)} }
 .loading{color:var(--dim);font-size:13px;padding:8px 2px}
 .empty{color:var(--dim);font-size:13px;padding:14px 2px;text-align:center}
 
@@ -109,7 +119,8 @@ td.rate{color:var(--up)}
       <span class="ctl-label">プロダクト</span>
       <div class="seg" id="segProduct">
         <button data-p="rela" class="on">RELA</button>
-        <button data-p="leo" disabled title="準備中">ゆうしゃレオ（準備中）</button>
+        <button data-p="leo" disabled title="データ連携準備中">ゆうしゃレオ（準備中）</button>
+        <button data-p="tea" disabled title="データ連携準備中">お茶の販売（準備中）</button>
       </div>
       <span class="ctl-label">期間</span>
       <div class="seg" id="segPeriod">
@@ -119,11 +130,36 @@ td.rate{color:var(--up)}
       </div>
     </div>
 
+    <div class="banner">
+      <div class="b-item"><span class="b-k">販売形態</span><span class="b-v">WEB（Stripe）＋ Google Play</span><span class="b-note">Apple / App Store 非対応</span></div>
+      <div class="b-item"><span class="b-k">集客チャネル</span><span class="b-v">LP（rela.info）／ Instagram ／ TikTok</span><span class="b-note">流入元は下の「流入元別」で内訳</span></div>
+      <div class="b-item"><span class="b-k">課金の源</span><span class="b-v">RevenueCat（サブスク＝月額 / RELA COIN）</span><span class="b-note" id="bChannelSplit">wake内訳: –</span></div>
+    </div>
+
     <div class="cards">
       <div class="card"><div class="k-label">新規ユーザー</div><div class="k-val" id="kNew">–</div><div class="k-sub">期間合計</div></div>
-      <div class="card c-wake"><div class="k-label">wake（起動）</div><div class="k-val" id="kWake">–</div><div class="k-sub">ユニーク合計</div></div>
+      <div class="card c-wake"><div class="k-label">wake（起動）</div><div class="k-val" id="kWake">–</div><div class="k-sub" id="kWakeSub">ユニーク合計</div></div>
       <div class="card"><div class="k-label">analysis（分析）</div><div class="k-val" id="kAna">–</div><div class="k-sub" id="kAnaSub">ユニーク合計</div></div>
       <div class="card"><div class="k-label">purchase（課金）</div><div class="k-val" id="kPur">–</div><div class="k-sub">ユニーク合計</div></div>
+    </div>
+
+    <div class="panel">
+      <h2>RELA COIN（トークン）活動</h2>
+      <div class="coin-cards">
+        <div class="card"><div class="k-label">付与（welcome+gift）</div><div class="k-val" id="cGrant">–</div><div class="coin-note">初回180＋ギフト</div></div>
+        <div class="card"><div class="k-label">コイン購入</div><div class="k-val" id="cBought">–</div><div class="coin-note" id="cBoughtSub">–</div></div>
+        <div class="card"><div class="k-label">分析 利用回数</div><div class="k-val" id="cAna">–</div><div class="coin-note">消費のトリガー</div></div>
+        <div class="card c-wake"><div class="k-label">推定 消費コイン</div><div class="k-val" id="cCons">–</div><div class="coin-note">analysis×90 の概算</div></div>
+      </div>
+      <div class="coin-note">※ コイン残高の正はRevenueCat。現在は課金ゲート（COINS_ENABLED）オフのため、消費は「利用回数×単価」の概算です。</div>
+    </div>
+
+    <div class="panel">
+      <h2>購入内訳（プラン / コイン・発生ベース）</h2>
+      <div class="tbl-wrap"><table id="tblPur"><thead><tr>
+        <th>商品</th><th>購入回数</th><th>人数</th><th>Google Play</th><th>WEB</th>
+      </tr></thead><tbody><tr><td colspan="5" class="loading">読み込み中…</td></tr></tbody></table></div>
+      <div class="coin-note">※ サブスクの「現在アクティブ数/MRR」の正はRevenueCat。ここは購入イベントの発生数です。</div>
     </div>
 
     <div class="panel">
@@ -201,13 +237,40 @@ td.rate{color:var(--up)}
   }
 
   function renderCards(daily){
-    var nu=0,wk=0,an=0,anC=0,pu=0;
-    daily.forEach(function(r){ nu+=+r.new_users||0; wk+=+r.wake_users||0; an+=+r.analysis_users||0; anC+=+r.analyses||0; pu+=+r.purchase_users||0; });
+    var nu=0,wk=0,an=0,anC=0,pu=0,wa=0,ww=0;
+    daily.forEach(function(r){ nu+=+r.new_users||0; wk+=+r.wake_users||0; an+=+r.analysis_users||0; anC+=+r.analyses||0; pu+=+r.purchase_users||0; wa+=+r.wake_android||0; ww+=+r.wake_web||0; });
     $('kNew').textContent=nfmt(nu);
     $('kWake').textContent=nfmt(wk);
+    $('kWakeSub').textContent='Google Play '+nfmt(wa)+' / WEB '+nfmt(ww);
+    var sp=$('bChannelSplit'); if(sp) sp.textContent='wake内訳: Google Play(android) '+nfmt(wa)+' / WEB '+nfmt(ww);
     $('kAna').textContent=nfmt(an);
     $('kAnaSub').textContent='のべ '+nfmt(anC)+' 回 ／ wake→analysis '+rate(an,wk);
     $('kPur').textContent=nfmt(pu);
+  }
+
+  function renderCoins(rows){
+    var grant=0,bought=0,orders=0,ana=0,cons=0;
+    rows.forEach(function(r){ grant+=(+r.welcome_coins||0)+(+r.gift_coins||0); bought+=+r.bought_coins||0; orders+=+r.coin_orders||0; ana+=+r.analyses||0; cons+=+r.est_consumed_coins||0; });
+    $('cGrant').textContent=nfmt(grant);
+    $('cBought').textContent=nfmt(bought);
+    $('cBoughtSub').textContent=nfmt(orders)+' 件（¥300 / 180コイン）';
+    $('cAna').textContent=nfmt(ana);
+    $('cCons').textContent=nfmt(cons);
+  }
+
+  function renderPurchases(rows){
+    var tb=$('tblPur').querySelector('tbody');
+    var agg={};
+    rows.forEach(function(r){ var p=r.product||'other'; if(!agg[p]) agg[p]={purchases:0,users:0,a:0,w:0};
+      agg[p].purchases+=+r.purchases||0; agg[p].users+=+r.users||0; agg[p].a+=+r.android_users||0; agg[p].w+=+r.web_users||0; });
+    var keys=Object.keys(agg);
+    if(!keys.length){ tb.innerHTML='<tr><td colspan="5" class="empty">購入イベントがありません</td></tr>'; return; }
+    var order={premium:0,standard:1,basic:2,coins:3};
+    keys.sort(function(a,b){ return (order[a]==null?9:order[a])-(order[b]==null?9:order[b]); });
+    var label={premium:'プレミアム（¥3,800）',standard:'スタンダード（¥1,500）',basic:'ベーシック（¥500）',coins:'RELA COIN（¥300）'};
+    tb.innerHTML=keys.map(function(p){ var x=agg[p];
+      return '<tr><td>'+(label[p]||p)+'</td><td class="num">'+nfmt(x.purchases)+'</td><td class="num">'+nfmt(x.users)+'</td><td class="num and">'+nfmt(x.a)+'</td><td class="num web">'+nfmt(x.w)+'</td></tr>';
+    }).join('');
   }
 
   function renderChart(daily){
@@ -294,6 +357,8 @@ td.rate{color:var(--up)}
       var daily=await fetchView('daily', f, t);
       renderCards(daily); renderChart(daily); renderDaily(daily);
     }catch(e){ $('chartBox').innerHTML='<div class="empty">読み込みに失敗しました（'+e.message+'）</div>'; }
+    try{ renderCoins(await fetchView('coins', f, t)); }catch(e){ ['cGrant','cBought','cAna','cCons'].forEach(function(id){$(id).textContent='—';}); $('cBoughtSub').textContent='取得失敗'; }
+    try{ renderPurchases(await fetchView('purchases', f, t)); }catch(e){ $('tblPur').querySelector('tbody').innerHTML='<tr><td colspan="5" class="empty">取得失敗（'+e.message+'）</td></tr>'; }
     try{ renderUtm(await fetchView('utm', f, t)); }catch(e){ $('tblUtm').querySelector('tbody').innerHTML='<tr><td colspan="8" class="empty">取得失敗（'+e.message+'）</td></tr>'; }
     try{ renderRet(await fetchView('retention', f, t)); }catch(e){ $('tblRet').querySelector('tbody').innerHTML='<tr><td colspan="6" class="empty">取得失敗（'+e.message+'）</td></tr>'; }
   }

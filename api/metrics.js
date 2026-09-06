@@ -18,6 +18,7 @@ function productSource(product) {
   const map = {
     rela: { url: process.env.METRICS_RELA_URL, key: process.env.METRICS_RELA_SERVICE_KEY },
     leo: { url: process.env.METRICS_LEO_URL, key: process.env.METRICS_LEO_SERVICE_KEY },
+    tea: { url: process.env.METRICS_TEA_URL, key: process.env.METRICS_TEA_SERVICE_KEY },
   };
   const s = map[product];
   if (!s || !s.url || !s.key) return null;
@@ -29,6 +30,8 @@ const VIEWS = {
   daily: { name: "v_daily_funnel", dateCol: "day", order: "day.asc" },
   utm: { name: "v_utm_funnel", dateCol: "first_day", order: "first_day.desc" },
   retention: { name: "v_retention", dateCol: "cohort_day", order: "cohort_day.asc" },
+  purchases: { name: "v_purchase_breakdown", dateCol: "day", order: "day.desc" },
+  coins: { name: "v_coin_activity", dateCol: "day", order: "day.asc" },
 };
 
 // ---- PORTAL 認証 -------------------------------------------------------------

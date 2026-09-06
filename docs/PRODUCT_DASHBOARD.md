@@ -31,6 +31,15 @@
 2. Vercel に `METRICS_LEO_URL` / `METRICS_LEO_SERVICE_KEY` を追加
 3. `api/metrics.js` の対応表はすでに `leo` を用意済み。画面の「ゆうしゃレオ」ボタンの `disabled` を外すだけ
 
+## 2026-09-07 拡張（RELA全開示・コイン・3プロダクト）
+- プロダクト構成を **RELA（稼働）／ゆうしゃレオ（準備中）／お茶の販売（準備中）** に。レオ/お茶は各Supabaseに同名ビュー＋環境変数(`METRICS_LEO_*`/`METRICS_TEA_*`)を入れ、`products.html`のボタン`disabled`を外せば有効化。
+- チャネルバナー：**WEB（Stripe）＋Google Play／Apple非対応／集客=LP・Instagram・TikTok**、wakeのandroid(Google Play)/web内訳。
+- RELA COIN（トークン）活動：付与(welcome180+gift)・購入(¥300/180)・利用(analysis回数)・推定消費(analysis×90)。
+  **残高の正はRevenueCat**・課金ゲート(COINS_ENABLED)は現状オフのため消費は概算。
+- 追加ビュー：`analytics.v_purchase_breakdown`（プラン/コイン購入の発生ベース）、`analytics.v_coin_activity`（コイン近似）。
+  → 反映には RELA で `sql/rela_analytics_views.sql` を **再実行**（`create or replace` なので既存は上書き、新ビュー追加）。
+- API view：`daily / utm / retention / purchases / coins` の5種。
+
 ## 触っていないもの
 RELA の既存テーブル・RLS・認証・課金・`app_events` の insert / PORTAL の既存権限ロジック（追加のみ）。
 service_role キーはコード・Git に一切入れていない（Vercel 環境変数のみ）。

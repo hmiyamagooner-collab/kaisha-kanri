@@ -78,6 +78,65 @@ from first_wake fw
 left join public.app_events e on e.user_id=fw.user_id and e.event='open'
 group by 1 order by 1;
 
+-- 4) 購入内訳（プラン/コインの購入イベント。RevenueCatが真実の源＝これは"発生ベース"） -------
+create or replace view analytics.v_purchase_breakdown as
+select
+  (created_at at time zone 'Asia/Tokyo')::date as day,
+  case
+    when lower(coalesce(meta->>'product','')) like '%coin%' then 'coins'
+    when lower(coalesce(meta->>'product','')) in ('basic','standard','premium') then lower(meta->>'product')
+    else nullif(lower(coalesce(meta->>'product','')), '')
+  end as product,
+  count(*) as purchases,
+  count(distinct user_id) as users,
+  count(distinct user_id) filter (where platform='android') as android_users,
+  count(distinct user_id) filter (where platform='web')     as web_users
+from public.app_events
+where event='purchase' and coalesce(meta->'utm'->>'campaign','') <> 'utm_check'
+group by 1,2
+order by 1 desc, 3 desc;
+
+-- 5) コイン(RELA COIN=トークン)活動（近似）。真の残高はRevenueCat側・ゲートは現状オフ。 --------
+--   welcome_grants(初回180) / gift_grants(coins列) / 購入(product~coin=180/件) / 利用(analysis回数)。
+create or replace view analytics.v_coin_activity as
+with d as (
+  select generate_series(date '2026-08-25', (now() at time zone 'Asia/Tokyo')::date, interval '1 day')::date as day
+),
+w as (
+  select (created_at at time zone 'Asia/Tokyo')::date as day, count(*)*180 as welcome_coins
+  from public.welcome_grants group by 1
+),
+g as (
+  select (created_at at time zone 'Asia/Tokyo')::date as day, coalesce(sum(coins),0) as gift_coins
+  from public.gift_grants group by 1
+),
+p as (
+  select (created_at at time zone 'Asia/Tokyo')::date as day, count(*)*180 as bought_coins, count(*) as coin_orders
+  from public.app_events
+  where event='purchase' and lower(coalesce(meta->>'product','')) like '%coin%'
+    and coalesce(meta->'utm'->>'campaign','') <> 'utm_check'
+  group by 1
+),
+a as (
+  select (created_at at time zone 'Asia/Tokyo')::date as day, count(*) as analyses
+  from public.app_events
+  where event='analysis' and coalesce(meta->'utm'->>'campaign','') <> 'utm_check'
+  group by 1
+)
+select d.day,
+  coalesce(w.welcome_coins,0) as welcome_coins,
+  coalesce(g.gift_coins,0)    as gift_coins,
+  coalesce(p.bought_coins,0)  as bought_coins,
+  coalesce(p.coin_orders,0)   as coin_orders,
+  coalesce(a.analyses,0)      as analyses,
+  coalesce(a.analyses,0)*90   as est_consumed_coins
+from d
+left join w on w.day=d.day
+left join g on g.day=d.day
+left join p on p.day=d.day
+left join a on a.day=d.day
+order by 1;
+
 -- アクセス制御：サービスロール以外は読めない ---------------------------------------
 revoke all on schema analytics from anon, authenticated;
 revoke all on all tables in schema analytics from anon, authenticated;
