@@ -168,8 +168,8 @@ window.GoonerSB=(function(){
 <style>
 
   html, body { background: #000; margin: 0; min-height: 100%; }
-  html { font-size: 15px; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
-  body { font-family: 'Zen Kaku Gothic New', sans-serif; line-height: 1.6; color: #eefcf8; overflow-x: hidden; }
+  html { font-size: 15px; -webkit-font-smoothing: antialiased; overflow-x: hidden; overflow-y: auto; }
+  body { font-family: 'Zen Kaku Gothic New', sans-serif; line-height: 1.6; color: #eefcf8; overflow-x: hidden; overflow-y: auto; }
   @keyframes cardIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 
@@ -1225,10 +1225,12 @@ body.is-hsplit-drag{cursor:ew-resize;user-select:none}
   top:0;
   align-self:start;
   height:auto;
-  min-height:var(--nav-matrix-h, 100dvh);
-  max-height:none;
+  min-height:0;
+  max-height:100dvh;
   overflow-x:hidden;
-  overflow-y:visible;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
   z-index:400;
   width:var(--nav-w);
   padding:10px 8px 12px;
@@ -2006,6 +2008,13 @@ body.is-hsplit-drag{cursor:ew-resize;user-select:none}
 .entaku-rec-bar button{
   border:1px solid rgba(255,255,255,.45);background:rgba(255,255,255,.08);color:#fff;
   border-radius:7px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;
+}
+#entakuRecoverBar .entaku-mini-btn{
+  border:1px solid rgba(217,130,43,.55);background:rgba(217,130,43,.16);color:var(--text);
+  border-radius:7px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer;line-height:1.2;
+}
+#entakuRecoverBar .entaku-mini-btn.secondary{
+  border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.06);color:var(--muted);
 }
 .ent-minutes-block{
   margin:8px 0;padding:10px 12px;border-radius:10px;
@@ -2965,6 +2974,10 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
   <button type="button" class="nav-biz" data-s="cf-flow">
     <span class="nav-photo" style="background-image:url(nav-flow.png)"></span>
     <span class="nav-label nav-label-2line">イレギュラー<br>案件フロー</span>
+  </button>
+  <button type="button" class="nav-biz" onclick="location.href='products.html'">
+    <span class="nav-photo" style="background-image:url(nav-it.png)"></span>
+    <span class="nav-label">プロダクト</span>
   </button>
   </div>
   <div class="nav-drops">
@@ -12113,6 +12126,54 @@ window.PortalAuth=(function(){
 </script>
 
 <script>
+/* ===== ホイール：overflow:hidden 領域でもページ／内側スクロールを効かせる ===== */
+(function(){
+  function canScroll(el, deltaY){
+    if(!el||el===document.body||el===document.documentElement) return false;
+    const st=window.getComputedStyle(el);
+    const oy=st.overflowY;
+    if(oy!=='auto'&&oy!=='scroll'&&oy!=='overlay') return false;
+    if(el.scrollHeight<=el.clientHeight+1) return false;
+    if(deltaY<0&&el.scrollTop>0) return true;
+    if(deltaY>0&&el.scrollTop+el.clientHeight<el.scrollHeight-1) return true;
+    return false;
+  }
+  function findScrollable(start, deltaY){
+    let el=start;
+    while(el&&el!==document.body&&el!==document.documentElement){
+      if(canScroll(el, deltaY)) return el;
+      el=el.parentElement;
+    }
+    return null;
+  }
+  function onWheel(e){
+    if(e.ctrlKey) return; // ピンチズーム等は触らない
+    if(document.body.classList.contains('is-vsplit-drag')||document.body.classList.contains('is-hsplit-drag')) return;
+    const dy=e.deltaY;
+    if(!dy) return;
+    const inner=findScrollable(e.target, dy);
+    if(inner) return; // 内側がまだスクロールできる
+    // ページ（html/body）へ転送
+    const root=document.scrollingElement||document.documentElement;
+    if(!root) return;
+    const max=Math.max(0, root.scrollHeight-root.clientHeight);
+    if(max<=0) return;
+    const next=Math.max(0, Math.min(max, root.scrollTop+dy));
+    if(next===root.scrollTop) return;
+    root.scrollTop=next;
+  }
+  window.addEventListener('wheel', onWheel, {passive:true, capture:true});
+  // 分割ドラッグが pointerup を取り逃しても解除
+  window.addEventListener('pointerup', function(){
+    document.body.classList.remove('is-vsplit-drag','is-hsplit-drag');
+  }, true);
+  window.addEventListener('pointercancel', function(){
+    document.body.classList.remove('is-vsplit-drag','is-hsplit-drag');
+  }, true);
+})();
+</script>
+
+<script>
 /* ===== 円卓集中モード（サイドナビ非表示・本体拡大） ===== */
 (function(){
   const KEY='gp_entaku_focus_v1';
@@ -14551,7 +14612,165 @@ window.EntakuDocIngest=(function(){
     const mic=el('entakuMicBtn'), stopBtn=el('entakuRecStop'), bar=el('entakuRecBar'), timerEl=el('entakuRecTimer');
     if(!mic) return;
     let mediaRec=null, chunks=[], stream=null, tick=null, startedAt=0, processing=false;
+    let wakeLock=null, pendingRecover=null;
     const MAX_MS=5*60*1000;
+    // 録音チャンクを1秒ごとにIndexedDBへ退避する耐障害ストア。
+    // タブ落ち・再読込・送信失敗でもここに残るので「途中まで消える」を防ぐ。
+    const EntakuRecStore=(function(){
+      const DB='entakuRecDB', VER=1, CHUNKS='chunks', SESS='session';
+      let dbp=null;
+      function open(){
+        if(dbp) return dbp;
+        dbp=new Promise(function(resolve,reject){
+          let req;
+          try{ req=indexedDB.open(DB,VER); }catch(e){ reject(e); return; }
+          req.onupgradeneeded=function(){
+            const db=req.result;
+            if(!db.objectStoreNames.contains(CHUNKS)) db.createObjectStore(CHUNKS,{autoIncrement:true});
+            if(!db.objectStoreNames.contains(SESS)) db.createObjectStore(SESS);
+          };
+          req.onsuccess=function(){ resolve(req.result); };
+          req.onerror=function(){ reject(req.error||new Error('idb open失敗')); };
+        });
+        return dbp;
+      }
+      return {
+        supported:function(){ return typeof indexedDB!=='undefined'; },
+        begin:function(mime,meta,at){
+          return open().then(function(db){
+            return new Promise(function(res,rej){
+              const t=db.transaction([CHUNKS,SESS],'readwrite');
+              t.objectStore(CHUNKS).clear();
+              t.objectStore(SESS).put({mime:mime||'audio/webm',meta:meta||null,startedAt:at||0},'current');
+              t.oncomplete=function(){res();}; t.onerror=function(){rej(t.error);};
+            });
+          });
+        },
+        append:function(blob){
+          return open().then(function(db){
+            return new Promise(function(res,rej){
+              const t=db.transaction(CHUNKS,'readwrite');
+              t.objectStore(CHUNKS).add(blob);
+              t.oncomplete=function(){res();}; t.onerror=function(){rej(t.error);};
+            });
+          });
+        },
+        count:function(){
+          return open().then(function(db){
+            return new Promise(function(res){
+              const t=db.transaction(CHUNKS,'readonly');
+              const r=t.objectStore(CHUNKS).count();
+              r.onsuccess=function(){res(r.result||0);}; r.onerror=function(){res(0);};
+            });
+          }).catch(function(){ return 0; });
+        },
+        readBlob:function(){
+          return open().then(function(db){
+            return new Promise(function(res){
+              const st=db.transaction(SESS,'readonly').objectStore(SESS).get('current');
+              st.onsuccess=function(){
+                const sess=st.result||{};
+                const parts=[];
+                const cur=db.transaction(CHUNKS,'readonly').objectStore(CHUNKS).openCursor();
+                cur.onsuccess=function(){
+                  const c=cur.result;
+                  if(c){ parts.push(c.value); c.continue(); return; }
+                  if(!parts.length){ res(null); return; }
+                  res({ blob:new Blob(parts,{type:sess.mime||'audio/webm'}), mime:sess.mime||'audio/webm', meta:sess.meta||null, startedAt:sess.startedAt||0 });
+                };
+                cur.onerror=function(){ res(null); };
+              };
+              st.onerror=function(){ res(null); };
+            });
+          }).catch(function(){ return null; });
+        },
+        clear:function(){
+          return open().then(function(db){
+            return new Promise(function(res){
+              const t=db.transaction([CHUNKS,SESS],'readwrite');
+              t.objectStore(CHUNKS).clear(); t.objectStore(SESS).clear();
+              t.oncomplete=function(){res();}; t.onerror=function(){res();};
+            });
+          }).catch(function(){});
+        }
+      };
+    })();
+    async function acquireWake(){
+      try{ if('wakeLock' in navigator){ wakeLock=await navigator.wakeLock.request('screen'); } }catch(e){}
+    }
+    function releaseWake(){ try{ if(wakeLock){ wakeLock.release(); wakeLock=null; } }catch(e){} }
+    function downloadBlob(blob, mime){
+      try{
+        const m=String(mime||'');
+        const ext=m.indexOf('ogg')>=0?'ogg':(m.indexOf('mp4')>=0||m.indexOf('m4a')>=0?'m4a':'webm');
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');
+        a.href=url; a.download='会議録音_'+new Date().toISOString().slice(0,16).replace(/[:T]/g,'')+'.'+ext;
+        document.body.appendChild(a); a.click();
+        setTimeout(function(){ try{URL.revokeObjectURL(url); a.remove();}catch(e){} }, 4000);
+      }catch(e){ window.Treasury?.toast?.('音声の保存に失敗しました'); }
+    }
+    function ensureRecoverBar(){
+      let b=el('entakuRecoverBar');
+      if(b) return b;
+      const form=el('entakuForm'); if(!form) return null;
+      b=document.createElement('div');
+      b.id='entakuRecoverBar';
+      b.setAttribute('aria-live','polite');
+      b.style.cssText='display:none;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0;padding:8px 10px;border:1px solid #d9822b;background:rgba(217,130,43,.12);border-radius:10px;font-size:13px;';
+      b.innerHTML='<span id="entakuRecoverMsg" style="flex:1 1 180px;min-width:150px">未送信の録音があります。</span>'
+        +'<button type="button" id="entakuRecoverGo" class="entaku-mini-btn">議事録化を再実行</button>'
+        +'<button type="button" id="entakuRecoverDl" class="entaku-mini-btn secondary">音声を保存</button>'
+        +'<button type="button" id="entakuRecoverDrop" class="entaku-mini-btn secondary">破棄</button>';
+      const rb=el('entakuRecBar');
+      if(rb && rb.parentNode) rb.parentNode.insertBefore(b, rb);
+      else form.appendChild(b);
+      el('entakuRecoverGo')?.addEventListener('click', function(){
+        const info=pendingRecover;
+        if(!info||!info.blob){ hideRecover(); return; }
+        hideRecover();
+        S.recMeta = info.meta || S.recMeta || { type:'other', label:'その他MT', participants:[] };
+        processBlob(info.blob, info.mime||info.blob.type||'audio/webm');
+      });
+      el('entakuRecoverDl')?.addEventListener('click', function(){
+        if(pendingRecover&&pendingRecover.blob) downloadBlob(pendingRecover.blob, pendingRecover.mime);
+      });
+      el('entakuRecoverDrop')?.addEventListener('click', function(){
+        if(!confirm('未送信の録音を破棄しますか？（元に戻せません）')) return;
+        EntakuRecStore.clear();
+        hideRecover();
+        window.Treasury?.toast?.('録音を破棄しました');
+      });
+      return b;
+    }
+    function offerRecover(info, msg){
+      pendingRecover=info;
+      const bar=ensureRecoverBar(); if(!bar) return;
+      const m=el('entakuRecoverMsg');
+      if(m){
+        const kb=info&&info.blob?Math.round(info.blob.size/1024):0;
+        const lbl=info&&info.meta&&info.meta.label?('「'+info.meta.label+'」'):'';
+        m.textContent=(msg||'未送信の録音があります。')+lbl+(kb?(' 約'+kb+'KB'):'');
+      }
+      bar.style.display='flex';
+      if(!S.open){ S.open=true; syncToggle(); }
+    }
+    function hideRecover(){
+      pendingRecover=null;
+      const b=el('entakuRecoverBar'); if(b) b.style.display='none';
+    }
+    async function checkPendingRec(){
+      try{
+        if(!EntakuRecStore.supported()) return;
+        if((await EntakuRecStore.count())<=0) return;
+        const info=await EntakuRecStore.readBlob();
+        if(info && info.blob && info.blob.size>=800){
+          offerRecover(info, '前回の録音が中断されたまま残っています。');
+        }else{
+          await EntakuRecStore.clear();
+        }
+      }catch(e){}
+    }
     function fmt(ms){
       const s=Math.floor(ms/1000), m=Math.floor(s/60), r=s%60;
       return m+':'+String(r).padStart(2,'0');
@@ -14567,6 +14786,7 @@ window.EntakuDocIngest=(function(){
       if(tick){ clearInterval(tick); tick=null; }
       if(stream){ stream.getTracks().forEach(function(t){ try{t.stop();}catch(e){} }); stream=null; }
       mediaRec=null; chunks=[];
+      releaseWake();
     }
     function blobToBase64(blob){
       return new Promise(function(resolve,reject){
@@ -14674,12 +14894,17 @@ window.EntakuDocIngest=(function(){
         window.PortalAuth?.serverLog?.('entaku-minutes', (meta.label||'')+' '+(transcript||'').slice(0,60));
         window.Treasury?.toast?.('議事録を'+meta.label+'へ保管しました');
         S.recMeta=null;
+        // 議事録化＋保管が完了したので退避データを破棄。再送提示も消す。
+        try{ await EntakuRecStore.clear(); }catch(_){}
+        hideRecover();
       }catch(e){
         S.history.push({
           role:'assistant', agent:'secretary',
-          content:'⚠ 議事録化に失敗しました（'+(e&&e.message||e)+'）。Vercel版＋OPENAI_API_KEY とマイク許可が必要です。'
+          content:'⚠ 議事録化に失敗しました（'+(e&&e.message||e)+'）。音声は端末に保存済みです。下の「議事録化を再実行」で送り直せます（Vercel版＋OPENAI_API_KEY とマイク許可が必要）。'
         });
-        window.Treasury?.toast?.('議事録化に失敗しました');
+        window.Treasury?.toast?.('議事録化に失敗（音声は保存済み）');
+        // 失敗しても退避データは消さず、再送/保存できるよう提示する。
+        try{ offerRecover({ blob:blob, mime:mime||blob.type||'audio/webm', meta:S.recMeta, startedAt:0 }, '議事録化に失敗しました。音声は保存済みです。'); }catch(_){}
       }finally{
         processing=false; S.busy=false; setUi('idle'); persistEntaku(); render();
         requestAnimationFrame(function(){ window.scrollTo(0,scrollY); });
@@ -14705,22 +14930,58 @@ window.EntakuDocIngest=(function(){
         window.Treasury?.toast?.('このブラウザではマイク録音に対応していません');
         return;
       }
+      // 未送信の録音が残っているなら、新規録音で上書きせず先に処理を促す。
+      try{
+        if(EntakuRecStore.supported() && (await EntakuRecStore.count())>0){
+          const prev=await EntakuRecStore.readBlob();
+          if(prev && prev.blob && prev.blob.size>=800){
+            offerRecover(prev, '未送信の録音があります。先に再実行・保存・破棄してください。');
+            window.Treasury?.toast?.('未送信の録音を処理してから始めてください');
+            return;
+          }
+          await EntakuRecStore.clear();
+        }
+      }catch(e){}
       try{
         stream=await navigator.mediaDevices.getUserMedia({ audio:true });
         const prefer='audio/webm;codecs=opus';
         const mime=MediaRecorder.isTypeSupported(prefer)?prefer:(MediaRecorder.isTypeSupported('audio/webm')?'audio/webm':'');
         chunks=[];
         mediaRec=mime?new MediaRecorder(stream,{mimeType:mime}):new MediaRecorder(stream);
-        mediaRec.ondataavailable=function(ev){ if(ev.data&&ev.data.size) chunks.push(ev.data); };
+        const recType=(mediaRec&&mediaRec.mimeType)||mime||'audio/webm';
+        startedAt=Date.now();
+        try{ await EntakuRecStore.begin(recType, S.recMeta, startedAt); }catch(e){}
+        mediaRec.ondataavailable=function(ev){
+          if(ev.data&&ev.data.size){
+            chunks.push(ev.data);
+            // 1秒ごとにIndexedDBへ退避。ここが「途中まで消える」の主対策。
+            EntakuRecStore.append(ev.data).catch(function(){});
+          }
+        };
+        mediaRec.onerror=function(){
+          window.Treasury?.toast?.('録音でエラー。ここまでを保存します');
+          try{ stopRec(); }catch(e){ cleanupStream(); setUi('idle'); }
+        };
         mediaRec.onstop=function(){
-          const type=(mediaRec&&mediaRec.mimeType)||mime||'audio/webm';
+          const type=(mediaRec&&mediaRec.mimeType)||recType;
           const blob=new Blob(chunks,{type:type});
           cleanupStream();
-          if(blob.size<800){ setUi('idle'); window.Treasury?.toast?.('録音が短すぎます'); return; }
+          if(blob.size<800){ setUi('idle'); EntakuRecStore.clear(); window.Treasury?.toast?.('録音が短すぎます'); return; }
           processBlob(blob, type);
         };
         mediaRec.start(1000);
-        startedAt=Date.now();
+        acquireWake();
+        // 画面ロード/他アプリのマイク奪取でトラックが切れたら、消さずに保存へ回す。
+        try{
+          stream.getAudioTracks().forEach(function(tr){
+            tr.addEventListener('ended', function(){
+              if(mediaRec && mediaRec.state!=='inactive'){
+                window.Treasury?.toast?.('マイクが切断されました。ここまでを保存します');
+                try{ stopRec(); }catch(e){}
+              }
+            });
+          });
+        }catch(e){}
         if(timerEl) timerEl.textContent='0:00';
         setUi('rec');
         if(!S.open){ S.open=true; syncToggle(); }
@@ -14750,6 +15011,12 @@ window.EntakuDocIngest=(function(){
       offerMeetingPick();
     });
     stopBtn?.addEventListener('click', function(e){ e.preventDefault(); stopRec(); });
+    // Wake Lockはタブが隠れると自動解放されるので、録音中に復帰したら取り直す。
+    document.addEventListener('visibilitychange', function(){
+      if(document.visibilityState==='visible' && mediaRec && mediaRec.state==='recording') acquireWake();
+    });
+    // 起動時：クラッシュ/送信失敗で残った録音があれば復元を提示。
+    checkPendingRec();
   })();
   // キャラカードをクリック → 枠内(.dc-photo)だけ反応して専門家を指名
   document.querySelectorAll('.dc-card[data-dept]').forEach(function(card){
