@@ -256,6 +256,155 @@ function applyCors(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
+function classifyOpenAIError(status, rawText) {
+  const t = String(rawText || "");
+  let parsed = null;
+  try { parsed = JSON.parse(t); } catch (e) { /* ignore */ }
+  const code = String(parsed?.error?.code || "");
+  const msg = String(parsed?.error?.message || t).slice(0, 400);
+  const type = String(parsed?.error?.type || "");
+  if (
+    code === "credit_balance_exhausted" ||
+    code === "insufficient_quota" ||
+    type === "insufficient_quota" ||
+    /no credits remaining|credit_balance_exhausted|insufficient_quota|billing/i.test(msg)
+  ) {
+    return {
+      state: "no_credits",
+      label: "残高不足",
+      detail: "OpenAIのクレジット残高がありません。Billingでチャージしてください。",
+      code: code || "insufficient_quota",
+    };
+  }
+  if (status === 401 || code === "invalid_api_key" || /invalid.?api.?key/i.test(msg)) {
+    return {
+      state: "bad_key",
+      label: "キー無効",
+      detail: "OPENAI_API_KEY が無効です。Vercelの環境変数を確認してください。",
+      code: code || "invalid_api_key",
+    };
+  }
+  if (status === 429 || code === "rate_limit_exceeded") {
+    return {
+      state: "rate_limit",
+      label: "レート制限",
+      detail: "一時的にリクエスト上限です。しばらく待って再試行してください。",
+      code: code || "rate_limit_exceeded",
+    };
+  }
+  return {
+    state: "error",
+    label: "接続エラー",
+    detail: msg || ("HTTP " + status),
+    code: code || ("http_" + status),
+  };
+}
+
+async function fetchRecentSpendUsd(adminKey) {
+  if (!adminKey) return null;
+  const now = Math.floor(Date.now() / 1000);
+  const start = now - 7 * 24 * 3600;
+  try {
+    const url =
+      "https://api.openai.com/v1/organization/costs?start_time=" +
+      start +
+      "&limit=14";
+    const r = await fetch(url, {
+      headers: { Authorization: "Bearer " + adminKey },
+    });
+    const t = await r.text();
+    if (!r.ok) return { available: false, reason: "admin_costs_" + r.status };
+    let data = {};
+    try { data = JSON.parse(t); } catch (e) { return { available: false, reason: "bad_json" }; }
+    let total = 0;
+    const buckets = Array.isArray(data.data) ? data.data : [];
+    for (const b of buckets) {
+      const results = Array.isArray(b.results) ? b.results : [];
+      for (const row of results) {
+        const amt = Number(row?.amount?.value);
+        if (Number.isFinite(amt)) total += amt;
+      }
+    }
+    return {
+      available: true,
+      days: 7,
+      usd: Math.round(total * 100) / 100,
+      currency: "USD",
+    };
+  } catch (e) {
+    return { available: false, reason: String((e && e.message) || e).slice(0, 120) };
+  }
+}
+
+async function handleOpenAIStatus(res) {
+  const billingUrl = "https://platform.openai.com/settings/organization/billing/";
+  const apiKey = await getOpenAIKey();
+  if (!apiKey) {
+    return res.status(200).json({
+      ok: false,
+      state: "no_key",
+      label: "キー未設定",
+      detail: "Vercelの OPENAI_API_KEY が未設定です。",
+      billingUrl,
+      at: new Date().toISOString(),
+    });
+  }
+
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 12000);
+  let probe;
+  try {
+    // 残高の数値は公式APIに無いため、軽量な models 一覧で「使えるか／残高切れか」を判定する
+    probe = await fetch("https://api.openai.com/v1/models", {
+      method: "GET",
+      headers: { Authorization: "Bearer " + apiKey },
+      signal: ac.signal,
+    });
+  } catch (e) {
+    clearTimeout(timer);
+    const aborted = e && e.name === "AbortError";
+    return res.status(200).json({
+      ok: false,
+      state: aborted ? "timeout" : "error",
+      label: aborted ? "応答なし" : "接続エラー",
+      detail: aborted ? "OpenAIへの確認がタイムアウトしました。" : String((e && e.message) || e).slice(0, 200),
+      billingUrl,
+      at: new Date().toISOString(),
+    });
+  }
+  clearTimeout(timer);
+
+  const raw = await probe.text().catch(() => "");
+  if (!probe.ok) {
+    const cls = classifyOpenAIError(probe.status, raw);
+    return res.status(200).json({
+      ok: false,
+      state: cls.state,
+      label: cls.label,
+      detail: cls.detail,
+      code: cls.code,
+      http: probe.status,
+      billingUrl,
+      at: new Date().toISOString(),
+    });
+  }
+
+  const adminKey = String(process.env.OPENAI_ADMIN_KEY || "").trim();
+  const spend = await fetchRecentSpendUsd(adminKey);
+
+  return res.status(200).json({
+    ok: true,
+    state: "ok",
+    label: "接続OK",
+    detail: "OpenAIに接続でき、残高不足ではありません。",
+    model: MODEL,
+    spend7d: spend,
+    note: "※OpenAIは残り残高の金額を公式APIで返しません。残高不足かどうかはここで確認できます。",
+    billingUrl,
+    at: new Date().toISOString(),
+  });
+}
+
 export default async function handler(req, res) {
   applyCors(req, res);
   if (req.method === "OPTIONS") {
@@ -264,16 +413,22 @@ export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
-  const apiKey = await getOpenAIKey();
-  if (!apiKey) {
-    return res.status(500).json({
-      error: "OPENAI_API_KEY is not configured",
-      hint: "Vercelの環境変数 OPENAI_API_KEY を設定するか、api/secrets.local.js.example を secrets.local.js にコピーしてキーを入れてください。",
-    });
-  }
 
   try {
     const body = req.body || {};
+
+    // ===== 状態確認（残高不足・キー・接続）=====
+    if (body.mode === "status" || body.mode === "health") {
+      return await handleOpenAIStatus(res);
+    }
+
+    const apiKey = await getOpenAIKey();
+    if (!apiKey) {
+      return res.status(500).json({
+        error: "OPENAI_API_KEY is not configured",
+        hint: "Vercelの環境変数 OPENAI_API_KEY を設定するか、api/secrets.local.js.example を secrets.local.js にコピーしてキーを入れてください。",
+      });
+    }
 
     // ===== Text-to-Speech（円卓AIの声）=====
     // /api/tts が未デプロイでも動くよう、既存の /api/openai に載せる
@@ -444,7 +599,16 @@ export default async function handler(req, res) {
 
     if (!aiRes.ok) {
       const t = await aiRes.text();
-      return res.status(502).json({ error: "OpenAI呼び出しに失敗しました", detail: t.slice(0, 500) });
+      const cls = classifyOpenAIError(aiRes.status, t);
+      if (cls.state === "no_credits") {
+        return res.status(502).json({
+          error: "OpenAIの残高が不足しています",
+          detail: cls.detail,
+          state: cls.state,
+          billingUrl: "https://platform.openai.com/settings/organization/billing/",
+        });
+      }
+      return res.status(502).json({ error: "OpenAI呼び出しに失敗しました", detail: t.slice(0, 500), state: cls.state });
     }
 
     const data = await aiRes.json();

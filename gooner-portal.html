@@ -2833,6 +2833,45 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
 .pt-dropbox:hover{filter:brightness(1.08);border-color:var(--nav-green)}
 .pt-dropbox.is-on{border-color:rgba(154,209,74,.65);background:rgba(56,142,60,.22)}
 .pt-dropbox-status{font-size:10px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pt-openai{
+  font-size:11px;padding:5px 10px;border-radius:8px;cursor:pointer;
+  border:1px solid rgba(116,185,232,.45);background:rgba(40,90,140,.16);color:#cfe8f8;
+}
+.pt-openai:hover{filter:brightness(1.08);border-color:rgba(116,185,232,.7)}
+.pt-openai.is-ok{border-color:rgba(120,190,140,.55);background:rgba(40,120,70,.18);color:#b8e6c4}
+.pt-openai.is-ng{border-color:rgba(220,120,120,.55);background:rgba(140,40,40,.2);color:#f0c0c0}
+.pt-openai-status{font-size:10px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#oa-status-modal{
+  display:none;position:fixed;inset:0;z-index:9300;background:rgba(4,8,14,.72);
+  align-items:center;justify-content:center;padding:18px;
+}
+#oa-status-modal.open{display:flex}
+.oa-status-card{
+  width:min(420px,100%);background:linear-gradient(180deg,#121820,#0c1118);
+  border:1px solid rgba(196,166,106,.28);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.45);overflow:hidden;
+}
+.oa-status-card .oa-h{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(196,166,106,.18)}
+.oa-status-card .oa-h h2{margin:0;font-size:14px;font-weight:700;color:var(--text);flex:1}
+.oa-status-card .oa-h button{
+  font-size:11px;padding:5px 10px;border-radius:8px;cursor:pointer;
+  border:1px solid rgba(143,152,166,.35);background:transparent;color:var(--muted);
+}
+.oa-status-card .oa-body{padding:14px 16px;font-size:13px;line-height:1.7;color:var(--text)}
+.oa-status-card .oa-badge{
+  display:inline-block;font-size:12px;font-weight:800;padding:3px 10px;border-radius:999px;margin-bottom:8px;
+  border:1px solid rgba(143,152,166,.35);background:rgba(143,152,166,.1);
+}
+.oa-status-card .oa-badge.ok{color:#8fd6a6;border-color:rgba(120,190,140,.4);background:rgba(120,190,140,.12)}
+.oa-status-card .oa-badge.ng{color:#e79a9a;border-color:rgba(200,100,100,.4);background:rgba(200,100,100,.12)}
+.oa-status-card .oa-meta{font-size:11px;color:var(--muted);margin-top:10px}
+.oa-status-card .oa-foot{padding:12px 14px;border-top:1px solid rgba(143,152,166,.12);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.oa-status-card .oa-foot a,.oa-status-card .oa-foot button{
+  font-size:11px;padding:6px 12px;border-radius:8px;cursor:pointer;text-decoration:none;
+  border:1px solid rgba(143,152,166,.35);background:transparent;color:var(--muted);
+}
+.oa-status-card .oa-foot a.primary,.oa-status-card .oa-foot button.primary{
+  border-color:rgba(116,185,232,.5);background:rgba(40,90,140,.2);color:#cfe8f8;
+}
 .pt-sync-status{font-size:10px;color:var(--muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #dbx-modal{
   display:none;position:fixed;inset:0;z-index:9200;background:rgba(4,8,14,.72);
@@ -3095,6 +3134,8 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
   <span class="pt-logo">GOONER PORTAL</span>
   <button type="button" class="pt-dropbox" id="portalDropboxBtn" title="/GoonerPortal を一覧・ダウンロード">Dropbox同期</button>
   <span class="pt-dropbox-status" id="portalDropboxStatus" hidden></span>
+  <button type="button" class="pt-openai" id="portalOpenAIStatusBtn" title="OpenAIの接続・残高不足を確認">OpenAI状態</button>
+  <span class="pt-openai-status" id="portalOpenAIStatus" hidden></span>
   <span class="pt-user" id="portalUserChip" hidden></span>
   <span class="pt-task-badge" id="portalTaskBadge" hidden title="未完了タスク">TASK 0</span>
   <button type="button" class="pt-logout" id="portalDutyEndBtn" hidden title="本日の業務終了を記録">業務終了</button>
@@ -3112,6 +3153,21 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
   <span class="mx-corner-label">QUEST</span>
 </button>
 <button type="button" class="entaku-nav-fab" id="entakuNavFab" title="サイドメニューを再表示" hidden>メニュー</button>
+
+<div id="oa-status-modal" aria-hidden="true">
+  <div class="oa-status-card" role="dialog" aria-labelledby="oaStatusTitle">
+    <div class="oa-h">
+      <h2 id="oaStatusTitle">OpenAI 状態</h2>
+      <button type="button" id="oaStatusCloseBtn" aria-label="閉じる">閉じる</button>
+    </div>
+    <div class="oa-body" id="oaStatusBody">確認中…</div>
+    <div class="oa-foot">
+      <a class="primary" id="oaStatusBillingLink" href="https://platform.openai.com/settings/organization/billing/" target="_blank" rel="noopener">Billingを開く</a>
+      <button type="button" id="oaStatusRetryBtn">再確認</button>
+      <button type="button" class="primary" id="oaStatusCloseBtn2">閉じる</button>
+    </div>
+  </div>
+</div>
 
 <div id="dbx-modal" aria-hidden="true">
   <div class="dbx-card" role="dialog" aria-labelledby="dbxTitle">
@@ -11872,6 +11928,114 @@ window.PortalAuth=(function(){
     window.addEventListener('portal-member-ready', syncDropboxBtnVisibility);
   }
 
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire);
+  else wire();
+})();
+</script>
+
+<script>
+/* ===== OpenAI 状態確認（残高不足・キー・接続） ===== */
+(function(){
+  function endpoint(){
+    if(typeof resolveAiEndpoint==='function') return resolveAiEndpoint();
+    try{ if(/vercel\.app$/i.test(location.hostname||'')) return '/api/openai'; }catch(e){}
+    return 'https://kaisha-kanri.vercel.app/api/openai';
+  }
+  function modal(){ return document.getElementById('oa-status-modal'); }
+  function bodyEl(){ return document.getElementById('oaStatusBody'); }
+  function btn(){ return document.getElementById('portalOpenAIStatusBtn'); }
+  function chip(){ return document.getElementById('portalOpenAIStatus'); }
+  function openM(){
+    const m=modal(); if(!m) return;
+    m.classList.add('open'); m.setAttribute('aria-hidden','false');
+  }
+  function closeM(){
+    const m=modal(); if(!m) return;
+    m.classList.remove('open'); m.setAttribute('aria-hidden','true');
+  }
+  function esc(s){
+    return String(s||'').replace(/[&<>"']/g,function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);
+    });
+  }
+  function paint(data){
+    const ok=!!data.ok;
+    const b=btn();
+    if(b){
+      b.classList.toggle('is-ok', ok);
+      b.classList.toggle('is-ng', !ok);
+      b.textContent=ok?'OpenAI OK':'OpenAI注意';
+    }
+    const c=chip();
+    if(c){
+      c.hidden=false;
+      c.textContent=String(data.label|| (ok?'接続OK':'要確認'));
+    }
+    const link=document.getElementById('oaStatusBillingLink');
+    if(link && data.billingUrl) link.href=data.billingUrl;
+    let spend='';
+    if(data.spend7d && data.spend7d.available){
+      spend='<div class="oa-meta">直近7日の利用額: $'+esc(String(data.spend7d.usd))+'（Adminキー設定時のみ）</div>';
+    }
+    const html=
+      '<span class="oa-badge '+(ok?'ok':'ng')+'">'+esc(data.label|| (ok?'接続OK':'異常'))+'</span>'+
+      '<div>'+esc(data.detail||'')+'</div>'+
+      (data.note?'<div class="oa-meta">'+esc(data.note)+'</div>':'')+
+      spend+
+      (data.at?'<div class="oa-meta">確認時刻: '+esc(data.at)+'</div>':'');
+    const body=bodyEl();
+    if(body) body.innerHTML=html;
+  }
+  async function check(){
+    openM();
+    const body=bodyEl();
+    if(body) body.innerHTML='確認中…（数秒）';
+    try{
+      if(/^file:/i.test(location.protocol||'')){
+        paint({
+          ok:false, state:'local_file', label:'ローカルファイル',
+          detail:'file:// では確認できません。https://kaisha-kanri.vercel.app/gooner-portal で開いてください。',
+          billingUrl:'https://platform.openai.com/settings/organization/billing/'
+        });
+        return;
+      }
+      const r=await fetch(endpoint(),{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({mode:'status'})
+      });
+      const data=await r.json().catch(function(){ return {}; });
+      if(!r.ok && !data.state){
+        paint({
+          ok:false, label:'確認失敗', detail:String(data.error||data.detail||('HTTP '+r.status)),
+          billingUrl:'https://platform.openai.com/settings/organization/billing/',
+          at:new Date().toISOString()
+        });
+        return;
+      }
+      paint(data);
+      try{
+        window.Treasury?.toast?.(data.ok
+          ? ('OpenAI: '+(data.label||'接続OK'))
+          : ('OpenAI: '+(data.label||'要確認')+' — '+(data.detail||'').slice(0,80)));
+      }catch(e){}
+    }catch(e){
+      paint({
+        ok:false, label:'確認失敗', detail:String((e&&e.message)||e),
+        billingUrl:'https://platform.openai.com/settings/organization/billing/',
+        at:new Date().toISOString()
+      });
+    }
+  }
+  function wire(){
+    const b=btn();
+    if(!b) return;
+    b.addEventListener('click', check);
+    document.getElementById('oaStatusCloseBtn')?.addEventListener('click', closeM);
+    document.getElementById('oaStatusCloseBtn2')?.addEventListener('click', closeM);
+    document.getElementById('oaStatusRetryBtn')?.addEventListener('click', check);
+    modal()?.addEventListener('click', function(e){ if(e.target===modal()) closeM(); });
+  }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire);
   else wire();
 })();
