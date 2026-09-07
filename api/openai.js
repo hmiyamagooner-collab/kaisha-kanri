@@ -469,9 +469,15 @@ async function handleOpenAIStatus(res) {
   const adminKey = String(process.env.OPENAI_ADMIN_KEY || "").trim();
   const spend = await fetchRecentSpendUsd(adminKey);
 
+  // 信号機: 残あり=ok(緑)。閾値(OPENAI_ALERT_USD)を超えたら low(橙)。残高切れ/無効は out(赤)は上位のstateで判定。
+  let level = "ok";
+  const thr = Number(process.env.OPENAI_ALERT_USD || 0);
+  if (thr > 0 && spend && spend.available && Number(spend.usd) >= thr) level = "low";
+
   return res.status(200).json({
     ok: true,
     state: "ok",
+    level,
     label: "接続OK",
     detail: "OpenAIに接続でき、残高不足ではありません。",
     model: MODEL,

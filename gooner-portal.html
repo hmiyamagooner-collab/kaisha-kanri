@@ -2889,6 +2889,18 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
 .pt-openai.is-ok{border-color:rgba(120,190,140,.55);background:rgba(40,120,70,.18);color:#b8e6c4}
 .pt-openai.is-ng{border-color:rgba(220,120,120,.55);background:rgba(140,40,40,.2);color:#f0c0c0}
 .pt-openai-status{font-size:10px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ===== トークン残量の信号機：緑=残あり / 橙=残り僅か / 赤=切れ（常時発光） ===== */
+.pt-openai::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle;background:#5b6b7a;box-shadow:none;transition:background .25s ease,box-shadow .25s ease}
+.pt-openai.pt-tok-ok{border-color:rgba(110,205,150,.7)!important}
+.pt-openai.pt-tok-ok::before{background:#38d178;box-shadow:0 0 6px 2px rgba(56,209,120,.75);animation:ptTokOk 2.6s ease-in-out infinite}
+.pt-openai.pt-tok-low{border-color:rgba(240,185,80,.8)!important}
+.pt-openai.pt-tok-low::before{background:#f4b13c;box-shadow:0 0 8px 3px rgba(244,177,60,.8);animation:ptTokLow 1.3s ease-in-out infinite}
+.pt-openai.pt-tok-out{border-color:rgba(245,110,110,.9)!important}
+.pt-openai.pt-tok-out::before{background:#ff5a5a;box-shadow:0 0 10px 4px rgba(255,90,90,.85);animation:ptTokOut .8s ease-in-out infinite}
+@keyframes ptTokOk{0%,100%{box-shadow:0 0 4px 1px rgba(56,209,120,.5)}50%{box-shadow:0 0 9px 3px rgba(56,209,120,.85)}}
+@keyframes ptTokLow{0%,100%{box-shadow:0 0 5px 2px rgba(244,177,60,.55)}50%{box-shadow:0 0 12px 4px rgba(244,177,60,.95)}}
+@keyframes ptTokOut{0%,100%{box-shadow:0 0 6px 2px rgba(255,90,90,.6)}50%{box-shadow:0 0 14px 5px rgba(255,90,90,1)}}
+@media (prefers-reduced-motion:reduce){.pt-openai.pt-tok-ok::before,.pt-openai.pt-tok-low::before,.pt-openai.pt-tok-out::before{animation:none}}
 #oa-status-modal{
   display:none;position:fixed;inset:0;z-index:9300;background:rgba(4,8,14,.72);
   align-items:center;justify-content:center;padding:18px;
@@ -15609,23 +15621,44 @@ window.EntakuDocIngest=(function(){
     try{ window.DashTalk && window.DashTalk.warn && window.DashTalk.warn('finance', msg, 30000); }catch(e){}
     try{ window.Treasury && window.Treasury.toast && window.Treasury.toast(msg); }catch(e){}
   }
-  function markChip(chipId, btnId, on, text){
+  // 信号機の点灯（緑=残あり / 橙=残り僅か / 赤=切れ / 無印=不明）
+  function setLight(btnId, chipId, level, chipText){
     try{
-      var c=document.getElementById(chipId);
-      if(c){ c.hidden=false; c.textContent=text; c.style.color=on?'#f0a0a0':''; }
       var b=document.getElementById(btnId);
-      if(b){ b.classList.toggle('is-ng', !!on); if(on) b.classList.remove('is-ok'); }
+      if(b){
+        b.classList.remove('pt-tok-ok','pt-tok-low','pt-tok-out','is-ng','is-ok');
+        if(level==='ok') b.classList.add('pt-tok-ok');
+        else if(level==='low') b.classList.add('pt-tok-low');
+        else if(level==='out'){ b.classList.add('pt-tok-out'); b.classList.add('is-ng'); }
+      }
+      var c=document.getElementById(chipId);
+      if(c){
+        if(chipText){ c.hidden=false; c.textContent=chipText;
+          c.style.color = level==='out' ? '#ff9a9a' : (level==='low' ? '#f4cd8a' : (level==='ok' ? '#9fe6bd' : ''));
+        }else{ c.hidden=true; c.textContent=''; }
+      }
     }catch(e){}
+  }
+  // state/creditから信号機レベルを判定（サーバのlevelを優先）
+  function levelFrom(serverLevel, state){
+    if(serverLevel==='ok'||serverLevel==='low'||serverLevel==='out'||serverLevel==='unknown') return serverLevel;
+    if(state==='ok') return 'ok';
+    if(state==='no_credits'||state==='bad_key') return 'out';
+    if(state==='rate_limit') return 'low';
+    return 'unknown';
   }
   async function checkOpenAI(){
     try{
       var r=await fetch(oaEndpoint(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'status'})});
       var d=await r.json().catch(function(){ return {}; });
-      if(d.state==='no_credits'){
-        markChip('portalOpenAIStatus','portalOpenAIStatusBtn', true, '⚠残高不足');
-        if(shouldAlert('oa')) fireAlert('⚠ OpenAIの残高が不足しています（トークン切れ）。円卓AIが止まります。Billingでチャージしてください。');
-      }else if(d.state==='bad_key'){
-        if(shouldAlert('oa_key')) fireAlert('⚠ OpenAIのAPIキーが無効です。Vercelの OPENAI_API_KEY を確認してください。');
+      var lv=levelFrom(d.level, d.state);
+      var txt = lv==='ok' ? '● 残あり' : lv==='low' ? '● 残り僅か' : lv==='out' ? '⚠ 残高不足' : '';
+      setLight('portalOpenAIStatusBtn','portalOpenAIStatus', lv, txt);
+      if(lv==='out'){
+        if(d.state==='bad_key'){ if(shouldAlert('oa_key')) fireAlert('⚠ OpenAIのAPIキーが無効です。Vercelの OPENAI_API_KEY を確認してください。'); }
+        else if(shouldAlert('oa')) fireAlert('⚠ OpenAIの残高が不足しています（トークン切れ）。円卓AIが止まります。Billingでチャージしてください。');
+      }else if(lv==='low'){
+        if(shouldAlert('oa_low')) fireAlert('⚠ OpenAIのトークン残量が少なくなっています。早めにBillingで補充してください。');
       }
     }catch(e){}
   }
@@ -15634,11 +15667,14 @@ window.EntakuDocIngest=(function(){
       var r=await fetch(clEndpoint(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'status'})});
       var d=await r.json().catch(function(){ return {}; });
       var cr=d.credit||{};
-      if(cr.state==='no_credits'){
-        markChip('portalClaudeStatus','portalClaudeStatusBtn', true, '⚠残高不足');
-        if(shouldAlert('cl')) fireAlert('⚠ Anthropic(Claude)の残高が不足しています（トークン切れ）。ゆうしゃレオ等が止まります。コンソールでチャージしてください。');
-      }else if(cr.state==='bad_key'){
-        if(shouldAlert('cl_key')) fireAlert('⚠ Anthropic(Claude)のAPIキーが無効です。ANTHROPIC_API_KEY を確認してください。');
+      var lv=levelFrom(d.level, cr.state);
+      var txt = lv==='ok' ? '● 残あり' : lv==='low' ? '● 残り僅か' : lv==='out' ? '⚠ 残高不足' : '';
+      setLight('portalClaudeStatusBtn','portalClaudeStatus', lv, txt);
+      if(lv==='out'){
+        if(cr.state==='bad_key'){ if(shouldAlert('cl_key')) fireAlert('⚠ Anthropic(Claude)のAPIキーが無効です。ANTHROPIC_API_KEY を確認してください。'); }
+        else if(shouldAlert('cl')) fireAlert('⚠ Anthropic(Claude)の残高が不足しています（トークン切れ）。ゆうしゃレオ等が止まります。コンソールでチャージしてください。');
+      }else if(lv==='low'){
+        if(shouldAlert('cl_low')) fireAlert('⚠ Anthropic(Claude)のトークン残量が少なくなっています。早めにコンソールで補充してください。');
       }
     }catch(e){}
   }

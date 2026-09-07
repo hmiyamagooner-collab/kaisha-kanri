@@ -118,6 +118,18 @@ async function checkAnthropicCredit() {
   }
 }
 
+// 信号機レベル: 残あり=ok(緑) / 残り僅か=low(橙) / 切れ・無効=out(赤) / 不明=unknown
+function anthLevel(credit, cost) {
+  const st = credit && credit.state;
+  if (st === "no_credits" || st === "bad_key") return "out";
+  if (st === "ok") {
+    const thr = Number(process.env.ANTHROPIC_ALERT_USD || 0);
+    if (thr > 0 && cost && cost.available && Number(cost.usd) >= thr) return "low";
+    return "ok";
+  }
+  return "unknown";
+}
+
 async function handleStatus(res) {
   const key = String(process.env.ANTHROPIC_ADMIN_KEY || "").trim();
   const credit = await checkAnthropicCredit();
@@ -125,7 +137,7 @@ async function handleStatus(res) {
     return res.status(200).json({
       ok: false, state: "no_key", label: "キー未設定",
       detail: "Vercelの環境変数 ANTHROPIC_ADMIN_KEY（Admin APIキー sk-ant-admin...）が未設定です。設定すると利用額・トークンを表示します。",
-      credit, billingUrl: CONSOLE_USAGE, at: new Date().toISOString(),
+      credit, level: anthLevel(credit, null), billingUrl: CONSOLE_USAGE, at: new Date().toISOString(),
     });
   }
   const [cost, tokens] = await Promise.all([fetchCostUsd(key, 7), fetchTokens(key, 7)]);
@@ -150,6 +162,7 @@ async function handleStatus(res) {
     spend7d: cost,
     tokens7d: tokens,
     credit,
+    level: anthLevel(credit, cost),
     note: "※組織全体の利用（ゆうしゃレオ等を含む）。ワークスペース別内訳は将来対応可。",
     billingUrl: CONSOLE_USAGE,
     at: new Date().toISOString(),
