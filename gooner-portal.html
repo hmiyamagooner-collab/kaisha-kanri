@@ -5820,10 +5820,10 @@ window.PortalTTS=(function(){
   const LS_VOICE='portal-tts-voice';
   const LS_ENGINE='portal-tts-engine'; // cloud | browser
   const CLOUD_VOICES=[
-    {id:'shimmer', label:'shimmer（妖精・やわらか）', female:true, instr:'妖精のように軽やかで、非常に高く透き通った声で話してください。鈴が鳴るようにかん高いピッチで、ふわふわと空気感のある、きらめく魔法のようなトーンで、やさしくささやくように。'},
-    {id:'coral',   label:'coral（妖精・かわいい）',   female:true, agent:'secretary', instr:'妖精のように軽やかで愛らしい、非常に高くかん高い声で話してください。鈴のように高いピッチで、きらきらと弾む魔法のトーンで、明るく親しみやすく。'},
-    {id:'nova',    label:'nova（妖精・元気）',         female:true, agent:'secretary', instr:'妖精のように軽やかで元気な、非常に高くきらめく声で話してください。かん高く弾むピッチで、いたずらっぽく可愛い妖精のトーンで、はきはきと。'},
-    {id:'sage',    label:'sage（妖精・やさしい）',     female:true, agent:'finance', instr:'妖精のように軽やかでやさしい、非常に高く透き通った声で話してください。鈴のようにかん高いピッチで、ふんわり癒やし系の、きらめく魔法のトーンで、おっとりと。'},
+    {id:'shimmer', label:'shimmer（若い女の子・やわらか）', female:true, instr:'若くてやわらかい、10代の女の子の声で話してください。甲高く澄んだ、可愛らしいアニメ声のトーンで。落ち着いた大人の女性・中年女性の声は絶対に避ける。A cute, youthful, high-pitched teenage anime girl voice; never mature or middle-aged.'},
+    {id:'coral',   label:'coral（若い女の子・かわいい）',   female:true, agent:'secretary', instr:'若くてとても可愛い、10代前半の女の子の声で話してください。アニメのヒロインのように甲高く澄んだ、明るく元気で親しみやすい声。落ち着いた大人・中年女性の声は絶対に避ける。A cute young anime girl voice, high-pitched, cheerful and youthful; never mature or middle-aged.'},
+    {id:'nova',    label:'nova（若い女の子・元気）',         female:true, agent:'secretary', instr:'若くて元気な、10代前半の女の子の声で話してください。アニメの元気な女の子のように甲高く、はきはきと明るく。落ち着いた大人・中年女性の声は絶対に避ける。A high-pitched cheerful young anime girl voice; never mature or middle-aged.'},
+    {id:'sage',    label:'sage（若い女の子・やさしい）',     female:true, agent:'finance', instr:'若くてやさしい、10代の女の子の声で話してください。甲高く癒やし系の、可愛いアニメ声。落ち着いた大人・中年女性の声は絶対に避ける。A gentle, high-pitched, youthful young girl voice; never mature or middle-aged.'},
     {id:'alloy',   label:'alloy（中性）'},
     {id:'fable',   label:'fable（英国・中性）'},
     {id:'verse',   label:'verse（表情豊か）'},
@@ -5855,7 +5855,8 @@ window.PortalTTS=(function(){
   }
   let enabled=localStorage.getItem(LS_KEY)!=='0';
   let preferredURI=localStorage.getItem(LS_VOICE)||'nova';
-  let engine=localStorage.getItem(LS_ENGINE)||'cloud';
+  // 声は必ずOpenAIで生成（端末の合成音声＝中年風になるため常用しない。クラウド失敗時のみ最終手段でフォールバック）
+  let engine='cloud';
   let speaking=false;
   let intentionalStop=false;
   let queueGen=0;
