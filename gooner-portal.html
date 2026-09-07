@@ -2846,6 +2846,11 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
   align-items:center;justify-content:center;padding:18px;
 }
 #oa-status-modal.open{display:flex}
+#cl-status-modal{
+  display:none;position:fixed;inset:0;z-index:9300;background:rgba(4,8,14,.72);
+  align-items:center;justify-content:center;padding:18px;
+}
+#cl-status-modal.open{display:flex}
 .oa-status-card{
   width:min(420px,100%);background:linear-gradient(180deg,#121820,#0c1118);
   border:1px solid rgba(196,166,106,.28);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.45);overflow:hidden;
@@ -3136,6 +3141,8 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
   <span class="pt-dropbox-status" id="portalDropboxStatus" hidden></span>
   <button type="button" class="pt-openai" id="portalOpenAIStatusBtn" title="OpenAIの接続・残高不足を確認">OpenAI状態</button>
   <span class="pt-openai-status" id="portalOpenAIStatus" hidden></span>
+  <button type="button" class="pt-openai" id="portalClaudeStatusBtn" title="Anthropic(Claude)の利用額・トークンを確認（ゆうしゃレオ等）">Claude状態</button>
+  <span class="pt-openai-status" id="portalClaudeStatus" hidden></span>
   <span class="pt-user" id="portalUserChip" hidden></span>
   <span class="pt-task-badge" id="portalTaskBadge" hidden title="未完了タスク">TASK 0</span>
   <button type="button" class="pt-logout" id="portalDutyEndBtn" hidden title="本日の業務終了を記録">業務終了</button>
@@ -3165,6 +3172,21 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
       <a class="primary" id="oaStatusBillingLink" href="https://platform.openai.com/settings/organization/billing/" target="_blank" rel="noopener">Billingを開く</a>
       <button type="button" id="oaStatusRetryBtn">再確認</button>
       <button type="button" class="primary" id="oaStatusCloseBtn2">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<div id="cl-status-modal" aria-hidden="true">
+  <div class="oa-status-card" role="dialog" aria-labelledby="clStatusTitle">
+    <div class="oa-h">
+      <h2 id="clStatusTitle">Anthropic (Claude) 状態</h2>
+      <button type="button" id="clStatusCloseBtn" aria-label="閉じる">閉じる</button>
+    </div>
+    <div class="oa-body" id="clStatusBody">確認中…</div>
+    <div class="oa-foot">
+      <a class="primary" id="clStatusBillingLink" href="https://console.anthropic.com/settings/usage" target="_blank" rel="noopener">Usageを開く</a>
+      <button type="button" id="clStatusRetryBtn">再確認</button>
+      <button type="button" class="primary" id="clStatusCloseBtn2">閉じる</button>
     </div>
   </div>
 </div>
@@ -12038,6 +12060,85 @@ window.PortalAuth=(function(){
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wire);
   else wire();
+})();
+</script>
+
+<script>
+/* ===== Anthropic(Claude) 状態確認（利用額・トークン｜ゆうしゃレオ等） ===== */
+(function(){
+  function endpoint(){
+    try{ if(/vercel\.app$/i.test(location.hostname||'')) return '/api/anthropic-status'; }catch(e){}
+    return 'https://kaisha-kanri.vercel.app/api/anthropic-status';
+  }
+  var USAGE='https://console.anthropic.com/settings/usage';
+  function modal(){ return document.getElementById('cl-status-modal'); }
+  function bodyEl(){ return document.getElementById('clStatusBody'); }
+  function btn(){ return document.getElementById('portalClaudeStatusBtn'); }
+  function chip(){ return document.getElementById('portalClaudeStatus'); }
+  function openM(){ var m=modal(); if(!m) return; m.classList.add('open'); m.setAttribute('aria-hidden','false'); }
+  function closeM(){ var m=modal(); if(!m) return; m.classList.remove('open'); m.setAttribute('aria-hidden','true'); }
+  function esc(s){ return String(s||'').replace(/[&<>"']/g,function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }); }
+  function nf(n){ n=Number(n||0); return n.toLocaleString('ja-JP'); }
+  function paint(data){
+    var ok=!!data.ok, b=btn();
+    if(b){ b.classList.toggle('is-ok',ok); b.classList.toggle('is-ng',!ok); b.textContent=ok?'Claude OK':'Claude注意'; }
+    var c=chip();
+    if(c){
+      c.hidden=false;
+      var s=(data.spend7d&&data.spend7d.available)?('$'+data.spend7d.usd+'/7日'):String(data.label||(ok?'接続OK':'要確認'));
+      c.textContent=s;
+    }
+    var link=document.getElementById('clStatusBillingLink');
+    if(link && data.billingUrl) link.href=data.billingUrl;
+    var spend='';
+    if(data.spend7d && data.spend7d.available){
+      spend='<div class="oa-meta">直近7日の利用額: <b>$'+esc(String(data.spend7d.usd))+'</b> '+esc(data.spend7d.currency||'USD')+'（組織全体）</div>';
+    }else if(data.spend7d && data.spend7d.reason){
+      spend='<div class="oa-meta">利用額: 取得不可（'+esc(data.spend7d.reason)+'）</div>';
+    }
+    var tok='';
+    if(data.tokens7d && data.tokens7d.available){
+      tok='<div class="oa-meta">直近7日のトークン: 入力 '+nf(data.tokens7d.input)+' / 出力 '+nf(data.tokens7d.output)+' / 計 <b>'+nf(data.tokens7d.total)+'</b></div>';
+    }else if(data.tokens7d && data.tokens7d.reason){
+      tok='<div class="oa-meta">トークン: 取得不可（'+esc(data.tokens7d.reason)+'）</div>';
+    }
+    var html=
+      '<span class="oa-badge '+(ok?'ok':'ng')+'">'+esc(data.label||(ok?'接続OK':'異常'))+'</span>'+
+      '<div>'+esc(data.detail||'')+'</div>'+
+      spend+tok+
+      (data.note?'<div class="oa-meta">'+esc(data.note)+'</div>':'')+
+      (data.at?'<div class="oa-meta">確認時刻: '+esc(data.at)+'</div>':'');
+    var body=bodyEl(); if(body) body.innerHTML=html;
+  }
+  async function check(){
+    openM();
+    var body=bodyEl(); if(body) body.innerHTML='確認中…（数秒）';
+    try{
+      if(/^file:/i.test(location.protocol||'')){
+        paint({ok:false,label:'ローカルファイル',detail:'file:// では確認できません。https://kaisha-kanri.vercel.app/gooner-portal で開いてください。',billingUrl:USAGE});
+        return;
+      }
+      var r=await fetch(endpoint(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'status'})});
+      var data=await r.json().catch(function(){ return {}; });
+      if(!r.ok && !data.state){
+        paint({ok:false,label:'確認失敗',detail:String(data.error||data.detail||('HTTP '+r.status)),billingUrl:USAGE,at:new Date().toISOString()});
+        return;
+      }
+      paint(data);
+      try{ window.Treasury && window.Treasury.toast && window.Treasury.toast(data.ok?('Claude: '+(data.label||'接続OK')):('Claude: '+(data.label||'要確認'))); }catch(e){}
+    }catch(e){
+      paint({ok:false,label:'確認失敗',detail:String((e&&e.message)||e),billingUrl:USAGE,at:new Date().toISOString()});
+    }
+  }
+  function wire(){
+    var b=btn(); if(!b) return;
+    b.addEventListener('click',check);
+    var x=document.getElementById('clStatusCloseBtn'); if(x) x.addEventListener('click',closeM);
+    var x2=document.getElementById('clStatusCloseBtn2'); if(x2) x2.addEventListener('click',closeM);
+    var rt=document.getElementById('clStatusRetryBtn'); if(rt) rt.addEventListener('click',check);
+    var m=modal(); if(m) m.addEventListener('click',function(e){ if(e.target===m) closeM(); });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',wire); else wire();
 })();
 </script>
 
