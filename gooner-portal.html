@@ -2926,6 +2926,11 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
 body.gate-dev .pt-openai,
 body.gate-dev .pt-openai-status,
 body.gate-dev .pt-ext{display:none!important}
+/* 業務中トグル：業務中は緑で在席を明示 */
+.pt-logout.is-working{
+  border-color:rgba(76,200,120,.7)!important;background:rgba(40,140,80,.22)!important;color:#c6f5d6!important;
+  box-shadow:0 0 0 1px rgba(76,200,120,.4),0 0 10px 1px rgba(76,200,120,.35);
+}
 /* ===== トークン残量の信号機：緑=残あり / 橙=残り僅か / 赤=切れ（常時発光） ===== */
 .pt-openai::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle;background:#5b6b7a;box-shadow:none;transition:background .25s ease,box-shadow .25s ease}
 .pt-openai.pt-tok-ok{border-color:rgba(110,205,150,.7)!important}
@@ -8801,9 +8806,14 @@ window.Treasury={
     const scoresByChar={};
     const chars=[];
     const activeCharIds=[];
+    // 自分（ログイン中）は「業務中」の時だけオフィスに登場させる（業務終了で退席）
+    const meId=selfMemberIdForOffice();
+    let selfWorking=true;
+    try{ if(window.PortalDailyDuty?.isWorking?.()===false) selfWorking=false; }catch(e){}
     members.forEach(function(m){
       const cid=links[String(m.id)] || autoLinkGuess(m);
       if(!cid) return;
+      if(meId && String(m.id)===meId && !selfWorking) return; // 業務終了中は自分のキャラを非表示
       scoresByChar[cid]=(scoresByChar[cid]||0)+memberScore(m.id);
       activeCharIds.push(cid);
       const def=defs[cid] || ensureMemberChar(m);
@@ -8827,6 +8837,24 @@ window.Treasury={
     }catch(e){}
     window.__portalOfficeSync=payload;
   }
+  // ログイン中メンバーのidを推定（自分のキャラの在席判定に使用）
+  function selfMemberIdForOffice(){
+    try{ var m=window.GoonerSB?.me?.(); if(m&&m.id) return String(m.id); }catch(e){}
+    try{ var m2=window.PortalTasks?.me?.(); if(m2&&m2.id) return String(m2.id); }catch(e){}
+    try{
+      var u=window.PortalAuth?.getUser?.();
+      if(u){
+        var hit=(members||[]).find(function(x){
+          return (u.memberId && String(x.id)===String(u.memberId))
+            || (u.email && String(x.email||'').toLowerCase()===String(u.email).toLowerCase())
+            || (u.name && String(x.name||'')===String(u.name));
+        });
+        if(hit) return String(hit.id);
+      }
+    }catch(e){}
+    return '';
+  }
+  try{ window.__syncOfficeQuestState=syncOfficeQuestState; }catch(e){}
   function isMine(t, m){
     if(!t||!m) return false;
     return !!(t.assigned_all || String(t.assigned_to)===String(m.id));
@@ -10989,9 +11017,11 @@ window.BizCaseLink=(function(){
     try{ window.PortalAuth?.serverLog?.('duty-start','attendance'); }catch(e){}
   }
   function startWork(){
-    patchDay(function(st){ st.started=true; st.startedAt=new Date().toISOString(); });
+    patchDay(function(st){ st.started=true; st.workEnded=false; st.startedAt=new Date().toISOString(); });
     postCheckin();
     try{ window.PortalRisk?.refresh?.(); }catch(e){}
+    try{ syncDutyBtn(); }catch(e){}
+    try{ window.__syncOfficeQuestState && window.__syncOfficeQuestState(); }catch(e){}
     showTaskCheck();
   }
   function buildMissAlert(leaks){
@@ -11160,6 +11190,28 @@ window.BizCaseLink=(function(){
     patchDay(function(st){ st.workEnded=true; st.endedAt=new Date().toISOString(); });
     try{ window.Treasury?.toast?.('業務終了を記録しました'); }catch(e){}
   }
+  // 業務中かどうか（出勤済み かつ 業務終了していない）
+  function isWorking(){ var st=dayState().st; return !!(st.started && !st.workEnded); }
+  // 業務中／業務終了を切り替える
+  function setWorking(on){
+    patchDay(function(st){
+      if(on){ st.started=true; st.workEnded=false; if(!st.startedAt) st.startedAt=new Date().toISOString(); }
+      else { st.workEnded=true; st.endedAt=new Date().toISOString(); }
+    });
+    try{ window.Treasury?.toast?.(on?'業務を開始しました（在席中）':'業務終了を記録しました'); }catch(e){}
+    syncDutyBtn();
+    try{ window.__syncOfficeQuestState && window.__syncOfficeQuestState(); }catch(e){}
+  }
+  function toggleWorking(){ setWorking(!isWorking()); }
+  // ヘッダーのボタン表示を状態に合わせる（業務中＝緑／業務終了＝グレー）
+  function syncDutyBtn(){
+    var btn=document.getElementById('portalDutyEndBtn'); if(!btn) return;
+    var working=isWorking();
+    btn.textContent = working ? '🟢 業務中' : '業務終了';
+    btn.title = working ? '業務中（クリックで業務終了）' : '業務終了（クリックで業務を再開）';
+    btn.classList.toggle('is-working', working);
+    btn.setAttribute('aria-pressed', working?'true':'false');
+  }
 
   // ログアウト前ガード（紗耶香）
   function wrapLogout(){
@@ -11183,6 +11235,10 @@ window.BizCaseLink=(function(){
   window.PortalDailyDuty={
     start:maybeStart,
     markWorkEnded:markWorkEnded,
+    isWorking:isWorking,
+    setWorking:setWorking,
+    toggleWorking:toggleWorking,
+    syncBtn:syncDutyBtn,
     showAttend:showAttend,
     showTaskCheck:showTaskCheck,
     isSayaka:isSayaka,
@@ -11559,7 +11615,7 @@ window.PortalAuth=(function(){
       if(shell)shell.hidden=false;
       if(chip){chip.hidden=false;chip.textContent=(isDemoMode()?'DEMO・':'')+u.role+'　'+u.name;}
       if(logout)logout.hidden=false;
-      if(dutyEnd)dutyEnd.hidden=!!isDemoMode();
+      if(dutyEnd){ dutyEnd.hidden=!!isDemoMode(); try{ window.PortalDailyDuty?.syncBtn?.(); }catch(e){} }
       if(badge)badge.textContent=isDemoMode()?('デモ・'+u.name):u.name;
       document.querySelectorAll('.gamenav button.on').forEach(function(b){ b.classList.remove('on'); });
       document.querySelectorAll('.screen.on').forEach(function(x){ x.classList.remove('on'); });
@@ -11853,7 +11909,7 @@ window.PortalAuth=(function(){
     });
     document.getElementById('portalLogoutBtn')?.addEventListener('click',logout);
     document.getElementById('portalDutyEndBtn')?.addEventListener('click', function(){
-      try{ window.PortalDailyDuty?.markWorkEnded?.(); }catch(e){}
+      try{ window.PortalDailyDuty?.toggleWorking?.(); }catch(e){}
     });
     // デイリー出勤ガードをログアウトに接続
     try{ window.PortalDailyDuty && window.dispatchEvent(new Event('portal-duty-wire')); }catch(e){}
