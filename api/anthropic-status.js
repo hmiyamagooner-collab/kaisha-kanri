@@ -134,9 +134,14 @@ async function handleStatus(res) {
   const key = String(process.env.ANTHROPIC_ADMIN_KEY || "").trim();
   const credit = await checkAnthropicCredit();
   if (!key) {
+    const okCredit = credit && credit.state === "ok";
     return res.status(200).json({
-      ok: false, state: "no_key", label: "キー未設定",
-      detail: "Vercelの環境変数 ANTHROPIC_ADMIN_KEY（Admin APIキー sk-ant-admin...）が未設定です。設定すると利用額・トークンを表示します。",
+      ok: okCredit ? true : false,
+      state: "no_key",
+      label: okCredit ? "接続OK（稼働中）" : "キー未設定",
+      detail: okCredit
+        ? "Claudeは正常に接続・稼働しています（残高あり／トークン切れアラート有効）。利用額・トークン数の“表示だけ”は任意のAdminキー（sk-ant-admin...）が必要ですが、未設定でも動作に問題はありません。"
+        : "Vercelの環境変数 ANTHROPIC_ADMIN_KEY（Admin APIキー sk-ant-admin...）が未設定です。設定すると利用額・トークンを表示します。",
       credit, level: anthLevel(credit, null), billingUrl: CONSOLE_USAGE, at: new Date().toISOString(),
     });
   }
