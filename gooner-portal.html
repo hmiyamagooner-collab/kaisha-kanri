@@ -5820,6 +5820,13 @@ window.PortalTTS=(function(){
     var hit=CLOUD_VOICES.find(function(v){return v.id===voiceId;});
     return (hit&&hit.instr)||'';
   }
+  // 読み上げ専用：TTSが誤読しがちなキャラ名をひらがな読みに置換（画面表示は漢字のまま）
+  function toReading(s){
+    return String(s||'')
+      .replace(/陽翔/g,'はると')   // ようしょう等の誤読を防止
+      .replace(/紬/g,'つむぎ')     // ちゅう等の誤読を防止
+      .replace(/凛/g,'りん');
+  }
   let enabled=localStorage.getItem(LS_KEY)!=='0';
   let preferredURI=localStorage.getItem(LS_VOICE)||'nova';
   let engine=localStorage.getItem(LS_ENGINE)||'cloud';
@@ -6055,7 +6062,7 @@ window.PortalTTS=(function(){
         if(typeof onend==='function') try{ onend(); }catch(e){}
         return;
       }
-      const t=String(text||'').trim();
+      const t=toReading(String(text||'').trim());
       if(!t){ if(typeof onend==='function') try{ onend(); }catch(e){} return; }
       unlock();
       if(engine==='browser') speakBrowser(t, onend);
