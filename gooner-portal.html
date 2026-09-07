@@ -5846,6 +5846,13 @@ window.PortalTTS=(function(){
     var hit=CLOUD_VOICES.find(function(v){return v.id===voiceId;});
     return (hit&&hit.instr)||'';
   }
+  // 再生時のピッチ＆速度アップ（preservesPitch=false + playbackRate でアニメ声化）。女性キャラは高く速く。
+  var FEMALE_RATE=1.4;
+  var voiceRate=1;
+  function rateForVoice(voiceId){
+    var hit=CLOUD_VOICES.find(function(v){return v.id===voiceId;});
+    return (hit&&hit.female)?FEMALE_RATE:1;
+  }
   // 読み上げ専用：TTSが誤読しがちなキャラ名をひらがな読みに置換（画面表示は漢字のまま）
   function toReading(s){
     return String(s||'')
@@ -5960,6 +5967,9 @@ window.PortalTTS=(function(){
       audioEl=new Audio(objectUrl);
       audioEl.preload='auto';
       audioEl.volume=1;
+      // ピッチ保持をオフにして再生速度を上げる＝音程も上がる（アニメ声化）
+      try{ audioEl.preservesPitch=false; audioEl.mozPreservesPitch=false; audioEl.webkitPreservesPitch=false; }catch(e){}
+      try{ audioEl.playbackRate=voiceRate||1; }catch(e){}
       audioEl.onended=function(){ resolve(true); };
       audioEl.onerror=function(){ resolve(false); };
       const p=audioEl.play();
@@ -5978,6 +5988,7 @@ window.PortalTTS=(function(){
     syncUi();
     const chunks=splitText(text);
     const voice=agentToVoice(agent);
+    voiceRate=rateForVoice(voice);
     // 1チャンク分のTTS音声を取得（決してrejectせず {blob}/{error} を返す＝先読みの未処理reject回避）
     const fetchChunk=async function(idx){
       try{
