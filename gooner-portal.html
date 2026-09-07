@@ -2219,6 +2219,35 @@ body.is-hsplit-drag{cursor:ew-resize;user-select:none}
 .dc-card[data-dept="finance"].is-hot{border-color:rgba(196,166,106,.45);box-shadow:0 18px 48px rgba(0,0,0,.62),0 10px 24px rgba(0,0,0,.38),0 0 28px rgba(140,150,170,.1)}
 .dc-card[data-dept="legal"]:has(.dc-photo:hover),
 .dc-card[data-dept="legal"].is-hot{border-color:rgba(196,166,106,.45);box-shadow:0 18px 48px rgba(0,0,0,.62),0 10px 24px rgba(0,0,0,.38),0 0 28px rgba(150,135,175,.1)}
+/* ===== AIが発言中(トーク中)：ひと目で分かる強調表示 ===== */
+.dc-cards.is-talking-on .dc-card:not(.is-talking){opacity:.38;filter:grayscale(.4);transition:opacity .25s ease,filter .25s ease}
+.dc-card.is-talking{z-index:6;transition:box-shadow .2s ease,border-color .2s ease}
+.dc-card.is-talking{
+  border-color:rgba(120,232,178,.8)!important;
+  animation:dcTalkPulse 1.15s ease-in-out infinite;
+}
+@keyframes dcTalkPulse{
+  0%,100%{box-shadow:0 0 0 2px rgba(92,222,152,.8),0 0 18px 4px rgba(70,210,140,.42),0 18px 48px rgba(0,0,0,.6)}
+  50%{box-shadow:0 0 0 3px rgba(128,244,186,.98),0 0 36px 11px rgba(84,232,154,.72),0 18px 48px rgba(0,0,0,.6)}
+}
+.dc-talk-badge{
+  position:absolute;top:8px;left:50%;transform:translateX(-50%);
+  z-index:7;display:none;align-items:center;gap:6px;
+  padding:4px 11px;border-radius:999px;
+  background:linear-gradient(180deg,rgba(34,188,116,.97),rgba(20,150,95,.97));
+  color:#fff;font-size:12px;font-weight:800;letter-spacing:.02em;
+  box-shadow:0 4px 14px rgba(0,0,0,.45);white-space:nowrap;pointer-events:none;
+}
+.dc-card.is-talking .dc-talk-badge{display:inline-flex}
+.dc-talk-badge .dc-talk-dot{
+  width:7px;height:7px;border-radius:50%;background:#eafff3;
+  animation:dcTalkDot 1s ease-out infinite;
+}
+@keyframes dcTalkDot{0%{box-shadow:0 0 0 0 rgba(255,255,255,.6)}70%{box-shadow:0 0 0 8px rgba(255,255,255,0)}100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}}
+@media (prefers-reduced-motion:reduce){
+  .dc-card.is-talking{animation:none}
+  .dc-talk-badge .dc-talk-dot{animation:none}
+}
 .dc-photo.dc-card__media{
   position:relative;overflow:hidden;min-height:0;min-width:0;width:100%;
   height:100%;
@@ -13275,16 +13304,34 @@ window.EntakuDocIngest=(function(){
     return String(s||'').replace(/⚠[^\n]*/g,'').replace(/【[^】]+】/g,'').replace(/\n+/g,'。').trim();
   }
   // 円卓の返信時：発言中のキャラ本人の動画音声を再生（普段はミュート、音声ON時のみ発声）。
+  var TALK_NAME={secretary:'凛',finance:'紬',legal:'陽翔'};
+  function ensureTalkBadge(photo, name){
+    if(!photo) return;
+    var b=photo.querySelector('.dc-talk-badge');
+    if(!b){
+      b=document.createElement('div'); b.className='dc-talk-badge';
+      b.innerHTML='<span class="dc-talk-dot" aria-hidden="true"></span><span class="dc-talk-txt"></span>';
+      photo.appendChild(b);
+    }
+    var t=b.querySelector('.dc-talk-txt'); if(t) t.textContent='🎙 '+name+'が発言中';
+  }
+  function clearTalking(){
+    var wrap=document.querySelector('.dc-cards'); if(wrap) wrap.classList.remove('is-talking-on');
+    document.querySelectorAll('.dc-card.is-talking').forEach(function(c){ c.classList.remove('is-talking'); });
+  }
   function entakuReactChar(agent){
     try{
       document.querySelectorAll('.dc-card video').forEach(function(v){ try{v.pause();}catch(e){} v.muted=true; });
       document.querySelectorAll('.dc-card').forEach(function(c){ c.classList.remove('is-hot'); });
       document.querySelectorAll('.dc-photo').forEach(function(p){ p.classList.remove('is-hot'); });
+      clearTalking();
       var dept=['secretary','finance','legal'].indexOf(agent)>=0?agent:null;
       if(!dept) return;
       var card=document.querySelector('.dc-card[data-dept="'+dept+'"]'); if(!card) return;
       var photo=card.querySelector('.dc-photo'); var video=card.querySelector('video.dc-card__image');
       card.classList.add('is-hot'); if(photo) photo.classList.add('is-hot');
+      ensureTalkBadge(photo, TALK_NAME[dept]||''); card.classList.add('is-talking');
+      var wrap=document.querySelector('.dc-cards'); if(wrap) wrap.classList.add('is-talking-on');
       if(!video) return;
       // 各AIの動作に応じて本人の動画音声を再生（普段はミュート＝OFF）。
       // 合成読み上げ(🔊)がONのときは主音声がTTSなので小さめに重ね、OFFなら本人の声を主音声として等倍で鳴らす。
@@ -13302,6 +13349,7 @@ window.EntakuDocIngest=(function(){
       document.querySelectorAll('.dc-card video').forEach(function(v){ try{v.pause();}catch(e){} v.muted=true; });
       document.querySelectorAll('.dc-card').forEach(function(c){ c.classList.remove('is-hot'); });
       document.querySelectorAll('.dc-photo').forEach(function(p){ p.classList.remove('is-hot'); });
+      clearTalking();
     }catch(e){}
   }
   // 1人ずつ順番に発言（カードを光らせ→TTS読み上げ→次へ）
