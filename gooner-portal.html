@@ -12141,8 +12141,19 @@ window.PortalAuth=(function(){
   function esc(s){ return String(s||'').replace(/[&<>"']/g,function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }); }
   function nf(n){ n=Number(n||0); return n.toLocaleString('ja-JP'); }
   function paint(data){
-    var ok=!!data.ok, b=btn();
-    if(b){ b.classList.toggle('is-ok',ok); b.classList.toggle('is-ng',!ok); b.textContent=ok?'Claude OK':'Claude注意'; }
+    // 判定はAdminキーの有無(data.ok)ではなく「Claudeが実際に使えるか(credit)」で行う。
+    // Adminキー未設定でも残高OKなら稼働中＝緑。残高不足/無効のときだけ注意(赤)。
+    var cr=data.credit||{};
+    var creditOut=(cr.state==='no_credits'||cr.state==='bad_key');
+    var usable=(cr.state==='ok')||!!data.ok;
+    var ok=usable && !creditOut;
+    var b=btn();
+    if(b){
+      b.classList.remove('is-ok','is-ng','pt-tok-ok','pt-tok-low','pt-tok-out');
+      if(creditOut){ b.classList.add('is-ng','pt-tok-out'); b.textContent='Claude注意'; }
+      else if(usable){ b.classList.add('is-ok','pt-tok-ok'); b.textContent='Claude OK'; }
+      else { b.textContent='Claude状態'; }
+    }
     var c=chip();
     if(c){
       c.hidden=false;
@@ -12163,9 +12174,14 @@ window.PortalAuth=(function(){
     }else if(data.tokens7d && data.tokens7d.reason){
       tok='<div class="oa-meta">トークン: 取得不可（'+esc(data.tokens7d.reason)+'）</div>';
     }
+    var badgeTxt = creditOut ? (data.label||'残高不足') : (usable ? '接続OK（Claude稼働中）' : (data.label||'要確認'));
+    var creditNote = (cr.state==='ok')
+      ? '<div class="oa-meta">残高チェック: <b>OK（残高あり・アラート有効）</b></div>'
+      : (creditOut ? '<div class="oa-meta" style="color:#f0a0a0">残高チェック: <b>要対応（残高不足/無効）</b></div>' : '');
     var html=
-      '<span class="oa-badge '+(ok?'ok':'ng')+'">'+esc(data.label||(ok?'接続OK':'異常'))+'</span>'+
+      '<span class="oa-badge '+(ok?'ok':'ng')+'">'+esc(badgeTxt)+'</span>'+
       '<div>'+esc(data.detail||'')+'</div>'+
+      creditNote+
       spend+tok+
       (data.note?'<div class="oa-meta">'+esc(data.note)+'</div>':'')+
       (data.at?'<div class="oa-meta">確認時刻: '+esc(data.at)+'</div>':'');
@@ -12186,7 +12202,11 @@ window.PortalAuth=(function(){
         return;
       }
       paint(data);
-      try{ window.Treasury && window.Treasury.toast && window.Treasury.toast(data.ok?('Claude: '+(data.label||'接続OK')):('Claude: '+(data.label||'要確認'))); }catch(e){}
+      try{
+        var _cr=data.credit||{}, _out=(_cr.state==='no_credits'||_cr.state==='bad_key'), _usable=(_cr.state==='ok')||!!data.ok;
+        var _msg=_out?(data.label||'残高不足'):(_usable?'接続OK（稼働中）':(data.label||'要確認'));
+        window.Treasury && window.Treasury.toast && window.Treasury.toast('Claude: '+_msg);
+      }catch(e){}
     }catch(e){
       paint({ok:false,label:'確認失敗',detail:String((e&&e.message)||e),billingUrl:USAGE,at:new Date().toISOString()});
     }
