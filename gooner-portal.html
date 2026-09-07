@@ -3361,7 +3361,11 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
         <div class="entaku-cap">
           <span>AI円卓会議</span>
           <button type="button" class="entaku-clear-btn" id="entakuClearBtn" title="相談内容をすべて削除" aria-label="相談内容をクリア" disabled>クリア</button>
-          <select class="entaku-voice-sel" id="entakuVoiceSel" title="声の種類" aria-label="声の種類"></select>
+          <span class="entaku-voice-group" title="各キャラの声（かわいい女性の声も選べます）" style="display:inline-flex;gap:4px;flex-wrap:wrap;align-items:center">
+            <select class="entaku-voice-sel" id="voiceSel-secretary" data-agent="secretary" aria-label="凛の声" title="凛（秘書）の声" style="max-width:132px"></select>
+            <select class="entaku-voice-sel" id="voiceSel-finance" data-agent="finance" aria-label="紬の声" title="紬（経理）の声" style="max-width:132px"></select>
+            <select class="entaku-voice-sel" id="voiceSel-legal" data-agent="legal" aria-label="陽翔の声" title="陽翔（法務）の声" style="max-width:132px"></select>
+          </span>
           <button type="button" class="entaku-audio-btn" id="entakuAudioBtn" data-portal-audio-btn onclick="PortalTTS.toggle()" aria-pressed="true" title="音声をOFFにする" aria-label="音声ON"><span class="portal-audio-lbl" aria-hidden="true">🔊</span></button>
         </div>
         <div class="entaku-pins" id="entakuPins" hidden aria-label="円卓ショートカット"></div>
@@ -5770,13 +5774,32 @@ window.PortalTTS=(function(){
   const LS_VOICE='portal-tts-voice';
   const LS_ENGINE='portal-tts-engine'; // cloud | browser
   const CLOUD_VOICES=[
-    {id:'nova', label:'凛（nova）', agent:'secretary'},
-    {id:'shimmer', label:'紬（shimmer）', agent:'finance'},
-    {id:'onyx', label:'陽翔（onyx）', agent:'legal'},
-    {id:'alloy', label:'alloy'},
-    {id:'echo', label:'echo'},
-    {id:'fable', label:'fable'}
+    {id:'shimmer', label:'shimmer（やわらか女性）', female:true, instr:'やわらかく可愛らしい若い女性の声で、やさしく丁寧に話してください。'},
+    {id:'coral',   label:'coral（かわいい女性）',   female:true, agent:'secretary', instr:'明るく可愛らしい若い女性の声で、親しみやすく話してください。'},
+    {id:'nova',    label:'nova（元気な女性）',       female:true, agent:'secretary', instr:'元気で明るい若い女性の声で、はきはきと話してください。'},
+    {id:'sage',    label:'sage（やさしい女性）',     female:true, agent:'finance', instr:'落ち着いたやさしい女性の声で、丁寧に話してください。'},
+    {id:'alloy',   label:'alloy（中性）'},
+    {id:'fable',   label:'fable（英国・中性）'},
+    {id:'verse',   label:'verse（表情豊か）'},
+    {id:'echo',    label:'echo（男性）'},
+    {id:'onyx',    label:'onyx（低め男性）', agent:'legal', instr:'落ち着いた誠実な男性の声で話してください。'},
+    {id:'ballad',  label:'ballad（落ち着き男性）'},
+    {id:'ash',     label:'ash（男性）'}
   ];
+  const DEFAULT_AGENT_VOICE={secretary:'nova', finance:'shimmer', legal:'onyx'};
+  function voiceFor(agent){
+    var a=(agent==='secretary'||agent==='finance'||agent==='legal')?agent:null;
+    if(a){
+      try{ var v=localStorage.getItem('portal-voice-'+a); if(v && CLOUD_VOICES.some(function(x){return x.id===v;})) return v; }catch(e){}
+      return DEFAULT_AGENT_VOICE[a];
+    }
+    if(CLOUD_VOICES.some(function(v){return v.id===preferredURI;})) return preferredURI;
+    return 'nova';
+  }
+  function instrFor(voiceId){
+    var hit=CLOUD_VOICES.find(function(v){return v.id===voiceId;});
+    return (hit&&hit.instr)||'';
+  }
   let enabled=localStorage.getItem(LS_KEY)!=='0';
   let preferredURI=localStorage.getItem(LS_VOICE)||'nova';
   let engine=localStorage.getItem(LS_ENGINE)||'cloud';
@@ -5800,14 +5823,15 @@ window.PortalTTS=(function(){
     }catch(e){}
     return 'https://kaisha-kanri.vercel.app/api/openai';
   }
-  function agentToVoice(agent){
-    if(agent==='finance') return 'shimmer';
-    if(agent==='legal') return 'onyx';
-    if(agent==='secretary') return 'nova';
-    if(CLOUD_VOICES.some(function(v){return v.id===preferredURI;})) return preferredURI;
-    return 'nova';
-  }
+  function agentToVoice(agent){ return voiceFor(agent); }
   function fillVoiceSelect(){
+    ['secretary','finance','legal'].forEach(function(a){
+      var s=document.getElementById('voiceSel-'+a);
+      if(!s) return;
+      s.innerHTML=CLOUD_VOICES.map(function(v){
+        return '<option value="'+escAttr(v.id)+'"'+(v.id===voiceFor(a)?' selected':'')+'>'+escAttr(v.label)+'</option>';
+      }).join('');
+    });
     const sel=document.getElementById('entakuVoiceSel');
     if(!sel) return;
     // クラウド優先の固定リスト（端末依存のブラウザ音声は使わない）
@@ -5906,7 +5930,7 @@ window.PortalTTS=(function(){
         const res=await fetch(ttsEndpoint(),{
           method:'POST',
           headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({ mode:'tts', text:chunks[idx], voice:voice, agent:agent||'' })
+          body:JSON.stringify({ mode:'tts', text:chunks[idx], voice:voice, agent:agent||'', instructions: instrFor(voice) })
         });
         const data=await res.json().catch(function(){ return {}; });
         if(!res.ok || !data.audioBase64){
@@ -6031,10 +6055,20 @@ window.PortalTTS=(function(){
     return (hit&&hit.agent)||'secretary';
   }
   function wireVoiceSel(){
-    const sel=document.getElementById('entakuVoiceSel');
-    if(!sel||sel.dataset.wired) return;
-    sel.dataset.wired='1';
-    sel.addEventListener('change', function(){ api.setVoiceURI(sel.value, true); });
+    var NAME={secretary:'凛', finance:'紬', legal:'陽翔'};
+    ['secretary','finance','legal'].forEach(function(a){
+      var sel=document.getElementById('voiceSel-'+a);
+      if(!sel||sel.dataset.wired) return;
+      sel.dataset.wired='1';
+      sel.addEventListener('change', function(){
+        try{ localStorage.setItem('portal-voice-'+a, sel.value); }catch(e){}
+        fillVoiceSelect();
+        if(enabled){ api.stop(); setTimeout(function(){ api.speak(NAME[a]+'です。この声でお話しします。', null, {agent:a}); }, 80); }
+      });
+    });
+    // 旧・単一セレクタが残っていれば従来通り（後方互換）
+    var old=document.getElementById('entakuVoiceSel');
+    if(old && !old.dataset.wired){ old.dataset.wired='1'; old.addEventListener('change', function(){ api.setVoiceURI(old.value, true); }); }
   }
   function wireUnlock(){
     const once=function(){ unlock(); };

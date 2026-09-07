@@ -516,7 +516,11 @@ export default async function handler(req, res) {
     // ===== Text-to-Speech（円卓AIの声）=====
     // /api/tts が未デプロイでも動くよう、既存の /api/openai に載せる
     if (body.mode === "tts" || body.tts === true) {
-      const VOICES = new Set(["alloy", "echo", "fable", "onyx", "nova", "shimmer"]);
+      // gpt-4o-mini-tts は全11声＋トーン指定(instructions)対応。かわいい女性系: coral/nova/sage/shimmer 等。
+      const VOICES = new Set([
+        "alloy", "ash", "ballad", "coral", "echo", "fable",
+        "nova", "onyx", "sage", "shimmer", "verse",
+      ]);
       let text = String(body.text || body.input || "").replace(/\s+/g, " ").trim();
       if (!text) return res.status(400).json({ error: "text が空です" });
       if (text.length > 3500) text = text.slice(0, 3500);
@@ -526,7 +530,18 @@ export default async function handler(req, res) {
       else if (voice === "legal" || voice === "hinata" || voice === "陽翔") voice = "onyx";
       if (!VOICES.has(voice)) voice = "nova";
       const speed = Math.min(1.25, Math.max(0.85, Number(body.speed) || 1.05));
-      const ttsModel = process.env.OPENAI_TTS_MODEL || "tts-1";
+      const ttsModel = process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts";
+      // トーン指定は gpt-4o-mini-tts 系のみ有効（tts-1 は無視される）
+      let instructions = String(body.instructions || "").slice(0, 500).trim();
+      const supportsInstr = /gpt-4o.*tts/i.test(ttsModel);
+      const payload = {
+        model: ttsModel,
+        voice,
+        input: text,
+        response_format: "mp3",
+        speed,
+      };
+      if (supportsInstr && instructions) payload.instructions = instructions;
       const acTts = new AbortController();
       const timerTts = setTimeout(() => acTts.abort(), 28000);
       let ttsRes;
@@ -537,13 +552,7 @@ export default async function handler(req, res) {
             "Content-Type": "application/json",
             Authorization: `Bearer ${apiKey}`,
           },
-          body: JSON.stringify({
-            model: ttsModel,
-            voice,
-            input: text,
-            response_format: "mp3",
-            speed,
-          }),
+          body: JSON.stringify(payload),
           signal: acTts.signal,
         });
       } finally {
