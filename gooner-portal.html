@@ -13271,11 +13271,36 @@ window.EntakuDocIngest=(function(){
   function entakuTtsPlain(s){
     return String(s||'').replace(/⚠[^\n]*/g,'').replace(/【[^】]+】/g,'').replace(/\n+/g,'。').trim();
   }
+  // 円卓の返信時：発言中のキャラ本人の動画音声を再生（普段はミュート、音声ON時のみ発声）。
+  function entakuReactChar(agent){
+    try{
+      document.querySelectorAll('.dc-card video').forEach(function(v){ try{v.pause();}catch(e){} v.muted=true; });
+      document.querySelectorAll('.dc-card').forEach(function(c){ c.classList.remove('is-hot'); });
+      document.querySelectorAll('.dc-photo').forEach(function(p){ p.classList.remove('is-hot'); });
+      var dept=['secretary','finance','legal'].indexOf(agent)>=0?agent:null;
+      if(!dept) return;
+      var card=document.querySelector('.dc-card[data-dept="'+dept+'"]'); if(!card) return;
+      var photo=card.querySelector('.dc-photo'); var video=card.querySelector('video.dc-card__image');
+      card.classList.add('is-hot'); if(photo) photo.classList.add('is-hot');
+      if(!video) return;
+      // 🔊(AI音声)ONのときだけ本人の動画音声を鳴らす。TTSは主音声のままなので小さめに重ねる。
+      if(!(window.PortalTTS && window.PortalTTS.isEnabled && window.PortalTTS.isEnabled())) return;
+      try{ video.muted=false; video.volume=0.5; var p=video.play(); if(p&&p.catch) p.catch(function(){}); }catch(e){}
+    }catch(e){}
+  }
+  function entakuReactStop(){
+    try{
+      document.querySelectorAll('.dc-card video').forEach(function(v){ try{v.pause();}catch(e){} v.muted=true; });
+      document.querySelectorAll('.dc-card').forEach(function(c){ c.classList.remove('is-hot'); });
+      document.querySelectorAll('.dc-photo').forEach(function(p){ p.classList.remove('is-hot'); });
+    }catch(e){}
+  }
   // 1人ずつ順番に発言（カードを光らせ→TTS読み上げ→次へ）
   function speakAgentLine(agent, text, done){
     const a = agentOf(agent);
     const plain = entakuTtsPlain(text);
     window.__entakuSpeaking = true;
+    entakuReactChar(agent);
     window.DashTalk?.speak(agent, plain.slice(0,120) || (a.name+'です。'), 99999, {keepTts:true});
     if(window.PortalTTS?.isEnabled?.() && plain){
       let speech = a.name + 'です。' + plain;
@@ -13337,6 +13362,7 @@ window.EntakuDocIngest=(function(){
         S.playing = false;
         window.__entakuSpeaking = false;
         window.DashTalk?.stop?.({keepTts:true});
+        entakuReactStop();
         commitActions(actions || []);
         render();
         focusEntakuInput();
