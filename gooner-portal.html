@@ -15185,8 +15185,18 @@ window.EntakuDocIngest=(function(){
     // ★ 自動送信ポーラー：入力欄を定期監視し、テキストが SILENCE_MS 変化なしなら送信。
     //   認識イベントの発火パターンに依存しないため、端末差でも確実に送られる。
     setInterval(function(){
+      var aiActive = S.busy || S.playing || window.__entakuSpeaking;
+      if(aiActive){
+        // AIが応答・発話している間はマイクを完全停止（AIの声を拾って文字起こし＝エコーを防ぐ）
+        if(listening){ try{ rec && rec.abort(); }catch(e){} listening=false; syncBtn(); }
+        // 万一拾ってしまった「音声由来」の途中テキストは破棄（手入力は lastChangeAt=0 なので温存）
+        if(lastChangeAt){
+          committed=''; lastHeard=''; lastChangeAt=0;
+          var ta0=el('entakuText'); if(ta0) ta0.value='';
+        }
+        return;
+      }
       if(!modeOn || sending) return;
-      if(S.busy || S.playing || window.__entakuSpeaking) return;
       var ta=el('entakuText'); var txt=(ta&&ta.value||'').trim();
       if(!txt || !lastChangeAt) return;
       if(Date.now()-lastChangeAt >= SILENCE_MS){ submitHeard(); }
@@ -15215,11 +15225,12 @@ window.EntakuDocIngest=(function(){
           // ブラウザ側がセッションを落とした場合：確定文があれば送信、なければ会話ONなら再開
           if(!modeOn || sending || S.busy || S.playing || window.__entakuSpeaking) return;
           if(submitHeard()) return;
+          // 再開はゆっくり（頻繁な再起動＝ON/OFFのチラつきを防ぐ）
           setTimeout(function(){
             if(modeOn && !listening && !sending && !S.busy && !S.playing && !window.__entakuSpeaking){
               startListen();
             }
-          }, 500);
+          }, 900);
         };
         rec.onerror=function(ev){
           listening=false; syncBtn();
@@ -15283,10 +15294,10 @@ window.EntakuDocIngest=(function(){
         if(!modeOn){ idleSince=0; stuckSince=0; return; }
         var now=Date.now();
         var speakingOrBusy=!!(S.busy||S.playing||window.__entakuSpeaking);
-        // ケースA：何も起きていない（聞取も応答もTTSも無い）→ 3秒続いたら聞取再開
+        // ケースA：何も起きていない（聞取も応答もTTSも無い）→ 8秒続いたら聞取再開（頻繁な再起動でのチラつき防止）
         if(!listening && !sending && !speakingOrBusy){
           if(!idleSince) idleSince=now;
-          if(now-idleSince > 3000){ idleSince=0; try{ startListen(); }catch(e){} }
+          if(now-idleSince > 8000){ idleSince=0; try{ startListen(); }catch(e){} }
         } else { idleSince=0; }
         // ケースB：フラグは立っているが「TTSは実際に鳴っていない・生成もしていない」＝固着。
         // 実際に読み上げ中(isSpeaking)や生成中(S.busy)なら正常なので対象外（長文の読み上げを切らない）。
