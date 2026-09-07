@@ -15146,6 +15146,7 @@ window.EntakuDocIngest=(function(){
     let rec=null;
     let sending=false;
     let committed='';
+    let lastHeard='';
     let silenceTimer=null;
     function clearSilence(){ if(silenceTimer){ clearTimeout(silenceTimer); silenceTimer=null; } }
     function syncBtn(){
@@ -15188,6 +15189,8 @@ window.EntakuDocIngest=(function(){
       if(!S.open){ S.open=true; syncToggle(); }
       try{ window.PortalTTS?.stop(); }catch(e){}
       committed='';
+      lastHeard='';
+      sending=false;   // 取りこぼし防止：聞き取り開始時に必ずリセット
       clearSilence();
       if(!rec){
         rec=new SR();
@@ -15233,13 +15236,24 @@ window.EntakuDocIngest=(function(){
           }
           if(finals) committed=(committed+finals).replace(/\s+/g,' ').trim();
           const ta=el('entakuText');
-          if(ta) ta.value=((committed+(interim?(' '+interim):''))).trim();
-          clearSilence();
-          // 無音が続いたら発話終了とみなして送信（途中切れ防止）
-          silenceTimer=setTimeout(function(){
-            if(!modeOn || sending) return;
-            submitHeard();
-          }, SILENCE_MS);
+          const shown=((committed+(interim?(' '+interim):''))).trim();
+          if(ta) ta.value=shown;
+          // テキストが「変化した時だけ」無音タイマーを張り直す。
+          // （無音でも認識イベントが繰り返す端末で、タイマーが延々リセットされ自動送信されない不具合を防ぐ）
+          if(shown && shown!==lastHeard){
+            lastHeard=shown;
+            clearSilence();
+            silenceTimer=setTimeout(function(){
+              if(!modeOn || sending) return;
+              submitHeard();
+            }, SILENCE_MS);
+          } else if(shown && !silenceTimer){
+            // 同じテキストのままでもタイマーが無ければ必ず1本張る（発火保証）
+            silenceTimer=setTimeout(function(){
+              if(!modeOn || sending) return;
+              submitHeard();
+            }, SILENCE_MS);
+          }
         };
       }
       try{ rec.start(); listening=true; syncBtn(); }
