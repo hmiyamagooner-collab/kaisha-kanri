@@ -76,8 +76,9 @@ body.embedded canvas#game{
   background:#54963a;
   transform-origin:center center;
 }
-/* クエストは縦表示固定（ビーチ上）。横画面推奨オーバーレイは出さない */
+/* クエストは横表示（マップ自然向き）。縦画面推奨オーバーレイは出さない */
 #rotate-note{display:none!important;}
+body.map-landscape canvas#game{background:#54963a;}
 @media(max-width:1000px) and (orientation:portrait){
   .toprow{flex-direction:column;}
   .cards{flex:1 1 auto;height:72vh;}
@@ -380,14 +381,14 @@ else if(!EMBEDDED){const f=document.getElementById('cardframe');if(f&&f.dataset.
 })();
 /* ================= MAP（横長・ドット／町：社長室独立・オフィス+会議併設・デイ独立・右端に海） ================= */
 const MAP_W=480, MAP_H=320, DPR=2;
-/* 縦表示固定：ビーチ上。元マップの上下芝生（画面の両脇）は切り捨て */
-const CROP_Y0=40, CROP_Y1=280;
-const VIEW_W=CROP_Y1-CROP_Y0, VIEW_H=MAP_W;
-const mapPortrait=true;
-/* 埋め込み表示：道路・建物エリアだけ見せる（上下の芝生マージンをカット） */
-const EMBED_VIEW_Y0=12, EMBED_VIEW_Y1=300, EMBED_VIEW_H=EMBED_VIEW_Y1-EMBED_VIEW_Y0;
+/* 横表示（自然向き）：マップそのまま。縦固定は廃止 */
+const CROP_Y0=0, CROP_Y1=MAP_H;
+const VIEW_W=MAP_W, VIEW_H=MAP_H;
+const mapPortrait=false;
+/* 埋め込み表示用（互換のため残す） */
+const EMBED_VIEW_Y0=0, EMBED_VIEW_Y1=MAP_H, EMBED_VIEW_H=MAP_H;
 let _embedFit=null;
-try{ document.body.classList.add('map-portrait'); }catch(e){}
+try{ document.body.classList.remove('map-portrait'); document.body.classList.add('map-landscape'); }catch(e){}
 const PAD=6;
 /* 道路：横のメイン通り＋縦のメイン(十字路)＋右のT字 */
 const ROADS={
@@ -1066,8 +1067,9 @@ function initCanvasSize(){
   cityCv.width=MAP_W*DPR;cityCv.height=MAP_H*DPR;
 }
 initCanvasSize();
-/** 縦表示ワールド変換後も、人・文字が画面に対して正立するよう +90° */
+/** 縦表示時のみ、人・文字が画面に対して正立するよう +90°。横表示では不要 */
 function drawUprightAt(g,x,y,fn){
+  if(!mapPortrait){ fn(); return; }
   g.save();
   g.translate(x,y);
   g.rotate(Math.PI/2);
@@ -1540,7 +1542,7 @@ function drawWxPixelIcon(g,ix,iy,ic){
 function drawStatusHud(g){
   const wz=weather(),W=124,H=54;
   const sw=W*STATUS_HUD_SCALE,sh=H*STATUS_HUD_SCALE;
-  // 縦画面の右上（画面座標）
+  // 画面座標の右上
   const x=VIEW_W-sw-MAP_UI_MARGIN;
   const y=MAP_UI_MARGIN;
   g.save();
@@ -1650,10 +1652,12 @@ function draw(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.imageSmoothingEnabled=false;
   ctx.clearRect(0,0,VIEW_W,VIEW_H);
-  // ワールド：ビーチ上＋両脇芝生（元マップ上下）をカット
   ctx.save();
-  ctx.translate(-CROP_Y0,MAP_W);
-  ctx.rotate(-Math.PI/2);
+  if(mapPortrait){
+    // 旧・縦表示：ビーチ上＋両脇芝生カット
+    ctx.translate(-CROP_Y0,MAP_W);
+    ctx.rotate(-Math.PI/2);
+  }
   ctx.drawImage(cityCv,0,0,MAP_W,MAP_H);
   drawOceanWaves(ctx,performance.now());
   drawTraffic(ctx);
@@ -1687,7 +1691,7 @@ function draw(){
   drawWeatherFx(ctx,now);
   drawAllZoneLabels(ctx);
   ctx.restore();
-  // 画面固定HUD（縦・正立・右上）
+  // 画面固定HUD（右上）
   drawPhaseLabel(ctx);
   drawStatusHud(ctx);
 }
@@ -1855,14 +1859,18 @@ function mapPointFromEvent(e){
     const f=_embedFit;
     const sx=t.clientX-wr.left-f.offX;
     const sy=t.clientY-wr.top-f.offY;
-    // 画面(sx,sy) ← ワールド: sx=(my-CROP_Y0)*s, sy=(MAP_W-mx)*s
-    return{mx:MAP_W-sy/f.scale, my:CROP_Y0+sx/f.scale};
+    if(mapPortrait){
+      // 画面(sx,sy) ← ワールド: sx=(my-CROP_Y0)*s, sy=(MAP_W-mx)*s
+      return{mx:MAP_W-sy/f.scale, my:CROP_Y0+sx/f.scale};
+    }
+    return{mx:sx/f.scale, my:sy/f.scale};
   }
   const r=(cv||wrap).getBoundingClientRect();
   const w=Math.max(1,r.width),h=Math.max(1,r.height);
   const sx=(t.clientX-r.left)/w*VIEW_W;
   const sy=(t.clientY-r.top)/h*VIEW_H;
-  return{mx:MAP_W-sy, my:CROP_Y0+sx};
+  if(mapPortrait) return{mx:MAP_W-sy, my:CROP_Y0+sx};
+  return{mx:sx, my:sy};
 }
 function charAtEvent(e){
   const {mx,my}=mapPointFromEvent(e);
@@ -2109,7 +2117,7 @@ function fitCanvas(){
   const availH=Math.max(8,r.height);
   if(availW<8||availH<8)return;
 
-  // 縦表示固定：描画バッファ VIEW_W×VIEW_H（ビーチ上）
+  // 横表示：描画バッファ VIEW_W×VIEW_H（マップ自然向き）
   const scale=Math.min(availW/VIEW_W, availH/VIEW_H);
   const dispW=VIEW_W*scale, dispH=VIEW_H*scale;
   const left=(availW-dispW)/2;
@@ -2126,7 +2134,7 @@ function fitCanvas(){
   cv.style.margin='0';
   wrap.style.alignItems='stretch';
   wrap.style.justifyContent='stretch';
-  _embedFit={scale,offX:left,offY:top,vy0:0,vh:VIEW_H,portrait:true};
+  _embedFit={scale,offX:left,offY:top,vy0:0,vh:VIEW_H,portrait:!!mapPortrait};
 }
 if(EMBEDDED){
   const sg=document.querySelector('.stage-game');
