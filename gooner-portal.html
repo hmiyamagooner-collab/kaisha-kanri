@@ -1088,8 +1088,8 @@ button.cf-case:hover{border-color:var(--gold);box-shadow:0 0 12px rgba(232,184,7
   height:100%;
 }
 #portal-shell.nav-collapsed .dc-card{border-radius:0}
-/* クエスト格納：円卓を全幅に */
-#portal-shell.quest-collapsed .dash-split-row{
+/* クエスト格納：クエストを隠し、上段を3キャラのみ全幅に */
+#portal-shell.quest-collapsed .dash-top-row{
   grid-template-columns:minmax(0,1fr)!important;
 }
 #portal-shell.quest-collapsed #office-pane,
@@ -1294,10 +1294,19 @@ body.is-hsplit-drag{cursor:ew-resize;user-select:none}
 .dash-split-row{
   min-height:0;height:100%;overflow:hidden;
   display:grid;
-  /* 通常：円卓 60% / スプリッタ / クエスト 40% — 比率は JS が上書き可 */
-  grid-template-columns:minmax(0,60fr) 7px minmax(0,40fr);
+  /* 円卓はフル幅（クエストは上段へ移動して大きく） */
+  grid-template-columns:minmax(0,1fr);
   gap:0;
 }
+/* 上段：3キャラ ｜ クエスト（横並び。左右比率は JS が上書き可） */
+.dash-top-row{
+  min-height:0;height:100%;overflow:hidden;
+  display:grid;
+  grid-template-columns:minmax(120px,42fr) 7px minmax(0,58fr);
+  gap:0;
+}
+.dash-top-row>#dashboard-pane,
+.dash-top-row>#office-pane{height:100%;min-height:0;overflow:hidden;}
 #office-pane .office-frame{
   align-items:stretch;justify-content:stretch;
 }
@@ -2637,11 +2646,14 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
   #portal-shell > .gamenav button.nav-green{min-width:96px;padding:8px 10px}
   #quests-row{
     height:auto;overflow:visible;
-    grid-template-rows:minmax(220px,40vh) 7px minmax(180px,1fr);
+    grid-template-rows:auto 7px minmax(220px,1fr);
+  }
+  .dash-top-row{
+    grid-template-columns:1fr;
+    grid-template-rows:minmax(160px,auto) minmax(220px,1fr);
   }
   .dash-split-row{
     grid-template-columns:1fr;
-    grid-template-rows:minmax(180px,1fr) minmax(200px,1fr);
   }
   .entaku-quest-split{display:none!important}
   #dashboard-pane,#office-pane,.dash-entaku-pane{min-height:0;overflow:hidden;}
@@ -2676,15 +2688,20 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
   #portal-bar{position:sticky;top:0;z-index:20;background:#000}
   #quests-row{
     height:auto;
-    min-height:640px;
-    grid-template-rows:minmax(300px,340px) 7px minmax(340px,1fr);
+    min-height:900px;
+    grid-template-rows:auto 7px minmax(340px,1fr);
     gap:0;padding:6px;
     overflow:visible;
+  }
+  .dash-top-row{
+    grid-template-columns:1fr;
+    grid-template-rows:minmax(300px,auto) minmax(300px,auto);
+    height:auto;
   }
   .dash-split-row{
     min-height:340px;
     height:340px;
-    grid-template-columns:minmax(0,60fr) 7px minmax(0,40fr);
+    grid-template-columns:minmax(0,1fr);
   }
   #dashboard-pane{
     min-height:300px;height:100%;overflow:hidden;
@@ -3212,6 +3229,7 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
 </div>
 
 <div id="quests-row">
+  <div class="dash-top-row">
   <section class="quest-pane" id="dashboard-pane">
     <div class="dash-cards-wrap" id="dashCompact">
       <div class="dc-cards">
@@ -3265,7 +3283,35 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
     </div>
     <div id="root" hidden></div>
   </section>
-  <button type="button" class="quests-row-split" id="questsRowSplit" title="ドラッグで円卓枠を上下に伸縮" aria-label="円卓の高さを調整"></button>
+  <button type="button" class="entaku-quest-split" id="entakuQuestSplit" title="ドラッグで3キャラとクエストの幅を調整" aria-label="キャラとクエストの幅を調整"></button>
+  <section class="quest-pane" id="office-pane">
+    <div class="office-frame">
+      <iframe src="office.html?embedded=1" title="オフィスクエスト マップ" tabindex="-1"></iframe>
+    </div>
+    <div class="office-task-dock">
+      <div class="office-tk-alert" id="officeTkAlert" hidden>
+        <div class="office-tk-alert-msg">新しいタスクが届いています</div>
+        <div class="office-tk-pending" id="officeTkPending"></div>
+      </div>
+      <div class="office-tk-alert is-open" id="officeTkOpenAlert" hidden>
+        <div class="office-tk-alert-msg" id="officeTkOpenMsg">未完了タスクがあります</div>
+        <div class="office-tk-pending" id="officeTkOpenList"></div>
+      </div>
+      <!-- メッセージ送信は円卓へ集約（#14）。ドックからは削除。 -->
+      <div class="office-tk-links" role="navigation" aria-label="タスク画面">
+        <button type="button" class="office-tk-open" data-jump="tasks" title="タスク管理を開く">
+          <span class="nav-photo" style="background-image:url(nav-task.png)" aria-hidden="true"></span>
+          <span class="nav-label">タスク管理</span>
+        </button>
+        <button type="button" class="office-tk-open" data-jump="biz-task" title="タスク評価を開く">
+          <span class="nav-photo" style="background-image:url(nav-task.png)" aria-hidden="true"></span>
+          <span class="nav-label">タスク評価</span>
+        </button>
+      </div>
+    </div>
+  </section>
+  </div><!-- /.dash-top-row -->
+  <button type="button" class="quests-row-split" id="questsRowSplit" title="ドラッグで上段(キャラ+クエスト)と円卓の高さを調整" aria-label="円卓の高さを調整"></button>
   <div class="dash-split-row">
     <section class="quest-pane dash-entaku-pane">
       <div class="entaku-inline collapsed" id="entaku-inline">
@@ -3327,33 +3373,6 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
           <textarea id="entakuText" rows="1" placeholder="相談・細かい指示… 💬会話 / 🎙議事録　Enter送信"></textarea>
           <button type="submit" id="entakuSend">送信</button>
         </form>
-      </div>
-    </section>
-    <button type="button" class="entaku-quest-split" id="entakuQuestSplit" title="ドラッグで円卓とクエストの幅を調整" aria-label="円卓とクエストの幅を調整"></button>
-    <section class="quest-pane" id="office-pane">
-      <div class="office-frame">
-        <iframe src="office.html?embedded=1" title="オフィスクエスト マップ" tabindex="-1"></iframe>
-      </div>
-      <div class="office-task-dock">
-        <div class="office-tk-alert" id="officeTkAlert" hidden>
-          <div class="office-tk-alert-msg">新しいタスクが届いています</div>
-          <div class="office-tk-pending" id="officeTkPending"></div>
-        </div>
-        <div class="office-tk-alert is-open" id="officeTkOpenAlert" hidden>
-          <div class="office-tk-alert-msg" id="officeTkOpenMsg">未完了タスクがあります</div>
-          <div class="office-tk-pending" id="officeTkOpenList"></div>
-        </div>
-        <!-- メッセージ送信は円卓へ集約（#14）。ドックからは削除。 -->
-        <div class="office-tk-links" role="navigation" aria-label="タスク画面">
-          <button type="button" class="office-tk-open" data-jump="tasks" title="タスク管理を開く">
-            <span class="nav-photo" style="background-image:url(nav-task.png)" aria-hidden="true"></span>
-            <span class="nav-label">タスク管理</span>
-          </button>
-          <button type="button" class="office-tk-open" data-jump="biz-task" title="タスク評価を開く">
-            <span class="nav-photo" style="background-image:url(nav-task.png)" aria-hidden="true"></span>
-            <span class="nav-label">タスク評価</span>
-          </button>
-        </div>
       </div>
     </section>
   </div>
@@ -12324,10 +12343,10 @@ window.PortalAuth=(function(){
 <script>
 /* ===== 円卓／クエストの左右伸縮 ===== */
 (function(){
-  const KEY='gp_entaku_h_split_v1';
+  const KEY='gp_topcards_quest_split_v1';
   const SPLIT_W=7;
-  let leftFr=60; // 円卓側（残りがクエスト）
-  function row(){ return document.querySelector('.dash-split-row'); }
+  let leftFr=42; // 3キャラ側（残りがクエスト）
+  function row(){ return document.querySelector('.dash-top-row'); }
   function collapsed(){
     return !!document.getElementById('portal-shell')?.classList.contains('quest-collapsed');
   }
