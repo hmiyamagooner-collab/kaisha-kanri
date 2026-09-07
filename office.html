@@ -2120,19 +2120,23 @@ function fitCanvas(){
   if(availW<8||availH<8)return;
 
   if(EMBEDDED){
-    // 横長にストレッチしてペイン全体を埋める：余白の芝生・海の継ぎ目・上下の切れを同時に解消。
-    // オフィスは横長表示（クリック座標は scaleX/scaleY で個別に整合）。
+    // 横長にストレッチしてペイン全体を埋める。さらに上下の芝生帯だけを落として建物を縦いっぱいに。
+    // 建物は y44-274 なので CY0/CY1 はその外側（建物は切れない）。クリックは scaleX/scaleY+offY で整合。
+    const CY0=40, CY1=280;            // 上下の芝生をカットする範囲（建物は残す）
+    const bandH=CY1-CY0;
+    const sX=availW/VIEW_W, sY=availH/bandH;
     cv.style.position='absolute';
-    cv.style.left='0px'; cv.style.top='0px';
+    cv.style.left='0px';
+    cv.style.top=Math.round(-CY0*sY)+'px';
     cv.style.width=Math.max(1,Math.floor(availW))+'px';
-    cv.style.height=Math.max(1,Math.floor(availH))+'px';
+    cv.style.height=Math.max(1,Math.round(VIEW_H*sY))+'px';
     cv.style.transform='none'; cv.style.transformOrigin='0 0';
     cv.style.maxWidth='none'; cv.style.maxHeight='none'; cv.style.margin='0';
     wrap.style.alignItems='stretch'; wrap.style.justifyContent='stretch';
     // 旧・埋めレイヤーは不要（あれば除去）
     const oL=wrap.querySelector('#emb-fill-l'), oR=wrap.querySelector('#emb-fill-r');
     if(oL) oL.remove(); if(oR) oR.remove();
-    _embedFit={scaleX:availW/VIEW_W, scaleY:availH/VIEW_H, offX:0, offY:0, vy0:0, vh:VIEW_H, portrait:!!mapPortrait};
+    _embedFit={scaleX:sX, scaleY:sY, offX:0, offY:-CY0*sY, vy0:CY0, vh:bandH, portrait:!!mapPortrait};
     return;
   }
   // 横表示（非埋め込み）：アスペクト維持の contain
