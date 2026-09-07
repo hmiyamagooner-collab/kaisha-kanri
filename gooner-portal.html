@@ -2550,6 +2550,16 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
   border-color:rgba(30,120,70,.55);
   background:linear-gradient(180deg,rgba(244,255,248,.98),rgba(220,245,230,.95));
 }
+.dc-risk-close{
+  position:absolute;top:4px;right:5px;z-index:9;
+  width:20px;height:20px;padding:0;border:none;border-radius:50%;
+  background:rgba(120,30,20,.14);color:#7a1e14;
+  font-size:15px;font-weight:800;line-height:1;cursor:pointer;
+  pointer-events:auto; /* 吹き出しはpointer-events:noneのため×だけ有効化 */
+  display:flex;align-items:center;justify-content:center;
+}
+.dc-risk-close:hover{background:rgba(120,30,20,.3)}
+.dc-risk-bubble.is-ok .dc-risk-close{color:#176b3e;background:rgba(20,90,50,.14)}
 .dc-risk-bubble::after{
   content:"";position:absolute;left:26px;bottom:-7px;
   border:7px solid transparent;border-top-color:rgba(255,236,220,.96);
@@ -3367,6 +3377,7 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
             <select class="entaku-voice-sel" id="voiceSel-legal" data-agent="legal" aria-label="陽翔の声" title="陽翔（法務）の声" style="max-width:132px"></select>
           </span>
           <button type="button" class="entaku-audio-btn" id="entakuAudioBtn" data-portal-audio-btn onclick="PortalTTS.toggle()" aria-pressed="true" title="音声をOFFにする" aria-label="音声ON"><span class="portal-audio-lbl" aria-hidden="true">🔊</span></button>
+          <button type="button" class="entaku-clear-btn" id="riskToggleBtn" aria-pressed="true" title="キャラの上に出る忠告ポップアップを表示/非表示">⚠ 忠告を隠す</button>
         </div>
         <div class="entaku-pins" id="entakuPins" hidden aria-label="円卓ショートカット"></div>
         <div class="entaku-bg-art" aria-hidden="true"><img src="entaku.png" alt="" decoding="async" draggable="false"></div>
@@ -10670,22 +10681,35 @@ window.BizCaseLink=(function(){
             +'</div>';
         }).join('');
     const sub=ok?'引き続き監視します。':'円卓で確認・指示できます。';
-    return '<div class="dc-risk-cap">'+(ok?'✓ ':'⚠ ')+esc(pack.title)+'</div>'+lines
+    return '<button type="button" class="dc-risk-close" title="忠告を隠す" aria-label="忠告を隠す">×</button>'
+      +'<div class="dc-risk-cap">'+(ok?'✓ ':'⚠ ')+esc(pack.title)+'</div>'+lines
       +'<div class="dc-risk-sub">'+esc(sub)+'</div>';
+  }
+
+  function riskHidden(){ try{ return localStorage.getItem('gp_risk_hidden')==='1'; }catch(e){ return false; } }
+  function setRiskHidden(on){ try{ localStorage.setItem('gp_risk_hidden', on?'1':'0'); }catch(e){} paintBubbles(snapshot()); }
+  function syncRiskToggle(){
+    var b=document.getElementById('riskToggleBtn'); if(!b) return;
+    var h=riskHidden();
+    b.textContent=h?'⚠ 忠告を表示':'⚠ 忠告を隠す';
+    b.setAttribute('aria-pressed', h?'false':'true');
   }
 
   function paintBubbles(snap){
     snap=snap||snapshot();
+    var hidden=riskHidden();
     ['secretary','finance','legal'].forEach(function(dept){
       const el=document.querySelector('[data-risk-bubble="'+dept+'"]');
       if(!el) return;
+      if(hidden){ el.hidden=true; return; }
       const pack=snap.byDept[dept];
       const hot=(pack?.items||[]).some(function(it){ return it.count>0; });
-      // 常時表示（忠告を見落とさない）
+      // 常時表示（忠告を見落とさない）。ただし利用者が「非表示」にした場合は隠す
       el.hidden=false;
       el.classList.toggle('is-ok', !hot);
       el.innerHTML=bubbleHtml(dept, snap);
     });
+    syncRiskToggle();
   }
 
   function reportForDept(dept){
@@ -10730,8 +10754,22 @@ window.BizCaseLink=(function(){
     aiContext:aiContext,
     reportForDept:reportForDept,
     refresh:refresh,
-    paint:paintBubbles
+    paint:paintBubbles,
+    setHidden:setRiskHidden,
+    isHidden:riskHidden
   };
+
+  function wireRiskUi(){
+    if(document.__riskWired) return; document.__riskWired=true;
+    // 各吹き出しの「×」で全リスク忠告を非表示に（イベント委譲：innerHTML再生成に強い）
+    document.addEventListener('click', function(e){
+      var c=e.target && e.target.closest && e.target.closest('.dc-risk-close');
+      if(c){ e.preventDefault(); e.stopPropagation(); setRiskHidden(true); }
+    });
+    var rt=document.getElementById('riskToggleBtn');
+    if(rt && !rt.dataset.wired){ rt.dataset.wired='1'; rt.addEventListener('click', function(){ setRiskHidden(!riskHidden()); }); }
+    syncRiskToggle();
+  }
 
   function stopAll(opts){
     const keepTts=!!(opts&&opts.keepTts)||!!window.__entakuSpeaking;
@@ -10768,8 +10806,8 @@ window.BizCaseLink=(function(){
     refreshRisk:refresh
   };
 
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ refresh(); });
-  else refresh();
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ refresh(); wireRiskUi(); });
+  else { refresh(); wireRiskUi(); }
   setInterval(refresh, 45000);
   window.addEventListener('storage', function(e){
     if(!e.key) return;
