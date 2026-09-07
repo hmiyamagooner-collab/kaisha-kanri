@@ -64,7 +64,8 @@ body.embedded .stage-game{
   flex:1;position:relative;min-height:0;overflow:hidden;
   display:block;
   padding:0;
-  background:linear-gradient(180deg,#0a0c10 0%,#050608 100%);
+  /* マップ（芝生 #54963a）と同色で左右/上下の余白を埋め、連続した芝地に見せる */
+  background:#54963a;
 }
 body.embedded canvas#game{
   position:absolute;z-index:1;
