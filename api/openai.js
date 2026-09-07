@@ -306,6 +306,17 @@ function parseEntakuActions(j) {
     });
 }
 
+// agent を id に正規化（gpt-4o-mini等が「凛/紬/陽翔」や役職名で返すことがあるため）
+function normAgent(a) {
+  const s = String(a || "").trim().toLowerCase();
+  if (s === "secretary" || s === "finance" || s === "legal") return s;
+  const raw = String(a || "");
+  if (/秘書|凛|rin/i.test(raw)) return "secretary";
+  if (/経理|紬|tsumugi|tumugi/i.test(raw)) return "finance";
+  if (/法務|陽翔|はると|haruto/i.test(raw)) return "legal";
+  return "";
+}
+
 function parseEntakuReplies(raw) {
   const text = String(raw || "").trim();
   if (!text) return { replies: [{ agent: "secretary", text: "（応答が空でした）" }], actions: [] };
@@ -314,8 +325,9 @@ function parseEntakuReplies(raw) {
     const j = JSON.parse(m ? m[0] : text);
     const replies = Array.isArray(j.replies) ? j.replies : [];
     const valid = replies
-      .filter((r) => r && ["secretary", "finance", "legal"].includes(r.agent) && String(r.text || "").trim())
-      .map((r) => ({ agent: r.agent, text: String(r.text).trim().slice(0, 6000) }));
+      .map((r) => ({ agent: normAgent(r && r.agent), text: String((r && r.text) || "").trim() }))
+      .filter((r) => r.agent && r.text)
+      .map((r) => ({ agent: r.agent, text: r.text.slice(0, 6000) }));
     if (valid.length) return { replies: valid, actions: parseEntakuActions(j) };
   } catch (e) { /* fall through */ }
   return { replies: [{ agent: "secretary", text: text.slice(0, 6000) }], actions: [] };
