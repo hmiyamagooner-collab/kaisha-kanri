@@ -15137,7 +15137,10 @@ window.EntakuDocIngest=(function(){
     const btn=el('entakuTalkBtn');
     if(!btn) return;
     const LS='entaku-talk-mode';
-    const SILENCE_MS=2000; // 無音この時間で「話し終わり」とみなす
+    // 無音この時間で「話し終わり」とみなして送信。短いほど反映が速い（短すぎると文中の間で切れる）。
+    // localStorage の gp_talk_silence_ms で調整可（既定1100ms）。
+    var SILENCE_MS=1100;
+    try{ var _sm=Number(localStorage.getItem('gp_talk_silence_ms')); if(_sm>=400 && _sm<=4000) SILENCE_MS=_sm; }catch(e){}
     let modeOn=localStorage.getItem(LS)==='1';
     let listening=false;
     let rec=null;
@@ -15260,6 +15263,37 @@ window.EntakuDocIngest=(function(){
         }, 700);
       }
     };
+    // ウォッチドッグ：会話ON中に「聞取もAI応答も進んでいない」状態が続いたら自動復帰（フリーズ対策）。
+    // TTS再生が固まって __entakuSpeaking / S.playing が立ちっぱなしになるケースを検知して強制リセット。
+    (function talkWatchdog(){
+      var idleSince=0, stuckSince=0;
+      setInterval(function(){
+        if(!modeOn){ idleSince=0; stuckSince=0; return; }
+        var now=Date.now();
+        var speakingOrBusy=!!(S.busy||S.playing||window.__entakuSpeaking);
+        // ケースA：何も起きていない（聞取も応答もTTSも無い）→ 3秒続いたら聞取再開
+        if(!listening && !sending && !speakingOrBusy){
+          if(!idleSince) idleSince=now;
+          if(now-idleSince > 3000){ idleSince=0; try{ startListen(); }catch(e){} }
+        } else { idleSince=0; }
+        // ケースB：フラグは立っているが「TTSは実際に鳴っていない・生成もしていない」＝固着。
+        // 実際に読み上げ中(isSpeaking)や生成中(S.busy)なら正常なので対象外（長文の読み上げを切らない）。
+        var reallyStuck=false;
+        try{ reallyStuck = speakingOrBusy && !listening && !S.busy && !(window.PortalTTS && window.PortalTTS.isSpeaking && window.PortalTTS.isSpeaking()); }catch(e){}
+        if(reallyStuck){
+          if(!stuckSince) stuckSince=now;
+          if(now-stuckSince > 6000){
+            stuckSince=0;
+            try{ window.PortalTTS?.stop?.(); }catch(e){}
+            try{ window.DashTalk?.stop?.({keepTts:false}); }catch(e){}
+            S.playing=false; window.__entakuSpeaking=false; sending=false;
+            var sb=el('entakuSend'); if(sb) sb.disabled=false;
+            try{ window.Treasury?.toast?.('音声会話を復帰しました'); }catch(e){}
+            try{ startListen(); }catch(e){}
+          }
+        } else { stuckSince=0; }
+      }, 2000);
+    })();
     btn.addEventListener('click', function(){
       if(listening){ stopListen(); return; }
       if(modeOn){
