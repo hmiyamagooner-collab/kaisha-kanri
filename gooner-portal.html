@@ -10398,9 +10398,8 @@ window.BizCaseLink=(function(){
     photo.classList.add('is-hot');
     if(!video) return;
     video.loop=true;
-    const wantSound=!(window.PortalTTS&&!window.PortalTTS.isEnabled()) && video.dataset.hasAudio==='1';
-    video.muted=!wantSound;
-    if(wantSound) video.volume=1;
+    // ホバー/タッチは映像のみ（音声OFF）。動画音声は「各AIの動作に応じて」再生する。
+    video.muted=true;
     const p=video.play();
     if(p&&typeof p.catch==='function'){
       p.catch(function(){
@@ -13287,9 +13286,15 @@ window.EntakuDocIngest=(function(){
       var photo=card.querySelector('.dc-photo'); var video=card.querySelector('video.dc-card__image');
       card.classList.add('is-hot'); if(photo) photo.classList.add('is-hot');
       if(!video) return;
-      // 🔊(AI音声)ONのときだけ本人の動画音声を鳴らす。TTSは主音声のままなので小さめに重ねる。
-      if(!(window.PortalTTS && window.PortalTTS.isEnabled && window.PortalTTS.isEnabled())) return;
-      try{ video.muted=false; video.volume=0.5; var p=video.play(); if(p&&p.catch) p.catch(function(){}); }catch(e){}
+      // 各AIの動作に応じて本人の動画音声を再生（普段はミュート＝OFF）。
+      // 合成読み上げ(🔊)がONのときは主音声がTTSなので小さめに重ね、OFFなら本人の声を主音声として等倍で鳴らす。
+      var ttsOn=!!(window.PortalTTS && window.PortalTTS.isEnabled && window.PortalTTS.isEnabled());
+      try{
+        video.loop=true; video.muted=false; video.volume=ttsOn?0.5:1;
+        try{ if(video.currentTime>0.2) video.currentTime=0; }catch(e){}
+        var p=video.play();
+        if(p&&p.catch) p.catch(function(){ try{ video.muted=true; var p2=video.play(); if(p2&&p2.catch)p2.catch(function(){}); }catch(e){} });
+      }catch(e){}
     }catch(e){}
   }
   function entakuReactStop(){
