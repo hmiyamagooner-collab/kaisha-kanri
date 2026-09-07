@@ -13472,6 +13472,20 @@ window.EntakuDocIngest=(function(){
     }catch(e){}
   }
   // 1人ずつ順番に発言（カードを光らせ→TTS読み上げ→次へ）
+  // 読み上げ用の名前(かな)。TTSは漢字名を誤読しがちなので読みで名乗らせる。
+  const AGENT_READING = { secretary:'りん', finance:'つむぎ', legal:'はると' };
+  // 自己紹介を1回だけ付ける：本文が既に名前(漢字/かな)で始まっていれば二重に名乗らない
+  function buildSpeech(a, plain){
+    var nm = a.name;
+    var rd = AGENT_READING[a.id] || nm;
+    var body = String(plain||'').replace(/^[\s　]+/, '');
+    var names = [nm, rd].filter(Boolean);
+    for(var i=0;i<names.length;i++){
+      var re = new RegExp('^'+names[i]+'\\s*(?:です[。、]?|だ[。、]?|[、。：:])');
+      if(re.test(body)){ body = body.replace(re, '').replace(/^[\s　]+/, ''); break; }
+    }
+    return rd + 'です。' + body;
+  }
   function speakAgentLine(agent, text, done){
     const a = agentOf(agent);
     const plain = entakuTtsPlain(text);
@@ -13479,7 +13493,7 @@ window.EntakuDocIngest=(function(){
     entakuReactChar(agent);
     window.DashTalk?.speak(agent, plain.slice(0,120) || (a.name+'です。'), 99999, {keepTts:true});
     if(window.PortalTTS?.isEnabled?.() && plain){
-      let speech = a.name + 'です。' + plain;
+      let speech = buildSpeech(a, plain);
       // チャンク再生のため長文も可。極端な長さだけ画面確認へ誘導
       if(speech.length > 2400) speech = speech.slice(0,2400) + '。以降は画面でご確認ください。';
       let advanced = false;
