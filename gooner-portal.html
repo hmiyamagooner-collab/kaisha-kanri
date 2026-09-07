@@ -14641,6 +14641,14 @@ window.EntakuDocIngest=(function(){
       const riskCtx=window.PortalRisk?.aiContext?.();
       if(riskCtx) parts.push(riskCtx);
     }catch(e){}
+    // AI利用コストの警告（残高不足・急増）があれば、紬から会話で忠告させる
+    try{
+      const warns=(window.__aiCostWarnings||[]).filter(function(x){ return Date.now()-x.at < 60*60*1000; });
+      if(warns.length){
+        parts.push('【AI利用コスト警告】\n'+warns.map(function(w){ return '・'+w.msg; }).join('\n')
+          +'\n※ この警告がある場合、経理(紬)は会議の最後に一言、AI利用コストの異常（残高不足または急増）を社長に忠告すること。');
+      }
+    }catch(e){}
     return parts.join('\n');
   }
   function updateEntakuStatus(){
@@ -15839,6 +15847,37 @@ window.EntakuDocIngest=(function(){
   function fireAlert(msg){
     try{ window.DashTalk && window.DashTalk.warn && window.DashTalk.warn('finance', msg, 30000); }catch(e){}
     try{ window.Treasury && window.Treasury.toast && window.Treasury.toast(msg); }catch(e){}
+    // 円卓AIにも会話で忠告させるため、最新の警告を共有（buildContextが読む）
+    try{
+      window.__aiCostWarnings = window.__aiCostWarnings || [];
+      window.__aiCostWarnings.push({ msg: msg, at: Date.now() });
+      window.__aiCostWarnings = window.__aiCostWarnings.filter(function(x){ return Date.now()-x.at < 60*60*1000; }).slice(-4);
+    }catch(e){}
+  }
+  // 利用額の急増（＝残高の急激な減少）を検知。約1時間前の記録と比べて閾値超なら警告。
+  // ※金額(spend7d)は OPENAI_ADMIN_KEY / ANTHROPIC_ADMIN_KEY が設定されている時のみ取得可能。
+  var SPIKE_USD = 5;      // 直近~1時間で利用額が$5以上増えたら急増とみなす（環境変数 gp_spike_usd で調整可）
+  try{ var sv=Number(localStorage.getItem('gp_spike_usd')); if(sv>0) SPIKE_USD=sv; }catch(e){}
+  function recordSpendAndDetect(provider, usd){
+    if(!(typeof usd==='number' && isFinite(usd))) return null;
+    try{
+      var key='gp_spendhist_'+provider;
+      var hist=JSON.parse(localStorage.getItem(key)||'[]'); if(!Array.isArray(hist)) hist=[];
+      var now=Date.now();
+      hist.push({ t:now, usd:usd });
+      // 48時間より古いものは捨てる
+      hist=hist.filter(function(x){ return x && (now-x.t) < 48*3600*1000; });
+      localStorage.setItem(key, JSON.stringify(hist));
+      // 30分〜90分前の基準点を探し、そこからの増加を見る
+      var base=null;
+      for(var i=0;i<hist.length;i++){ var age=now-hist[i].t; if(age>=30*60*1000 && age<=180*60*1000){ base=hist[i]; break; } }
+      if(!base) return null;
+      var delta=usd-base.usd;
+      if(delta>=SPIKE_USD){
+        return { delta:Math.round(delta*100)/100, from:base.usd, to:usd, mins:Math.round((now-base.t)/60000) };
+      }
+    }catch(e){}
+    return null;
   }
   // 信号機の点灯（緑=残あり / 橙=残り僅か / 赤=切れ / 無印=不明）
   function setLight(btnId, chipId, level, chipText){
@@ -15879,6 +15918,12 @@ window.EntakuDocIngest=(function(){
       }else if(lv==='low'){
         if(shouldAlert('oa_low')) fireAlert('⚠ OpenAIのトークン残量が少なくなっています。早めにBillingで補充してください。');
       }
+      // 急増（残高の急激な減少）検知（要 OPENAI_ADMIN_KEY）
+      var sp=(d.spend7d&&d.spend7d.available)?Number(d.spend7d.usd):null;
+      var spike=recordSpendAndDetect('openai', sp);
+      if(spike && shouldAlert('oa_spike')){
+        fireAlert('🚨 OpenAIの利用額が急増しています（約'+spike.mins+'分で+$'+spike.delta+'／7日計$'+spike.to+'）。想定外の消費がないか確認してください。');
+      }
     }catch(e){}
   }
   async function checkAnthropic(){
@@ -15894,6 +15939,12 @@ window.EntakuDocIngest=(function(){
         else if(shouldAlert('cl')) fireAlert('⚠ Anthropic(Claude)の残高が不足しています（トークン切れ）。ゆうしゃレオ等が止まります。コンソールでチャージしてください。');
       }else if(lv==='low'){
         if(shouldAlert('cl_low')) fireAlert('⚠ Anthropic(Claude)のトークン残量が少なくなっています。早めにコンソールで補充してください。');
+      }
+      // 急増（残高の急激な減少）検知（要 ANTHROPIC_ADMIN_KEY）
+      var sp=(d.spend7d&&d.spend7d.available)?Number(d.spend7d.usd):null;
+      var spike=recordSpendAndDetect('anthropic', sp);
+      if(spike && shouldAlert('cl_spike')){
+        fireAlert('🚨 Anthropic(Claude)の利用額が急増しています（約'+spike.mins+'分で+$'+spike.delta+'／7日計$'+spike.to+'）。想定外の消費がないか確認してください。');
       }
     }catch(e){}
   }
