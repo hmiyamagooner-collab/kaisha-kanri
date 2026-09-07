@@ -2119,7 +2119,9 @@ function fitCanvas(){
   if(availW<8||availH<8)return;
 
   // 横表示：描画バッファ VIEW_W×VIEW_H（マップ自然向き）
-  const scale=Math.min(availW/VIEW_W, availH/VIEW_H);
+  // 芝生の余白を詰めてオフィスを大きく見せるためズームイン（はみ出しは overflow:hidden でトリミング）
+  const EMBED_ZOOM=1.35;
+  const scale=Math.min(availW/VIEW_W, availH/VIEW_H)*(EMBEDDED?EMBED_ZOOM:1);
   const dispW=VIEW_W*scale, dispH=VIEW_H*scale;
   const left=(availW-dispW)/2;
   const top=(availH-dispH)/2;
