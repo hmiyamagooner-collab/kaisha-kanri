@@ -136,6 +136,17 @@ td.rate{color:var(--up)}
       <div class="b-item"><span class="b-k">課金の源</span><span class="b-v">RevenueCat（サブスク＝月額 / RELA COIN）</span><span class="b-note" id="bChannelSplit">wake内訳: –</span></div>
     </div>
 
+    <div class="panel" id="revPanel">
+      <h2>RELA 実課金売上（RevenueCat｜Google Play＋App Store＋Web 統合）</h2>
+      <div class="cards" id="revCards">
+        <div class="card"><div class="k-label">売上（直近28日）</div><div class="k-val" id="rvRevenue">–</div><div class="k-sub" id="rvRevenueJpy">概算 ¥–</div></div>
+        <div class="card c-wake"><div class="k-label">MRR（月次経常収益）</div><div class="k-val" id="rvMrr">–</div><div class="k-sub" id="rvMrrJpy">概算 ¥–</div></div>
+        <div class="card"><div class="k-label">アクティブ課金者</div><div class="k-val" id="rvSubs">–</div><div class="k-sub">サブスク有効数</div></div>
+        <div class="card"><div class="k-label">トライアル中</div><div class="k-val" id="rvTrials">–</div><div class="k-sub" id="rvNew">新規顧客 –</div></div>
+      </div>
+      <div class="coin-note" id="rvNote">RevenueCatに接続すると、Google Play・App Store・Web課金を統合した実売上を表示します。</div>
+    </div>
+
     <div class="cards">
       <div class="card"><div class="k-label">新規ユーザー</div><div class="k-val" id="kNew">–</div><div class="k-sub">期間合計</div></div>
       <div class="card c-wake"><div class="k-label">wake（起動）</div><div class="k-val" id="kWake">–</div><div class="k-sub" id="kWakeSub">ユニーク合計</div></div>
@@ -349,9 +360,48 @@ td.rate{color:var(--up)}
     }).join('');
   }
 
+  // ===== RELA実課金売上（RevenueCat統合｜Google Play＋App Store＋Web）=====
+  function rvMoney(m){
+    if(!m || !isFinite(m.value)) return '–';
+    var u=(m.unit||'').trim();
+    if(u==='$'||/usd/i.test(u)) return '$'+Number(m.value).toLocaleString('en-US',{maximumFractionDigits:2});
+    return nfmt(m.value)+(u&&u!=='#'?(' '+u):'');
+  }
+  function rvJpy(m, r){
+    if(!m || !isFinite(m.value)) return '';
+    var u=(m.unit||'').trim();
+    if(u==='$'||/usd/i.test(u)) return '概算 ¥'+Math.round(Number(m.value)*r).toLocaleString('ja-JP');
+    return '';
+  }
+  async function loadRevenue(){
+    var note=$('rvNote');
+    try{
+      var r=await fetch('/api/rela-revenue',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'status'})});
+      var d=await r.json().catch(function(){ return {}; });
+      if(!d.ok){
+        ['rvRevenue','rvMrr','rvSubs','rvTrials'].forEach(function(id){ $(id).textContent='–'; });
+        $('rvRevenueJpy').textContent=''; $('rvMrrJpy').textContent=''; $('rvNew').textContent='新規顧客 –';
+        if(note) note.textContent=(d.state==='no_key')
+          ? 'RevenueCat未接続：Vercelに REVENUECAT_API_KEY（v2 Secret sk_...）を設定すると実売上を表示します。'
+          : ('取得できません：'+(d.detail||d.label||d.state||'error'));
+        return;
+      }
+      var m=d.metrics||{}, rt=Number(d.usdJpyRate||150)||150;
+      $('rvRevenue').textContent=rvMoney(m.revenue); $('rvRevenueJpy').textContent=rvJpy(m.revenue,rt);
+      $('rvMrr').textContent=rvMoney(m.mrr); $('rvMrrJpy').textContent=rvJpy(m.mrr,rt);
+      $('rvSubs').textContent=(m.active_subscriptions&&isFinite(m.active_subscriptions.value))?nfmt(m.active_subscriptions.value):'–';
+      $('rvTrials').textContent=(m.active_trials&&isFinite(m.active_trials.value))?nfmt(m.active_trials.value):'–';
+      $('rvNew').textContent='新規顧客 '+((m.new_customers&&isFinite(m.new_customers.value))?nfmt(m.new_customers.value):'–');
+      if(note) note.textContent=(d.note||'')+((d.project&&d.project.name)?(' / project: '+d.project.name):'');
+    }catch(e){
+      if(note) note.textContent='取得失敗：'+((e&&e.message)||e);
+    }
+  }
+
   async function loadAll(){
     var to=new Date(); var from=new Date(); from.setDate(from.getDate()-(days-1));
     var f=fmt(from), t=fmt(to);
+    if(product==='rela') loadRevenue();
     $('chartBox').innerHTML='<div class="loading">読み込み中…</div>';
     try{
       var daily=await fetchView('daily', f, t);
