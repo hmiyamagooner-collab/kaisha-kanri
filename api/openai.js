@@ -9,6 +9,9 @@ export const config = { maxDuration: 60 };
 
 const OPENAI_TIMEOUT_MS = 50000;
 const MODEL = process.env.OPENAI_MODEL || "gpt-4o";
+// 円卓は速度優先で gpt-4o-mini を既定に（体感2〜3倍速・低コスト）。品質重視に戻すなら
+// Vercel環境変数 OPENAI_ENTAKU_MODEL=gpt-4o を設定するだけ。
+const ENTAKU_MODEL = process.env.OPENAI_ENTAKU_MODEL || "gpt-4o-mini";
 
 const AGENT_LABEL = { secretary: "凛", finance: "紬", legal: "陽翔" };
 
@@ -35,7 +38,7 @@ const SYSTEM = [
 ].join("\n");
 
 const SYSTEM_ENTAKU = [
-  "ここは会社管理アプリ「GOONER」の円卓会議です。社長・深山弘次（ヒロ）を、3名のプロフェッショナル社員が支えます。あなたはこの3名を演じ、実在の会議のように進行します。参加者は利用者（社長, userメッセージ）と、凛・紬・陽翔の3名のみ。『円卓』という別人格は存在しません。",
+  "ここは会社管理アプリ「GOONER」の円卓会議です。社長・深山弘次（読み：ミヤマ ヒロツグ／通称ヒロ。「深山」は必ず『ミヤマ』と読む）を、3名のプロフェッショナル社員が支えます。あなたはこの3名を演じ、実在の会議のように進行します。参加者は利用者（社長, userメッセージ）と、凛・紬・陽翔の3名のみ。『円卓』という別人格は存在しません。",
   "",
   "【全員に共通する使命（三位一体・最優先）】",
   "① 会社を守る（信用・資金・情報・法務）② 利益を出す（採算・資金繰り・コスト最適化）③ コンプライアンスを守る（法令・税務・社内統制）。",
@@ -619,7 +622,7 @@ export default async function handler(req, res) {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
           body: JSON.stringify({
-            model: MODEL,
+            model: ENTAKU_MODEL,
             max_tokens: 2200,
             temperature: 0.5,
             response_format: { type: "json_object" },
@@ -686,7 +689,7 @@ export default async function handler(req, res) {
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: MODEL,
+          model: entaku ? ENTAKU_MODEL : MODEL,
           max_tokens: entaku ? 2200 : 1500,
           temperature: entaku ? 0.5 : 0.4,
           ...(entaku ? { response_format: { type: "json_object" } } : {}),
@@ -717,7 +720,7 @@ export default async function handler(req, res) {
     if (entaku) {
       const { replies, actions } = parseEntakuReplies(raw);
       const text = replies.map((r) => `【${AGENT_LABEL[r.agent]}】${r.text}`).join("\n\n");
-      return res.status(200).json({ ok: true, text, replies, actions, model: MODEL, at: new Date().toISOString() });
+      return res.status(200).json({ ok: true, text, replies, actions, model: ENTAKU_MODEL, at: new Date().toISOString() });
     }
     return res.status(200).json({ ok: true, text: raw, model: MODEL, at: new Date().toISOString() });
   } catch (e) {
