@@ -2119,10 +2119,11 @@ function fitCanvas(){
   if(availW<8||availH<8)return;
 
   // 横表示：描画バッファ VIEW_W×VIEW_H（マップ自然向き）
-  // 埋め込み時は「左右いっぱい」に合わせて全幅表示（上下のはみ出しは overflow:hidden でトリミング）
-  const scale=EMBEDDED ? (availW/VIEW_W) : Math.min(availW/VIEW_W, availH/VIEW_H);
+  // 上下を切らない高さフィット。左右の余白は「左＝道路/芝生」「右＝海」の埋めレイヤーで画面端まで充填。
+  const scale=Math.min(availW/VIEW_W, availH/VIEW_H);
   const dispW=VIEW_W*scale, dispH=VIEW_H*scale;
-  const left=(availW-dispW)/2;
+  // 埋め込みは左寄せ（オフィス/道路を左端へ）→ 余白は全て右の海で画面端まで充填
+  const left=EMBEDDED ? 0 : (availW-dispW)/2;
   const top=(availH-dispH)/2;
   cv.style.width=Math.max(1,Math.floor(dispW))+'px';
   cv.style.height=Math.max(1,Math.floor(dispH))+'px';
@@ -2136,6 +2137,19 @@ function fitCanvas(){
   cv.style.margin='0';
   wrap.style.alignItems='stretch';
   wrap.style.justifyContent='stretch';
+  if(EMBEDDED){
+    // 左右の余白を画面端まで充填：左＝芝生＋メイン道路の延長、右＝海（キャンバス背後・視覚のみ）
+    let fillL=wrap.querySelector('#emb-fill-l'), fillR=wrap.querySelector('#emb-fill-r');
+    if(!fillL){ fillL=document.createElement('div'); fillL.id='emb-fill-l'; fillL.style.cssText='position:absolute;top:0;bottom:0;left:0;z-index:0;background:#54963a;overflow:hidden;pointer-events:none'; fillL.innerHTML='<div class="emb-road"></div>'; wrap.insertBefore(fillL, wrap.firstChild); }
+    if(!fillR){ fillR=document.createElement('div'); fillR.id='emb-fill-r'; fillR.style.cssText='position:absolute;top:0;bottom:0;right:0;z-index:0;background:repeating-linear-gradient(90deg,#1f78c8 0 6px,#1a6cb8 6px 7px);pointer-events:none'; wrap.insertBefore(fillR, wrap.firstChild); }
+    fillL.style.width=Math.max(0,Math.floor(left))+'px';
+    fillR.style.width=Math.max(0,Math.ceil(availW-(left+dispW)))+'px';
+    const road=fillL.querySelector('.emb-road');
+    if(road){
+      const ROAD_Y=140, ROAD_H=40; // メイン横道路（マップ座標）
+      road.style.cssText='position:absolute;left:0;right:0;background:#3d4148;box-shadow:inset 0 1px 0 #2a2d33,inset 0 -1px 0 #2a2d33;top:'+Math.round(top+ROAD_Y*scale)+'px;height:'+Math.max(1,Math.round(ROAD_H*scale))+'px';
+    }
+  }
   _embedFit={scale,offX:left,offY:top,vy0:0,vh:VIEW_H,portrait:!!mapPortrait};
 }
 if(EMBEDDED){
