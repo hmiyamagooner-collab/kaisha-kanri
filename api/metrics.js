@@ -32,6 +32,9 @@ const VIEWS = {
   retention: { name: "v_retention", dateCol: "cohort_day", order: "cohort_day.asc" },
   purchases: { name: "v_purchase_breakdown", dateCol: "day", order: "day.desc" },
   coins: { name: "v_coin_activity", dateCol: "day", order: "day.asc" },
+  // 日次データ報告（追補）
+  daily_report: { name: "v_daily_report", dateCol: "day", order: "day.asc" },
+  analysis_breakdown: { name: "v_analysis_breakdown", dateCol: "day", order: "day.asc" },
 };
 
 // ---- PORTAL 認証 -------------------------------------------------------------

@@ -115,6 +115,11 @@ td.rate{color:var(--up)}
   <div id="gate" class="state" hidden></div>
 
   <div id="main" hidden>
+    <div class="ptabs">
+      <button type="button" class="ptab on" id="tabDash">指標ダッシュボード</button>
+      <button type="button" class="ptab" id="tabDaily">日次報告</button>
+    </div>
+    <div id="viewDash">
     <div class="controls">
       <span class="ctl-label">プロダクト</span>
       <div class="seg" id="segProduct">
@@ -200,9 +205,68 @@ td.rate{color:var(--up)}
     </div>
 
     <div class="foot-note">読み取り専用 ／ utm_check のテスト行は集計から除外済み ／ JST（Asia/Tokyo）基準</div>
+    </div><!-- /#viewDash -->
+
+    <div id="viewDaily" hidden>
+      <div class="controls">
+        <span class="ctl-label">期間</span>
+        <div class="seg" id="segDailyPeriod">
+          <button data-d="3" class="on">3日</button>
+          <button data-d="7">7日</button>
+          <button data-d="14">14日</button>
+        </div>
+        <button class="save-btn" id="dailyCopyBtn" type="button">Markdownでコピー</button>
+        <button class="save-btn" id="dailyInsightBtn" type="button">所見を生成</button>
+      </div>
+
+      <div class="panel">
+        <h2>今日の数字を入力（外部の数字・手入力）</h2>
+        <div class="kpi-input">
+          <label>日付<input type="date" id="kpiDay"></label>
+          <label>Googleインストール<input type="number" id="kpi_google_installs" min="0" step="1" inputmode="numeric"></label>
+          <label>Google費用(¥)<input type="number" id="kpi_google_cost" min="0" step="1" inputmode="numeric"></label>
+          <label>Playインストール<input type="number" id="kpi_play_installs" min="0" step="1" inputmode="numeric"></label>
+          <label>IGリーチ<input type="number" id="kpi_ig_reach" min="0" step="1" inputmode="numeric"></label>
+          <label>IGプロフ訪問<input type="number" id="kpi_ig_profile_visits" min="0" step="1" inputmode="numeric"></label>
+          <label>TikTok再生<input type="number" id="kpi_tiktok_views" min="0" step="1" inputmode="numeric"></label>
+          <button class="save-btn" id="kpiSaveBtn" type="button">保存</button>
+          <span id="kpiSaveMsg" class="coin-note"></span>
+        </div>
+        <div class="coin-note">毎朝この画面で入力（upsert＝同じ日付・指標は上書き）。空欄は保存しません。</div>
+      </div>
+
+      <div class="panel">
+        <h2>表A：日別ファネル</h2>
+        <div class="tbl-wrap"><table id="tblDailyA"><tbody><tr><td class="loading">読み込み中…</td></tr></tbody></table></div>
+      </div>
+
+      <div class="panel">
+        <h2>表B：分析の内訳（self / partner / message）</h2>
+        <div class="tbl-wrap"><table id="tblDailyB"><tbody><tr><td class="loading">読み込み中…</td></tr></tbody></table></div>
+        <div class="coin-note" id="dailyPrebuy">課金予備軍（相手 or LINE まで進んだ人）： —</div>
+      </div>
+
+      <div class="panel" id="insightPanel" hidden>
+        <h2>所見（AI）</h2>
+        <div id="insightBody" class="coin-note" style="white-space:pre-wrap;line-height:1.7"></div>
+      </div>
+
+      <div class="foot-note">Google/IG/TikTok/Play は手入力（daily_kpi）／ RELA側の自動値と合成 ／ JST基準</div>
+      <textarea id="dailyMdOut" style="position:absolute;left:-9999px;top:-9999px" aria-hidden="true"></textarea>
+    </div><!-- /#viewDaily -->
   </div>
 </div>
 
+<style>
+.ptabs{display:flex;gap:8px;margin:0 0 14px}
+.ptab{font-size:13px;font-weight:700;padding:8px 16px;border-radius:9px;cursor:pointer;border:1px solid rgba(120,140,170,.35);background:rgba(40,54,74,.4);color:#c7d4e6}
+.ptab.on{border-color:#33c6b3;background:rgba(51,198,179,.16);color:#eafff8}
+.kpi-input{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end}
+.kpi-input label{display:flex;flex-direction:column;font-size:11px;gap:4px;color:#9fb0c4}
+.kpi-input input{width:118px;background:#0f141a;border:1px solid rgba(143,152,166,.35);border-radius:7px;color:#eef;padding:7px 8px;font-size:13px}
+#tblDailyA th,#tblDailyA td,#tblDailyB th,#tblDailyB td{white-space:nowrap;text-align:center}
+#tblDailyA td:first-child,#tblDailyB td:first-child{text-align:left;font-weight:600}
+</style>
 <script>
 (function(){
   var SB_URL='https://bckzazaghgomhyvdikmb.supabase.co';
@@ -413,7 +477,125 @@ td.rate{color:var(--up)}
     try{ renderRet(await fetchView('retention', f, t)); }catch(e){ $('tblRet').querySelector('tbody').innerHTML='<tr><td colspan="6" class="empty">取得失敗（'+e.message+'）</td></tr>'; }
   }
 
+  // ===== 日次報告（表A/表B・手入力KPI・Markdownコピー・所見） =====
+  var dailyDays=3, dailyLoaded=false, lastDailyPayload=null;
+  var KPI_FIELDS=[
+    ['google_installs','kpi_google_installs'],['google_cost','kpi_google_cost'],
+    ['play_installs','kpi_play_installs'],['ig_reach','kpi_ig_reach'],
+    ['ig_profile_visits','kpi_ig_profile_visits'],['tiktok_views','kpi_tiktok_views']
+  ];
+  function mdShort(iso){ return iso? (Number(iso.slice(5,7))+'/'+Number(iso.slice(8,10))) : ''; }
+  function pct(a,b){ b=Number(b||0); if(!(b>0)) return '—'; return Math.round((Number(a||0)/b)*100)+'%'; }
+  function within2(iso, today){ try{ return (new Date(today+'T00:00:00')-new Date(iso+'T00:00:00'))/86400000 < 2; }catch(e){ return false; } }
+  async function loadKpi(from,to){
+    var c=sb(); if(!c) return {};
+    try{
+      var q=await c.from('daily_kpi').select('day,metric,value').eq('product',product).gte('day',from).lte('day',to);
+      var map={}; (q.data||[]).forEach(function(r){ (map[r.day]=map[r.day]||{})[r.metric]=Number(r.value); });
+      return map;
+    }catch(e){ return {}; }
+  }
+  async function fillKpiInputs(){
+    var day=$('kpiDay').value; if(!day) return;
+    var m=await loadKpi(day,day), row=m[day]||{};
+    KPI_FIELDS.forEach(function(f){ var el=$(f[1]); if(el) el.value=(row[f[0]]!=null?row[f[0]]:''); });
+  }
+  async function saveKpi(){
+    var c=sb(); if(!c) return;
+    var day=$('kpiDay').value; if(!day){ $('kpiSaveMsg').textContent='日付を入れてください'; return; }
+    var uid=null; try{ uid=(await c.auth.getUser()).data.user.id; }catch(e){}
+    var rows=[];
+    KPI_FIELDS.forEach(function(f){ var v=$(f[1]).value; if(v!==''&&v!=null&&!isNaN(Number(v))) rows.push({product:product,day:day,metric:f[0],value:Number(v),updated_by:uid,updated_at:new Date().toISOString()}); });
+    if(!rows.length){ $('kpiSaveMsg').textContent='入力がありません'; return; }
+    $('kpiSaveMsg').textContent='保存中…';
+    try{
+      var r=await c.from('daily_kpi').upsert(rows,{onConflict:'product,day,metric'});
+      if(r.error) throw r.error;
+      $('kpiSaveMsg').textContent='保存しました（'+rows.length+'件）';
+      loadDaily();
+    }catch(e){ $('kpiSaveMsg').textContent='保存失敗: '+((e&&e.message)||e); }
+  }
+  async function loadDaily(){
+    var toD=new Date(), fromD=new Date(); fromD.setDate(fromD.getDate()-(dailyDays-1));
+    var f=fmt(fromD), t=fmt(toD), today=fmt(new Date());
+    $('tblDailyA').innerHTML='<tbody><tr><td class="loading">読み込み中…</td></tr></tbody>';
+    var repRows=[], brk=[], kpi={};
+    try{ repRows=await fetchView('daily_report', f, t); }catch(e){}
+    try{ brk=await fetchView('analysis_breakdown', f, t); }catch(e){}
+    kpi=await loadKpi(f,t);
+    var days=[]; for(var d=new Date(fromD); d<=toD; d.setDate(d.getDate()+1)) days.push(fmt(new Date(d)));
+    var repByDay={}; repRows.forEach(function(r){ repByDay[String(r.day)]=r; });
+    var rowsDef=[
+      ['Google インストール', function(day){ var v=(kpi[day]||{}).google_installs; return v!=null?nfmt(v):'—'; }],
+      ['新規匿名ユーザー', function(day){ var r=repByDay[day]; return r?nfmt(r.new_anon_users):'—'; }],
+      ['wake', function(day){ var r=repByDay[day]; return r?nfmt(r.wake):'—'; }],
+      ['うち android', function(day){ var r=repByDay[day]; return r?nfmt(r.wake_android):'—'; }],
+      ['インストール → wake', function(day){ var r=repByDay[day]; var g=(kpi[day]||{}).google_installs; return (r&&g!=null&&g>0)?pct(r.wake,g):'—'; }],
+      ['analysis', function(day){ var r=repByDay[day]; return r?nfmt(r.analysis_users):'—'; }],
+      ['課金', function(day){ var r=repByDay[day]; return r?nfmt(r.purchase_users):'—'; }],
+      ['2日以内に戻った人', function(day){ var r=repByDay[day]; if(!r) return '—'; return within2(day,today)?'—':nfmt(r.returned_2d); }],
+      ['UTM 流入元', function(day){ var r=repByDay[day]; return (r&&r.utm_sources)?String(r.utm_sources):'—'; }]
+    ];
+    var headA='<thead><tr><th>指標</th>'+days.map(function(d){return '<th>'+mdShort(d)+'</th>';}).join('')+'</tr></thead>';
+    var bodyA='<tbody>'+rowsDef.map(function(rd){ return '<tr><td>'+rd[0]+'</td>'+days.map(function(d){return '<td>'+rd[1](d)+'</td>';}).join('')+'</tr>'; }).join('')+'</tbody>';
+    $('tblDailyA').innerHTML=headA+bodyA;
+    var types=['self','partner','message'];
+    var brkByDayType={}; brk.forEach(function(r){ (brkByDayType[String(r.day)]=brkByDayType[String(r.day)]||{})[r.type]={users:Number(r.users),analyses:Number(r.analyses)}; });
+    var headB='<thead><tr><th>日付</th>'+types.map(function(x){return '<th>'+x+'</th>';}).join('')+'</tr></thead>';
+    var bodyB='<tbody>'+days.map(function(d){ return '<tr><td>'+mdShort(d)+'</td>'+types.map(function(x){ var c2=(brkByDayType[d]||{})[x]; return '<td>'+(c2?(nfmt(c2.users)+'人'):'0')+'</td>'; }).join('')+'</tr>'; }).join('')+'</tbody>';
+    $('tblDailyB').innerHTML=headB+bodyB;
+    var preNum=0, wakeSum=0;
+    brk.forEach(function(r){ if(r.type==='partner'||r.type==='message') preNum+=Number(r.users||0); });
+    days.forEach(function(d){ var r=repByDay[d]; if(r) wakeSum+=Number(r.wake||0); });
+    $('dailyPrebuy').textContent='課金予備軍（相手 or LINE まで進んだ人）：'+preNum+' / '+wakeSum+' wake（'+pct(preNum,wakeSum)+'）';
+    var md=buildDailyMd(days, rowsDef, types, brkByDayType, preNum, wakeSum);
+    $('dailyMdOut').value=md;
+    lastDailyPayload={ period:{from:f,to:t}, days:days, tableB:brkByDayType, prebuy:{num:preNum, wake:wakeSum}, markdown:md };
+    dailyLoaded=true;
+  }
+  function buildDailyMd(days, rowsDef, types, brkByDayType, preNum, wakeSum){
+    var head='**RELA 日次報告（'+mdShort(days[0])+'〜'+mdShort(days[days.length-1])+'）**\n\n';
+    var hdr='| |'+days.map(function(d){return ' '+mdShort(d)+' |';}).join('')+'\n';
+    var sep='|---|'+days.map(function(){return '---|';}).join('')+'\n';
+    var body=rowsDef.map(function(rd){ return '| '+rd[0]+' |'+days.map(function(d){return ' '+rd[1](d)+' |';}).join(''); }).join('\n');
+    var mdB='\n\n**分析の内訳**\n| |'+types.map(function(x){return ' '+x+' |';}).join('')+'\n|---|'+types.map(function(){return '---|';}).join('')+'\n';
+    mdB+=days.map(function(d){ return '| '+mdShort(d)+' |'+types.map(function(x){ var c=(brkByDayType[d]||{})[x]; return ' '+(c?(c.users+'人'):'0')+' |'; }).join(''); }).join('\n');
+    mdB+='\n\n課金予備軍（相手 or LINE まで進んだ人）：'+preNum+' / '+wakeSum+' wake（'+pct(preNum,wakeSum)+'）\n';
+    return head+hdr+sep+body+mdB;
+  }
+  async function copyDailyMd(){
+    var ta=$('dailyMdOut'); if(!ta.value){ await loadDaily(); }
+    try{ await navigator.clipboard.writeText(ta.value); alert('Markdownをコピーしました'); }
+    catch(e){ ta.style.left='0'; ta.select(); try{document.execCommand('copy');}catch(_){} ta.style.left='-9999px'; alert('コピーしました'); }
+  }
+  async function genInsight(){
+    var btn=$('dailyInsightBtn'), old=btn.textContent; btn.disabled=true; btn.textContent='生成中…';
+    try{
+      if(!lastDailyPayload) await loadDaily();
+      var r=await fetch('/api/daily-insight',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({json:lastDailyPayload})});
+      var d=await r.json().catch(function(){return{};});
+      $('insightPanel').hidden=false;
+      $('insightBody').textContent=d.ok?d.insight:('生成できません：'+(d.error||d.state||'error'));
+    }catch(e){ $('insightPanel').hidden=false; $('insightBody').textContent='エラー：'+((e&&e.message)||e); }
+    finally{ btn.disabled=false; btn.textContent=old; }
+  }
+  function switchView(which){
+    var dash=which==='dash';
+    $('viewDash').hidden=!dash; $('viewDaily').hidden=dash;
+    $('tabDash').classList.toggle('on',dash); $('tabDaily').classList.toggle('on',!dash);
+    if(!dash){ if(!$('kpiDay').value) $('kpiDay').value=fmt(new Date()); if(!dailyLoaded){ fillKpiInputs(); loadDaily(); } }
+  }
+
   function wireControls(){
+    $('tabDash').onclick=function(){ switchView('dash'); };
+    $('tabDaily').onclick=function(){ switchView('daily'); };
+    document.querySelectorAll('#segDailyPeriod button').forEach(function(b){
+      b.onclick=function(){ dailyDays=+b.dataset.d; document.querySelectorAll('#segDailyPeriod button').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); loadDaily(); };
+    });
+    var kd=$('kpiDay'); if(kd) kd.onchange=fillKpiInputs;
+    var ks=$('kpiSaveBtn'); if(ks) ks.onclick=saveKpi;
+    var cb=$('dailyCopyBtn'); if(cb) cb.onclick=copyDailyMd;
+    var ib=$('dailyInsightBtn'); if(ib) ib.onclick=genInsight;
     document.querySelectorAll('#segProduct button').forEach(function(b){
       b.onclick=function(){ if(b.disabled) return; product=b.dataset.p;
         document.querySelectorAll('#segProduct button').forEach(function(x){x.classList.remove('on');}); b.classList.add('on'); loadAll(); };
