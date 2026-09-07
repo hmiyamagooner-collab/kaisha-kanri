@@ -15538,5 +15538,66 @@ window.EntakuDocIngest=(function(){
 <script src="billing-docs.js"></script>
 <script src="entaku-dbx-search.js"></script>
 
+<script>
+/* ===== AI残高(トークン切れ)アラート：OpenAI / Anthropic を定期チェックして警告 ===== */
+(function(){
+  function oaEndpoint(){ try{ if(/vercel\.app$/i.test(location.hostname||'')) return '/api/openai'; }catch(e){} return 'https://kaisha-kanri.vercel.app/api/openai'; }
+  function clEndpoint(){ try{ if(/vercel\.app$/i.test(location.hostname||'')) return '/api/anthropic-status'; }catch(e){} return 'https://kaisha-kanri.vercel.app/api/anthropic-status'; }
+  var COOLDOWN=30*60*1000; // 同じ警告の再通知は30分に1回
+  function shouldAlert(kind){
+    try{
+      var k='gp_tok_alert_'+kind;
+      var last=Number(sessionStorage.getItem(k)||0);
+      if(Date.now()-last < COOLDOWN) return false;
+      sessionStorage.setItem(k, String(Date.now()));
+      return true;
+    }catch(e){ return true; }
+  }
+  function fireAlert(msg){
+    try{ window.DashTalk && window.DashTalk.warn && window.DashTalk.warn('finance', msg, 30000); }catch(e){}
+    try{ window.Treasury && window.Treasury.toast && window.Treasury.toast(msg); }catch(e){}
+  }
+  function markChip(chipId, btnId, on, text){
+    try{
+      var c=document.getElementById(chipId);
+      if(c){ c.hidden=false; c.textContent=text; c.style.color=on?'#f0a0a0':''; }
+      var b=document.getElementById(btnId);
+      if(b){ b.classList.toggle('is-ng', !!on); if(on) b.classList.remove('is-ok'); }
+    }catch(e){}
+  }
+  async function checkOpenAI(){
+    try{
+      var r=await fetch(oaEndpoint(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'status'})});
+      var d=await r.json().catch(function(){ return {}; });
+      if(d.state==='no_credits'){
+        markChip('portalOpenAIStatus','portalOpenAIStatusBtn', true, '⚠残高不足');
+        if(shouldAlert('oa')) fireAlert('⚠ OpenAIの残高が不足しています（トークン切れ）。円卓AIが止まります。Billingでチャージしてください。');
+      }else if(d.state==='bad_key'){
+        if(shouldAlert('oa_key')) fireAlert('⚠ OpenAIのAPIキーが無効です。Vercelの OPENAI_API_KEY を確認してください。');
+      }
+    }catch(e){}
+  }
+  async function checkAnthropic(){
+    try{
+      var r=await fetch(clEndpoint(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'status'})});
+      var d=await r.json().catch(function(){ return {}; });
+      var cr=d.credit||{};
+      if(cr.state==='no_credits'){
+        markChip('portalClaudeStatus','portalClaudeStatusBtn', true, '⚠残高不足');
+        if(shouldAlert('cl')) fireAlert('⚠ Anthropic(Claude)の残高が不足しています（トークン切れ）。ゆうしゃレオ等が止まります。コンソールでチャージしてください。');
+      }else if(cr.state==='bad_key'){
+        if(shouldAlert('cl_key')) fireAlert('⚠ Anthropic(Claude)のAPIキーが無効です。ANTHROPIC_API_KEY を確認してください。');
+      }
+    }catch(e){}
+  }
+  function run(){ checkOpenAI(); checkAnthropic(); }
+  function boot(){
+    if(/^file:/i.test(location.protocol||'')) return;
+    setTimeout(run, 5000);            // 起動5秒後に一度
+    setInterval(run, 10*60*1000);     // 以後10分ごと
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+})();
+</script>
 </body>
 </html>

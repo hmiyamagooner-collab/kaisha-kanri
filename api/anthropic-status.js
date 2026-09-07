@@ -91,13 +91,41 @@ async function fetchTokens(key, days) {
   return { available: true, days, input, output, total: input + output };
 }
 
+// Anthropic(Claude)の残高切れ検知：通常APIキー(ANTHROPIC_API_KEY)で最小Messagesを叩く。
+//   残高不足なら 400 で「credit balance is too low」等が返る（ゆうしゃレオ等の停止に直結）。
+async function checkAnthropicCredit() {
+  const key = String(process.env.ANTHROPIC_API_KEY || "").trim();
+  if (!key) return { available: false, state: "no_key" };
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const r = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "claude-haiku-4-5", max_tokens: 1, messages: [{ role: "user", content: "ping" }] }),
+      signal: ctrl.signal,
+    });
+    if (r.ok) return { available: true, state: "ok" };
+    const text = (await r.text()) || "";
+    const low = /credit balance is too low|insufficient|billing|quota|payment/i.test(text);
+    if (r.status === 401) return { available: true, state: "bad_key" };
+    if ((r.status === 400 || r.status === 402 || r.status === 429) && low) return { available: true, state: "no_credits" };
+    return { available: true, state: "error", status: r.status };
+  } catch (e) {
+    return { available: false, state: "unknown", reason: String((e && e.message) || e).slice(0, 80) };
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 async function handleStatus(res) {
   const key = String(process.env.ANTHROPIC_ADMIN_KEY || "").trim();
+  const credit = await checkAnthropicCredit();
   if (!key) {
     return res.status(200).json({
       ok: false, state: "no_key", label: "キー未設定",
       detail: "Vercelの環境変数 ANTHROPIC_ADMIN_KEY（Admin APIキー sk-ant-admin...）が未設定です。設定すると利用額・トークンを表示します。",
-      billingUrl: CONSOLE_USAGE, at: new Date().toISOString(),
+      credit, billingUrl: CONSOLE_USAGE, at: new Date().toISOString(),
     });
   }
   const [cost, tokens] = await Promise.all([fetchCostUsd(key, 7), fetchTokens(key, 7)]);
@@ -121,6 +149,7 @@ async function handleStatus(res) {
       : "Admin APIから利用データを取得できませんでした（権限/期間をご確認ください）。",
     spend7d: cost,
     tokens7d: tokens,
+    credit,
     note: "※組織全体の利用（ゆうしゃレオ等を含む）。ワークスペース別内訳は将来対応可。",
     billingUrl: CONSOLE_USAGE,
     at: new Date().toISOString(),
