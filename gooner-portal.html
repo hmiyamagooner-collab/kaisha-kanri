@@ -5857,6 +5857,7 @@ window.PortalTTS=(function(){
   function toReading(s){
     return String(s||'')
       .replace(/深山/g,'ミヤマ')   // 社長の姓。ふかやま等の誤読を防止
+      .replace(/RELA/gi,'リラ')    // プロダクト名。「レラ/アールイーエルエー」等の誤読を防止
       .replace(/陽翔/g,'はると')   // ようしょう等の誤読を防止
       .replace(/紬/g,'つむぎ')     // ちゅう等の誤読を防止
       .replace(/凛/g,'りん');
