@@ -1298,15 +1298,17 @@ body.is-hsplit-drag{cursor:ew-resize;user-select:none}
   grid-template-columns:minmax(0,1fr);
   gap:0;
 }
-/* 上段：3キャラ ｜ クエスト（横並び。左右比率は JS が上書き可） */
+/* 上段：3キャラ ｜ クエスト（横並び）。スクショ比率で固定（3キャラ63%/クエスト37%）・ドラッグ不可 */
 .dash-top-row{
   min-height:0;height:100%;overflow:hidden;
   display:grid;
-  grid-template-columns:minmax(120px,42fr) 7px minmax(0,58fr);
+  grid-template-columns:minmax(120px,63fr) 7px minmax(0,37fr);
   gap:0;
 }
 .dash-top-row>#dashboard-pane,
 .dash-top-row>#office-pane{height:100%;min-height:0;overflow:hidden;}
+/* サイズ固定：上段・下段の分割ハンドルはドラッグ無効 */
+.entaku-quest-split,.quests-row-split{pointer-events:none!important;cursor:default!important}
 #office-pane .office-frame{
   align-items:stretch;justify-content:stretch;
 }
@@ -12296,6 +12298,7 @@ window.PortalAuth=(function(){
     try{ localStorage.setItem(KEY, String(Math.round(topFr*10)/10)); }catch(e){}
   }
   function wire(){
+    return; /* サイズ固定：上段/円卓の上下ドラッグを無効化（CSSの既定比率で固定） */
     load();
     const handle=document.getElementById('questsRowSplit');
     if(!handle) return;
@@ -12371,6 +12374,7 @@ window.PortalAuth=(function(){
     try{ localStorage.setItem(KEY, String(Math.round(leftFr*10)/10)); }catch(e){}
   }
   function wire(){
+    return; /* サイズ固定：クエストの左右ドラッグを無効化（CSSの既定比率で固定） */
     load();
     const handle=document.getElementById('entakuQuestSplit');
     if(!handle) return;
