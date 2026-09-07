@@ -15147,6 +15147,7 @@ window.EntakuDocIngest=(function(){
     let sending=false;
     let committed='';
     let lastHeard='';
+    let lastChangeAt=0;
     let silenceTimer=null;
     function clearSilence(){ if(silenceTimer){ clearTimeout(silenceTimer); silenceTimer=null; } }
     function syncBtn(){
@@ -15169,10 +15170,11 @@ window.EntakuDocIngest=(function(){
       const ta=el('entakuText');
       const text=((committed||'') || (ta&&ta.value) || '').trim();
       if(!text || sending) return false;
+      if(S.busy || S.playing) return false;   // AI応答中は送らない（テキストは温存）
       sending=true;
       clearSilence();
       stopListen();
-      committed='';
+      committed=''; lastHeard=''; lastChangeAt=0;
       if(ta) ta.value=text;
       setTimeout(function(){
         try{ window.sendEntaku(); }catch(e){}
@@ -15180,6 +15182,15 @@ window.EntakuDocIngest=(function(){
       }, 80);
       return true;
     }
+    // ★ 自動送信ポーラー：入力欄を定期監視し、テキストが SILENCE_MS 変化なしなら送信。
+    //   認識イベントの発火パターンに依存しないため、端末差でも確実に送られる。
+    setInterval(function(){
+      if(!modeOn || sending) return;
+      if(S.busy || S.playing || window.__entakuSpeaking) return;
+      var ta=el('entakuText'); var txt=(ta&&ta.value||'').trim();
+      if(!txt || !lastChangeAt) return;
+      if(Date.now()-lastChangeAt >= SILENCE_MS){ submitHeard(); }
+    }, 300);
     function startListen(){
       if(!SR){
         window.Treasury?.toast?.('このブラウザは音声会話に非対応です（Chrome推奨）');
@@ -15188,8 +15199,7 @@ window.EntakuDocIngest=(function(){
       if(S.busy||S.playing||window.__entakuSpeaking||sending) return;
       if(!S.open){ S.open=true; syncToggle(); }
       try{ window.PortalTTS?.stop(); }catch(e){}
-      committed='';
-      lastHeard='';
+      // ★ committed はここでリセットしない（再起動をまたいで認識テキストを保持する）
       sending=false;   // 取りこぼし防止：聞き取り開始時に必ずリセット
       clearSilence();
       if(!rec){
@@ -15237,22 +15247,10 @@ window.EntakuDocIngest=(function(){
           if(finals) committed=(committed+finals).replace(/\s+/g,' ').trim();
           const ta=el('entakuText');
           const shown=((committed+(interim?(' '+interim):''))).trim();
-          if(ta) ta.value=shown;
-          // テキストが「変化した時だけ」無音タイマーを張り直す。
-          // （無音でも認識イベントが繰り返す端末で、タイマーが延々リセットされ自動送信されない不具合を防ぐ）
-          if(shown && shown!==lastHeard){
-            lastHeard=shown;
-            clearSilence();
-            silenceTimer=setTimeout(function(){
-              if(!modeOn || sending) return;
-              submitHeard();
-            }, SILENCE_MS);
-          } else if(shown && !silenceTimer){
-            // 同じテキストのままでもタイマーが無ければ必ず1本張る（発火保証）
-            silenceTimer=setTimeout(function(){
-              if(!modeOn || sending) return;
-              submitHeard();
-            }, SILENCE_MS);
+          // 認識テキストがある時だけ入力欄を更新（空のinterimで既存テキストを消さない）
+          if(shown){
+            if(ta) ta.value=shown;
+            if(shown!==lastHeard){ lastHeard=shown; lastChangeAt=Date.now(); }
           }
         };
       }
