@@ -13333,14 +13333,13 @@ window.EntakuDocIngest=(function(){
       ensureTalkBadge(photo, TALK_NAME[dept]||''); card.classList.add('is-talking');
       var wrap=document.querySelector('.dc-cards'); if(wrap) wrap.classList.add('is-talking-on');
       if(!video) return;
-      // 各AIの動作に応じて本人の動画音声を再生（普段はミュート＝OFF）。
-      // 合成読み上げ(🔊)がONのときは主音声がTTSなので小さめに重ね、OFFなら本人の声を主音声として等倍で鳴らす。
+      // 音声はTTSのみ。動画はTTSが読み上げている時だけ再生（常にミュート＝映像のみ、本人の声は重ねない）。
       var ttsOn=!!(window.PortalTTS && window.PortalTTS.isEnabled && window.PortalTTS.isEnabled());
+      if(!ttsOn){ try{ video.pause(); }catch(e){} video.muted=true; return; }
       try{
-        video.loop=true; video.muted=false; video.volume=ttsOn?0.5:1;
+        video.loop=true; video.muted=true;
         try{ if(video.currentTime>0.2) video.currentTime=0; }catch(e){}
-        var p=video.play();
-        if(p&&p.catch) p.catch(function(){ try{ video.muted=true; var p2=video.play(); if(p2&&p2.catch)p2.catch(function(){}); }catch(e){} });
+        var p=video.play(); if(p&&p.catch) p.catch(function(){});
       }catch(e){}
     }catch(e){}
   }
