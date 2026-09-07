@@ -91,9 +91,16 @@ async function fetchTokens(key, days) {
   return { available: true, days, input, output, total: input + output };
 }
 
+// 残高チェックのサーバー側キャッシュ（トークン節約）。
+//   同一インスタンスでは TTL 内は Anthropic を叩かず前回結果を返す＝複数タブ/再試行で二重pingしない。
+//   OKは長め・異常は短めにキャッシュして「復旧の反映」も速くする。
+let _creditCache = { at: 0, value: null };
+const CREDIT_TTL_OK_MS = 25 * 60 * 1000;   // 正常時は25分キャッシュ
+const CREDIT_TTL_BAD_MS = 3 * 60 * 1000;   // 異常時は3分（復旧を早く拾う）
+
 // Anthropic(Claude)の残高切れ検知：通常APIキー(ANTHROPIC_API_KEY)で最小Messagesを叩く。
 //   残高不足なら 400 で「credit balance is too low」等が返る（ゆうしゃレオ等の停止に直結）。
-async function checkAnthropicCredit() {
+async function checkAnthropicCreditRaw() {
   const key = String(process.env.ANTHROPIC_API_KEY || "").trim();
   if (!key) return { available: false, state: "no_key" };
   const ctrl = new AbortController();
@@ -102,7 +109,7 @@ async function checkAnthropicCredit() {
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "claude-haiku-4-5", max_tokens: 1, messages: [{ role: "user", content: "ping" }] }),
+      body: JSON.stringify({ model: "claude-haiku-4-5", max_tokens: 1, messages: [{ role: "user", content: "." }] }),
       signal: ctrl.signal,
     });
     if (r.ok) return { available: true, state: "ok" };
@@ -118,6 +125,20 @@ async function checkAnthropicCredit() {
   }
 }
 
+async function checkAnthropicCredit(opts) {
+  const force = opts && opts.force;
+  const now = Date.now();
+  const v = _creditCache.value;
+  if (!force && v) {
+    const ttl = v.state === "ok" ? CREDIT_TTL_OK_MS : CREDIT_TTL_BAD_MS;
+    if (now - _creditCache.at < ttl) return Object.assign({ cached: true }, v);
+  }
+  const fresh = await checkAnthropicCreditRaw();
+  // no_key はキャッシュしない（設定直後に即反映させる）
+  if (fresh.state !== "no_key") _creditCache = { at: now, value: fresh };
+  return fresh;
+}
+
 // 信号機レベル: 残あり=ok(緑) / 残り僅か=low(橙) / 切れ・無効=out(赤) / 不明=unknown
 function anthLevel(credit, cost) {
   const st = credit && credit.state;
@@ -130,9 +151,9 @@ function anthLevel(credit, cost) {
   return "unknown";
 }
 
-async function handleStatus(res) {
+async function handleStatus(res, opts) {
   const key = String(process.env.ANTHROPIC_ADMIN_KEY || "").trim();
-  const credit = await checkAnthropicCredit();
+  const credit = await checkAnthropicCredit(opts);
   if (!key) {
     const okCredit = credit && credit.state === "ok";
     return res.status(200).json({
@@ -177,9 +198,11 @@ async function handleStatus(res) {
 export default async function handler(req, res) {
   applyCors(req, res);
   if (req.method === "OPTIONS") return res.status(204).end();
-  // GET でも POST({mode:'status'}) でも状態を返す
+  // GET でも POST({mode:'status'}) でも状態を返す。force=true で手動再確認（キャッシュ無視）
+  const body = req.body || {};
+  const force = body.force === true || String((req.query && req.query.force) || "") === "1";
   try {
-    return await handleStatus(res);
+    return await handleStatus(res, { force });
   } catch (e) {
     return res.status(500).json({
       ok: false, state: "error", label: "確認失敗",

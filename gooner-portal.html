@@ -12377,7 +12377,8 @@ window.PortalAuth=(function(){
         paint({ok:false,label:'ローカルファイル',detail:'file:// では確認できません。https://kaisha-kanri.vercel.app/gooner-portal で開いてください。',billingUrl:USAGE});
         return;
       }
-      var r=await fetch(endpoint(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'status'})});
+      // 手動で開いた/再確認したときは force で最新を取得（キャッシュ無視）
+      var r=await fetch(endpoint(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'status',force:true})});
       var data=await r.json().catch(function(){ return {}; });
       if(!r.ok && !data.state){
         paint({ok:false,label:'確認失敗',detail:String(data.error||data.detail||('HTTP '+r.status)),billingUrl:USAGE,at:new Date().toISOString()});
@@ -16010,7 +16011,7 @@ window.EntakuDocIngest=(function(){
   function boot(){
     if(/^file:/i.test(location.protocol||'')) return;
     setTimeout(run, 5000);            // 起動5秒後に一度
-    setInterval(run, 10*60*1000);     // 以後10分ごと
+    setInterval(run, 30*60*1000);     // 以後30分ごと（Claude残高pingのトークン節約。サーバー側でも結果をキャッシュ）
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();
