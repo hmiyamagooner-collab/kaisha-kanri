@@ -86,6 +86,12 @@ const SYSTEM_ENTAKU = [
   "経費: ①固定費（人件・家賃・光熱等） ②備品購入 ③その他変動費（消耗・外注）。月次で入金計−経費計＝差引、目標達成率を見る。",
   "紬の勘所: 給付・補助金・自己負担の区分管理、未入金・申請中の可視化、固定費のブレない計上、備品の資産性メモ。陽翔の勘所: 介護保険・補助金の要件、個人情報・契約・監査対応。",
   "",
+  "【事業メモ｜プロダクト事業（RELA・ゆうしゃレオ・お茶の販売／3人とも把握）】",
+  "自社プロダクトは ①RELA（AIで自分と相手を可視化する関係性分析アプリ）②ゆうしゃレオ ③お茶の販売（MARUMAGO・OEM/コンサル）。",
+  "RELAは【App Store非対応】でWEB販売（Stripe）＋Google Play（アプリ内課金）。集客はLP(rela.info)・Instagram・TikTok。課金の源はRevenueCat（月額サブスク＝ベーシック¥500/スタンダード¥1,500/プレミアム¥3,800＋消費型のRELA COIN）。",
+  "RELAの数値（DL数・起動/wake・分析・課金・流入元・コイン等）を聞かれたら、文脈末尾の【RELAプロダクト指標】を必ず参照し、具体的な数字で答える。『データ接続がない』と断らない（指標に“未接続/取得失敗”と明記されている場合のみ、設定待ちである旨を正直に伝える）。凛が全体サマリ、紬が採算（課金・コイン）を主導。",
+  "『DL数』の正確値はGoogle Play Console等ストア側のみ取得可能。指標では新規ユーザー(匿名起動)とwakeを実質的なDL/利用の近似として扱い、その旨を添えて答える。コイン残高の正はRevenueCat（課金ゲートは現状オフ＝消費は概算）。",
+  "",
   "【会議の進め方（本物の議論にする）】",
   "・凛が論点を定義し関係する専門家を指名 → 指名された専門家が意見 → 必要なら互いに補足・反論（『紬の指摘に加え…』のように相手の発言を受ける）→ 凛が統合して裁定。",
   "・意見が対立するときは対立点を明確にしてから、凛が判断材料を添えて裁定する。安易に丸めない。",
@@ -134,6 +140,73 @@ const SYSTEM_ENTAKU = [
 ].join("\n");
 
 const FOCUS_LABEL = { secretary: "凛（首席補佐官）", finance: "紬（経理・CFO）", legal: "陽翔（法務）" };
+
+// ===== RELA プロダクト指標を service_role で読み、円卓の文脈へ注入する要約を作る =====
+//   キーはサーバー側のみ（METRICS_RELA_*）。/api/metrics と同じ analytics ビューを読む。
+const METRICS_RELA_URL = process.env.METRICS_RELA_URL || "";
+const METRICS_RELA_KEY = process.env.METRICS_RELA_SERVICE_KEY || "";
+const RELA_DATECOL = { v_daily_funnel: "day", v_utm_funnel: "first_day", v_purchase_breakdown: "day", v_coin_activity: "day" };
+async function readAnalytics(view, fromDate) {
+  const dc = RELA_DATECOL[view];
+  const url = `${METRICS_RELA_URL}/rest/v1/${view}?select=*&${dc}=gte.${fromDate}`;
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 6000);
+  try {
+    const r = await fetch(url, {
+      headers: { apikey: METRICS_RELA_KEY, Authorization: "Bearer " + METRICS_RELA_KEY, "Accept-Profile": "analytics" },
+      signal: ctrl.signal,
+    });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch (e) {
+    return null;
+  } finally {
+    clearTimeout(t);
+  }
+}
+function ymd(d) { return d.toISOString().slice(0, 10); }
+function sumBy(rows, key) { return (rows || []).reduce((a, r) => a + (Number(r[key]) || 0), 0); }
+async function fetchRelaSummary() {
+  if (!METRICS_RELA_URL || !METRICS_RELA_KEY) {
+    return "【RELAプロダクト指標】現在データ未接続（集計ビュー未作成 または 環境変数 METRICS_RELA_* 未設定）。数値は断らず『指標基盤の設定が完了すれば表示できます』と正直に案内すること。";
+  }
+  const now = Date.now();
+  const from30 = ymd(new Date(now - 30 * 864e5));
+  const from7 = ymd(new Date(now - 7 * 864e5));
+  const [daily, utm, pur, coin] = await Promise.all([
+    readAnalytics("v_daily_funnel", from30),
+    readAnalytics("v_utm_funnel", from30),
+    readAnalytics("v_purchase_breakdown", from30),
+    readAnalytics("v_coin_activity", from30),
+  ]);
+  if (!daily) {
+    return "【RELAプロダクト指標】取得失敗（ビュー未作成の可能性・要 sql/rela_analytics_views.sql 実行）。数値は断らず設定待ちである旨を正直に伝えること。";
+  }
+  const d7 = daily.filter((r) => String(r.day) >= from7);
+  const rate = (a, b) => (b > 0 ? Math.round((a / b) * 100) + "%" : "–");
+  const lines = [];
+  lines.push("【RELAプロダクト指標（最新・自動連携／読み取り専用）】");
+  lines.push("販売: WEB(Stripe)＋Google Play、Apple/App Store非対応。集客: LP(rela.info)・Instagram・TikTok。課金の源はRevenueCat(月額サブスク＋RELA COIN)。");
+  lines.push(`■直近7日: 新規${sumBy(d7,"new_users")} / wake ${sumBy(d7,"wake_users")}(Android ${sumBy(d7,"wake_android")}・Web ${sumBy(d7,"wake_web")}) / 分析 ${sumBy(d7,"analysis_users")} / 課金 ${sumBy(d7,"purchase_users")}。wake→分析 ${rate(sumBy(d7,"analysis_users"),sumBy(d7,"wake_users"))}。`);
+  lines.push(`■直近30日: 新規${sumBy(daily,"new_users")} / wake ${sumBy(daily,"wake_users")}(Android ${sumBy(daily,"wake_android")}・Web ${sumBy(daily,"wake_web")}) / 分析 ${sumBy(daily,"analysis_users")} / 課金 ${sumBy(daily,"purchase_users")}。`);
+  if (Array.isArray(utm) && utm.length) {
+    const bySrc = {};
+    utm.forEach((r) => { const s = r.source || "direct"; if (!bySrc[s]) bySrc[s] = { u: 0, w: 0, p: 0 }; bySrc[s].u += +r.users || 0; bySrc[s].w += +r.wake_users || 0; bySrc[s].p += +r.purchase_users || 0; });
+    const top = Object.keys(bySrc).sort((a, b) => bySrc[b].u - bySrc[a].u).slice(0, 5).map((s) => `${s} 流入${bySrc[s].u}/wake${bySrc[s].w}/課金${bySrc[s].p}`).join(" ／ ");
+    lines.push("■流入元(30日): " + top);
+  }
+  if (Array.isArray(pur) && pur.length) {
+    const byP = {};
+    pur.forEach((r) => { const p = r.product || "other"; byP[p] = (byP[p] || 0) + (+r.purchases || 0); });
+    lines.push("■購入(30日・発生ベース): " + Object.keys(byP).map((p) => `${p} ${byP[p]}件`).join(" / "));
+  }
+  if (Array.isArray(coin) && coin.length) {
+    const grant = sumBy(coin, "welcome_coins") + sumBy(coin, "gift_coins");
+    lines.push(`■RELA COIN(近似): 付与${grant} / 購入${sumBy(coin,"bought_coins")} / 分析利用${sumBy(coin,"analyses")}回 / 推定消費${sumBy(coin,"est_consumed_coins")}。残高の正はRevenueCat・課金ゲート現状オフ。`);
+  }
+  lines.push("注:『DL数』の正確値はGoogle Play Console等ストア側のみ。ここでは新規ユーザー(匿名起動)とwakeを実質的なDL/利用の近似として扱い、その旨を添えて答える。");
+  return lines.join("\n");
+}
 
 function formatHistoryMessage(m) {
   const content = String(m.content || "").slice(0, 6000);
@@ -497,8 +570,17 @@ export default async function handler(req, res) {
     if (entaku && focus) {
       baseSystem += `\n\n【focus】この質問は ${FOCUS_LABEL[focus]} への指名です。${FOCUS_LABEL[focus]} を主役に、その人物が最初に答えてください。他の2名は必要なときだけ短く補足します。`;
     }
+    // 円卓のときは RELA プロダクト指標をサーバー側で取得し、文脈末尾へ注入（AIが数値で答えられる）
+    let relaBlock = "";
+    if (entaku) {
+      try { relaBlock = await fetchRelaSummary(); } catch (e) { relaBlock = ""; }
+    }
     // 現在状況コンテキストも 5000 字までに圧縮（巨大な状況メモによる遅延を抑える）
-    const system = context ? `${baseSystem}\n\n【現在のシステム状況】\n${context.slice(0, 5000)}` : baseSystem;
+    const system = [
+      baseSystem,
+      context ? `【現在のシステム状況】\n${context.slice(0, 5000)}` : "",
+      relaBlock,
+    ].filter(Boolean).join("\n\n");
 
     // ===== ストリーミング（円卓のみ・体感速度改善）=====
     // body.stream===true のときだけ SSE で逐次配信。既存の非ストリーミング経路は不変。
