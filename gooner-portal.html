@@ -1974,6 +1974,22 @@ body.is-hsplit-drag{cursor:ew-resize;user-select:none}
   font-size:16px;line-height:1;display:inline-flex;align-items:center;justify-content:center;
 }
 .entaku-dbx-btn{width:auto;min-width:52px;padding:0 8px;font-size:10px;font-weight:700}
+/* 会話ON/OFF・議事録ON/OFF：大きく・状態が一目で分かるトグル */
+.entaku-bigtoggle{
+  width:auto!important;height:42px!important;padding:0 14px!important;gap:8px;
+  border-radius:12px!important;border-width:1.6px!important;font-weight:800;
+}
+.entaku-bigtoggle .etb-ic{font-size:19px;line-height:1}
+.entaku-bigtoggle .etb-lb{font-size:13px;white-space:nowrap;letter-spacing:.02em}
+/* 会話 ON（緑・発光） */
+.entaku-talk-btn.entaku-bigtoggle.is-on{box-shadow:0 0 0 2px rgba(76,200,120,.55),0 0 15px 2px rgba(76,200,120,.45)}
+.entaku-talk-btn.entaku-bigtoggle.is-listen{box-shadow:0 0 0 2px rgba(110,200,255,.6),0 0 16px 3px rgba(110,200,255,.5)}
+/* 議事録 ON（赤・発光） */
+.entaku-mic-btn.entaku-bigtoggle.is-rec{box-shadow:0 0 0 2px rgba(255,90,90,.6),0 0 16px 3px rgba(255,90,90,.5)}
+@media (max-width:640px){
+  .entaku-bigtoggle{height:38px!important;padding:0 11px!important}
+  .entaku-bigtoggle .etb-lb{font-size:12px}
+}
 .entaku-attach-btn:hover,.entaku-mic-btn:hover,.entaku-talk-btn:hover,.entaku-dbx-btn:hover{background:rgba(51,198,179,.12);border-color:var(--nav-green)}
 .entaku-dbx-btn.has-pending{border-color:#e0a040;color:#f0c878;box-shadow:0 0 0 1px rgba(224,160,64,.35)}
 #entakuDbxPanel{
@@ -2105,7 +2121,7 @@ body.is-hsplit-drag{cursor:ew-resize;user-select:none}
 }
 .doc-inbox-item b{color:var(--text)}
 .doc-inbox-item .doc-meta{color:var(--muted);font-size:11px;margin-top:4px}
-.entaku-inline #entakuText{flex:1;min-width:0;rows:1;min-height:36px;max-height:72px;font-size:12px;padding:8px}
+.entaku-inline #entakuText{flex:1 1 70px;min-width:60px;rows:1;min-height:32px;max-height:64px;font-size:12px;padding:7px 8px}
 .entaku-inline #entakuSend{padding:0 14px;font-size:12px;height:36px}
 .ent-atts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .ent-att-img{max-width:min(220px,100%);max-height:160px;border-radius:8px;border:1px solid rgba(255,255,255,.25);display:block;cursor:zoom-in}
@@ -3434,10 +3450,10 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
           </div>
           <button type="button" class="entaku-attach-btn" id="entakuAttachBtn" title="PDF・CSV・写真を添付 / PrtScn貼付可" aria-label="添付">＋</button>
           <button type="button" class="entaku-dbx-btn" id="entakuDbxSearchBtn" title="Dropbox内を検索（要・社長承認）" aria-label="Dropbox検索">DB検索</button>
-          <button type="button" class="entaku-talk-btn" id="entakuTalkBtn" title="音声会話ON：話す→AIが答える（もう一度押すとOFF）" aria-label="音声会話" aria-pressed="false">💬</button>
-          <button type="button" class="entaku-mic-btn" id="entakuMicBtn" title="マイク録音→Whisper議事録" aria-label="マイク録音">🎙</button>
+          <button type="button" class="entaku-talk-btn entaku-bigtoggle" id="entakuTalkBtn" title="音声会話ON：話す→AIが答える（もう一度押すとOFF）" aria-label="音声会話" aria-pressed="false"><span class="etb-ic" aria-hidden="true">💬</span><span class="etb-lb">会話 OFF</span></button>
+          <button type="button" class="entaku-mic-btn entaku-bigtoggle" id="entakuMicBtn" title="マイク録音→Whisper議事録" aria-label="マイク録音"><span class="etb-ic" aria-hidden="true">🎙</span><span class="etb-lb">議事録 OFF</span></button>
           <input type="file" id="entakuFile" accept="image/*,application/pdf,.pdf,.csv,text/csv" multiple hidden>
-          <textarea id="entakuText" rows="1" placeholder="相談・細かい指示… 💬会話 / 🎙議事録　Enter送信"></textarea>
+          <textarea id="entakuText" rows="1" placeholder="相談・指示（Enter送信）"></textarea>
           <button type="submit" id="entakuSend">送信</button>
         </form>
       </div>
@@ -15050,6 +15066,8 @@ window.EntakuDocIngest=(function(){
       btn.title=listening?'聞いています…（クリックで停止）'
         : modeOn?'音声会話ON：AIのあと自動で聞きます（クリックでOFF）'
         :'音声会話：話す→AIが答える';
+      var lb=btn.querySelector('.etb-lb');
+      if(lb) lb.textContent=listening?'聞取中…':(modeOn?'会話 ON':'会話 OFF');
     }
     function stopListen(){
       listening=false;
@@ -15351,6 +15369,8 @@ window.EntakuDocIngest=(function(){
       if(bar) bar.classList.toggle('is-on', state==='rec');
       mic.title = state==='rec' ? '録音中（クリックで停止→議事録化）'
         : state==='busy' ? '議事録を作成中…' : 'マイク録音→Whisper議事録';
+      var lb=mic.querySelector('.etb-lb');
+      if(lb) lb.textContent = state==='rec' ? '議事録 ON' : state==='busy' ? '作成中…' : '議事録 OFF';
     }
     function cleanupStream(){
       if(tick){ clearInterval(tick); tick=null; }
