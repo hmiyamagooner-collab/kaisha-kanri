@@ -199,6 +199,10 @@ async function fetchRelaSummary() {
     const byP = {};
     pur.forEach((r) => { const p = r.product || "other"; byP[p] = (byP[p] || 0) + (+r.purchases || 0); });
     lines.push("■購入(30日・発生ベース): " + Object.keys(byP).map((p) => `${p} ${byP[p]}件`).join(" / "));
+    const PRICE = { premium: 3800, standard: 1500, basic: 500, coins: 300 };
+    let rev = 0;
+    Object.keys(byP).forEach((p) => { rev += (PRICE[p] || 0) * byP[p]; });
+    lines.push("■推定売上(30日・発生ベース概算): ¥" + rev.toLocaleString("ja-JP") + "（プラン単価×件数＋コイン¥300。継続課金/実売上の正はRevenueCat）");
   }
   if (Array.isArray(coin) && coin.length) {
     const grant = sumBy(coin, "welcome_coins") + sumBy(coin, "gift_coins");
