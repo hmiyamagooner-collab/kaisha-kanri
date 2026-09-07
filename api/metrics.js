@@ -97,14 +97,11 @@ async function readView(src, view, from, to) {
   params.set("order", v.order);
   if (from) params.append(v.dateCol, "gte." + from);
   if (to) params.append(v.dateCol, "lte." + to);
-  const res = await fetch(src.url + "/rest/v1/" + v.name + "?" + params.toString(), {
-    headers: {
-      apikey: src.key,
-      Authorization: "Bearer " + src.key,
-      // analytics スキーマのビューを読む（PostgREST の schema 指定）
-      "Accept-Profile": "analytics",
-    },
-  });
+  // Supabaseキーのヘッダ：新方式(sb_secret_...)はJWTでないため Bearer を付けない（401回避）。
+  // 旧方式(eyJ...=JWT)は従来どおり Bearer も付ける。apikey は常に付ける。
+  const headers = { apikey: src.key, "Accept-Profile": "analytics" };
+  if (/^eyJ/.test(String(src.key || ""))) headers.Authorization = "Bearer " + src.key;
+  const res = await fetch(src.url + "/rest/v1/" + v.name + "?" + params.toString(), { headers });
   const text = await res.text();
   if (!res.ok) {
     return { ok: false, status: res.status, detail: text.slice(0, 300) };

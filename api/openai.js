@@ -149,6 +149,13 @@ const FOCUS_LABEL = { secretary: "凛（首席補佐官）", finance: "紬（経
 const METRICS_RELA_URL = process.env.METRICS_RELA_URL || "";
 const METRICS_RELA_KEY = process.env.METRICS_RELA_SERVICE_KEY || "";
 const RELA_DATECOL = { v_daily_funnel: "day", v_utm_funnel: "first_day", v_purchase_breakdown: "day", v_coin_activity: "day" };
+// Supabaseキーのヘッダ組み立て。新方式(sb_secret_...)はJWTでないため Authorization Bearer を付けない
+// （PostgRESTがJWT検証で401になるのを防ぐ）。旧方式(eyJ...=JWT)は従来どおり Bearer も付ける。
+function sbHeaders(key, extra) {
+  const h = Object.assign({ apikey: key }, extra || {});
+  if (/^eyJ/.test(String(key || ""))) h.Authorization = "Bearer " + key;
+  return h;
+}
 async function readAnalytics(view, fromDate) {
   const dc = RELA_DATECOL[view];
   const url = `${METRICS_RELA_URL}/rest/v1/${view}?select=*&${dc}=gte.${fromDate}`;
@@ -156,7 +163,7 @@ async function readAnalytics(view, fromDate) {
   const t = setTimeout(() => ctrl.abort(), 6000);
   try {
     const r = await fetch(url, {
-      headers: { apikey: METRICS_RELA_KEY, Authorization: "Bearer " + METRICS_RELA_KEY, "Accept-Profile": "analytics" },
+      headers: sbHeaders(METRICS_RELA_KEY, { "Accept-Profile": "analytics" }),
       signal: ctrl.signal,
     });
     if (!r.ok) return null;
