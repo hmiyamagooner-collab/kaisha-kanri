@@ -1,7 +1,7 @@
 // Vercel Serverless Function: /api/legal-analyze
 // 法務部長・陽翔ペルソナで契約書を構造化チェック（円卓法務AIと同系統）
-// 適材適所: 法務の精読・リスク判断は Claude(Opus 4.8) を優先。
-//   ANTHROPIC_API_KEY 未設定 or Claude失敗時は OpenAI(GPT) に自動フォールバック。
+// コスト優先: OpenAI(GPT-4o) を優先。OPENAI_API_KEY 未設定 or 失敗時のみ Claude(Opus) にフォールバック。
+//   （精度重視でClaude優先に戻したい場合は handler 内の呼び出し順を入れ替える）
 //   出力スキーマ（analysis/reconcile 等）は従来と不変。
 
 import { getOpenAIKey } from "./_lib/getOpenAIKey.js";
@@ -147,22 +147,22 @@ export default async function handler(req, res) {
 
     const { systemText, userText } = buildPrompts(contractText, caseInfo);
 
-    // 適材適所: まず Claude、ダメなら OpenAI
-    let used = await callClaude(systemText, userText);
+    // コスト優先: まず OpenAI(GPT)、ダメなら Claude にフォールバック
+    let used = await callOpenAI(systemText, userText);
     if (!used.ok) {
-      const oa = await callOpenAI(systemText, userText);
-      if (oa.ok) {
-        used = oa;
-      } else if (used.skip && oa.skip) {
+      const cl = await callClaude(systemText, userText);
+      if (cl.ok) {
+        used = cl;
+      } else if (used.skip && cl.skip) {
         return res.status(500).json({
           error: "AIキーが未設定です",
-          hint: "Vercelの環境変数 ANTHROPIC_API_KEY（法務はClaude優先）または OPENAI_API_KEY を設定してください。",
+          hint: "Vercelの環境変数 OPENAI_API_KEY（法務はGPT優先）または ANTHROPIC_API_KEY を設定してください。",
         });
       } else {
         // 両方試して失敗
-        return res.status(used.aborted || oa.aborted ? 504 : 502).json({
-          error: used.aborted || oa.aborted ? "AIの応答がタイムアウトしました" : "AI呼び出しに失敗しました",
-          detail: (used.detail || oa.detail || "").slice(0, 500),
+        return res.status(used.aborted || cl.aborted ? 504 : 502).json({
+          error: used.aborted || cl.aborted ? "AIの応答がタイムアウトしました" : "AI呼び出しに失敗しました",
+          detail: (used.detail || cl.detail || "").slice(0, 500),
         });
       }
     }

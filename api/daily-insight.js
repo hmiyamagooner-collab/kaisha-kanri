@@ -1,12 +1,13 @@
 // Vercel Serverless Function: /api/daily-insight
 // 日次データ報告の「所見」を生成する（表A/表BのJSON → 3行以内の所見）。
 // 参照: Cursor指示書_追補_日次データ報告_20260907.md §4
-// APIキーは Vercel 環境変数 ANTHROPIC_API_KEY のみ（ブラウザに出さない）。
-// モデルは指示書指定の claude-sonnet-4-6。
+// コスト優先: OpenAI gpt-4o-mini を使用（安価）。APIキーは OPENAI_API_KEY（サーバー側のみ）。
+
+import { getOpenAIKey } from "./_lib/getOpenAIKey.js";
 
 export const config = { maxDuration: 30 };
 
-const MODEL = "claude-sonnet-4-6";
+const MODEL = process.env.OPENAI_INSIGHT_MODEL || "gpt-4o-mini";
 const TIMEOUT_MS = 25000;
 
 function applyCors(req, res) {
@@ -34,17 +35,16 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const key = String(process.env.ANTHROPIC_API_KEY || "").trim();
+  const key = await getOpenAIKey();
   if (!key) {
     return res.status(200).json({
       ok: false, state: "no_key",
-      error: "ANTHROPIC_API_KEY が未設定です。Vercelの環境変数を設定してください。",
+      error: "OPENAI_API_KEY が未設定です。Vercelの環境変数を設定してください。",
     });
   }
 
   try {
     const body = req.body || {};
-    // data はオブジェクトでも文字列でも受ける
     let jsonStr = "";
     if (typeof body.json === "string") jsonStr = body.json;
     else if (body.json != null) jsonStr = JSON.stringify(body.json);
@@ -56,16 +56,13 @@ export default async function handler(req, res) {
     const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
     let r;
     try {
-      r = await fetch("https://api.anthropic.com/v1/messages", {
+      r = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
-        headers: {
-          "x-api-key": key,
-          "anthropic-version": "2023-06-01",
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
         body: JSON.stringify({
           model: MODEL,
-          max_tokens: 400,
+          max_tokens: 300,
+          temperature: 0.3,
           messages: [{ role: "user", content: buildPrompt(jsonStr) }],
         }),
         signal: ctrl.signal,
@@ -76,19 +73,17 @@ export default async function handler(req, res) {
 
     const text = await r.text();
     if (!r.ok) {
-      const low = /credit balance is too low|insufficient|billing|quota/i.test(text);
+      const low = /insufficient_quota|billing|credit|no credits/i.test(text);
       return res.status(200).json({
         ok: false,
         state: low ? "no_credits" : "error",
-        error: low ? "Anthropicの残高が不足しています。" : "所見の生成に失敗しました。",
+        error: low ? "OpenAIの残高が不足しています。" : "所見の生成に失敗しました。",
         detail: text.slice(0, 300),
       });
     }
     let data = {};
     try { data = JSON.parse(text); } catch (e) {}
-    const insight = Array.isArray(data.content)
-      ? data.content.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim()
-      : "";
+    const insight = String(data.choices?.[0]?.message?.content || "").trim();
     return res.status(200).json({ ok: true, insight, model: MODEL, at: new Date().toISOString() });
   } catch (e) {
     const aborted = e && e.name === "AbortError";
