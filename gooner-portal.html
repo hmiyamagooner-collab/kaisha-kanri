@@ -5847,7 +5847,7 @@ window.PortalTTS=(function(){
     return (hit&&hit.instr)||'';
   }
   // 再生時のピッチ＆速度アップ（preservesPitch=false + playbackRate でアニメ声化）。女性キャラは高く速く。
-  var FEMALE_RATE=1.2;
+  var FEMALE_RATE=1.1;
   var voiceRate=1;
   function rateForVoice(voiceId){
     var hit=CLOUD_VOICES.find(function(v){return v.id===voiceId;});
