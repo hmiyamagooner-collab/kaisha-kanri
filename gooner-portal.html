@@ -2900,44 +2900,78 @@ details.ent-actions:not([open])>summary.ent-actions-cap{margin-bottom:0}
   border:1px solid rgba(143,152,166,.35);background:transparent;color:var(--muted);
 }
 .pt-logout:hover{color:var(--text);border-color:rgba(196,166,106,.35)}
-.pt-dropbox{
-  margin-left:auto;font-size:11px;padding:5px 10px;border-radius:8px;cursor:pointer;
-  border:1px solid rgba(76,175,80,.45);background:rgba(15,138,78,.12);color:var(--nav-label);
+/* トップバーの操作ボタン共通：キーキャップ風の立体感 */
+.pt-dropbox,.pt-openai{
+  font-weight:600;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -2px 3px rgba(0,0,0,.3),0 2px 0 rgba(0,0,0,.5),0 3px 6px rgba(0,0,0,.35);
+  transition:transform .07s ease, box-shadow .07s ease, filter .15s ease;
 }
-.pt-dropbox:hover{filter:brightness(1.08);border-color:var(--nav-green)}
-.pt-dropbox.is-on{border-color:rgba(154,209,74,.65);background:rgba(56,142,60,.22)}
+.pt-dropbox:active,.pt-openai:active{
+  transform:translateY(2px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 1px 4px rgba(0,0,0,.4),0 1px 2px rgba(0,0,0,.35);
+}
+.pt-dropbox{
+  margin-left:auto;font-size:11px;padding:5px 10px 6px;border-radius:8px;cursor:pointer;
+  border:1px solid rgba(76,175,80,.5);background:linear-gradient(180deg,rgba(35,150,90,.32),rgba(15,90,54,.34));color:var(--nav-label);
+}
+.pt-dropbox:hover{filter:brightness(1.1);border-color:var(--nav-green)}
+.pt-dropbox.is-on{border-color:rgba(154,209,74,.7);background:linear-gradient(180deg,rgba(76,162,80,.4),rgba(40,110,50,.42))}
 .pt-dropbox-status{font-size:10px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pt-openai{
-  font-size:11px;padding:5px 10px;border-radius:8px;cursor:pointer;
-  border:1px solid rgba(116,185,232,.45);background:rgba(40,90,140,.16);color:#cfe8f8;
+  font-size:11px;padding:5px 10px 6px;border-radius:8px;cursor:pointer;
+  border:1px solid rgba(116,185,232,.5);background:linear-gradient(180deg,rgba(56,116,170,.32),rgba(30,70,112,.34));color:#cfe8f8;
 }
-.pt-openai:hover{filter:brightness(1.08);border-color:rgba(116,185,232,.7)}
+.pt-openai:hover{filter:brightness(1.1);border-color:rgba(116,185,232,.75)}
 .pt-openai.is-ok{border-color:rgba(120,190,140,.55);background:rgba(40,120,70,.18);color:#b8e6c4}
 .pt-openai.is-ng{border-color:rgba(220,120,120,.55);background:rgba(140,40,40,.2);color:#f0c0c0}
 .pt-openai-status{font-size:10px;color:var(--muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* 外部サービス直リンク（Supabase / Vercel / GitHub）*/
-.pt-ext-group{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px 8px}
-.pt-ext{font-size:11px;padding:5px 10px;border-radius:8px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;border:1px solid rgba(150,170,200,.4);background:rgba(60,78,110,.16);color:#dbe6f4;transition:filter .15s ease,border-color .15s ease}
-.pt-ext:hover{filter:brightness(1.12);border-color:rgba(150,175,215,.75)}
-.pt-ext-sb{border-color:rgba(62,207,142,.5);background:rgba(30,120,80,.16);color:#bff0d6}
-.pt-ext-vc{border-color:rgba(190,200,215,.5);background:rgba(90,100,120,.18);color:#eef2f8}
-.pt-ext-gh{border-color:rgba(170,150,215,.5);background:rgba(90,75,130,.18);color:#e4dcf6}
-.pt-ext-rc{border-color:rgba(124,92,255,.55);background:rgba(80,60,150,.2);color:#ded3ff}
-.pt-ext-ig{border-color:rgba(225,110,160,.55);background:rgba(150,50,100,.2);color:#ffd0e4}
-.pt-ext-tt{border-color:rgba(80,220,220,.5);background:rgba(30,90,95,.22);color:#cffbfb}
+/* 外部サービス直リンク（Supabase / Vercel / GitHub / RC / IG / TikTok）
+   ── PCのキーボードのキーキャップ風 立体ボタン。1段のまま詰めて配置。 */
+.pt-ext-group{display:inline-flex;flex-wrap:nowrap;align-items:center;gap:6px}
+.pt-ext{
+  font-size:11px;font-weight:600;letter-spacing:.02em;
+  padding:5px 11px 6px;border-radius:8px;cursor:pointer;text-decoration:none;
+  display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+  border:1px solid rgba(150,170,200,.42);
+  background:linear-gradient(180deg,rgba(84,104,140,.32),rgba(40,54,80,.34));
+  color:#e4edf8;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.22),
+    inset 0 -2px 3px rgba(0,0,0,.34),
+    0 2px 0 rgba(0,0,0,.55),
+    0 3px 6px rgba(0,0,0,.4);
+  transition:transform .07s ease, box-shadow .07s ease, filter .15s ease;
+}
+.pt-ext:hover{filter:brightness(1.15) saturate(1.1)}
+.pt-ext:active{
+  transform:translateY(2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.14),
+    inset 0 1px 4px rgba(0,0,0,.4),
+    0 0 0 rgba(0,0,0,.55),
+    0 1px 2px rgba(0,0,0,.35);
+}
+/* サービスごとのキーキャップ配色（枠＋発光＋天面グラデ）*/
+.pt-ext-sb{border-color:rgba(62,207,142,.6);color:#c7f4dd;background:linear-gradient(180deg,rgba(48,168,112,.4),rgba(20,86,58,.42))}
+.pt-ext-vc{border-color:rgba(200,210,225,.6);color:#f2f5fb;background:linear-gradient(180deg,rgba(120,132,152,.4),rgba(56,64,80,.42))}
+.pt-ext-gh{border-color:rgba(178,158,225,.6);color:#ece4fb;background:linear-gradient(180deg,rgba(126,104,180,.4),rgba(60,48,92,.42))}
+.pt-ext-rc{border-color:rgba(140,110,255,.65);color:#e6ddff;background:linear-gradient(180deg,rgba(116,88,214,.42),rgba(58,42,120,.44))}
+.pt-ext-ig{border-color:rgba(235,120,170,.65);color:#ffdcec;background:linear-gradient(180deg,rgba(206,80,138,.42),rgba(110,34,74,.44))}
+.pt-ext-tt{border-color:rgba(90,225,225,.6);color:#d6fbfb;background:linear-gradient(180deg,rgba(52,176,180,.4),rgba(22,74,80,.44))}
 /* 開発者/外部サービス系(OpenAI/Claude状態・Supabase/Vercel/GitHub)は社長のみ表示。
    非社長では常に非表示（監視スクリプトのhidden切替に負けないよう display:none!important）。 */
 body.gate-dev .pt-openai,
 body.gate-dev .pt-openai-status,
 body.gate-dev .pt-ext{display:none!important}
-/* スマホ/狭幅：トップバーを折り返して段組みに整える（横スクロールで潰れないように） */
+/* スマホ/狭幅：トップバーは1段のまま横スクロール（高さを増やさず全体を1画面に収める） */
 @media(max-width:980px){
-  #portal-bar{flex-wrap:wrap;row-gap:6px;gap:6px 8px}
-  #portal-bar .pt-logo{flex:1 1 100%}          /* 1段目：ロゴ／タイトルを独立行に */
-  #portal-bar .pt-ext-group{width:100%}        /* 外部リンクは1行にまとめ、狭ければ2段に折返し */
+  #portal-bar{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:7px;padding:6px 12px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  #portal-bar::-webkit-scrollbar{display:none}
+  #portal-bar > *{flex:0 0 auto}
+  #portal-bar .pt-dropbox,#portal-bar .pt-focus-btn{margin-left:6px}   /* 横スクロール時は auto 余白をやめて詰める */
 }
 @media(max-width:560px){
-  .pt-ext{font-size:10px;padding:5px 8px}
+  .pt-ext{font-size:10px;padding:5px 9px}
 }
 /* 業務中トグル：業務中は緑で在席を明示 */
 .pt-logout.is-working{
