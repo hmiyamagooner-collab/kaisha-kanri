@@ -5823,7 +5823,7 @@ window.PortalTTS=(function(){
     {id:'shimmer', label:'shimmer（アニメ声・やわらか）', female:true, instr:'アニメキャラクターのように極端に甲高い、幼い女の子の声で話してください。子どものように非常に高いピッチで、やわらかく可愛く。少しヘリウムを吸ったような高さ。大人・中年女性の低い声は絶対に禁止。An extremely high-pitched, squeaky, cute anime girl voice, like a small child, almost helium-like. Never low, mature, or adult.'},
     {id:'coral',   label:'coral（アニメ声・かわいい）',   female:true, agent:'secretary', instr:'アニメキャラクターのように極端に甲高い、幼くて可愛い女の子の声で話してください。子どものように非常に高いピッチで、明るく元気に。少しヘリウムを吸ったような高さ。大人・中年女性の低い声は絶対に禁止。An extremely high-pitched, squeaky, adorable anime girl voice, like a small child, almost helium-like, bright and cheerful. Never low, mature, or adult.'},
     {id:'nova',    label:'nova（アニメ声・元気）',         female:true, agent:'secretary', instr:'アニメキャラクターのように極端に甲高い、幼くて元気な女の子の声で話してください。子どものように非常に高いピッチで、はきはき明るく。少しヘリウムを吸ったような高さ。大人・中年女性の低い声は絶対に禁止。An extremely high-pitched, squeaky, energetic anime girl voice, like a small child, almost helium-like. Never low, mature, or adult.'},
-    {id:'sage',    label:'sage（アニメ声・やさしい）',     female:true, agent:'finance', instr:'アニメキャラクターのように極端に甲高い、幼くてやさしい女の子の声で話してください。子どものように非常に高いピッチで、ふんわり可愛く。少しヘリウムを吸ったような高さ。大人・中年女性の低い声は絶対に禁止。An extremely high-pitched, squeaky, gentle anime girl voice, like a small child, almost helium-like. Never low, mature, or adult.'},
+    {id:'sage',    label:'sage（アニメ声・やさしい）',     female:true, agent:'finance', instr:'アニメキャラクターのように極端に甲高い、幼くてやさしい女の子の声で、はっきりと明瞭に、しっかりした声量で話してください。子どものように非常に高いピッチで、可愛く元気に。少しヘリウムを吸ったような高さ。ささやき声や小さい声にはしない。大人・中年女性の低い声は絶対に禁止。An extremely high-pitched, squeaky, cute anime girl voice, clear and at a strong full volume (never whispery or quiet). Never low, mature, or adult.'},
     {id:'alloy',   label:'alloy（中性）'},
     {id:'fable',   label:'fable（英国・中性）'},
     {id:'verse',   label:'verse（表情豊か）'},
@@ -5852,6 +5852,20 @@ window.PortalTTS=(function(){
   function rateForVoice(voiceId){
     var hit=CLOUD_VOICES.find(function(v){return v.id===voiceId;});
     return (hit&&hit.female)?FEMALE_RATE:1;
+  }
+  // 音量ブースト（Web Audioのゲイン）。ピッチを上げた女性ボイスは細く＝小さく聞こえるので底上げ。
+  var voiceGain=1.6;
+  function gainForVoice(voiceId){
+    var hit=CLOUD_VOICES.find(function(v){return v.id===voiceId;});
+    return (hit&&hit.female)?2.0:1.4;   // 女性=2.0倍 / 男性=1.4倍
+  }
+  var _audioCtx=null;
+  function audioCtx(){
+    try{
+      if(!_audioCtx){ var AC=window.AudioContext||window.webkitAudioContext; if(AC) _audioCtx=new AC(); }
+      if(_audioCtx && _audioCtx.state==='suspended') _audioCtx.resume().catch(function(){});
+    }catch(e){ _audioCtx=null; }
+    return _audioCtx;
   }
   // 読み上げ専用：TTSが誤読しがちなキャラ名をひらがな読みに置換（画面表示は漢字のまま）
   function toReading(s){
@@ -5920,7 +5934,10 @@ window.PortalTTS=(function(){
     fillVoiceSelect();
   }
   function cleanupAudio(){
-    try{ if(audioEl){ audioEl.onended=null; audioEl.onerror=null; audioEl.pause(); audioEl.removeAttribute('src'); audioEl.load(); } }catch(e){}
+    try{ if(audioEl){ audioEl.onended=null; audioEl.onerror=null; audioEl.pause();
+      try{ if(audioEl.__gain) audioEl.__gain.disconnect(); }catch(e){}
+      try{ if(audioEl.__src) audioEl.__src.disconnect(); }catch(e){}
+      audioEl.removeAttribute('src'); audioEl.load(); } }catch(e){}
     audioEl=null;
     if(objectUrl){ try{ URL.revokeObjectURL(objectUrl); }catch(e){} objectUrl=null; }
   }
@@ -5972,6 +5989,16 @@ window.PortalTTS=(function(){
       // ピッチ保持をオフにして再生速度を上げる＝音程も上がる（アニメ声化）
       try{ audioEl.preservesPitch=false; audioEl.mozPreservesPitch=false; audioEl.webkitPreservesPitch=false; }catch(e){}
       try{ audioEl.playbackRate=voiceRate||1; }catch(e){}
+      // Web Audioで音量ブースト（1.0超の増幅）。失敗時は通常再生(volume=1)にフォールバック。
+      try{
+        var ctx=audioCtx();
+        if(ctx){
+          var src=ctx.createMediaElementSource(audioEl);
+          var g=ctx.createGain(); g.gain.value=voiceGain||1;
+          src.connect(g); g.connect(ctx.destination);
+          audioEl.__src=src; audioEl.__gain=g;
+        }
+      }catch(e){}
       audioEl.onended=function(){ resolve(true); };
       audioEl.onerror=function(){ resolve(false); };
       const p=audioEl.play();
@@ -5991,6 +6018,7 @@ window.PortalTTS=(function(){
     const chunks=splitText(text);
     const voice=agentToVoice(agent);
     voiceRate=rateForVoice(voice);
+    voiceGain=gainForVoice(voice);
     // 1チャンク分のTTS音声を取得（決してrejectせず {blob}/{error} を返す＝先読みの未処理reject回避）
     const fetchChunk=async function(idx){
       try{
