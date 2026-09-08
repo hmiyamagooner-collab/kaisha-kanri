@@ -1264,12 +1264,21 @@ body.is-hsplit-drag{cursor:ew-resize;user-select:none}
   min-width:0;display:block;
 }
 #portal-bar{
-  flex-shrink:0;z-index:300;display:flex;gap:14px;align-items:center;
-  padding:8px 22px;
+  flex-shrink:0;z-index:300;display:flex;gap:9px;align-items:center;
+  padding:7px 18px;
   background:#000;
   border-bottom:1px solid var(--nav-green-line);
   box-shadow:none;
   position:sticky;top:0;
+  /* 1行固定：折り返さず、入りきらなければ横スクロール（文字は縮めてよいが改行しない） */
+  flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;
+}
+#portal-bar::-webkit-scrollbar{display:none}
+#portal-bar > *{flex-shrink:0}
+/* バー内のボタン/ラベルは絶対に改行しない（テキストが縦2段に割れるのを防止） */
+#portal-bar button,#portal-bar a,#portal-bar .pt-user,#portal-bar .pt-task-badge,
+#portal-bar .pt-dropbox-status,#portal-bar .pt-openai-status,#portal-bar .pt-logo{
+  white-space:nowrap;word-break:keep-all;
 }
 #portal-bar .pt-logo{
   font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--text);letter-spacing:.1em;
@@ -1284,7 +1293,7 @@ body.is-hsplit-drag{cursor:ew-resize;user-select:none}
   min-height:420px;
   display:grid;
   /* 上段キャラ / スプリッタ / 下段（円卓＋クエスト） — 比率は JS が上書き可 */
-  grid-template-rows:minmax(110px,36fr) 7px minmax(0,64fr);
+  grid-template-rows:minmax(110px,33fr) 7px minmax(0,67fr);
   grid-template-columns:1fr;
   gap:0;
   padding:4px 6px 4px;
@@ -12608,7 +12617,7 @@ window.PortalAuth=(function(){
 (function(){
   const KEY='gp_quests_v_split_v1';
   const SPLIT_H=7;
-  let topFr=36; // キャラ側（残りが円卓＋クエスト）
+  let topFr=33; // キャラ側（残りが円卓＋クエスト）※円卓を広めに取り1画面に収める
   function row(){ return document.getElementById('quests-row'); }
   function apply(){
     const el=row();
