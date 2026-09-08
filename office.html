@@ -1543,9 +1543,11 @@ function drawWxPixelIcon(g,ix,iy,ic){
 function drawStatusHud(g){
   const wz=weather(),W=124,H=54;
   const sw=W*STATUS_HUD_SCALE,sh=H*STATUS_HUD_SCALE;
-  // 画面座標の右上
+  // 画面座標の右上。埋め込み(ポータル)では上端の芝生をクロップするため、
+  // 時計/天気がクロップ線(CY0=40)に被って半分隠れる。埋め込み時だけ下へ逃がす。
   const x=VIEW_W-sw-MAP_UI_MARGIN;
-  const y=MAP_UI_MARGIN;
+  const embeddedHud=(typeof EMBEDDED!=='undefined' && EMBEDDED);
+  const y=MAP_UI_MARGIN+(embeddedHud?34:0);
   g.save();
   g.translate(x,y);
   g.scale(STATUS_HUD_SCALE,STATUS_HUD_SCALE);

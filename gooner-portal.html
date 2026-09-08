@@ -2931,6 +2931,10 @@ body.gate-dev .pt-ext{display:none!important}
   border-color:rgba(76,200,120,.7)!important;background:rgba(40,140,80,.22)!important;color:#c6f5d6!important;
   box-shadow:0 0 0 1px rgba(76,200,120,.4),0 0 10px 1px rgba(76,200,120,.35);
 }
+/* 業務終了中はグレー（クリックで業務中に戻せることを示す） */
+.pt-logout.is-ended{
+  border-color:rgba(150,160,175,.5)!important;background:rgba(70,80,95,.18)!important;color:#c0c8d4!important;
+}
 /* ===== トークン残量の信号機：緑=残あり / 橙=残り僅か / 赤=切れ（常時発光） ===== */
 .pt-openai::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle;background:#5b6b7a;box-shadow:none;transition:background .25s ease,box-shadow .25s ease}
 .pt-openai.pt-tok-ok{border-color:rgba(110,205,150,.7)!important}
@@ -11249,9 +11253,10 @@ window.BizCaseLink=(function(){
   function syncDutyBtn(){
     var btn=document.getElementById('portalDutyEndBtn'); if(!btn) return;
     var working=isWorking();
-    btn.textContent = working ? '🟢 業務中' : '業務終了';
-    btn.title = working ? '業務中（クリックで業務終了）' : '業務終了（クリックで業務を再開）';
+    btn.textContent = working ? '🟢 業務中' : '🔴 業務終了';
+    btn.title = working ? '業務中です（クリックで業務終了に切替）' : '業務終了中です（クリックで業務中に切替）';
     btn.classList.toggle('is-working', working);
+    btn.classList.toggle('is-ended', !working);
     btn.setAttribute('aria-pressed', working?'true':'false');
   }
 
