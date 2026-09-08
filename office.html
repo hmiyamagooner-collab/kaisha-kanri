@@ -2070,7 +2070,8 @@ function loop(now){
     // 夜：人を出さない（既に hidden）
   }
   updateTraffic(dt);
-  if(dayPhase!=='night') tickWork(now);
+  // ドットキャラの雑談（ランダムなセリフ）は無効化。タスク件数/点数などの情報表示は残す。
+  // if(dayPhase!=='night') tickWork(now);
   document.getElementById('clock').textContent=clockText()+(dayPhase==='night'?' 夜':dayPhase==='sunset'?' 夕':'');
   draw();
   requestAnimationFrame(loop);
