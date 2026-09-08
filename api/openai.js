@@ -479,11 +479,24 @@ function resolveDispatch(modelDispatch, focus, latestUserText) {
   return out.slice(0, 2);
 }
 
+// 凛が稀に返す“逃げ”テキスト（mini が terse入力で出しがち）。dispatch時はこれをリードインに差し替える。
+const DEFLECT_RE = /(正しく)?表示されていない|表示できません|内容が確認できません|確認できませんでした|もう一度[^。]*(お送り|お試し|お伝え|ご確認)|サポートできません|内容をお送りいただけますか|うまく(表示|受け取れ)/;
+function leadInFor(dispatch) {
+  const names = (dispatch || []).map((d) => AGENT_NAME[d.agent]).filter(Boolean);
+  if (!names.length) return "承知しました。";
+  return `承知しました。担当の${names.join("・")}から詳しくご説明します。`;
+}
+
 // 秘書の発言に、dispatch した専門家の発言をマージする。
 // dispatch した専門家は別AIの出力で置き換えるため、凛がインラインで代弁した同種発言は落とす。
 function mergeEntakuReplies(secReplies, dispatch, specialistReplies) {
   const dispatched = new Set((dispatch || []).map((d) => d.agent));
-  const base = (secReplies || []).filter((r) => r.agent === "secretary" || !dispatched.has(r.agent));
+  let base = (secReplies || []).filter((r) => r.agent === "secretary" || !dispatched.has(r.agent));
+  // dispatch時、凛の発言が“逃げ”テキストなら中身のあるリードインに差し替える（専門家は別途回答）。
+  if (dispatched.size && base.length && base[0].agent === "secretary" && DEFLECT_RE.test(base[0].text)) {
+    base = base.slice();
+    base[0] = { agent: "secretary", text: leadInFor(dispatch) };
+  }
   return base.concat(specialistReplies || []);
 }
 
