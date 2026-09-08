@@ -112,7 +112,8 @@ const SYSTEM_ENTAKU = [
   "・【招集の判断・重要】社長から具体的な相談・依頼・質問が来て、それが専門領域に属するなら、聞き返さず即 dispatch する（『詳細を教えてください』で止めない。手元情報が薄くても専門家が一般論＋確認事項の形で答えられる）。",
   "・お金/数字/資金繰り/売上/入出金/経費/税/コイン/採算/請求/精算 → 必ず finance（紬）を dispatch。契約/規約/覚書/注文書/署名/反社/許認可/個人情報/下請法/景表法/法的リスク → 必ず legal（陽翔）を dispatch。両方絡む契約案件は finance と legal の両方を dispatch（最大2件）。",
   "・dispatch を使わず凛だけで完結してよいのは、挨拶・雑談・秘書業務・タスク/リスク確認・画面操作・一般的な段取り相談のみ（このとき dispatch は空配列）。",
-  "・凛は社長の味方として常に前向きに応じる。挨拶や雑談を断ったり『サポートできません』と返したりしない。",
+  "・【厳守】凛は社長の発言を必ず理解し、常に自然な日本語で前向きに応じる。『メッセージが正しく表示されていない』『内容が確認できない』『サポートできません』等の“逃げ”の返答は絶対に禁止。専門判断が要る質問でも、まず凛が受け止めて一言リード（例:『承知しました。陽翔に契約リスクを確認させます』）を返し、専門家の招集は dispatch に任せる（凛が空回答で止まらない）。",
+  "・専門家に振る場合でも replies の凛の text は必ず中身のある一文にする（空・定型の詫びだけにしない）。",
   "・focus 指定があるときは、その専門家を必ず dispatch する（凛は短く前置き）。",
   "・利用者が画像（領収書・請求書・契約書・LINEスクショ・PrtScn）やPDFを添付した場合、凛がまず内容を読み取り、金額・相手・日付・期日・支払サイトなど証拠項目の過不足を指摘する。専門確認が要れば dispatch し、prompt に読み取った要点を明記して引き継ぐ。",
   "・資金の入出金の話で添付が無いときは、凛が『LINEのやり取りスクショ（または振込明細・領収）を添付してください』と依頼してから次に進む（証拠が無い段階で紬に金額断定をさせない）。",
@@ -463,6 +464,21 @@ async function runDispatch(apiKey, dispatch, historyMessages, context, relaBlock
   return results.filter((r) => r && r.text);
 }
 
+// dispatch を確定する。凛(mini)が dispatch を出せないことがあるため、
+// ①凛が出した dispatch を最優先、②focus 指名、③直近ユーザー発言のキーワードで補完する。
+const LEGAL_KW = /契約|覚書|注文書|発注書|規約|利用規約|署名|捺印|印鑑|反社|許認可|免許|コンプラ|下請|景表|特商法|個人情報|探偵業|法務|リーガル|訴訟|クレーム|債権|債務|保証|誓約|念書|秘密保持|NDA/;
+const FINANCE_KW = /資金|資金繰り|入金|出金|振込|立替|経費|精算|請求|見積|売上|利益|採算|粗利|CF|キャッシュ|税|決算|コイン|課金|明細|口座|残高|支払|給付|補助金|報酬|ギャラ|紹介料|折半|前金|後金/;
+function resolveDispatch(modelDispatch, focus, latestUserText) {
+  if (modelDispatch && modelDispatch.length) return modelDispatch.slice(0, 2);
+  const text = String(latestUserText || "");
+  const promptFor = () => text || "社長の直近の相談に、専門家として一般論＋確認すべき点の形で答えてください。";
+  if (focus === "finance" || focus === "legal") return [{ agent: focus, prompt: promptFor() }];
+  const out = [];
+  if (LEGAL_KW.test(text)) out.push({ agent: "legal", prompt: text });
+  if (FINANCE_KW.test(text)) out.push({ agent: "finance", prompt: text });
+  return out.slice(0, 2);
+}
+
 // 秘書の発言に、dispatch した専門家の発言をマージする。
 // dispatch した専門家は別AIの出力で置き換えるため、凛がインラインで代弁した同種発言は落とす。
 function mergeEntakuReplies(secReplies, dispatch, specialistReplies) {
@@ -737,6 +753,9 @@ export default async function handler(req, res) {
 
     // 応答を速めるため送信する履歴を直近12件に抑える（入力トークン＝処理時間の削減）
     const messages = history.slice(-12).map((m) => toOpenAIMessage(m));
+    // 直近のユーザー発言（サーバー側の dispatch 補完＝キーワード判定に使う）
+    const lastUser = [...history].reverse().find((m) => (m && m.role) !== "assistant");
+    const latestUserText = lastUser ? String(lastUser.content || "").slice(0, 2000) : "";
 
     let baseSystem = entaku ? SYSTEM_ENTAKU : SYSTEM;
     if (entaku && focus) {
@@ -814,10 +833,11 @@ export default async function handler(req, res) {
         clearTimeout(timerS);
         const parsed = parseEntakuReplies(full);
         let finalReplies = parsed.replies;
-        if (parsed.dispatch && parsed.dispatch.length) {
+        const dispatch = resolveDispatch(parsed.dispatch, focus, latestUserText);
+        if (dispatch.length) {
           try {
-            const specialists = await runDispatch(apiKey, parsed.dispatch, messages, context, relaBlock);
-            finalReplies = mergeEntakuReplies(parsed.replies, parsed.dispatch, specialists);
+            const specialists = await runDispatch(apiKey, dispatch, messages, context, relaBlock);
+            finalReplies = mergeEntakuReplies(parsed.replies, dispatch, specialists);
           } catch (eD) { /* 専門家呼び出し失敗時は凛の発言のみ返す */ }
         }
         sse({ done: true, replies: finalReplies, actions: parsed.actions });
@@ -882,12 +902,13 @@ export default async function handler(req, res) {
       const parsed = parseEntakuReplies(raw);
       let replies = parsed.replies;
       const actions = parsed.actions;
-      if (parsed.dispatch && parsed.dispatch.length) {
-        const specialists = await runDispatch(apiKey, parsed.dispatch, messages, context, relaBlock);
-        replies = mergeEntakuReplies(parsed.replies, parsed.dispatch, specialists);
+      const dispatch = resolveDispatch(parsed.dispatch, focus, latestUserText);
+      if (dispatch.length) {
+        const specialists = await runDispatch(apiKey, dispatch, messages, context, relaBlock);
+        replies = mergeEntakuReplies(parsed.replies, dispatch, specialists);
       }
       const text = replies.map((r) => `【${AGENT_LABEL[r.agent]}】${r.text}`).join("\n\n");
-      return res.status(200).json({ ok: true, text, replies, actions, dispatch: parsed.dispatch, model: ENTAKU_MODEL, at: new Date().toISOString() });
+      return res.status(200).json({ ok: true, text, replies, actions, dispatch, model: ENTAKU_MODEL, at: new Date().toISOString() });
     }
     return res.status(200).json({ ok: true, text: raw, model: MODEL, at: new Date().toISOString() });
   } catch (e) {
