@@ -152,6 +152,17 @@ td.rate{color:var(--up)}
       <div class="coin-note" id="rvNote">RevenueCatに接続すると、Google Play・App Store・Web課金を統合した実売上を表示します。</div>
     </div>
 
+    <div class="panel" id="revPanelLeo">
+      <h2>ゆうしゃレオ 実課金売上（RevenueCat｜Google Play＋App Store 統合）</h2>
+      <div class="cards" id="revCardsLeo">
+        <div class="card"><div class="k-label">売上（直近28日）</div><div class="k-val" id="lvRevenue">–</div><div class="k-sub" id="lvRevenueJpy">概算 ¥–</div></div>
+        <div class="card c-wake"><div class="k-label">MRR（月次経常収益）</div><div class="k-val" id="lvMrr">–</div><div class="k-sub" id="lvMrrJpy">概算 ¥–</div></div>
+        <div class="card"><div class="k-label">アクティブ課金者</div><div class="k-val" id="lvSubs">–</div><div class="k-sub">ベーシック＋レオ プレミアム</div></div>
+        <div class="card"><div class="k-label">トライアル中</div><div class="k-val" id="lvTrials">–</div><div class="k-sub" id="lvNew">新規顧客 –</div></div>
+      </div>
+      <div class="coin-note" id="lvNote">RevenueCatのレオ用プロジェクトに接続すると、ベーシック／レオ プレミアム／ガチャチケットの実売上を表示します。</div>
+    </div>
+
     <div class="cards">
       <div class="card"><div class="k-label">新規ユーザー</div><div class="k-val" id="kNew">–</div><div class="k-sub">期間合計</div></div>
       <div class="card c-wake"><div class="k-label">wake（起動）</div><div class="k-val" id="kWake">–</div><div class="k-sub" id="kWakeSub">ユニーク合計</div></div>
@@ -437,35 +448,37 @@ td.rate{color:var(--up)}
     if(u==='$'||/usd/i.test(u)) return '概算 ¥'+Math.round(Number(m.value)*r).toLocaleString('ja-JP');
     return '';
   }
-  async function loadRevenue(){
-    var note=$('rvNote');
+  // prod: 'rela' | 'leo'、p: 要素IDの接頭辞（rela=rv / leo=lv）。同じAPIを product 指定で呼び分ける
+  async function loadRevenueFor(prod, p){
+    var note=$(p+'Note');
     try{
-      var r=await fetch('/api/rela-revenue',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'status'})});
+      var r=await fetch('/api/rela-revenue?product='+encodeURIComponent(prod),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'status',product:prod})});
       var d=await r.json().catch(function(){ return {}; });
       if(!d.ok){
-        ['rvRevenue','rvMrr','rvSubs','rvTrials'].forEach(function(id){ $(id).textContent='–'; });
-        $('rvRevenueJpy').textContent=''; $('rvMrrJpy').textContent=''; $('rvNew').textContent='新規顧客 –';
+        [p+'Revenue',p+'Mrr',p+'Subs',p+'Trials'].forEach(function(id){ $(id).textContent='–'; });
+        $(p+'RevenueJpy').textContent=''; $(p+'MrrJpy').textContent=''; $(p+'New').textContent='新規顧客 –';
         if(note) note.textContent=(d.state==='no_key')
-          ? 'RevenueCat未接続：Vercelに REVENUECAT_API_KEY（v2 Secret sk_...）を設定すると実売上を表示します。'
-          : ('取得できません：'+(d.detail||d.label||d.state||'error'));
+          ? ('RevenueCat未接続：Vercelに '+(d.keyEnv||'REVENUECAT_API_KEY')+'（v2 Secret sk_...）を設定すると実売上を表示します。')
+          : ((d.label||'取得できません')+'：'+(d.detail||d.state||'error'));
         return;
       }
       var m=d.metrics||{}, rt=Number(d.usdJpyRate||150)||150;
-      $('rvRevenue').textContent=rvMoney(m.revenue); $('rvRevenueJpy').textContent=rvJpy(m.revenue,rt);
-      $('rvMrr').textContent=rvMoney(m.mrr); $('rvMrrJpy').textContent=rvJpy(m.mrr,rt);
-      $('rvSubs').textContent=(m.active_subscriptions&&isFinite(m.active_subscriptions.value))?nfmt(m.active_subscriptions.value):'–';
-      $('rvTrials').textContent=(m.active_trials&&isFinite(m.active_trials.value))?nfmt(m.active_trials.value):'–';
-      $('rvNew').textContent='新規顧客 '+((m.new_customers&&isFinite(m.new_customers.value))?nfmt(m.new_customers.value):'–');
+      $(p+'Revenue').textContent=rvMoney(m.revenue); $(p+'RevenueJpy').textContent=rvJpy(m.revenue,rt);
+      $(p+'Mrr').textContent=rvMoney(m.mrr); $(p+'MrrJpy').textContent=rvJpy(m.mrr,rt);
+      $(p+'Subs').textContent=(m.active_subscriptions&&isFinite(m.active_subscriptions.value))?nfmt(m.active_subscriptions.value):'–';
+      $(p+'Trials').textContent=(m.active_trials&&isFinite(m.active_trials.value))?nfmt(m.active_trials.value):'–';
+      $(p+'New').textContent='新規顧客 '+((m.new_customers&&isFinite(m.new_customers.value))?nfmt(m.new_customers.value):'–');
       if(note) note.textContent=(d.note||'')+((d.project&&d.project.name)?(' / project: '+d.project.name):'');
     }catch(e){
       if(note) note.textContent='取得失敗：'+((e&&e.message)||e);
     }
   }
+  function loadRevenue(){ loadRevenueFor('rela','rv'); loadRevenueFor('leo','lv'); }
 
   async function loadAll(){
     var to=new Date(); var from=new Date(); from.setDate(from.getDate()-(days-1));
     var f=fmt(from), t=fmt(to);
-    if(product==='rela') loadRevenue();
+    loadRevenue(); // 実課金売上（RELA／ゆうしゃレオ）は選択プロダクトに関わらず常に表示
     $('chartBox').innerHTML='<div class="loading">読み込み中…</div>';
     try{
       var daily=await fetchView('daily', f, t);
