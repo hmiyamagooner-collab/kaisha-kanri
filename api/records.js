@@ -10,7 +10,7 @@
 //   DELETE /api/records  {op:"category", id}             … 指標セットを削除（既定のものは非表示にする。記録データは残す）
 // 認証: PORTAL のログイン（Supabase Auth セッション）＋ 管理者ロール（社長・秘書）のみ。
 // データ: PORTAL 自身の Supabase の public.metrics_record / public.metrics_category（RLS 有効・ポリシー無し＝service_role のみ）。
-import { BUILTIN, DEFAULT_TENANT, loadCategories, invalidateCategories, categoryOf, normPeriod, normalizeCategory } from "./_lib/recordCategories.js";
+import { BUILTIN, DEFAULT_TENANT, loadCategories, invalidateCategories, categoryOf, normPeriod, normalizeCategory, lastLoadDiag } from "./_lib/recordCategories.js";
 
 const ALLOWED_ROLES = ["社長", "秘書"];
 const TABLE = "metrics_record";
@@ -284,7 +284,11 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   try {
     if (req.method === "GET" && req.query && String(req.query.meta || "") === "1") {
-      return res.status(200).json({ ok: true, categories: await loadCategories(), tenant: DEFAULT_TENANT });
+      const debug = String(req.query.debug || "") === "1";
+      const categories = await loadCategories(debug ? { force: true } : undefined);
+      const out = { ok: true, categories, tenant: DEFAULT_TENANT };
+      if (debug) out.diag = lastLoadDiag; // 秘密は含まない（キーの種別・HTTP状態・件数のみ）
+      return res.status(200).json(out);
     }
     const member = await requireAdmin(req, res);
     if (!member) return;

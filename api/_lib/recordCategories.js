@@ -46,6 +46,8 @@ export function normalizeCategory(id, raw) {
 
 let cache = { at: 0, cats: null };
 export function invalidateCategories() { cache = { at: 0, cats: null }; }
+// 直近の DB 読み込みの診断情報（秘密は含めない。/api/records?meta=1&debug=1 で確認）
+export let lastLoadDiag = { at: 0 };
 
 // 既定 + DB を合成した { id: 定義 } を返す（30秒キャッシュ。DB不通時は既定のみ）
 export async function loadCategories(opts) {
@@ -56,14 +58,19 @@ export async function loadCategories(opts) {
     if (n) out[id] = Object.assign(n, { builtin: true, custom: false, sort: 0 });
   }
   const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const k = String(key || "");
+  lastLoadDiag = { at: Date.now(), hasUrl: !!url, keyKind: !k ? "none" : (/^eyJ/.test(k) ? "jwt" : (/^sb_/.test(k) ? k.slice(0, 9) : "other")), status: null, rows: null, error: null, bodyHead: null };
   if (url && key) {
     try {
       const headers = { apikey: key };
-      if (/^eyJ/.test(String(key))) headers.Authorization = "Bearer " + key;
+      if (/^eyJ/.test(k)) headers.Authorization = "Bearer " + key;
       const r = await fetch(url + "/rest/v1/metrics_category?select=id,label,period_type,hint,items,sort,enabled&tenant_id=eq." +
         encodeURIComponent(DEFAULT_TENANT) + "&order=sort.asc,label.asc", { headers });
+      lastLoadDiag.status = r.status;
+      if (!r.ok) { lastLoadDiag.bodyHead = String(await r.text().catch(() => "")).slice(0, 200); }
       if (r.ok) {
         const rows = await r.json();
+        lastLoadDiag.rows = Array.isArray(rows) ? rows.length : -1;
         for (const row of Array.isArray(rows) ? rows : []) {
           const id = String(row.id || "").toLowerCase();
           if (row.enabled === false) { delete out[id]; continue; }
@@ -71,7 +78,7 @@ export async function loadCategories(opts) {
           if (n) out[n.id] = Object.assign(n, { builtin: !!(out[n.id] && out[n.id].builtin), custom: true, sort: Number(row.sort) || 0 });
         }
       }
-    } catch (e) { /* DB不通時は既定のみで続行 */ }
+    } catch (e) { lastLoadDiag.error = String((e && e.message) || e).slice(0, 200); /* DB不通時は既定のみで続行 */ }
   }
   cache = { at: Date.now(), cats: out };
   return out;
