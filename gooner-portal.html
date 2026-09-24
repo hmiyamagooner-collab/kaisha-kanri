@@ -6002,9 +6002,11 @@ window.PortalTTS=(function(){
     if(CLOUD_VOICES.some(function(v){return v.id===preferredURI;})) return preferredURI;
     return 'nova';
   }
+  // 言語の指示を先頭に固定：漢字を中国語・英語読みしない／固有名詞はひらがな表記どおり（誤読・言語違い対策）
+  var JA_INSTR='これは日本語の文章です。日本語ネイティブのアナウンサーとして、全て日本語の読み方で自然に読み上げてください。漢字を中国語や英語の読みで発音しない。ひらがな・カタカナで書かれた固有名詞はその表記どおりに読む。数字は日本語で読む。';
   function instrFor(voiceId){
     var hit=CLOUD_VOICES.find(function(v){return v.id===voiceId;});
-    return (hit&&hit.instr)||'';
+    return JA_INSTR+' '+((hit&&hit.instr)||'');
   }
   // 再生時のピッチ＆速度アップ（preservesPitch=false + playbackRate でアニメ声化）。女性キャラは高く速く。
   var FEMALE_RATE=1.1;
@@ -6028,13 +6030,33 @@ window.PortalTTS=(function(){
     return _audioCtx;
   }
   // 読み上げ専用：TTSが誤読しがちなキャラ名をひらがな読みに置換（画面表示は漢字のまま）
+  // 誤読しやすい語の読み辞書（画面表示は漢字のまま。ここに足すだけで読み上げに反映）
+  var READING_DICT=[
+    [/深山弘次/g,'ミヤマ コウジ'], [/深山/g,'ミヤマ'],   // 社長。ふかやま等の誤読を防止
+    [/弘次/g,'コウジ'],
+    [/RELA/gi,'リラ'],                                  // プロダクト名。「レラ/アールイーエルエー」等の誤読を防止
+    [/Gooner|GOONER/g,'グーナー'],
+    [/ゆうしゃレオ/g,'ゆうしゃレオ'],
+    [/陽翔/g,'はると'], [/紬/g,'つむぎ'], [/凛/g,'りん'],  // 円卓の3人
+    [/リハプライド蘇我/g,'リハプライド そが'], [/蘇我/g,'そが'],  // 弊社デイサービス（そが）
+    [/印籠/g,'いんろう'],
+    [/入出金/g,'にゅうしゅっきん'], [/出金/g,'しゅっきん'], [/入金/g,'にゅうきん'],
+    [/資金繰り/g,'しきんぐり'], [/金消契約/g,'きんしょうけいやく'], [/金銭消費貸借/g,'きんせんしょうひたいしゃく'],
+    [/稼働率/g,'かどうりつ'], [/稼働/g,'かどう'],
+    [/全国順位/g,'ぜんこくじゅんい'], [/都道府県順位/g,'とどうふけんじゅんい'], [/順位/g,'じゅんい'],
+    [/前月比/g,'ぜんげつひ'], [/前年同月比/g,'ぜんねんどうげつひ'],
+    [/月次/g,'げつじ'], [/日次/g,'にちじ'], [/粗利/g,'あらり'], [/採算/g,'さいさん'],
+    [/特商法/g,'とくしょうほう'], [/景表法/g,'けいひょうほう'], [/下請法/g,'したうけほう'],
+    [/反社/g,'はんしゃ'], [/覚書/g,'おぼえがき'], [/念書/g,'ねんしょ'], [/捺印/g,'なついん'],
+    [/六本木/g,'ろっぽんぎ'], [/港区/g,'みなとく'],
+    [/円卓/g,'えんたく'], [/首席補佐官/g,'しゅせきほさかん'],
+    [/kaisha-kanri/gi,'かいしゃかんり'],
+    [/(\d)位/g,'$1い']                                   // 「3位」を「さんくらい」と読ませない
+  ];
   function toReading(s){
-    return String(s||'')
-      .replace(/深山/g,'ミヤマ')   // 社長の姓。ふかやま等の誤読を防止
-      .replace(/RELA/gi,'リラ')    // プロダクト名。「レラ/アールイーエルエー」等の誤読を防止
-      .replace(/陽翔/g,'はると')   // ようしょう等の誤読を防止
-      .replace(/紬/g,'つむぎ')     // ちゅう等の誤読を防止
-      .replace(/凛/g,'りん');
+    var t=String(s||'');
+    for(var i=0;i<READING_DICT.length;i++) t=t.replace(READING_DICT[i][0],READING_DICT[i][1]);
+    return t;
   }
   let enabled=localStorage.getItem(LS_KEY)!=='0';
   let preferredURI=localStorage.getItem(LS_VOICE)||'nova';
@@ -12973,6 +12995,15 @@ window.EntakuAI=(function(){
     }catch(e){}
     return AI_PROD;
   }
+  // ログイン中なら Authorization を添える（円卓が「記録できる指標セット」をログイン権限で読むため。未ログインでも会話は動く）
+  function authHeaders(){
+    var h={'Content-Type':'application/json'};
+    try{
+      var p=(window.GoonerSB&&window.GoonerSB.authToken)?window.GoonerSB.authToken():null;
+      if(p&&typeof p.then==='function') return p.then(function(t){ if(t) h.Authorization='Bearer '+t; return h; }).catch(function(){ return h; });
+    }catch(e){}
+    return Promise.resolve(h);
+  }
   function normalizeReplies(data){
     if(Array.isArray(data.replies)&&data.replies.length){
       return data.replies.map(function(r){
@@ -12993,11 +13024,11 @@ window.EntakuAI=(function(){
       if(typeof location!=='undefined' && /^file:/i.test(location.protocol||'')){
         return Promise.reject(new Error('LOCAL_FILE'));
       }
-      return fetch(ep,{
+      return authHeaders().then(function(h){ return fetch(ep,{
         method:'POST',
-        headers:{'Content-Type':'application/json'},
+        headers:h,
         body:JSON.stringify({mode:'entaku',messages:messages,context:context||'',focus:focus||''})
-      }).then(function(r){
+      }); }).then(function(r){
         return r.json().catch(function(){return{};}).then(function(data){
           if(!r.ok){
             var detail=String(data.detail||data.hint||'').trim();
@@ -13047,11 +13078,11 @@ window.EntakuAI=(function(){
       if(!ep) return Promise.reject(new Error('AI_NOT_CONNECTED'));
       if(typeof location!=='undefined' && /^file:/i.test(location.protocol||'')) return Promise.reject(new Error('LOCAL_FILE'));
       if(typeof window==='undefined' || !window.fetch || typeof TextDecoder==='undefined') return Promise.reject(new Error('NO_STREAM'));
-      return fetch(ep,{
+      return authHeaders().then(function(h){ return fetch(ep,{
         method:'POST',
-        headers:{'Content-Type':'application/json'},
+        headers:h,
         body:JSON.stringify({mode:'entaku',stream:true,messages:messages,context:context||'',focus:focus||''})
-      }).then(function(r){
+      }); }).then(function(r){
         if(!r.ok || !r.body || !r.body.getReader) throw new Error('HTTP '+r.status);
         var reader=r.body.getReader();
         var dec=new TextDecoder();

@@ -8,9 +8,9 @@ const CACHE_MS = 30000;
 
 export const BUILTIN = {
   dayservice_ranking: {
-    label: "デイサービス 全国ランキング",
+    label: "リハプライド蘇我 全国ランキング",
     periodType: "month",
-    hint: "毎月メールで届く全国ランキングの本文",
+    hint: "弊社運営のデイサービス「リハプライド蘇我」に毎月メールで届く全国ランキングの本文（この施設の順位だけを追う）",
     items: [
       { key: "全国順位",     unit: "位", lowerIsBetter: true },
       { key: "都道府県順位", unit: "位", lowerIsBetter: true },
@@ -52,6 +52,24 @@ export function serviceKey() {
   ).trim();
 }
 
+// DB へのアクセス方法を決める。
+//  service … Vercel に service_role キーがある（RLS を通らない。従来どおり）
+//  user    … キーが無いので、ログイン中ユーザーのトークン＋anon キーで RLS（管理者のみ許可）を通す
+export function dbAuth(userToken) {
+  const url = process.env.SUPABASE_URL;
+  if (!url) return null;
+  const sk = serviceKey();
+  if (sk) {
+    const headers = { apikey: sk, "Content-Type": "application/json" };
+    if (/^eyJ/.test(sk)) headers.Authorization = "Bearer " + sk;
+    return { url, mode: "service", headers };
+  }
+  const anon = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY || "";
+  const t = String(userToken || "").trim();
+  if (anon && t) return { url, mode: "user", headers: { apikey: anon, Authorization: "Bearer " + t, "Content-Type": "application/json" } };
+  return null;
+}
+
 let cache = { at: 0, cats: null };
 export function invalidateCategories() { cache = { at: 0, cats: null }; }
 // 直近の DB 読み込みの診断情報（秘密は含めない。/api/records?meta=1&debug=1 で確認）
@@ -59,28 +77,27 @@ export let lastLoadDiag = { at: 0 };
 
 // 既定 + DB を合成した { id: 定義 } を返す（30秒キャッシュ。DB不通時は既定のみ）
 export async function loadCategories(opts) {
-  if (!(opts && opts.force) && cache.cats && Date.now() - cache.at < CACHE_MS) return cache.cats;
+  opts = opts || {};
+  const auth = dbAuth(opts.userToken);
+  const cacheable = !!(auth && auth.mode === "service"); // ユーザー経路は人ごとに結果が違い得るのでキャッシュしない
+  if (cacheable && !opts.force && cache.cats && Date.now() - cache.at < CACHE_MS) return cache.cats;
   const out = {};
   for (const [id, c] of Object.entries(BUILTIN)) {
     const n = normalizeCategory(id, c);
     if (n) out[id] = Object.assign(n, { builtin: true, custom: false, sort: 0 });
   }
-  const url = process.env.SUPABASE_URL;
-  const key = serviceKey();
-  const k = String(key || "");
+  const k = serviceKey();
   lastLoadDiag = {
-    at: Date.now(), hasUrl: !!url,
+    at: Date.now(), hasUrl: !!process.env.SUPABASE_URL, mode: auth ? auth.mode : "none",
     keyKind: !k ? "none" : (/^eyJ/.test(k) ? "jwt" : (/^sb_/.test(k) ? k.slice(0, 9) : "other")),
     // 設定済みの環境変数「名」だけ（値は出さない）。キー名の食い違いを見つけるため
     envNames: Object.keys(process.env).filter((n) => /SUPABASE|^SB_|SERVICE_ROLE|SECRET_KEY/i.test(n)).sort(),
     status: null, rows: null, error: null, bodyHead: null,
   };
-  if (url && key) {
+  if (auth) {
     try {
-      const headers = { apikey: key };
-      if (/^eyJ/.test(k)) headers.Authorization = "Bearer " + key;
-      const r = await fetch(url + "/rest/v1/metrics_category?select=id,label,period_type,hint,items,sort,enabled&tenant_id=eq." +
-        encodeURIComponent(DEFAULT_TENANT) + "&order=sort.asc,label.asc", { headers });
+      const r = await fetch(auth.url + "/rest/v1/metrics_category?select=id,label,period_type,hint,items,sort,enabled&tenant_id=eq." +
+        encodeURIComponent(DEFAULT_TENANT) + "&order=sort.asc,label.asc", { headers: auth.headers });
       lastLoadDiag.status = r.status;
       if (!r.ok) { lastLoadDiag.bodyHead = String(await r.text().catch(() => "")).slice(0, 200); }
       if (r.ok) {
@@ -95,7 +112,7 @@ export async function loadCategories(opts) {
       }
     } catch (e) { lastLoadDiag.error = String((e && e.message) || e).slice(0, 200); /* DB不通時は既定のみで続行 */ }
   }
-  cache = { at: Date.now(), cats: out };
+  if (cacheable) cache = { at: Date.now(), cats: out };
   return out;
 }
 

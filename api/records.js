@@ -10,7 +10,7 @@
 //   DELETE /api/records  {op:"category", id}             … 指標セットを削除（既定のものは非表示にする。記録データは残す）
 // 認証: PORTAL のログイン（Supabase Auth セッション）＋ 管理者ロール（社長・秘書）のみ。
 // データ: PORTAL 自身の Supabase の public.metrics_record / public.metrics_category（RLS 有効・ポリシー無し＝service_role のみ）。
-import { BUILTIN, DEFAULT_TENANT, loadCategories, invalidateCategories, categoryOf, normPeriod, normalizeCategory, lastLoadDiag, serviceKey } from "./_lib/recordCategories.js";
+import { BUILTIN, DEFAULT_TENANT, loadCategories, invalidateCategories, categoryOf, normPeriod, normalizeCategory, lastLoadDiag, dbAuth } from "./_lib/recordCategories.js";
 
 const ALLOWED_ROLES = ["社長", "秘書"];
 const TABLE = "metrics_record";
@@ -22,31 +22,21 @@ function applyCors(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 }
 
-// ---- PORTAL 認証（api/metrics.js と同じ流儀）------------------------------------
-function svc() {
-  const url = process.env.SUPABASE_URL;
-  const key = serviceKey();
-  if (!url || !key) return null;
-  const headers = { apikey: key, "Content-Type": "application/json" };
-  if (/^eyJ/.test(String(key))) headers.Authorization = "Bearer " + key;
-  return { url, key, headers };
-}
-
+// ---- PORTAL 認証（api/metrics.js と同じ流儀。service_role キーが無い環境では利用者のトークンで RLS を通す）----
 async function portalUser(token) {
   const url = process.env.SUPABASE_URL;
   const anon =
     process.env.SUPABASE_ANON_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    process.env.SUPABASE_PUBLISHABLE_KEY ||
-    serviceKey();
+    process.env.SUPABASE_PUBLISHABLE_KEY || "";
   if (!url || !anon || !token) return null;
   const res = await fetch(url + "/auth/v1/user", { headers: { apikey: anon, Authorization: "Bearer " + token } });
   if (!res.ok) return null;
   try { return await res.json(); } catch (e) { return null; }
 }
 
-async function memberForUser(user) {
-  const s = svc();
+async function memberForUser(user, token) {
+  const s = dbAuth(token);
   if (!s || !user) return null;
   const sel = "select=id,name,role,email,auth_user_id&limit=1";
   if (user.id) {
@@ -67,10 +57,11 @@ async function requireAdmin(req, res) {
   if (!token) { res.status(401).json({ ok: false, error: "login_required" }); return null; }
   const user = await portalUser(token);
   if (!user) { res.status(401).json({ ok: false, error: "invalid_session" }); return null; }
-  const member = await memberForUser(user);
+  const member = await memberForUser(user, token);
   if (!member || !ALLOWED_ROLES.includes(String(member.role || ""))) {
     res.status(403).json({ ok: false, error: "forbidden" }); return null;
   }
+  member.token = token;
   return member;
 }
 
@@ -128,12 +119,12 @@ async function handleList(req, res, s) {
   params.set("limit", String(Math.min(5000, Math.max(1, Number(q.limit) || 2000))));
   const r = await pg(s, TABLE + "?" + params.toString());
   if (!r.ok) return res.status(502).json({ ok: false, error: "db_read_failed", detail: r.text.slice(0, 300) });
-  return res.status(200).json({ ok: true, rows: Array.isArray(r.data) ? r.data : [], categories: await loadCategories(), tenant: DEFAULT_TENANT });
+  return res.status(200).json({ ok: true, rows: Array.isArray(r.data) ? r.data : [], categories: await loadCategories({ userToken: s.token }), tenant: DEFAULT_TENANT });
 }
 
 // ---- 保存（確認済みの内容のみ。同 period の既存があれば overwrite 指定が要る）--------
 async function handleSave(req, res, s, member, b) {
-  const cats = await loadCategories();
+  const cats = await loadCategories({ userToken: s.token });
   const category = String(b.category || "").trim().toLowerCase();
   const cat = categoryOf(cats, category);
   if (!cat) return res.status(400).json({ ok: false, error: "unknown_category", categories: Object.keys(cats) });
@@ -251,7 +242,7 @@ async function handleCategorySave(req, res, s, b) {
   });
   if (!up.ok) return res.status(502).json({ ok: false, error: "db_write_failed", detail: up.text.slice(0, 300) });
   invalidateCategories();
-  const cats = await loadCategories({ force: true });
+  const cats = await loadCategories({ force: true, userToken: s.token });
   return res.status(200).json({ ok: true, category: cats[n.id] || n, categories: cats });
 }
 
@@ -275,7 +266,7 @@ async function handleCategoryDelete(req, res, s, b) {
     if (!r.ok) return res.status(502).json({ ok: false, error: "db_delete_failed", detail: r.text.slice(0, 300) });
   }
   invalidateCategories();
-  const cats = await loadCategories({ force: true });
+  const cats = await loadCategories({ force: true, userToken: s.token });
   return res.status(200).json({ ok: true, deleted: id, note, categories: cats });
 }
 
@@ -292,8 +283,9 @@ export default async function handler(req, res) {
     }
     const member = await requireAdmin(req, res);
     if (!member) return;
-    const s = svc();
-    if (!s) return res.status(500).json({ ok: false, error: "SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY is not configured" });
+    const s = dbAuth(member.token);
+    if (!s) return res.status(500).json({ ok: false, error: "SUPABASE_URL / SUPABASE_ANON_KEY (or SUPABASE_SERVICE_ROLE_KEY) is not configured" });
+    s.token = member.token;
     const b = parseBody(req);
     const op = String(b.op || (req.query && req.query.op) || "").trim();
     if (req.method === "GET") return await handleList(req, res, s);

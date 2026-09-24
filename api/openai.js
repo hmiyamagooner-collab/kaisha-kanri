@@ -560,7 +560,7 @@ function applyCors(req, res) {
     res.setHeader("Vary", "Origin");
   }
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 }
 
 function classifyOpenAIError(status, rawText) {
@@ -762,7 +762,7 @@ export default async function handler(req, res) {
       const speed = Math.min(1.25, Math.max(0.85, Number(body.speed) || 1.05));
       const ttsModel = process.env.OPENAI_TTS_MODEL || "gpt-4o-mini-tts";
       // トーン指定は gpt-4o-mini-tts 系のみ有効（tts-1 は無視される）
-      let instructions = String(body.instructions || "").slice(0, 500).trim();
+      let instructions = String(body.instructions || "").slice(0, 900).trim(); // 言語指示＋声質指示の両方が収まる長さ
       const supportsInstr = /gpt-4o.*tts/i.test(ttsModel);
       const payload = {
         model: ttsModel,
@@ -832,9 +832,11 @@ export default async function handler(req, res) {
       try { relaBlock = await fetchRelaSummary(); } catch (e) { relaBlock = ""; }
     }
     // 記録できる指標セット（既定＋画面から追加したもの）を文脈末尾へ注入（数字の貼り付けを record に読み取れる）
+    // service_role キーが無い環境では、円卓の呼び出しに添えられたログイントークン（Authorization）で RLS を通して読む
     let recordCats = null, recordBlock = "";
     if (entaku) {
-      try { recordCats = await loadCategories(); recordBlock = categoriesPromptBlock(recordCats); } catch (e) { recordCats = null; recordBlock = ""; }
+      const userToken = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "").trim();
+      try { recordCats = await loadCategories({ userToken }); recordBlock = categoriesPromptBlock(recordCats); } catch (e) { recordCats = null; recordBlock = ""; }
     }
     // 現在状況コンテキストも 5000 字までに圧縮（巨大な状況メモによる遅延を抑える）
     const system = [
