@@ -4,6 +4,7 @@
 // キー設定: Vercelの OPENAI_API_KEY 環境変数、または api/secrets.local.js（example をコピー）
 
 import { getOpenAIKey } from "./_lib/getOpenAIKey.js";
+import { categoriesPromptBlock, categoryOf, normPeriod } from "./_lib/recordCategories.js";
 
 export const config = { maxDuration: 60 };
 
@@ -157,8 +158,17 @@ const SYSTEM_ENTAKU = [
   "・『Supabaseの数値/データを見たい』＝プロダクトの実数値のことなので、文脈末尾の【RELAプロダクト指標】を参照して数字で答える（無ければ設定待ちと正直に案内）。op不要。",
   "・『管理コンソールを開きたい』＝画面右上の外部リンクボタン(Supabase/Vercel/GitHub)から開ける旨を replies で案内する（社長のみ表示）。存在しない社内画面へ goto しない。",
   "",
+  "【数字の記録（円卓に貼ると記録してグラフになる）】",
+  "利用者がランキングのメール本文や数字の報告を貼り付けた／添付した／『記録して』と言ったときは、下の【記録できる指標】のどれに当たるか判断し、JSON の record に読み取った数字を入れる（記録は利用者が確認してから保存される。あなたが保存するのではない）。",
+  "・record.items には読み取れた項目だけを入れる。読み取れなかった項目は record.missing に項目名を入れ、推測や仮の数字で埋めない（絶対）。",
+  "・period は本文中の対象月（例『2026年9月度』→ 2026-09）。本文に無ければ利用者の発言日付や『先月』等から判断し、判断根拠を replies で一言添える。それでも不明なら period を空にして利用者に聞く。",
+  "・replies の凛は『◯年◯月の全国ランキングとして、全国順位◯位・利用者数◯人と読み取りました。この内容で記録しますか？』のように読み取り結果を要約し、確認を求める（画面に確認カードが出て、利用者が『記録する』を押すと保存される）。",
+  "・数字の貼り付けでないときは record を付けない（省略する）。ランキングや指標の“相談”だけで数字が無いときも付けない。",
+  categoriesPromptBlock(),
+  "",
   "【出力形式 — 必ずこのJSONのみ。前後に説明やMarkdownを付けない】",
-  '{"replies":[{"agent":"secretary","text":"凛の発言本文"}],"dispatch":[{"agent":"finance|legal","prompt":"その専門家AIへの具体的な指示（何を・どの観点で見て・何を答えるか）"}],"actions":[{"title":"具体的な次の一手","owner":"凛|紬|陽翔|社長","due":"YYYY-MM-DDまたは期限表現","op":"goto|locate|snapshot|print|search|pin|fill|tasks|risk|assign|delete|note","module":"画面ID","query":"検索語","scope":"local|dropbox|both","label":"ピン名","field":"入力欄id","value":"入力値","assignee":"社員名またはall","detail":"タスク補足","taskId":"タスクid"}]}',
+  '{"replies":[{"agent":"secretary","text":"凛の発言本文"}],"dispatch":[{"agent":"finance|legal","prompt":"その専門家AIへの具体的な指示（何を・どの観点で見て・何を答えるか）"}],"actions":[{"title":"具体的な次の一手","owner":"凛|紬|陽翔|社長","due":"YYYY-MM-DDまたは期限表現","op":"goto|locate|snapshot|print|search|pin|fill|tasks|risk|assign|delete|note","module":"画面ID","query":"検索語","scope":"local|dropbox|both","label":"ピン名","field":"入力欄id","value":"入力値","assignee":"社員名またはall","detail":"タスク補足","taskId":"タスクid"}],"record":{"category":"記録できる指標のcategory","period":"YYYY-MM","items":[{"item":"項目名","value":123,"unit":"位"}],"missing":["読み取れなかった項目名"]}}',
+  "・record は数字の記録時のみ。無いときはキーごと省略。",
   "・replies は原則 凛（secretary）1件のみ（会話のメイン）。専門家の発言は replies に書かず dispatch で招集する。",
   "・dispatch は 0〜2件。専門判断が要るときだけ finance／legal を入れる。要らなければ空配列 []。dispatch した専門家は別AIとして実際に発言する（凛が代筆しない）。",
   "・actions は0〜10件（無ければ空配列）。操作指示なら必ず op を付ける。タスク指示は op=assign、削除は op=delete。単なるやることなら op=note または省略可。",
@@ -401,9 +411,43 @@ function parseEntakuDispatch(j) {
   return out;
 }
 
-function parseEntakuReplies(raw) {
+// 凛が読み取った「記録の下書き」を正規化する（保存はしない。利用者の確認後に /api/records が保存する）。
+// 既知の category と項目だけ通し、数値にならない値は missing に回す。何も残らなければ null。
+function parseEntakuRecord(j, latestUserText) {
+  const r = j && j.record;
+  if (!r || typeof r !== "object") return null;
+  const category = String(r.category || "").trim();
+  const cat = categoryOf(category);
+  if (!cat) return null;
+  const allowed = new Map(cat.items.map((it) => [it.key, it]));
+  const items = [];
+  const missing = new Set((Array.isArray(r.missing) ? r.missing : []).map((s) => String(s || "").trim()).filter(Boolean));
+  for (const raw of Array.isArray(r.items) ? r.items : []) {
+    const key = String((raw && raw.item) || "").trim();
+    const def = allowed.get(key);
+    if (!def) continue;
+    let v = raw && raw.value;
+    if (typeof v !== "number") {
+      let s = String(v == null ? "" : v).replace(/[０-９．－]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
+      s = s.replace(/[,，\s]/g, "").replace(/[^0-9.+-]/g, "");
+      v = s ? Number(s) : NaN;
+    }
+    if (!isFinite(v)) { missing.add(key); continue; }
+    items.push({ item: key, value: v, unit: def.unit || "" });
+  }
+  for (const it of cat.items) if (!items.some((x) => x.item === it.key) && !missing.has(it.key)) missing.add(it.key);
+  if (!items.length) return null;
+  return {
+    category, label: cat.label, periodType: cat.periodType,
+    period: normPeriod(r.period, cat.periodType),   // 不明なら ""（画面で入力してもらう）
+    items, missing: [...missing],
+    raw_text: String(latestUserText || "").slice(0, 20000),
+  };
+}
+
+function parseEntakuReplies(raw, latestUserText) {
   const text = String(raw || "").trim();
-  if (!text) return { replies: [{ agent: "secretary", text: "（応答が空でした）" }], actions: [], dispatch: [] };
+  if (!text) return { replies: [{ agent: "secretary", text: "（応答が空でした）" }], actions: [], dispatch: [], record: null };
   try {
     const m = text.match(/\{[\s\S]*\}/);
     const j = JSON.parse(m ? m[0] : text);
@@ -416,10 +460,12 @@ function parseEntakuReplies(raw) {
     if (valid.length || dispatch.length) {
       // 凛の発言が無い（=dispatchのみ）ときも、先頭に凛の一言を保証する
       const repliesOut = valid.length ? valid : [{ agent: "secretary", text: "担当より確認いたします。" }];
-      return { replies: repliesOut, actions: parseEntakuActions(j), dispatch };
+      let record = null;
+      try { record = parseEntakuRecord(j, latestUserText); } catch (e) { record = null; }
+      return { replies: repliesOut, actions: parseEntakuActions(j), dispatch, record };
     }
   } catch (e) { /* fall through */ }
-  return { replies: [{ agent: "secretary", text: text.slice(0, 6000) }], actions: [], dispatch: [] };
+  return { replies: [{ agent: "secretary", text: text.slice(0, 6000) }], actions: [], dispatch: [], record: null };
 }
 
 // 凛の指示プロンプトを受けて、専門家AI（紬=経理／陽翔=法務）を実際に別モデルで呼び出す。
@@ -847,7 +893,7 @@ export default async function handler(req, res) {
           }
         }
         clearTimeout(timerS);
-        const parsed = parseEntakuReplies(full);
+        const parsed = parseEntakuReplies(full, latestUserText);
         let finalReplies = parsed.replies;
         const dispatch = resolveDispatch(parsed.dispatch, focus, latestUserText);
         if (dispatch.length) {
@@ -856,7 +902,7 @@ export default async function handler(req, res) {
             finalReplies = mergeEntakuReplies(parsed.replies, dispatch, specialists);
           } catch (eD) { /* 専門家呼び出し失敗時は凛の発言のみ返す */ }
         }
-        sse({ done: true, replies: finalReplies, actions: parsed.actions });
+        sse({ done: true, replies: finalReplies, actions: parsed.actions, record: parsed.record || null });
         res.write("data: [DONE]\n\n");
         return res.end();
       } catch (e) {
@@ -864,8 +910,8 @@ export default async function handler(req, res) {
         // ここまでに full があれば救済して返す
         try {
           if (full && full.trim()) {
-            const parsed = parseEntakuReplies(full);
-            sse({ done: true, replies: parsed.replies, actions: parsed.actions });
+            const parsed = parseEntakuReplies(full, latestUserText);
+            sse({ done: true, replies: parsed.replies, actions: parsed.actions, record: parsed.record || null });
           } else {
             sse({ error: (e && e.name === "AbortError") ? "timeout" : String((e && e.message) || e).slice(0, 200) });
           }
@@ -915,7 +961,7 @@ export default async function handler(req, res) {
     const data = await aiRes.json();
     const raw = String(data.choices?.[0]?.message?.content || "").trim();
     if (entaku) {
-      const parsed = parseEntakuReplies(raw);
+      const parsed = parseEntakuReplies(raw, latestUserText);
       let replies = parsed.replies;
       const actions = parsed.actions;
       const dispatch = resolveDispatch(parsed.dispatch, focus, latestUserText);
@@ -924,7 +970,7 @@ export default async function handler(req, res) {
         replies = mergeEntakuReplies(parsed.replies, dispatch, specialists);
       }
       const text = replies.map((r) => `【${AGENT_LABEL[r.agent]}】${r.text}`).join("\n\n");
-      return res.status(200).json({ ok: true, text, replies, actions, dispatch, model: ENTAKU_MODEL, at: new Date().toISOString() });
+      return res.status(200).json({ ok: true, text, replies, actions, dispatch, record: parsed.record || null, model: ENTAKU_MODEL, at: new Date().toISOString() });
     }
     return res.status(200).json({ ok: true, text: raw, model: MODEL, at: new Date().toISOString() });
   } catch (e) {

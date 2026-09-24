@@ -2132,6 +2132,24 @@ body.is-hsplit-drag{cursor:ew-resize;user-select:none}
 .doc-inbox-item .doc-meta{color:var(--muted);font-size:11px;margin-top:4px}
 .entaku-inline #entakuText{flex:1 1 70px;min-width:60px;rows:1;min-height:32px;max-height:64px;font-size:12px;padding:7px 8px}
 .entaku-inline #entakuSend{padding:0 14px;font-size:12px;height:36px}
+/* 円卓：数字の記録 確認カード */
+.ent-rec{margin-top:6px;border:1px solid rgba(231,205,132,.35);border-radius:12px;background:rgba(231,205,132,.06);padding:10px 12px}
+.ent-rec.is-saved{border-color:rgba(95,208,166,.45);background:rgba(95,208,166,.07)}
+.ent-rec.is-cancel{opacity:.6}
+.ent-rec-h{font-weight:700;font-size:13px;color:#e7cd84;margin-bottom:6px}
+.ent-rec.is-saved .ent-rec-h{color:#5fd0a6}
+.ent-rec-s{font-size:12px;color:#c9cfdb;margin-bottom:6px}
+.ent-rec-row{display:grid;grid-template-columns:110px 1fr 28px;gap:6px;align-items:center;font-size:12px;color:#c9cfdb;margin:4px 0}
+.ent-rec-row input{width:100%;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.12);color:#eef1f6;border-radius:8px;padding:6px 8px;font:inherit;font-size:13px}
+.ent-rec-row input:focus{outline:none;border-color:rgba(231,205,132,.5)}
+.ent-rec-row em{font-style:normal;color:#8A93A6;font-size:11px}
+.ent-rec-miss{font-size:11px;color:#ff9bb8;margin-top:6px}
+.ent-rec-btns{display:flex;gap:8px;margin-top:10px}
+.ent-rec-save{background:linear-gradient(135deg,#2a2410,#1a1a26);border:1px solid rgba(231,205,132,.5);color:#e7cd84;border-radius:999px;padding:7px 14px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.ent-rec-save:disabled{opacity:.5;cursor:default}
+.ent-rec-cancel{background:none;border:1px solid rgba(255,255,255,.12);color:#8A93A6;border-radius:999px;padding:7px 12px;font:inherit;font-size:12px;cursor:pointer}
+.ent-rec-msg{font-size:11px;color:#8A93A6;margin-top:6px;min-height:1.2em}
+.ent-rec-link{display:inline-block;font-size:12px;color:#e7cd84;text-decoration:none;margin-top:2px}
 .ent-atts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .ent-att-img{max-width:min(220px,100%);max-height:160px;border-radius:8px;border:1px solid rgba(255,255,255,.25);display:block;cursor:zoom-in}
 .ent-att-pdf{
@@ -3188,6 +3206,10 @@ body.gate-dev .pt-ext{display:none!important}
   <button type="button" class="nav-biz" onclick="location.href='products.html'">
     <span class="nav-photo" style="background-image:url(nav-it.png)"></span>
     <span class="nav-label">プロダクト</span>
+  </button>
+  <button type="button" class="nav-biz" onclick="location.href='records.html'">
+    <span class="nav-photo" style="background-image:url(nav-care.png)"></span>
+    <span class="nav-label nav-label-2line">記録と<br>グラフ</span>
   </button>
   </div>
   <div class="nav-drops">
@@ -13009,7 +13031,7 @@ window.EntakuAI=(function(){
                 };
               })
             :[];
-          return {replies:replies, actions:actions};
+          return {replies:replies, actions:actions, record:(data.record&&typeof data.record==='object')?data.record:null};
         });
       }).catch(function(e){
         if(e && e.name==='TypeError'){
@@ -13055,7 +13077,7 @@ window.EntakuAI=(function(){
                 detail:String(a.detail||'').trim(), taskId:String(a.taskId||'').trim(), done:false
               };
             }):[];
-            result={replies:reps, actions:acts};
+            result={replies:reps, actions:acts, record:(j.record&&typeof j.record==='object')?j.record:null};
           } else if(j.error){
             errMsg=String(j.error)+(j.detail?(' — '+j.detail):'');
           }
@@ -13079,7 +13101,7 @@ window.EntakuAI=(function(){
           var reps=[];
           try{ var m=full.match(/\{[\s\S]*\}/); if(m){ reps=normalizeReplies(JSON.parse(m[0])); } }catch(e){}
           if(!reps.length){ reps=normalizeReplies({text:full}); }
-          if(reps.length) return {replies:reps, actions:(result&&result.actions)||[]};
+          if(reps.length) return {replies:reps, actions:(result&&result.actions)||[], record:(result&&result.record)||null};
           throw new Error('EMPTY_REPLY');
         });
       });
@@ -13807,7 +13829,68 @@ window.EntakuDocIngest=(function(){
     t.innerHTML = txt ? esc(txt).replace(/\n/g,'<br>') : '凛・紬・陽翔が協議中…';
     body.scrollTop=body.scrollHeight;
   }
-  function playReplies(replies, actions, scrollY){
+  // ===== 数字の記録（円卓に貼ると記録してグラフになる）=====
+  // 凛が読み取った record（下書き）を確認カードとして表示し、「はい、記録する」で /api/records に保存する。
+  // 保存前に数字・対象月を直せる（AIの読み取り違いをそのまま残さないため）。
+  function recordCardHtml(m, idx){
+    var r=m.record||{}; var items=r.items||[]; var miss=r.missing||[];
+    var title=esc(r.label||r.category||'指標');
+    if(r.saved) return '<div class="ent-rec is-saved"><div class="ent-rec-h">✔ 記録しました：'+title+'（'+esc(r.period||'')+'）</div>'
+      +'<div class="ent-rec-s">'+esc(r.summary||'')+'</div><a class="ent-rec-link" href="records.html">記録とグラフを見る ↗</a></div>';
+    if(r.cancelled) return '<div class="ent-rec is-cancel"><div class="ent-rec-h">記録をやめました：'+title+'</div></div>';
+    var isDay=r.periodType==='day';
+    var rows='<label class="ent-rec-row"><span>対象'+(isDay?'日':'月')+'</span><input type="'+(isDay?'date':'month')+'" data-rec-period value="'+esc(r.period||'')+'"><em></em></label>';
+    rows+=items.map(function(it,i){
+      return '<label class="ent-rec-row"><span>'+esc(it.item)+'</span><input type="text" inputmode="decimal" data-rec-val="'+i+'" value="'+esc(it.value)+'"><em>'+esc(it.unit||'')+'</em></label>';
+    }).join('');
+    var missHtml=miss.length?'<div class="ent-rec-miss">読み取れなかった項目：'+esc(miss.join('、'))+'（保存されません。必要なら「記録とグラフ」で手入力）</div>':'';
+    return '<div class="ent-rec"><div class="ent-rec-h">この内容で記録しますか？ ─ '+title+'</div>'+rows+missHtml
+      +'<div class="ent-rec-btns"><button type="button" class="ent-rec-save" data-rec-save="'+idx+'">はい、記録する</button>'
+      +'<button type="button" class="ent-rec-cancel" data-rec-cancel="'+idx+'">やめる</button></div>'
+      +'<div class="ent-rec-msg" data-rec-msg="'+idx+'"></div></div>';
+  }
+  function recordsEndpoint(){
+    try{ if(/vercel\.app$/i.test(String(location.hostname||''))) return '/api/records'; }catch(e){}
+    return 'https://kaisha-kanri.vercel.app/api/records';
+  }
+  async function saveEntakuRecord(idx, overwrite){
+    var m=S.history[idx]; if(!m||!m.record||m.record.saved) return;
+    var body=el('entakuBody'); var box=body?body.querySelector('[data-ent-idx="'+idx+'"]'):null; if(!box) return;
+    var msg=box.querySelector('[data-rec-msg]'); var btn=box.querySelector('[data-rec-save]');
+    var pin=box.querySelector('[data-rec-period]'); var period=pin?String(pin.value||'').trim():'';
+    var items=[];
+    box.querySelectorAll('[data-rec-val]').forEach(function(inp){
+      var it=m.record.items[+inp.dataset.recVal];
+      if(it && String(inp.value).trim()!=='') items.push({item:it.item, value:inp.value, unit:it.unit});
+    });
+    if(!period){ if(msg) msg.textContent='対象月を入力してください。'; return; }
+    if(!items.length){ if(msg) msg.textContent='記録する数字がありません。'; return; }
+    if(btn) btn.disabled=true; if(msg) msg.textContent='保存中…';
+    try{
+      var token=''; try{ token=await (window.GoonerSB&&window.GoonerSB.authToken?window.GoonerSB.authToken():''); }catch(e){}
+      if(!token) throw new Error('ログインが必要です。ポータルにログインしてから記録してください');
+      var r=await fetch(recordsEndpoint(),{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
+        body:JSON.stringify({category:m.record.category, period:period, items:items, source:'entaku', raw_text:m.record.raw_text||'', overwrite:!!overwrite})});
+      var j=await r.json().catch(function(){ return {}; });
+      if(j.state==='exists'){
+        var cur=(j.existing||[]).map(function(e){ return e.item+' '+e.value+(e.unit||''); }).join('、');
+        if(btn) btn.disabled=false;
+        if(confirm((j.detail||'同じ期間の記録があります。上書きしますか？')+'\n\n現在の記録: '+cur)) return saveEntakuRecord(idx, true);
+        if(msg) msg.textContent='上書きをやめました。';
+        return;
+      }
+      if(!r.ok||!j.ok) throw new Error(j.detail||j.error||('HTTP '+r.status));
+      m.record.saved=true; m.record.period=period; m.record.summary=j.summary||'記録しました。';
+      S.history.push({role:'assistant', agent:'secretary', content:(j.summary||'記録しました。')+' 推移は「記録とグラフ」で見られます。'});
+      persistEntaku(); render();
+      try{ window.DashTalk?.speak?.('secretary', j.summary||'記録しました。', 4000); }catch(e){}
+      try{ window.PortalAuth?.serverLog?.('record-save', m.record.category+' '+period); }catch(e){}
+    }catch(e){
+      if(btn) btn.disabled=false;
+      if(msg) msg.textContent='保存できません：'+((e&&e.message)||e);
+    }
+  }
+  function playReplies(replies, actions, scrollY, record){
     S.playing = true;
     window.__entakuSpeaking = true;
     let i = 0;
@@ -13818,6 +13901,11 @@ window.EntakuDocIngest=(function(){
         window.DashTalk?.stop?.({keepTts:true});
         entakuReactStop();
         commitActions(actions || []);
+        // 凛の発言が終わったら、読み取った数字の確認カードを出す（利用者が「はい」で保存）
+        if(record && typeof record==='object' && Array.isArray(record.items) && record.items.length){
+          S.history.push({ role:'assistant', agent:'secretary', kind:'record-draft', content:'（記録の確認：'+(record.label||record.category||'')+'）', record:record });
+          persistEntaku();
+        }
         render();
         focusEntakuInput();
         if(scrollY!=null) requestAnimationFrame(function(){ window.scrollTo(0, scrollY); });
@@ -14636,9 +14724,11 @@ window.EntakuDocIngest=(function(){
       const who = agentLabel(m);
       const cls = m.role==='user' ? 'ent-me' : ('ent-ai ent-agent-'+(m.agent||'secretary'));
       const jumps = m.role==='assistant' && m.kind!=='load-status' && m.kind!=='doc-clarify' ? jumpButtons(m.content) : '';
-      const bodyTxt = m.kind==='load-status' ? '' : (m.kind==='tool-result'
+      const bodyTxt = m.kind==='load-status' ? '' : (m.kind==='record-draft'
+        ? recordCardHtml(m, idx)
+        : (m.kind==='tool-result'
         ? '<div class="ent-tool-result">'+esc(m.content).replace(/\n/g,'<br>')+'</div>'
-        : esc(m.content).replace(/\n/g,'<br>'));
+        : esc(m.content).replace(/\n/g,'<br>')));
       return '<div class="ent-msg '+cls+'" data-ent-idx="'+idx+'"><div class="ent-msg-head"><span class="ent-who">'+who+'</span><button type="button" class="ent-msg-del" data-ent-del="'+idx+'" title="この相談を削除" aria-label="削除">削除</button></div><div class="ent-txt">'+bodyTxt+minutesHtml(m)+meetingPickHtml(m,idx)+docClarifyHtml(m)+attachmentsHtml(m.attachments)+jumps+'</div></div>';
     }).join('')
       + (S.busy?'<div class="ent-msg ent-ai ent-agent-secretary"><span class="ent-who">秘書　凛</span><div class="ent-txt ent-typing">'+(S.streamPreview?esc(S.streamPreview).replace(/\n/g,'<br>'):'凛・紬・陽翔が協議中…')+'</div></div>':'');
@@ -14663,6 +14753,12 @@ window.EntakuDocIngest=(function(){
         if(!confirm('この相談を削除しますか？')) return;
         deleteEntakuMsg(i);
       };
+    });
+    body.querySelectorAll('[data-rec-save]').forEach(function(b){
+      b.onclick=function(e){ e.preventDefault(); e.stopPropagation(); saveEntakuRecord(+b.dataset.recSave, false); };
+    });
+    body.querySelectorAll('[data-rec-cancel]').forEach(function(b){
+      b.onclick=function(e){ e.preventDefault(); e.stopPropagation(); const m=S.history[+b.dataset.recCancel]; if(m&&m.record){ m.record.cancelled=true; persistEntaku(); render(); } };
     });
     _scope.querySelectorAll('.entaku-jump,.ent-act-jump[data-s]').forEach(b=>b.onclick=()=>gotoScreen(b.dataset.s,{noScroll:true}));
     _scope.querySelectorAll('[data-ent-run]').forEach(function(b){
@@ -14991,7 +15087,7 @@ window.EntakuDocIngest=(function(){
       var actions = (data && data.actions) || [];
       S.focus = null;
       render();
-      playReplies(replies, actions, scrollY); // 1人ずつ順番に発言＋読み上げ
+      playReplies(replies, actions, scrollY, (data&&data.record)||null); // 1人ずつ順番に発言＋読み上げ（最後に記録の確認カード）
     }).catch(function(e){
       S.streamPreview='';
       S.busy=false; S.playing=false; window.__entakuSpeaking=false;
