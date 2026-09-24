@@ -44,6 +44,14 @@ export function normalizeCategory(id, raw) {
   return { id, label, periodType, hint: String(raw.hint || "").trim().slice(0, 200), items };
 }
 
+// PORTAL の service_role キー（名前の揺れを吸収。値はどれか1つ設定されていればよい）
+export function serviceKey() {
+  return String(
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SECRET_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE || process.env.SUPABASE_SERVICEROLE_KEY || ""
+  ).trim();
+}
+
 let cache = { at: 0, cats: null };
 export function invalidateCategories() { cache = { at: 0, cats: null }; }
 // 直近の DB 読み込みの診断情報（秘密は含めない。/api/records?meta=1&debug=1 で確認）
@@ -57,9 +65,16 @@ export async function loadCategories(opts) {
     const n = normalizeCategory(id, c);
     if (n) out[id] = Object.assign(n, { builtin: true, custom: false, sort: 0 });
   }
-  const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const url = process.env.SUPABASE_URL;
+  const key = serviceKey();
   const k = String(key || "");
-  lastLoadDiag = { at: Date.now(), hasUrl: !!url, keyKind: !k ? "none" : (/^eyJ/.test(k) ? "jwt" : (/^sb_/.test(k) ? k.slice(0, 9) : "other")), status: null, rows: null, error: null, bodyHead: null };
+  lastLoadDiag = {
+    at: Date.now(), hasUrl: !!url,
+    keyKind: !k ? "none" : (/^eyJ/.test(k) ? "jwt" : (/^sb_/.test(k) ? k.slice(0, 9) : "other")),
+    // 設定済みの環境変数「名」だけ（値は出さない）。キー名の食い違いを見つけるため
+    envNames: Object.keys(process.env).filter((n) => /SUPABASE|^SB_|SERVICE_ROLE|SECRET_KEY/i.test(n)).sort(),
+    status: null, rows: null, error: null, bodyHead: null,
+  };
   if (url && key) {
     try {
       const headers = { apikey: key };

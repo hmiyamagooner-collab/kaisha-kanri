@@ -10,7 +10,7 @@
 //   DELETE /api/records  {op:"category", id}             … 指標セットを削除（既定のものは非表示にする。記録データは残す）
 // 認証: PORTAL のログイン（Supabase Auth セッション）＋ 管理者ロール（社長・秘書）のみ。
 // データ: PORTAL 自身の Supabase の public.metrics_record / public.metrics_category（RLS 有効・ポリシー無し＝service_role のみ）。
-import { BUILTIN, DEFAULT_TENANT, loadCategories, invalidateCategories, categoryOf, normPeriod, normalizeCategory, lastLoadDiag } from "./_lib/recordCategories.js";
+import { BUILTIN, DEFAULT_TENANT, loadCategories, invalidateCategories, categoryOf, normPeriod, normalizeCategory, lastLoadDiag, serviceKey } from "./_lib/recordCategories.js";
 
 const ALLOWED_ROLES = ["社長", "秘書"];
 const TABLE = "metrics_record";
@@ -25,7 +25,7 @@ function applyCors(req, res) {
 // ---- PORTAL 認証（api/metrics.js と同じ流儀）------------------------------------
 function svc() {
   const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = serviceKey();
   if (!url || !key) return null;
   const headers = { apikey: key, "Content-Type": "application/json" };
   if (/^eyJ/.test(String(key))) headers.Authorization = "Bearer " + key;
@@ -38,7 +38,7 @@ async function portalUser(token) {
     process.env.SUPABASE_ANON_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     process.env.SUPABASE_PUBLISHABLE_KEY ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY;
+    serviceKey();
   if (!url || !anon || !token) return null;
   const res = await fetch(url + "/auth/v1/user", { headers: { apikey: anon, Authorization: "Bearer " + token } });
   if (!res.ok) return null;
