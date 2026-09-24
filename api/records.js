@@ -1,16 +1,20 @@
 // Vercel Serverless Function: /api/records
-// 「円卓に投げると、記録してグラフになる」の記録API（仕様メモ 2026-09-22）。
-//   GET    /api/records?meta=1                          … 記録できる指標の定義（カテゴリ・項目・単位）
+// 「円卓に投げると、記録してグラフになる」の記録API（仕様メモ 2026-09-22）。業種を問わない汎用の仕組み。
+//   GET    /api/records?meta=1                          … 記録できる指標セットの定義（既定＋画面から追加したもの）
 //   GET    /api/records?category=X&from=YYYY-MM&to=YYYY-MM … 記録の一覧（period 昇順）
 //   POST   /api/records  {category, period, items:[{item,value,unit}], source, raw_text, overwrite}
 //            … 保存（同じ period の記録が既にあり overwrite が無ければ state:"exists" を返して確認を促す）
-//   DELETE /api/records  {id}                            … 1件削除
+//   POST   /api/records  {op:"category", id, label, periodType, hint, items:[{key,unit,lowerIsBetter}]}
+//            … 指標セットの追加・編集（id 省略で自動採番。既定と同じ id なら上書き）
+//   DELETE /api/records  {id}                            … 記録を1件削除
+//   DELETE /api/records  {op:"category", id}             … 指標セットを削除（既定のものは非表示にする。記録データは残す）
 // 認証: PORTAL のログイン（Supabase Auth セッション）＋ 管理者ロール（社長・秘書）のみ。
-// データ: PORTAL 自身の Supabase の public.metrics_record（RLS 有効・ポリシー無し＝service_role のみ）。
-import { CATEGORIES, DEFAULT_TENANT, categoryOf, normPeriod } from "./_lib/recordCategories.js";
+// データ: PORTAL 自身の Supabase の public.metrics_record / public.metrics_category（RLS 有効・ポリシー無し＝service_role のみ）。
+import { BUILTIN, DEFAULT_TENANT, loadCategories, invalidateCategories, categoryOf, normPeriod, normalizeCategory } from "./_lib/recordCategories.js";
 
 const ALLOWED_ROLES = ["社長", "秘書"];
 const TABLE = "metrics_record";
+const CAT_TABLE = "metrics_category";
 
 function applyCors(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -124,15 +128,15 @@ async function handleList(req, res, s) {
   params.set("limit", String(Math.min(5000, Math.max(1, Number(q.limit) || 2000))));
   const r = await pg(s, TABLE + "?" + params.toString());
   if (!r.ok) return res.status(502).json({ ok: false, error: "db_read_failed", detail: r.text.slice(0, 300) });
-  return res.status(200).json({ ok: true, rows: Array.isArray(r.data) ? r.data : [], categories: CATEGORIES, tenant: DEFAULT_TENANT });
+  return res.status(200).json({ ok: true, rows: Array.isArray(r.data) ? r.data : [], categories: await loadCategories(), tenant: DEFAULT_TENANT });
 }
 
 // ---- 保存（確認済みの内容のみ。同 period の既存があれば overwrite 指定が要る）--------
-async function handleSave(req, res, s, member) {
-  const b = parseBody(req);
-  const category = String(b.category || "").trim();
-  const cat = categoryOf(category);
-  if (!cat) return res.status(400).json({ ok: false, error: "unknown_category", categories: Object.keys(CATEGORIES) });
+async function handleSave(req, res, s, member, b) {
+  const cats = await loadCategories();
+  const category = String(b.category || "").trim().toLowerCase();
+  const cat = categoryOf(cats, category);
+  if (!cat) return res.status(400).json({ ok: false, error: "unknown_category", categories: Object.keys(cats) });
   const period = normPeriod(b.period, cat.periodType);
   if (!period) return res.status(400).json({ ok: false, error: "bad_period", detail: cat.periodType === "day" ? "YYYY-MM-DD で指定してください" : "YYYY-MM で指定してください" });
 
@@ -217,9 +221,8 @@ async function handleSave(req, res, s, member) {
   });
 }
 
-// ---- 削除 ---------------------------------------------------------------------------
-async function handleDelete(req, res, s) {
-  const b = parseBody(req);
+// ---- 記録の削除 ---------------------------------------------------------------------
+async function handleDelete(req, res, s, b) {
   const id = Number(b.id || (req.query && req.query.id));
   if (!isFinite(id) || id <= 0) return res.status(400).json({ ok: false, error: "bad_id" });
   const r = await pg(s, TABLE + "?id=eq." + id + "&tenant_id=eq." + DEFAULT_TENANT, {
@@ -229,20 +232,69 @@ async function handleDelete(req, res, s) {
   return res.status(200).json({ ok: true, deleted: Array.isArray(r.data) ? r.data.length : 0 });
 }
 
+// ---- 指標セットの追加・編集（業種を問わず画面から）------------------------------------
+async function handleCategorySave(req, res, s, b) {
+  let id = String(b.id || "").trim().toLowerCase();
+  if (!id) id = "cat_" + Date.now().toString(36);
+  const n = normalizeCategory(id, b);
+  if (!n) {
+    return res.status(400).json({ ok: false, error: "bad_category", detail: "IDは半角英数字と_（2〜40文字）、名前と1つ以上の項目（項目名は30文字まで・重複不可）が必要です。" });
+  }
+  const row = {
+    tenant_id: DEFAULT_TENANT, id: n.id, label: n.label, period_type: n.periodType, hint: n.hint || null,
+    items: n.items, sort: Number(b.sort) || 0, enabled: true, updated_at: new Date().toISOString(),
+  };
+  const up = await pg(s, CAT_TABLE + "?on_conflict=tenant_id,id", {
+    method: "POST",
+    headers: Object.assign({}, s.headers, { Prefer: "resolution=merge-duplicates,return=representation" }),
+    body: JSON.stringify([row]),
+  });
+  if (!up.ok) return res.status(502).json({ ok: false, error: "db_write_failed", detail: up.text.slice(0, 300) });
+  invalidateCategories();
+  const cats = await loadCategories({ force: true });
+  return res.status(200).json({ ok: true, category: cats[n.id] || n, categories: cats });
+}
+
+async function handleCategoryDelete(req, res, s, b) {
+  const id = String(b.id || (req.query && req.query.id) || "").trim().toLowerCase();
+  if (!/^[a-z0-9_]{2,40}$/.test(id)) return res.status(400).json({ ok: false, error: "bad_id" });
+  let note = "";
+  if (BUILTIN[id]) {
+    // 既定の指標セットは行が無くても復活するので、enabled=false の行で「非表示」にする（再度追加すれば戻る）
+    const n = normalizeCategory(id, BUILTIN[id]);
+    const row = { tenant_id: DEFAULT_TENANT, id, label: n.label, period_type: n.periodType, hint: n.hint || null, items: n.items, enabled: false, updated_at: new Date().toISOString() };
+    const up = await pg(s, CAT_TABLE + "?on_conflict=tenant_id,id", {
+      method: "POST", headers: Object.assign({}, s.headers, { Prefer: "resolution=merge-duplicates,return=representation" }), body: JSON.stringify([row]),
+    });
+    if (!up.ok) return res.status(502).json({ ok: false, error: "db_write_failed", detail: up.text.slice(0, 300) });
+    note = "既定の指標セットなので非表示にしました（同じIDで追加すると戻ります）。";
+  } else {
+    const r = await pg(s, CAT_TABLE + "?tenant_id=eq." + DEFAULT_TENANT + "&id=eq." + encodeURIComponent(id), {
+      method: "DELETE", headers: Object.assign({}, s.headers, { Prefer: "return=representation" }),
+    });
+    if (!r.ok) return res.status(502).json({ ok: false, error: "db_delete_failed", detail: r.text.slice(0, 300) });
+  }
+  invalidateCategories();
+  const cats = await loadCategories({ force: true });
+  return res.status(200).json({ ok: true, deleted: id, note, categories: cats });
+}
+
 export default async function handler(req, res) {
   applyCors(req, res);
   if (req.method === "OPTIONS") return res.status(204).end();
   try {
     if (req.method === "GET" && req.query && String(req.query.meta || "") === "1") {
-      return res.status(200).json({ ok: true, categories: CATEGORIES, tenant: DEFAULT_TENANT });
+      return res.status(200).json({ ok: true, categories: await loadCategories(), tenant: DEFAULT_TENANT });
     }
     const member = await requireAdmin(req, res);
     if (!member) return;
     const s = svc();
     if (!s) return res.status(500).json({ ok: false, error: "SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY is not configured" });
+    const b = parseBody(req);
+    const op = String(b.op || (req.query && req.query.op) || "").trim();
     if (req.method === "GET") return await handleList(req, res, s);
-    if (req.method === "POST") return await handleSave(req, res, s, member);
-    if (req.method === "DELETE") return await handleDelete(req, res, s);
+    if (req.method === "POST") return op === "category" ? await handleCategorySave(req, res, s, b) : await handleSave(req, res, s, member, b);
+    if (req.method === "DELETE") return op === "category" ? await handleCategoryDelete(req, res, s, b) : await handleDelete(req, res, s, b);
     return res.status(405).json({ ok: false, error: "Method not allowed" });
   } catch (e) {
     return res.status(500).json({ ok: false, error: "server_error", detail: String((e && e.message) || e).slice(0, 300) });

@@ -4,7 +4,7 @@
 // キー設定: Vercelの OPENAI_API_KEY 環境変数、または api/secrets.local.js（example をコピー）
 
 import { getOpenAIKey } from "./_lib/getOpenAIKey.js";
-import { categoriesPromptBlock, categoryOf, normPeriod } from "./_lib/recordCategories.js";
+import { loadCategories, categoriesPromptBlock, categoryOf, normPeriod } from "./_lib/recordCategories.js";
 
 export const config = { maxDuration: 60 };
 
@@ -159,12 +159,11 @@ const SYSTEM_ENTAKU = [
   "・『管理コンソールを開きたい』＝画面右上の外部リンクボタン(Supabase/Vercel/GitHub)から開ける旨を replies で案内する（社長のみ表示）。存在しない社内画面へ goto しない。",
   "",
   "【数字の記録（円卓に貼ると記録してグラフになる）】",
-  "利用者がランキングのメール本文や数字の報告を貼り付けた／添付した／『記録して』と言ったときは、下の【記録できる指標】のどれに当たるか判断し、JSON の record に読み取った数字を入れる（記録は利用者が確認してから保存される。あなたが保存するのではない）。",
+  "利用者がランキングのメール本文・KPI・売上などの数字の報告を貼り付けた／添付した／『記録して』と言ったときは、文脈末尾の【記録できる指標】のどれに当たるか判断し、JSON の record に読み取った数字を入れる（記録は利用者が確認してから保存される。あなたが保存するのではない）。業種は問わない。どの指標セットにも当たらなければ record を付けず、『記録とグラフ』画面で指標セットを追加できると案内する。",
   "・record.items には読み取れた項目だけを入れる。読み取れなかった項目は record.missing に項目名を入れ、推測や仮の数字で埋めない（絶対）。",
   "・period は本文中の対象月（例『2026年9月度』→ 2026-09）。本文に無ければ利用者の発言日付や『先月』等から判断し、判断根拠を replies で一言添える。それでも不明なら period を空にして利用者に聞く。",
   "・replies の凛は『◯年◯月の全国ランキングとして、全国順位◯位・利用者数◯人と読み取りました。この内容で記録しますか？』のように読み取り結果を要約し、確認を求める（画面に確認カードが出て、利用者が『記録する』を押すと保存される）。",
   "・数字の貼り付けでないときは record を付けない（省略する）。ランキングや指標の“相談”だけで数字が無いときも付けない。",
-  categoriesPromptBlock(),
   "",
   "【出力形式 — 必ずこのJSONのみ。前後に説明やMarkdownを付けない】",
   '{"replies":[{"agent":"secretary","text":"凛の発言本文"}],"dispatch":[{"agent":"finance|legal","prompt":"その専門家AIへの具体的な指示（何を・どの観点で見て・何を答えるか）"}],"actions":[{"title":"具体的な次の一手","owner":"凛|紬|陽翔|社長","due":"YYYY-MM-DDまたは期限表現","op":"goto|locate|snapshot|print|search|pin|fill|tasks|risk|assign|delete|note","module":"画面ID","query":"検索語","scope":"local|dropbox|both","label":"ピン名","field":"入力欄id","value":"入力値","assignee":"社員名またはall","detail":"タスク補足","taskId":"タスクid"}],"record":{"category":"記録できる指標のcategory","period":"YYYY-MM","items":[{"item":"項目名","value":123,"unit":"位"}],"missing":["読み取れなかった項目名"]}}',
@@ -413,11 +412,11 @@ function parseEntakuDispatch(j) {
 
 // 凛が読み取った「記録の下書き」を正規化する（保存はしない。利用者の確認後に /api/records が保存する）。
 // 既知の category と項目だけ通し、数値にならない値は missing に回す。何も残らなければ null。
-function parseEntakuRecord(j, latestUserText) {
+function parseEntakuRecord(j, latestUserText, cats) {
   const r = j && j.record;
   if (!r || typeof r !== "object") return null;
-  const category = String(r.category || "").trim();
-  const cat = categoryOf(category);
+  const category = String(r.category || "").trim().toLowerCase();
+  const cat = categoryOf(cats, category);
   if (!cat) return null;
   const allowed = new Map(cat.items.map((it) => [it.key, it]));
   const items = [];
@@ -445,7 +444,7 @@ function parseEntakuRecord(j, latestUserText) {
   };
 }
 
-function parseEntakuReplies(raw, latestUserText) {
+function parseEntakuReplies(raw, latestUserText, cats) {
   const text = String(raw || "").trim();
   if (!text) return { replies: [{ agent: "secretary", text: "（応答が空でした）" }], actions: [], dispatch: [], record: null };
   try {
@@ -461,7 +460,7 @@ function parseEntakuReplies(raw, latestUserText) {
       // 凛の発言が無い（=dispatchのみ）ときも、先頭に凛の一言を保証する
       const repliesOut = valid.length ? valid : [{ agent: "secretary", text: "担当より確認いたします。" }];
       let record = null;
-      try { record = parseEntakuRecord(j, latestUserText); } catch (e) { record = null; }
+      try { record = parseEntakuRecord(j, latestUserText, cats); } catch (e) { record = null; }
       return { replies: repliesOut, actions: parseEntakuActions(j), dispatch, record };
     }
   } catch (e) { /* fall through */ }
@@ -832,11 +831,17 @@ export default async function handler(req, res) {
     if (entaku) {
       try { relaBlock = await fetchRelaSummary(); } catch (e) { relaBlock = ""; }
     }
+    // 記録できる指標セット（既定＋画面から追加したもの）を文脈末尾へ注入（数字の貼り付けを record に読み取れる）
+    let recordCats = null, recordBlock = "";
+    if (entaku) {
+      try { recordCats = await loadCategories(); recordBlock = categoriesPromptBlock(recordCats); } catch (e) { recordCats = null; recordBlock = ""; }
+    }
     // 現在状況コンテキストも 5000 字までに圧縮（巨大な状況メモによる遅延を抑える）
     const system = [
       baseSystem,
       context ? `【現在のシステム状況】\n${context.slice(0, 5000)}` : "",
       relaBlock,
+      recordBlock,
     ].filter(Boolean).join("\n\n");
 
     // ===== ストリーミング（円卓のみ・体感速度改善）=====
@@ -893,7 +898,7 @@ export default async function handler(req, res) {
           }
         }
         clearTimeout(timerS);
-        const parsed = parseEntakuReplies(full, latestUserText);
+        const parsed = parseEntakuReplies(full, latestUserText, recordCats);
         let finalReplies = parsed.replies;
         const dispatch = resolveDispatch(parsed.dispatch, focus, latestUserText);
         if (dispatch.length) {
@@ -910,7 +915,7 @@ export default async function handler(req, res) {
         // ここまでに full があれば救済して返す
         try {
           if (full && full.trim()) {
-            const parsed = parseEntakuReplies(full, latestUserText);
+            const parsed = parseEntakuReplies(full, latestUserText, recordCats);
             sse({ done: true, replies: parsed.replies, actions: parsed.actions, record: parsed.record || null });
           } else {
             sse({ error: (e && e.name === "AbortError") ? "timeout" : String((e && e.message) || e).slice(0, 200) });
@@ -961,7 +966,7 @@ export default async function handler(req, res) {
     const data = await aiRes.json();
     const raw = String(data.choices?.[0]?.message?.content || "").trim();
     if (entaku) {
-      const parsed = parseEntakuReplies(raw, latestUserText);
+      const parsed = parseEntakuReplies(raw, latestUserText, recordCats);
       let replies = parsed.replies;
       const actions = parsed.actions;
       const dispatch = resolveDispatch(parsed.dispatch, focus, latestUserText);
