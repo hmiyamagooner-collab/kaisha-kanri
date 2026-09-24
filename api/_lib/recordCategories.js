@@ -189,16 +189,69 @@ export function categoriesPromptBlock(cats) {
   return lines.join("\n");
 }
 
-// 記録済みの指標（直近）を円卓の文脈に載せる文（分析・前月比・目標との差を、記録にある数字だけで答えさせる）
-export async function recentRecordsBlock(userToken, cats) {
+// 記録済みの指標（直近400件・新しい順）を取得。無ければ []
+export async function loadRecentRecords(userToken) {
   const auth = dbAuth(userToken);
-  if (!auth || !cats) return "";
+  if (!auth) return [];
   try {
     const r = await fetch(auth.url + "/rest/v1/metrics_record?select=category,item,period,value,unit&tenant_id=eq." +
       encodeURIComponent(DEFAULT_TENANT) + "&order=period.desc,item.asc&limit=400", { headers: auth.headers });
-    if (!r.ok) return "";
+    if (!r.ok) return [];
     const rows = await r.json();
-    if (!Array.isArray(rows) || !rows.length) return "";
+    return Array.isArray(rows) ? rows.map((x) => Object.assign({}, x, { value: Number(x.value) })) : [];
+  } catch (e) { return []; }
+}
+
+function fmtN(n) {
+  n = Number(n);
+  if (!isFinite(n)) return "–";
+  return Number.isInteger(n) ? n.toLocaleString("ja-JP") : n.toLocaleString("ja-JP", { maximumFractionDigits: 2 });
+}
+
+// 読み取った record の各項目について、前回比・目標比をサーバー側で確定計算する（AIに引き算をさせない）
+export function computeComparisons(record, cat, rows) {
+  if (!record || !cat) return [];
+  return (record.items || []).map((it) => {
+    const def = cat.items.find((d) => d.key === it.item) || {};
+    const out = { item: it.item, value: it.value, unit: it.unit || def.unit || "", prev_period: null, prev_value: null, diff: null, better: null, target: null, target_diff: null, achievement: null };
+    const prev = (rows || []).filter((r) => r.category === record.category && r.item === it.item && (!record.period || r.period < record.period))
+      .sort((a, b) => (a.period < b.period ? 1 : -1))[0];
+    if (prev) {
+      out.prev_period = prev.period; out.prev_value = prev.value; out.diff = it.value - prev.value;
+      out.better = out.diff === 0 ? null : (def.lowerIsBetter ? out.diff < 0 : out.diff > 0);
+    }
+    if (def.target != null && isFinite(def.target)) {
+      out.target = Number(def.target); out.target_diff = it.value - out.target;
+      out.achievement = def.lowerIsBetter ? (it.value > 0 ? Math.round((out.target / it.value) * 1000) / 10 : null)
+                                          : (out.target > 0 ? Math.round((it.value / out.target) * 1000) / 10 : null);
+    }
+    return out;
+  });
+}
+
+// 確定計算の結果を、紬への指示に載せる文にする（この数字をそのまま報告させる）
+export function comparisonsText(record, cat, comps) {
+  const lines = [`■ ${cat.label}（${record.period || "期間未定"}）`];
+  for (const c of comps) {
+    const parts = [`${c.item} ${fmtN(c.value)}${c.unit}`];
+    if (c.prev_period) {
+      const s = c.diff > 0 ? "+" : c.diff < 0 ? "−" : "±";
+      parts.push(`前回 ${c.prev_period}=${fmtN(c.prev_value)}${c.unit} → ${s}${fmtN(Math.abs(c.diff))}${c.unit}` + (c.better === null ? "（変わらず）" : c.better ? "（改善）" : "（悪化）"));
+    } else parts.push("前回: 未記録（比較不可）");
+    if (c.target != null) {
+      const s = c.target_diff > 0 ? "+" : c.target_diff < 0 ? "−" : "±";
+      parts.push(`目標 ${fmtN(c.target)}${c.unit} → ${s}${fmtN(Math.abs(c.target_diff))}${c.unit}` + (c.achievement != null ? `・達成率 ${c.achievement}%` : ""));
+    } else parts.push("目標: 未設定");
+    lines.push("・" + parts.join("｜"));
+  }
+  if (record.missing && record.missing.length) lines.push("・読み取れなかった項目: " + record.missing.join("、"));
+  return lines.join("\n");
+}
+
+// 記録済みの指標（直近）を円卓の文脈に載せる文（分析・前月比・目標との差を、記録にある数字だけで答えさせる）
+export function recentRecordsBlock(cats, rows) {
+  if (!cats || !Array.isArray(rows) || !rows.length) return "";
+  try {
     const by = {};
     for (const row of rows) {
       const c = cats[row.category]; if (!c) continue;

@@ -4,7 +4,7 @@
 // キー設定: Vercelの OPENAI_API_KEY 環境変数、または api/secrets.local.js（example をコピー）
 
 import { getOpenAIKey } from "./_lib/getOpenAIKey.js";
-import { loadCategories, categoriesPromptBlock, categoryOf, normPeriod, matchItem, recentRecordsBlock } from "./_lib/recordCategories.js";
+import { loadCategories, categoriesPromptBlock, categoryOf, normPeriod, matchItem, loadRecentRecords, recentRecordsBlock, computeComparisons, comparisonsText } from "./_lib/recordCategories.js";
 
 export const config = { maxDuration: 60 };
 
@@ -475,14 +475,17 @@ function parseEntakuRecords(j, latestUserText, cats) {
 
 // 数字の記録があるときは必ず紬（finance）に報告させる（凛が指示し、紬が報告する＝徹底）。
 // 既にキーワード等で finance が入っていても、読み取った数字を列挙した指示プロンプトに差し替える。
-function ensureFinanceForRecords(dispatch, records) {
+function ensureFinanceForRecords(dispatch, records, cats, rows) {
   if (!records || !records.length) return dispatch;
-  const lines = records.map((r) => `■ ${r.label || r.category}（${r.period || "期間未定"}）: ` +
-    r.items.map((it) => `${it.item} ${it.value}${it.unit || ""}`).join("、") +
-    (r.missing && r.missing.length ? `／読み取れなかった項目: ${r.missing.join("、")}` : ""));
-  const prompt = "社長から数字の報告が貼られました。凛が読み取った内容は次のとおりです（利用者の確認後に記録されます）。\n" + lines.join("\n") +
-    "\n\n文脈末尾の【記録済みの指標】と【記録できる指標】の目標だけを根拠に、項目ごとに『今回の値／前回比（期間と増減）／目標との差と達成率』を数字で簡潔に報告してください。" +
-    "記録に無い期間・項目は『未記録のため比較できません』と述べ、評価語（良好・順調など）や一般論の助言は書かないでください。";
+  // 前回比・目標比・達成率はここで確定計算し、紬にはその数字をそのまま報告させる（AIの引き算ミス防止）
+  const blocks = records.map((r) => {
+    const cat = categoryOf(cats, r.category);
+    if (!cat) return `■ ${r.label || r.category}（${r.period || "期間未定"}）: ` + r.items.map((it) => `${it.item} ${it.value}${it.unit || ""}`).join("、");
+    return comparisonsText(r, cat, computeComparisons(r, cat, rows || []));
+  });
+  const prompt = "社長から数字の報告が貼られました。凛が読み取り、前回比・目標比・達成率まで計算済みの内容は次のとおりです（利用者の確認後に記録されます）。\n" + blocks.join("\n") +
+    "\n\n【計算は済んでいます。自分で引き算・割り算をせず、上の数字をそのまま】項目ごとに『今回の値／前回比（期間と増減）／目標との差と達成率』を簡潔に報告してください。" +
+    "『未記録（比較不可）』『目標: 未設定』はそのまま述べ、評価語（良好・順調など）や一般論の助言は書かないでください。最後に、目標に届いていない項目があれば不足額（上の数字）を一言で示してください。";
   const rest = (dispatch || []).filter((d) => d.agent !== "finance");
   return [{ agent: "finance", prompt }, ...rest].slice(0, 2);
 }
@@ -875,12 +878,12 @@ export default async function handler(req, res) {
     }
     // 記録できる指標セット（既定＋画面から追加したもの）を文脈末尾へ注入（数字の貼り付けを record に読み取れる）
     // service_role キーが無い環境では、円卓の呼び出しに添えられたログイントークン（Authorization）で RLS を通して読む
-    let recordCats = null, recordBlock = "";
+    let recordCats = null, recordBlock = "", recentRows = [];
     if (entaku) {
       const userToken = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "").trim();
       try { recordCats = await loadCategories({ userToken }); recordBlock = categoriesPromptBlock(recordCats); } catch (e) { recordCats = null; recordBlock = ""; }
       // 記録済みの数字（直近）も添える＝貼られた数字を前月・目標と比べて分析できる
-      try { const recent = await recentRecordsBlock(userToken, recordCats); if (recent) recordBlock += "\n\n" + recent; } catch (e) { /* 無くても続行 */ }
+      try { recentRows = await loadRecentRecords(userToken); const recent = recentRecordsBlock(recordCats, recentRows); if (recent) recordBlock += "\n\n" + recent; } catch (e) { recentRows = []; }
     }
     // 専門家（紬）にも RELA 指標と記録済みの指標・目標を渡す（数字の報告の根拠にする）
     const specialistBlock = [relaBlock, recordBlock].filter(Boolean).join("\n\n");
@@ -948,7 +951,7 @@ export default async function handler(req, res) {
         clearTimeout(timerS);
         const parsed = parseEntakuReplies(full, latestUserText, recordCats);
         let finalReplies = parsed.replies;
-        const dispatch = ensureFinanceForRecords(resolveDispatch(parsed.dispatch, focus, latestUserText), parsed.records);
+        const dispatch = ensureFinanceForRecords(resolveDispatch(parsed.dispatch, focus, latestUserText), parsed.records, recordCats, recentRows);
         if (dispatch.length) {
           try {
             const specialists = await runDispatch(apiKey, dispatch, messages, context, specialistBlock);
@@ -1017,7 +1020,7 @@ export default async function handler(req, res) {
       const parsed = parseEntakuReplies(raw, latestUserText, recordCats);
       let replies = parsed.replies;
       const actions = parsed.actions;
-      const dispatch = ensureFinanceForRecords(resolveDispatch(parsed.dispatch, focus, latestUserText), parsed.records);
+      const dispatch = ensureFinanceForRecords(resolveDispatch(parsed.dispatch, focus, latestUserText), parsed.records, recordCats, recentRows);
       if (dispatch.length) {
         const specialists = await runDispatch(apiKey, dispatch, messages, context, specialistBlock);
         replies = mergeEntakuReplies(parsed.replies, dispatch, specialists);
