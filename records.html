@@ -142,7 +142,7 @@ td .del{background:none;border:0;color:var(--dim);cursor:pointer;font-size:12px}
           <label>期間の単位<select id="cPeriod"><option value="month">月ごと</option><option value="day">日ごと</option></select></label>
           <label>円卓が判断する手がかり<input type="text" id="cHint" placeholder="例: 毎月メールで届く全国ランキングの本文"></label>
         </div>
-        <div class="tbl-wrap"><table id="cItems"><thead><tr><th>項目名</th><th>単位</th><th>小さいほど良い</th><th></th></tr></thead><tbody></tbody></table></div>
+        <div class="tbl-wrap"><table id="cItems"><thead><tr><th>項目名</th><th>単位</th><th>別名（本文での言い方・カンマ区切り）</th><th>目標値（任意）</th><th>小さいほど良い</th><th></th></tr></thead><tbody></tbody></table></div>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px">
           <button type="button" class="btn ghost" id="btnAddItem">＋ 項目を追加</button>
           <span style="flex:1"></span>
@@ -223,9 +223,15 @@ td .del{background:none;border:0;color:var(--dim);cursor:pointer;font-size:12px}
       if(!cur){ html+='<div class="card"><div class="k-label">'+esc(def.key)+'</div><div class="k-val">–</div><div class="k-sub">記録なし</div></div>'; return; }
       var mom=list.find(function(r){ return r.period===addMonths(cur.period,-1); });
       var yoy=list.find(function(r){ return r.period===addMonths(cur.period,-12); });
+      var tgt='';
+      if(def.target!=null && isFinite(def.target)){
+        var ach=def.lowerIsBetter?(cur.value>0?Math.round(def.target/cur.value*100):null):(def.target>0?Math.round(cur.value/def.target*100):null);
+        var gap=cur.value-def.target; var ok=def.lowerIsBetter?gap<=0:gap>=0;
+        tgt='<div class="k-sub '+(ok?'good':'bad')+'">目標 '+nfmt(def.target)+esc(def.unit||'')+'　達成率 '+(ach==null?'–':ach+'%')+'　差 '+(gap>0?'+':(gap<0?'−':'±'))+nfmt(Math.abs(gap))+esc(def.unit||'')+'</div>';
+      }
       html+='<div class="card"><div class="k-label">'+esc(def.key)+'（'+esc(plabel(cur.period))+'）</div>'+
         '<div class="k-val">'+nfmt(cur.value)+'<small>'+esc(def.unit||'')+'</small></div>'+
-        '<div>'+diffHtml(cur,mom,def,'前月比')+'　'+diffHtml(cur,yoy,def,'前年同月比')+'</div></div>';
+        '<div>'+diffHtml(cur,mom,def,'前月比')+'　'+diffHtml(cur,yoy,def,'前年同月比')+'</div>'+tgt+'</div>';
     });
     $('cards').innerHTML=html||'<div class="empty">指標の定義がありません</div>';
   }
@@ -235,12 +241,15 @@ td .del{background:none;border:0;color:var(--dim);cursor:pointer;font-size:12px}
     var W=460,H=170,L=34,R=12,T=14,B=24;
     if(!list.length) return '<div class="empty">記録なし</div>';
     var vals=list.map(function(r){ return r.value; });
+    var hasT=(def.target!=null && isFinite(def.target)); if(hasT) vals=vals.concat([Number(def.target)]);
     var lo=Math.min.apply(null,vals), hi=Math.max.apply(null,vals); if(hi===lo){ hi=lo+1; lo=lo-1; }
     var pad=(hi-lo)*0.12; lo-=pad; hi+=pad;
     var n=list.length; var xs=function(i){ return n===1?(L+(W-L-R)/2):(L+(W-L-R)*i/(n-1)); };
     var ys=function(v){ var t=(v-lo)/(hi-lo); if(def.lowerIsBetter) t=1-t; return T+(H-T-B)*(1-t); };
     var s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">';
     for(var g=0;g<4;g++){ var y=T+(H-T-B)*g/3; s+='<line class="grid" x1="'+L+'" x2="'+(W-R)+'" y1="'+y+'" y2="'+y+'"/>'; }
+    if(hasT){ var ty=ys(Number(def.target)); s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+ty.toFixed(1)+'" y2="'+ty.toFixed(1)+'" stroke="#5fd0a6" stroke-width="1.5" stroke-dasharray="5 4" opacity=".8"/>'+
+      '<text class="lbl" x="'+(W-R)+'" y="'+(ty-4).toFixed(1)+'" text-anchor="end" fill="#5fd0a6">目標 '+nfmt(def.target)+'</text>'; }
     var d=list.map(function(r,i){ return (i?'L':'M')+xs(i).toFixed(1)+' '+ys(r.value).toFixed(1); }).join(' ');
     s+='<path class="line" d="'+d+'"/>';
     list.forEach(function(r,i){
@@ -333,6 +342,8 @@ td .del{background:none;border:0;color:var(--dim);cursor:pointer;font-size:12px}
   function ciRow(it){ it=it||{};
     return '<tr><td><input type="text" data-ci-key value="'+esc(it.key||'')+'" placeholder="例: 全国順位"></td>'+
       '<td><input type="text" data-ci-unit value="'+esc(it.unit||'')+'" placeholder="位／人／%／円" style="min-width:80px;width:90px"></td>'+
+      '<td><input type="text" data-ci-alias value="'+esc((it.aliases||[]).join('、'))+'" placeholder="例: 東京都内順位、県内順位"></td>'+
+      '<td><input type="text" inputmode="decimal" data-ci-target value="'+esc(it.target==null?'':it.target)+'" placeholder="例: 4000000" style="min-width:90px;width:110px"></td>'+
       '<td style="text-align:center"><input type="checkbox" data-ci-lower'+(it.lowerIsBetter?' checked':'')+'></td>'+
       '<td><button type="button" class="del" data-ci-del>削除</button></td></tr>';
   }
@@ -348,7 +359,7 @@ td .del{background:none;border:0;color:var(--dim);cursor:pointer;font-size:12px}
   async function saveCat(){
     var items=[]; $('cItems').querySelectorAll('tbody tr').forEach(function(tr){
       var k=tr.querySelector('[data-ci-key]').value.trim(); if(!k) return;
-      items.push({key:k, unit:tr.querySelector('[data-ci-unit]').value.trim(), lowerIsBetter:tr.querySelector('[data-ci-lower]').checked});
+      items.push({key:k, unit:tr.querySelector('[data-ci-unit]').value.trim(), aliases:tr.querySelector('[data-ci-alias]').value, target:tr.querySelector('[data-ci-target]').value.trim(), lowerIsBetter:tr.querySelector('[data-ci-lower]').checked});
     });
     var msg=$('catMsg'); var label=$('cLabel').value.trim();
     if(!label||!items.length){ msg.textContent='名前と、1つ以上の項目を入力してください。'; msg.className='msg err'; return; }

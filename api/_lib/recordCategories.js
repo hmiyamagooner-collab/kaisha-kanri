@@ -12,13 +12,45 @@ export const BUILTIN = {
     periodType: "month",
     hint: "弊社運営のデイサービス「リハプライド蘇我」に毎月メールで届く全国ランキングの本文（この施設の順位だけを追う）",
     items: [
-      { key: "全国順位",     unit: "位", lowerIsBetter: true },
-      { key: "都道府県順位", unit: "位", lowerIsBetter: true },
-      { key: "利用者数",     unit: "人" },
-      { key: "稼働率",       unit: "%" },
+      { key: "全国順位",     unit: "位", lowerIsBetter: true, aliases: ["全国ランキング", "総合順位"] },
+      { key: "都道府県順位", unit: "位", lowerIsBetter: true, aliases: ["県内順位", "都内順位", "府内順位", "道内順位", "千葉県内順位", "東京都内順位", "県順位", "エリア順位"] },
+      { key: "利用者数",     unit: "人", aliases: ["延べ利用者数", "月間延べ利用者数", "月間利用者数", "利用者"] },
+      { key: "稼働率",       unit: "%",  aliases: ["稼動率", "利用率"] },
+    ],
+  },
+  rehapride_monthly: {
+    label: "リハプライド蘇我 月次実績",
+    periodType: "month",
+    hint: "弊社運営のデイサービス「リハプライド蘇我」の毎月の売上・実績報告（売上の目標は月400万円。ランキングのメールとは別）",
+    items: [
+      { key: "売上",     unit: "円", target: 4000000, aliases: ["売上高", "月間売上", "総売上", "売上金額", "収入", "介護報酬"] },
+      { key: "利用者数", unit: "人", aliases: ["延べ利用者数", "月間延べ利用者数", "利用者", "延人数", "延べ人数"] },
+      { key: "稼働率",   unit: "%",  aliases: ["稼動率", "利用率"] },
     ],
   },
 };
+
+// 項目名の緩やかな照合（メール側の表記揺れを吸収）。完全一致 → 別名一致 → 記号除去後の包含 の順
+function normKey(s) {
+  return String(s || "").replace(/[\s　（）()【】\[\]「」:：・]/g, "").toLowerCase();
+}
+export function matchItem(cat, rawKey) {
+  if (!cat || !rawKey) return null;
+  const raw = String(rawKey).trim();
+  const nraw = normKey(raw);
+  if (!nraw) return null;
+  for (const it of cat.items) if (it.key === raw) return it;
+  for (const it of cat.items) {
+    if (normKey(it.key) === nraw) return it;
+    for (const a of it.aliases || []) if (normKey(a) === nraw) return it;
+  }
+  for (const it of cat.items) {
+    const nk = normKey(it.key);
+    if (nk.length >= 2 && (nraw.includes(nk) || nk.includes(nraw))) return it;
+    for (const a of it.aliases || []) { const na = normKey(a); if (na.length >= 2 && (nraw.includes(na) || na.includes(nraw))) return it; }
+  }
+  return null;
+}
 
 // 入力（コード既定 / DB行 / 画面からのPOST）を同じ形に正規化する。不正なら null
 export function normalizeCategory(id, raw) {
@@ -32,10 +64,20 @@ export function normalizeCategory(id, raw) {
     const key = String((it && it.key) || "").trim().slice(0, 30);
     if (!key || seen.has(key)) continue;
     seen.add(key);
+    let aliases = it && it.aliases;
+    if (typeof aliases === "string") aliases = aliases.split(/[,、，\n]/);
+    aliases = (Array.isArray(aliases) ? aliases : []).map((a) => String(a || "").trim().slice(0, 30)).filter((a) => a && a !== key);
+    aliases = [...new Set(aliases)].slice(0, 12);
+    // 目標値（任意）。"4,000,000" のような桁区切りも許す。空なら null
+    const tv = it && it.target;
+    let target = null;
+    if (tv !== "" && tv != null) { const n = Number(String(tv).replace(/[,，\s]/g, "")); if (isFinite(n)) target = n; }
     items.push({
       key,
       unit: String((it && it.unit) || "").trim().slice(0, 10),
       lowerIsBetter: !!(it && (it.lowerIsBetter || it.lower_is_better)),
+      aliases,
+      target,
     });
     if (items.length >= 12) break;
   }
@@ -139,7 +181,40 @@ export function categoriesPromptBlock(cats) {
     const c = cats[id];
     lines.push(`・category="${id}"（${c.label}）` + (c.hint ? `｜手がかり: ${c.hint}` : "") +
       `｜period=${c.periodType === "day" ? "YYYY-MM-DD" : "YYYY-MM"}｜項目: ` +
-      c.items.map((it) => `${it.key}${it.unit ? "(" + it.unit + ")" : ""}`).join(" / "));
+      c.items.map((it) => `${it.key}${it.unit ? "(" + it.unit + ")" : ""}` +
+        (it.target != null ? `［目標 ${it.target}${it.unit || ""}］` : "") +
+        (it.aliases && it.aliases.length ? `〔別名: ${it.aliases.slice(0, 6).join("・")}〕` : "")).join(" / "));
   }
+  lines.push("※ record.items の item には上の項目名をそのまま使う（本文の表記が別名や似た言い方でも、対応する項目名に読み替える。例: 東京都内順位→都道府県順位、月間延べ利用者数→利用者数）。");
   return lines.join("\n");
+}
+
+// 記録済みの指標（直近）を円卓の文脈に載せる文（分析・前月比・目標との差を、記録にある数字だけで答えさせる）
+export async function recentRecordsBlock(userToken, cats) {
+  const auth = dbAuth(userToken);
+  if (!auth || !cats) return "";
+  try {
+    const r = await fetch(auth.url + "/rest/v1/metrics_record?select=category,item,period,value,unit&tenant_id=eq." +
+      encodeURIComponent(DEFAULT_TENANT) + "&order=period.desc,item.asc&limit=400", { headers: auth.headers });
+    if (!r.ok) return "";
+    const rows = await r.json();
+    if (!Array.isArray(rows) || !rows.length) return "";
+    const by = {};
+    for (const row of rows) {
+      const c = cats[row.category]; if (!c) continue;
+      by[row.category] = by[row.category] || {};
+      (by[row.category][row.item] = by[row.category][row.item] || []).push(row);
+    }
+    const lines = ["【記録済みの指標（直近・新しい順）。分析・前月比・目標との差は、ここにある数字だけを根拠に答える。無い期間は「未記録」と言い、推測で補わない】"];
+    for (const [cid, items] of Object.entries(by)) {
+      const c = cats[cid];
+      lines.push(`■ ${c.label}`);
+      for (const [item, list] of Object.entries(items)) {
+        const def = c.items.find((i) => i.key === item);
+        const tgt = def && def.target != null ? `（目標 ${def.target}${def.unit || ""}）` : "";
+        lines.push(`・${item}${tgt}: ` + list.slice(0, 8).map((x) => `${x.period}=${x.value}${x.unit || ""}`).join(", "));
+      }
+    }
+    return lines.join("\n");
+  } catch (e) { return ""; }
 }

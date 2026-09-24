@@ -4,7 +4,7 @@
 // キー設定: Vercelの OPENAI_API_KEY 環境変数、または api/secrets.local.js（example をコピー）
 
 import { getOpenAIKey } from "./_lib/getOpenAIKey.js";
-import { loadCategories, categoriesPromptBlock, categoryOf, normPeriod } from "./_lib/recordCategories.js";
+import { loadCategories, categoriesPromptBlock, categoryOf, normPeriod, matchItem, recentRecordsBlock } from "./_lib/recordCategories.js";
 
 export const config = { maxDuration: 60 };
 
@@ -163,6 +163,7 @@ const SYSTEM_ENTAKU = [
   "・record.items には読み取れた項目だけを入れる。読み取れなかった項目は record.missing に項目名を入れ、推測や仮の数字で埋めない（絶対）。",
   "・period は本文中の対象月（例『2026年9月度』→ 2026-09）。本文に無ければ利用者の発言日付や『先月』等から判断し、判断根拠を replies で一言添える。それでも不明なら period を空にして利用者に聞く。",
   "・replies の凛は『◯年◯月の全国ランキングとして、全国順位◯位・利用者数◯人と読み取りました。この内容で記録しますか？』のように読み取り結果を要約し、確認を求める（画面に確認カードが出て、利用者が『記録する』を押すと保存される）。",
+  "・そのうえで短い分析を添える：文脈末尾の【記録済みの指標】に前回の数字があれば前回比（増減と方向）、項目に目標があれば目標との差と達成率を一言で。記録に無い数字は使わず、無ければ『前回の記録が無いので比較はできません』と言う。評価語は控えめに、数字で語る。",
   "・数字の貼り付けでないときは record を付けない（省略する）。ランキングや指標の“相談”だけで数字が無いときも付けない。",
   "",
   "【出力形式 — 必ずこのJSONのみ。前後に説明やMarkdownを付けない】",
@@ -418,13 +419,14 @@ function parseEntakuRecord(j, latestUserText, cats) {
   const category = String(r.category || "").trim().toLowerCase();
   const cat = categoryOf(cats, category);
   if (!cat) return null;
-  const allowed = new Map(cat.items.map((it) => [it.key, it]));
   const items = [];
   const missing = new Set((Array.isArray(r.missing) ? r.missing : []).map((s) => String(s || "").trim()).filter(Boolean));
   for (const raw of Array.isArray(r.items) ? r.items : []) {
-    const key = String((raw && raw.item) || "").trim();
-    const def = allowed.get(key);
+    const rawKey = String((raw && (raw.item || raw.key || raw.name)) || "").trim();
+    const def = matchItem(cat, rawKey); // 表記揺れ（別名・包含）を吸収して正規の項目名に寄せる
     if (!def) continue;
+    const key = def.key;
+    if (items.some((x) => x.item === key)) continue;
     let v = raw && raw.value;
     if (typeof v !== "number") {
       let s = String(v == null ? "" : v).replace(/[０-９．－]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
@@ -434,7 +436,12 @@ function parseEntakuRecord(j, latestUserText, cats) {
     if (!isFinite(v)) { missing.add(key); continue; }
     items.push({ item: key, value: v, unit: def.unit || "" });
   }
-  for (const it of cat.items) if (!items.some((x) => x.item === it.key) && !missing.has(it.key)) missing.add(it.key);
+  // missing は正規の項目名で持つ（読み取れた項目は missing から外す）
+  const missingOut = new Set();
+  for (const m of missing) { const def = matchItem(cat, m); if (def) missingOut.add(def.key); }
+  for (const it of cat.items) if (!items.some((x) => x.item === it.key)) missingOut.add(it.key);
+  for (const x of items) missingOut.delete(x.item);
+  missing.clear(); for (const m of missingOut) missing.add(m);
   if (!items.length) return null;
   return {
     category, label: cat.label, periodType: cat.periodType,
@@ -837,6 +844,8 @@ export default async function handler(req, res) {
     if (entaku) {
       const userToken = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "").trim();
       try { recordCats = await loadCategories({ userToken }); recordBlock = categoriesPromptBlock(recordCats); } catch (e) { recordCats = null; recordBlock = ""; }
+      // 記録済みの数字（直近）も添える＝貼られた数字を前月・目標と比べて分析できる
+      try { const recent = await recentRecordsBlock(userToken, recordCats); if (recent) recordBlock += "\n\n" + recent; } catch (e) { /* 無くても続行 */ }
     }
     // 現在状況コンテキストも 5000 字までに圧縮（巨大な状況メモによる遅延を抑える）
     const system = [

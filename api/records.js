@@ -10,7 +10,7 @@
 //   DELETE /api/records  {op:"category", id}             … 指標セットを削除（既定のものは非表示にする。記録データは残す）
 // 認証: PORTAL のログイン（Supabase Auth セッション）＋ 管理者ロール（社長・秘書）のみ。
 // データ: PORTAL 自身の Supabase の public.metrics_record / public.metrics_category（RLS 有効・ポリシー無し＝service_role のみ）。
-import { BUILTIN, DEFAULT_TENANT, loadCategories, invalidateCategories, categoryOf, normPeriod, normalizeCategory, lastLoadDiag, dbAuth } from "./_lib/recordCategories.js";
+import { BUILTIN, DEFAULT_TENANT, loadCategories, invalidateCategories, categoryOf, normPeriod, normalizeCategory, lastLoadDiag, dbAuth, matchItem } from "./_lib/recordCategories.js";
 
 const ALLOWED_ROLES = ["社長", "秘書"];
 const TABLE = "metrics_record";
@@ -135,12 +135,13 @@ async function handleSave(req, res, s, member, b) {
   const items = [];
   const rejected = [];
   for (const raw of Array.isArray(b.items) ? b.items : []) {
-    const key = String((raw && raw.item) || "").trim();
-    const def = allowedItems.get(key);
+    const rawKey = String((raw && raw.item) || "").trim();
+    const def = matchItem(cat, rawKey);
     const value = toNumber(raw && raw.value);
-    if (!def) { if (key) rejected.push({ item: key, reason: "unknown_item" }); continue; }
-    if (!isFinite(value)) { rejected.push({ item: key, reason: "not_a_number" }); continue; }
-    items.push({ item: key, value, unit: String((raw && raw.unit) || def.unit || "").trim().slice(0, 10) });
+    if (!def) { if (rawKey) rejected.push({ item: rawKey, reason: "unknown_item" }); continue; }
+    if (!isFinite(value)) { rejected.push({ item: rawKey, reason: "not_a_number" }); continue; }
+    if (items.some((x) => x.item === def.key)) continue;
+    items.push({ item: def.key, value, unit: String((raw && raw.unit) || def.unit || "").trim().slice(0, 10) });
   }
   if (!items.length) return res.status(400).json({ ok: false, error: "no_items", rejected });
 
@@ -191,18 +192,31 @@ async function handleSave(req, res, s, member, b) {
   const prevRows = pv.ok && Array.isArray(pv.data) ? pv.data : [];
   const compare = items.map((it) => {
     const def = allowedItems.get(it.item) || {};
+    const target = (def.target != null && isFinite(def.target)) ? Number(def.target) : null;
+    const tgt = target == null ? {} : {
+      target, target_diff: it.value - target,
+      achievement: def.lowerIsBetter ? (it.value > 0 ? Math.round((target / it.value) * 100) : null) : (target > 0 ? Math.round((it.value / target) * 100) : null),
+    };
     const prev = prevRows.find((r) => r.item === it.item);
-    if (!prev) return { item: it.item, value: it.value, unit: it.unit, prev_period: null, prev_value: null, diff: null, better: null };
+    if (!prev) return Object.assign({ item: it.item, value: it.value, unit: it.unit, prev_period: null, prev_value: null, diff: null, better: null }, tgt);
     const diff = it.value - Number(prev.value);
     const better = diff === 0 ? null : (def.lowerIsBetter ? diff < 0 : diff > 0);
-    return { item: it.item, value: it.value, unit: it.unit, prev_period: prev.period, prev_value: Number(prev.value), diff, better };
+    return Object.assign({ item: it.item, value: it.value, unit: it.unit, prev_period: prev.period, prev_value: Number(prev.value), diff, better }, tgt);
   });
   const parts = compare.map((c) => {
     const base = `${c.item} ${fmtNum(c.value)}${c.unit}`;
-    if (c.prev_period == null) return base + "（初回）";
-    const sign = c.diff > 0 ? "+" : c.diff < 0 ? "−" : "±";
-    const tag = c.better === null ? "変わらず" : (c.better ? "改善" : "悪化");
-    return `${base}（${periodLabel(c.prev_period, cat.periodType)}比 ${sign}${fmtNum(Math.abs(c.diff))}${c.unit}・${tag}）`;
+    const notes = [];
+    if (c.prev_period == null) notes.push("初回");
+    else {
+      const sign = c.diff > 0 ? "+" : c.diff < 0 ? "−" : "±";
+      const tag = c.better === null ? "変わらず" : (c.better ? "改善" : "悪化");
+      notes.push(`${periodLabel(c.prev_period, cat.periodType)}比 ${sign}${fmtNum(Math.abs(c.diff))}${c.unit}・${tag}`);
+    }
+    if (c.target != null) {
+      const s = c.target_diff > 0 ? "+" : c.target_diff < 0 ? "−" : "±";
+      notes.push(`目標 ${fmtNum(c.target)}${c.unit} に対し ${s}${fmtNum(Math.abs(c.target_diff))}${c.unit}` + (c.achievement != null ? `・達成率 ${c.achievement}%` : ""));
+    }
+    return `${base}（${notes.join("／")}）`;
   });
   const summary = `${periodLabel(period, cat.periodType)} の「${cat.label}」を記録しました。` + parts.join("、") + "。";
 
