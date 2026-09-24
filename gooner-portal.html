@@ -13062,7 +13062,8 @@ window.EntakuAI=(function(){
                 };
               })
             :[];
-          return {replies:replies, actions:actions, record:(data.record&&typeof data.record==='object')?data.record:null};
+          var recs=Array.isArray(data.records)?data.records:((data.record&&typeof data.record==='object')?[data.record]:[]);
+          return {replies:replies, actions:actions, record:recs[0]||null, records:recs};
         });
       }).catch(function(e){
         if(e && e.name==='TypeError'){
@@ -13108,7 +13109,8 @@ window.EntakuAI=(function(){
                 detail:String(a.detail||'').trim(), taskId:String(a.taskId||'').trim(), done:false
               };
             }):[];
-            result={replies:reps, actions:acts, record:(j.record&&typeof j.record==='object')?j.record:null};
+            var recs=Array.isArray(j.records)?j.records:((j.record&&typeof j.record==='object')?[j.record]:[]);
+            result={replies:reps, actions:acts, record:recs[0]||null, records:recs};
           } else if(j.error){
             errMsg=String(j.error)+(j.detail?(' — '+j.detail):'');
           }
@@ -13132,7 +13134,7 @@ window.EntakuAI=(function(){
           var reps=[];
           try{ var m=full.match(/\{[\s\S]*\}/); if(m){ reps=normalizeReplies(JSON.parse(m[0])); } }catch(e){}
           if(!reps.length){ reps=normalizeReplies({text:full}); }
-          if(reps.length) return {replies:reps, actions:(result&&result.actions)||[], record:(result&&result.record)||null};
+          if(reps.length) return {replies:reps, actions:(result&&result.actions)||[], record:(result&&result.record)||null, records:(result&&result.records)||[]};
           throw new Error('EMPTY_REPLY');
         });
       });
@@ -13921,7 +13923,7 @@ window.EntakuDocIngest=(function(){
       if(msg) msg.textContent='保存できません：'+((e&&e.message)||e);
     }
   }
-  function playReplies(replies, actions, scrollY, record){
+  function playReplies(replies, actions, scrollY, records){
     S.playing = true;
     window.__entakuSpeaking = true;
     let i = 0;
@@ -13932,11 +13934,16 @@ window.EntakuDocIngest=(function(){
         window.DashTalk?.stop?.({keepTts:true});
         entakuReactStop();
         commitActions(actions || []);
-        // 凛の発言が終わったら、読み取った数字の確認カードを出す（利用者が「はい」で保存）
-        if(record && typeof record==='object' && Array.isArray(record.items) && record.items.length){
-          S.history.push({ role:'assistant', agent:'secretary', kind:'record-draft', content:'（記録の確認：'+(record.label||record.category||'')+'）', record:record });
-          persistEntaku();
-        }
+        // 発言が終わったら、読み取った数字の確認カードを出す（指標セットごとに1枚。利用者が「はい」で保存）
+        var recList=Array.isArray(records)?records:(records?[records]:[]);
+        var pushed=false;
+        recList.forEach(function(record){
+          if(record && typeof record==='object' && Array.isArray(record.items) && record.items.length){
+            S.history.push({ role:'assistant', agent:'secretary', kind:'record-draft', content:'（記録の確認：'+(record.label||record.category||'')+'）', record:record });
+            pushed=true;
+          }
+        });
+        if(pushed) persistEntaku();
         render();
         focusEntakuInput();
         if(scrollY!=null) requestAnimationFrame(function(){ window.scrollTo(0, scrollY); });
@@ -15118,7 +15125,7 @@ window.EntakuDocIngest=(function(){
       var actions = (data && data.actions) || [];
       S.focus = null;
       render();
-      playReplies(replies, actions, scrollY, (data&&data.record)||null); // 1人ずつ順番に発言＋読み上げ（最後に記録の確認カード）
+      playReplies(replies, actions, scrollY, (data&&(data.records||(data.record?[data.record]:[])))||[]); // 1人ずつ順番に発言＋読み上げ（最後に記録の確認カード）
     }).catch(function(e){
       S.streamPreview='';
       S.busy=false; S.playing=false; window.__entakuSpeaking=false;

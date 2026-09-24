@@ -160,15 +160,16 @@ const SYSTEM_ENTAKU = [
   "",
   "【数字の記録（円卓に貼ると記録してグラフになる）】",
   "利用者がランキングのメール本文・KPI・売上などの数字の報告を貼り付けた／添付した／『記録して』と言ったときは、文脈末尾の【記録できる指標】のどれに当たるか判断し、JSON の record に読み取った数字を入れる（記録は利用者が確認してから保存される。あなたが保存するのではない）。業種は問わない。どの指標セットにも当たらなければ record を付けず、『記録とグラフ』画面で指標セットを追加できると案内する。",
-  "・record.items には読み取れた項目だけを入れる。読み取れなかった項目は record.missing に項目名を入れ、推測や仮の数字で埋めない（絶対）。",
+  "・指標セットは『本文の数字がどのセットの項目に最も当てはまるか』で選ぶ（手がかりも参考）。売上・実績の報告を順位のセットに入れない。1つの本文に複数セットの数字（例: 順位と売上）があれば、record を配列にしてセットごとに分けて全部入れる。",
+  "・record.items には本文に実際にある項目だけを入れる。本文に無い項目は items に入れず（0・null・仮の数字で埋めない＝絶対）、record.missing に項目名を入れる。",
+  "・【数字の報告は凛が指示し、紬が報告する（徹底）】数字の記録・報告のときは、凛は読み取り結果の要約と『この内容で記録しますか？』の確認だけを行い、分析（前回比・目標との差・達成率）は必ず dispatch で紬（finance）に指示する。dispatch.prompt には読み取った数字を列挙し『文脈末尾の【記録済みの指標】と各項目の目標だけを根拠に、項目ごとに今回の値／前回比／目標との差と達成率を数字で報告。未記録は未記録と言う。評価語・一般論は不要』と書く。凛自身は数字の良し悪しを語らない。",
   "・period は本文中の対象月（例『2026年9月度』→ 2026-09）。本文に無ければ利用者の発言日付や『先月』等から判断し、判断根拠を replies で一言添える。それでも不明なら period を空にして利用者に聞く。",
   "・replies の凛は『◯年◯月の全国ランキングとして、全国順位◯位・利用者数◯人と読み取りました。この内容で記録しますか？』のように読み取り結果を要約し、確認を求める（画面に確認カードが出て、利用者が『記録する』を押すと保存される）。",
-  "・そのうえで短い分析を添える：文脈末尾の【記録済みの指標】に前回の数字があれば前回比（増減と方向）、項目に目標があれば目標との差と達成率を一言で。記録に無い数字は使わず、無ければ『前回の記録が無いので比較はできません』と言う。評価語は控えめに、数字で語る。",
   "・数字の貼り付けでないときは record を付けない（省略する）。ランキングや指標の“相談”だけで数字が無いときも付けない。",
   "",
   "【出力形式 — 必ずこのJSONのみ。前後に説明やMarkdownを付けない】",
-  '{"replies":[{"agent":"secretary","text":"凛の発言本文"}],"dispatch":[{"agent":"finance|legal","prompt":"その専門家AIへの具体的な指示（何を・どの観点で見て・何を答えるか）"}],"actions":[{"title":"具体的な次の一手","owner":"凛|紬|陽翔|社長","due":"YYYY-MM-DDまたは期限表現","op":"goto|locate|snapshot|print|search|pin|fill|tasks|risk|assign|delete|note","module":"画面ID","query":"検索語","scope":"local|dropbox|both","label":"ピン名","field":"入力欄id","value":"入力値","assignee":"社員名またはall","detail":"タスク補足","taskId":"タスクid"}],"record":{"category":"記録できる指標のcategory","period":"YYYY-MM","items":[{"item":"項目名","value":123,"unit":"位"}],"missing":["読み取れなかった項目名"]}}',
-  "・record は数字の記録時のみ。無いときはキーごと省略。",
+  '{"replies":[{"agent":"secretary","text":"凛の発言本文"}],"dispatch":[{"agent":"finance|legal","prompt":"その専門家AIへの具体的な指示（何を・どの観点で見て・何を答えるか）"}],"actions":[{"title":"具体的な次の一手","owner":"凛|紬|陽翔|社長","due":"YYYY-MM-DDまたは期限表現","op":"goto|locate|snapshot|print|search|pin|fill|tasks|risk|assign|delete|note","module":"画面ID","query":"検索語","scope":"local|dropbox|both","label":"ピン名","field":"入力欄id","value":"入力値","assignee":"社員名またはall","detail":"タスク補足","taskId":"タスクid"}],"record":[{"category":"記録できる指標のcategory","period":"YYYY-MM","items":[{"item":"項目名","value":123,"unit":"位"}],"missing":["読み取れなかった項目名"]}]}',
+  "・record は数字の記録時のみ（配列。セットが1つでも配列）。無いときはキーごと省略。",
   "・replies は原則 凛（secretary）1件のみ（会話のメイン）。専門家の発言は replies に書かず dispatch で招集する。",
   "・dispatch は 0〜2件。専門判断が要るときだけ finance／legal を入れる。要らなければ空配列 []。dispatch した専門家は別AIとして実際に発言する（凛が代筆しない）。",
   "・actions は0〜10件（無ければ空配列）。操作指示なら必ず op を付ける。タスク指示は op=assign、削除は op=delete。単なるやることなら op=note または省略可。",
@@ -184,6 +185,7 @@ const SYSTEM_FINANCE = [
   "強み: 資金繰り／CF予測・着地見込み／利益率と採算判断／経費最適化と合法的節税／証拠化（領収書・請求書・明細突合）／不正・資金の不透明化（マネロン）の牽制／資金ショートの回避。",
   "流儀: 金額・相手・日付・期日・支払サイトなど『証拠とCF管理に必要な項目』の過不足を必ず点検する。資金の入出金が話題なら LINEスクショ等の証拠添付を必ず要求する。社内データが未接続なら具体数値は『（データ未接続）』と正直に断る。断定的な税務助言は避け、必要なら税理士確認を促す。",
   "担当モジュール: 口座・CSV取込／明細突合／精算クエスト／CF予測／印籠レポート。RELAの課金・コイン等プロダクト採算を聞かれたら、文脈末尾の【RELAプロダクト指標】を数字で参照する（無ければ設定待ちと正直に）。",
+  "【数字の記録・報告のとき（凛が指示し、紬が報告する）】凛から『数字の報告』を指示されたら、貼られた数字と、文脈末尾の【記録済みの指標】および【記録できる指標】の目標だけを根拠に、項目ごとに『今回の値／前回（期間）比の増減／目標との差と達成率』を数字で簡潔に報告する。記録に無い期間・項目は『未記録のため比較できません』と述べる。『良好』『順調』『安定』などの評価語、『過去データと比較することをお勧めします』のような一般論の助言、推測の数字は書かない。数字から導く解釈は『〜の可能性があります』と事実の文と分けて書く。",
   "出力: 前置き・JSON・記号装飾は不要。紬としての回答本文だけを日本語で返す（1〜4段落程度、要点は箇条書き可）。名乗りは任意。",
 ].join("\n");
 
@@ -421,12 +423,17 @@ function parseEntakuRecord(j, latestUserText, cats) {
   if (!cat) return null;
   const items = [];
   const missing = new Set((Array.isArray(r.missing) ? r.missing : []).map((s) => String(s || "").trim()).filter(Boolean));
+  // モデルが「読み取れなかった」と言った項目（正規名に寄せる）。items に 0 等で入っていても採用しない
+  const modelMissing = new Set();
+  for (const m of missing) { const d = matchItem(cat, m); if (d) modelMissing.add(d.key); }
   for (const raw of Array.isArray(r.items) ? r.items : []) {
     const rawKey = String((raw && (raw.item || raw.key || raw.name)) || "").trim();
     const def = matchItem(cat, rawKey); // 表記揺れ（別名・包含）を吸収して正規の項目名に寄せる
     if (!def) continue;
     const key = def.key;
+    if (modelMissing.has(key)) continue;
     if (items.some((x) => x.item === key)) continue;
+    if (raw && (raw.value === null || raw.value === undefined || raw.value === "")) continue;
     let v = raw && raw.value;
     if (typeof v !== "number") {
       let s = String(v == null ? "" : v).replace(/[０-９．－]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0));
@@ -451,9 +458,38 @@ function parseEntakuRecord(j, latestUserText, cats) {
   };
 }
 
+// record は配列（複数セット）でも単体でも受け付け、正規化した配列にする（category 重複は先勝ち・最大4件）
+function parseEntakuRecords(j, latestUserText, cats) {
+  let list = j && (j.records != null ? j.records : j.record);
+  if (!list) return [];
+  if (!Array.isArray(list)) list = [list];
+  const out = [];
+  const seen = new Set();
+  for (const r of list.slice(0, 4)) {
+    let one = null;
+    try { one = parseEntakuRecord({ record: r }, latestUserText, cats); } catch (e) { one = null; }
+    if (one && !seen.has(one.category)) { seen.add(one.category); out.push(one); }
+  }
+  return out;
+}
+
+// 数字の記録があるときは必ず紬（finance）に報告させる（凛が指示し、紬が報告する＝徹底）。
+// 既にキーワード等で finance が入っていても、読み取った数字を列挙した指示プロンプトに差し替える。
+function ensureFinanceForRecords(dispatch, records) {
+  if (!records || !records.length) return dispatch;
+  const lines = records.map((r) => `■ ${r.label || r.category}（${r.period || "期間未定"}）: ` +
+    r.items.map((it) => `${it.item} ${it.value}${it.unit || ""}`).join("、") +
+    (r.missing && r.missing.length ? `／読み取れなかった項目: ${r.missing.join("、")}` : ""));
+  const prompt = "社長から数字の報告が貼られました。凛が読み取った内容は次のとおりです（利用者の確認後に記録されます）。\n" + lines.join("\n") +
+    "\n\n文脈末尾の【記録済みの指標】と【記録できる指標】の目標だけを根拠に、項目ごとに『今回の値／前回比（期間と増減）／目標との差と達成率』を数字で簡潔に報告してください。" +
+    "記録に無い期間・項目は『未記録のため比較できません』と述べ、評価語（良好・順調など）や一般論の助言は書かないでください。";
+  const rest = (dispatch || []).filter((d) => d.agent !== "finance");
+  return [{ agent: "finance", prompt }, ...rest].slice(0, 2);
+}
+
 function parseEntakuReplies(raw, latestUserText, cats) {
   const text = String(raw || "").trim();
-  if (!text) return { replies: [{ agent: "secretary", text: "（応答が空でした）" }], actions: [], dispatch: [], record: null };
+  if (!text) return { replies: [{ agent: "secretary", text: "（応答が空でした）" }], actions: [], dispatch: [], record: null, records: [] };
   try {
     const m = text.match(/\{[\s\S]*\}/);
     const j = JSON.parse(m ? m[0] : text);
@@ -466,12 +502,11 @@ function parseEntakuReplies(raw, latestUserText, cats) {
     if (valid.length || dispatch.length) {
       // 凛の発言が無い（=dispatchのみ）ときも、先頭に凛の一言を保証する
       const repliesOut = valid.length ? valid : [{ agent: "secretary", text: "担当より確認いたします。" }];
-      let record = null;
-      try { record = parseEntakuRecord(j, latestUserText, cats); } catch (e) { record = null; }
-      return { replies: repliesOut, actions: parseEntakuActions(j), dispatch, record };
+      const records = parseEntakuRecords(j, latestUserText, cats);
+      return { replies: repliesOut, actions: parseEntakuActions(j), dispatch, record: records[0] || null, records };
     }
   } catch (e) { /* fall through */ }
-  return { replies: [{ agent: "secretary", text: text.slice(0, 6000) }], actions: [], dispatch: [], record: null };
+  return { replies: [{ agent: "secretary", text: text.slice(0, 6000) }], actions: [], dispatch: [], record: null, records: [] };
 }
 
 // 凛の指示プロンプトを受けて、専門家AI（紬=経理／陽翔=法務）を実際に別モデルで呼び出す。
@@ -847,6 +882,8 @@ export default async function handler(req, res) {
       // 記録済みの数字（直近）も添える＝貼られた数字を前月・目標と比べて分析できる
       try { const recent = await recentRecordsBlock(userToken, recordCats); if (recent) recordBlock += "\n\n" + recent; } catch (e) { /* 無くても続行 */ }
     }
+    // 専門家（紬）にも RELA 指標と記録済みの指標・目標を渡す（数字の報告の根拠にする）
+    const specialistBlock = [relaBlock, recordBlock].filter(Boolean).join("\n\n");
     // 現在状況コンテキストも 5000 字までに圧縮（巨大な状況メモによる遅延を抑える）
     const system = [
       baseSystem,
@@ -911,14 +948,14 @@ export default async function handler(req, res) {
         clearTimeout(timerS);
         const parsed = parseEntakuReplies(full, latestUserText, recordCats);
         let finalReplies = parsed.replies;
-        const dispatch = resolveDispatch(parsed.dispatch, focus, latestUserText);
+        const dispatch = ensureFinanceForRecords(resolveDispatch(parsed.dispatch, focus, latestUserText), parsed.records);
         if (dispatch.length) {
           try {
-            const specialists = await runDispatch(apiKey, dispatch, messages, context, relaBlock);
+            const specialists = await runDispatch(apiKey, dispatch, messages, context, specialistBlock);
             finalReplies = mergeEntakuReplies(parsed.replies, dispatch, specialists);
           } catch (eD) { /* 専門家呼び出し失敗時は凛の発言のみ返す */ }
         }
-        sse({ done: true, replies: finalReplies, actions: parsed.actions, record: parsed.record || null });
+        sse({ done: true, replies: finalReplies, actions: parsed.actions, record: parsed.record || null, records: parsed.records || [] });
         res.write("data: [DONE]\n\n");
         return res.end();
       } catch (e) {
@@ -927,7 +964,7 @@ export default async function handler(req, res) {
         try {
           if (full && full.trim()) {
             const parsed = parseEntakuReplies(full, latestUserText, recordCats);
-            sse({ done: true, replies: parsed.replies, actions: parsed.actions, record: parsed.record || null });
+            sse({ done: true, replies: parsed.replies, actions: parsed.actions, record: parsed.record || null, records: parsed.records || [] });
           } else {
             sse({ error: (e && e.name === "AbortError") ? "timeout" : String((e && e.message) || e).slice(0, 200) });
           }
@@ -980,13 +1017,13 @@ export default async function handler(req, res) {
       const parsed = parseEntakuReplies(raw, latestUserText, recordCats);
       let replies = parsed.replies;
       const actions = parsed.actions;
-      const dispatch = resolveDispatch(parsed.dispatch, focus, latestUserText);
+      const dispatch = ensureFinanceForRecords(resolveDispatch(parsed.dispatch, focus, latestUserText), parsed.records);
       if (dispatch.length) {
-        const specialists = await runDispatch(apiKey, dispatch, messages, context, relaBlock);
+        const specialists = await runDispatch(apiKey, dispatch, messages, context, specialistBlock);
         replies = mergeEntakuReplies(parsed.replies, dispatch, specialists);
       }
       const text = replies.map((r) => `【${AGENT_LABEL[r.agent]}】${r.text}`).join("\n\n");
-      return res.status(200).json({ ok: true, text, replies, actions, dispatch, record: parsed.record || null, model: ENTAKU_MODEL, at: new Date().toISOString() });
+      return res.status(200).json({ ok: true, text, replies, actions, dispatch, record: parsed.record || null, records: parsed.records || [], model: ENTAKU_MODEL, at: new Date().toISOString() });
     }
     return res.status(200).json({ ok: true, text: raw, model: MODEL, at: new Date().toISOString() });
   } catch (e) {
